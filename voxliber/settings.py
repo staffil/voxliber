@@ -13,6 +13,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from decouple import config
+
+# 개발용 기본값을 설정
+SECRET_KEY = config('DJANGO_SECRET_KEY', default='dev-secret-key')
+EXTERNAL_TTS_URL = config('EXTERNAL_TTS_URL', default='http://localhost:8000/fake-tts')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
