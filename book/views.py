@@ -11,7 +11,7 @@ COLAB_TTS_URL = os.getenv('COLAB_TTS_URL', 'https://xxxx.ngrok-free.app')
 
 # 작품 등록 이용약관
 def book_tos(request):
-    return render(request, "book/book_tos.html")
+    return render(request, "book/book_TOS.html")
 
 
 # 태그 검색
