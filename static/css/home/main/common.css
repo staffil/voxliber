@@ -305,12 +305,7 @@
 }
 
 /* Footer */
-.main-footer {
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-color);
-  padding: var(--spacing-3xl) 0 var(--spacing-xl);
-  margin-top: var(--spacing-3xl);
-}
+
 .footer-container {
   max-width: 1400px;
   margin: 0 auto;
