@@ -1,0 +1,83 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/common/loginHeader.css' %}">
+    <link rel="stylesheet" href="{% static 'css/common/variables.css' %}">
+</head>
+<body>
+<header id="header">
+    <div class="nav-container">
+        <!-- Logo -->
+        <a href="/" class="logo">
+            <div class="logo-icon">
+                <img src="{% static 'img/logo.png' %}?v=2" alt="VOXLIBER" class="logo-img">
+            </div>
+            <span class="logo-text">VOXLIBER</span>
+        </a>
+
+
+
+        <!-- Desktop Navigation -->
+        <nav class="nav-menu desktop-only">
+            <a href="{% url 'book:book_tos' %}" class="nav-item">이야기 만들기</a>
+            <a href="/book/book-snap/" class="nav-item">SNAP</a>
+            <a href="/book/author-dashboard/" class="nav-item">작가 센터</a>
+            <a href="/mypage/library/" class="nav-item">내 서제</a>
+            <a href="{% url 'register:logout' %}" class="nav-item">로그아웃</a>
+        </nav>
+
+        <!-- User Actions -->
+        <div class="user-actions">
+            <!-- Theme Toggle -->
+        <a href="/search/" class="theme-toggle" style="text-decoration: none;">🔍</a>
+
+            <button class="theme-toggle" id="themeToggle" onclick="themeToggle()">🌙</button>
+
+            <!-- User Profile -->
+            <a href="{% url 'mypage:my_profile' %}" class="user-profile-link">
+                <div class="user-profile">
+                    {% if user.user_img %}
+                        <img src="{{ user.user_img.url }}" alt="프로필" class="profile-img">
+                    {% else %}
+                        <img src="{% static 'img/default-avatar.png' %}" alt="프로필" class="profile-img">
+                    {% endif %}
+                    <span class="username">{{ user.nickname|default:user.email|default:"사용자" }}</span>
+                </div>
+            </a>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-toggle" id="mobileMenuToggleGuest" onclick="toggleMobileMenu('Guest')">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
+        </div>
+    </div>
+
+
+</header>
+
+<script src="{% static 'js/common/notLoginHeader.js' %}"></script>
+<script>
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobileSideMenu');
+    const toggle = document.getElementById('mobileMenuToggle');
+    menu.classList.toggle('active');
+    toggle.classList.toggle('active');
+    document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
+}
+
+function closeMobileMenu() {
+    const menu = document.getElementById('mobileSideMenu');
+    const toggle = document.getElementById('mobileMenuToggle');
+    menu.classList.remove('active');
+    toggle.classList.remove('active');
+    document.body.style.overflow = '';
+}
+</script>
+
+</body>
+</html>

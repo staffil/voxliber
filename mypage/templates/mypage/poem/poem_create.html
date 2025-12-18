@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}시 작성하기 - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage/poem/poem_create.css' %}">
+<style>
+    .audio-preview-box {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 10px;
+        background: #f5f5f5;
+        display: none;
+    }
+    .audio-preview-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="poem-write-container">
+
+    <h2 class="page-title">✒ 나만의 시 작성하기</h2>
+    <p class="page-description">당신의 감성을 목소리로 들려주세요</p>
+
+    <form id="poemForm" action="" method="POST" class="poem-form" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Title -->
+        <div class="form-group">
+            <label for="title">📌 시 제목</label>
+            <input type="text" id="title" name="title" class="form-input"
+                   placeholder="예) 달빛 아래 피어나는 그리움" required>
+        </div>
+
+        <!-- Content -->
+        <div class="form-group">
+            <label for="content">📝 시 내용</label>
+            <textarea id="content" name="content" class="form-textarea"
+                      placeholder="당신의 시를 자유롭게 적어보세요..." required></textarea>
+        </div>
+
+        <!-- Voice Select -->
+        <div class="form-group">
+            <label for="voice">🎤 내 보이스 선택</label>
+
+            <select id="voice" name="voice" class="voice-select">
+                {% for voice in my_voice_list %}
+                <option value="{{ voice.voice.voice_id }}">
+                    {{ voice.alias_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Public setting -->
+        <div class="form-group checkbox-group">
+            <input type="checkbox" id="is_public" name="is_public" checked>
+            <label for="is_public">공개 설정</label>
+        </div>
+
+        <!-- Buttons -->
+        <div class="button-group">
+
+            <!-- 🎧 TTS 생성하기 -->
+            <button type="button" id="generateTTSBtn" class="btn-tts">
+                🎧 TTS 생성하기
+            </button>
+
+            <!-- ✨ 시 제출하기 -->
+            <button type="submit" name="action" value="submit_poem" class="btn-submit">
+                ✨ 시 제출하기
+            </button>
+            <div class="form-group">
+                <label for="cover_image">🖼 시 커버 이미지</label>
+                <input type="file" id="cover_image" name="cover_image" accept="image/*" class="form-input">
+            </div>
+        </div>
+
+    </form>
+
+    <!-- 오디오 미리듣기 -->
+    <div id="audioPreviewBox" class="audio-preview-box">
+        <div class="audio-preview-title">🎶 생성된 TTS 미리듣기</div>
+        <audio id="ttsAudio" controls></audio>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById("generateTTSBtn").addEventListener("click", async function () {
+
+    const content = document.getElementById("content").value.trim();
+    const voiceId = document.getElementById("voice").value;
+
+    if (!content) {
+        alert("시 내용을 먼저 입력해주세요.");
+        return;
+    }
+
+    this.disabled = true;
+    this.innerText = "🔄 생성 중...";
+
+    try {
+        const response = await fetch("/book/tts/generate/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+            },
+            body: JSON.stringify({
+                text: content,
+                voice_id: voiceId,
+                language_code: "ko",   // 필요 시 수정 가능
+                speed_value: "1.0"
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error("TTS 생성 실패");
+        }
+
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+
+        // 오디오 미리듣기 활성화
+        document.getElementById("ttsAudio").src = audioUrl;
+        document.getElementById("audioPreviewBox").style.display = "block";
+
+    } catch (err) {
+        console.error(err);
+        alert("TTS 생성 중 문제가 발생했습니다.");
+    } finally {
+        this.disabled = false;
+        this.innerText = "🎧 TTS 생성하기";
+    }
+});
+</script>
+{% endblock %}

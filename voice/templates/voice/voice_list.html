@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}보이스 라이브러리 | VoxLiber{% endblock %}
+
+{% block content %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/voice/voice_list.css' %}">
+{% endblock %}
+
+<!-- 페이지 헤더 -->
+<div class="page-header">
+    <h1 class="page-title">🎤 보이스 라이브러리</h1>
+    <p class="page-subtitle">나만의 오디오북을 위한 완벽한 목소리를 찾아보세요</p>
+</div>
+
+<!-- 타입 필터 섹션 -->
+<div class="filter-section">
+    <div class="filter-title">목소리 타입</div>
+    <div class="filter-buttons">
+        {% for voice_type in voice_types %}
+        <a href="?type_id={{ voice_type.id }}" class="filter-btn {% if selected_type_id == voice_type.id %}active{% endif %}">
+            {{ voice_type.name }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 메인 레이아웃: 왼쪽(내 보이스) + 오른쪽(전체 목록) -->
+<div class="main-layout">
+    <!-- 왼쪽: 내 보이스 -->
+    <div class="my-voices-section"> 
+        <div class="section-header">💾 내 보이스 컬렉션</div>
+
+        {% if my_voices %}
+            {% for item in my_voices %}
+            <div class="myvoice-card-small">
+                <div class="myvoice-header">
+                    {% if item.voice.voice_image %}
+                    <img src="{{ item.voice.voice_image.url }}" class="myvoice-img-small" alt="{{ item.alias_name }}" loading="lazy">
+                    {% else %}
+                    <img src="{% static 'default_voice.png' %}" class="myvoice-img-small" alt="{{ item.alias_name }}" loading="lazy">
+                    {% endif %}
+
+                    <div class="myvoice-info-small">
+                        <div class="myvoice-name-small">{{ item.alias_name }}</div>
+                        <div class="myvoice-alias-small">{{ item.voice.voice_name }}</div>
+                    </div>
+
+                    <button class="favorite-btn-small" onclick="toggleFavorite({{ item.id }}, this)" data-favorite="{{ item.is_favorite|lower }}">
+                        {% if item.is_favorite %}⭐{% else %}☆{% endif %}
+                    </button>
+                </div>
+
+                <!-- 책 선택 -->
+                <select name="book_id" onchange="selectBook({{ item.id }}, this.value)" class="book-select-small">
+                    <option value="">📚 전체 작품</option>
+                    {% for book in books %}
+                    <option value="{{ book.id }}" {% if item.book and book.id == item.book.id %}selected{% endif %}>
+                        {{ book.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <!-- 오디오 플레이어 -->
+                {% if item.voice.sample_audio %}
+                <div class="audio-player-small">
+                    <button onclick="togglePlaySmall(this)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </button>
+                    <div class="progress-bar-small">
+                        <div class="progress-small"></div>
+                    </div>
+                    <span class="time-small">0:00 / 0:00</span>
+                    <audio src="{{ item.voice.sample_audio.url }}" preload="metadata" loading="lazy"></audio>
+                </div>
+                {% endif %}
+
+                <!-- 삭제 버튼 -->
+                <button type="button" class="delete-btn-small" onclick="deleteVoice({{ item.id }}, this)">🗑️ 삭제</button>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-myvoice-small">
+                <div class="no-myvoice-icon-small">🎙️</div>
+                <p style="font-size: 14px; margin-bottom: 0;">저장된 보이스가 없습니다</p>
+                <p style="font-size: 12px; color: var(--text-secondary);">오른쪽에서 목소리를 선택하세요</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 오른쪽: 전체 보이스 목록 -->
+    <div class="voice-list-section">
+        <div class="section-header">🎵 전체 보이스 목록</div>
+
+        <div class="voice-container">
+            {% if voice_lists %}
+                {% for voice in voice_lists %}
+                <div class="voice-card">
+                    {% if voice.voice_image %}
+                    <img src="{{ voice.voice_image.url }}" alt="{{ voice.voice_name }}" class="voice-image" loading="lazy">
+                    {% else %}
+                    <img src="{% static 'default_voice.png' %}" alt="{{ voice.voice_name }}" class="voice-image" loading="lazy">
+                    {% endif %}
+
+                    <div class="voice-name">{{ voice.voice_name }}</div>
+
+                    {% if voice.types.all %}
+                    <div class="voice-types">
+                        {% for type in voice.types.all %}
+                        <span class="type-badge">{{ type.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="voice-desc">{{ voice.voice_description|default:"설명이 없습니다." }}</div>
+
+                    {% if voice.sample_audio %}
+                    <div class="voice-audio-player">
+                        <button class="play-btn" onclick="toggleVoicePlay(this)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </button>
+                        <div class="audio-progress">
+                            <div class="audio-progress-bar"></div>
+                        </div>
+                        <span class="audio-time">0:00 / 0:00</span>
+                        <audio src="{{ voice.sample_audio.url }}" preload="metadata" loading="lazy"></audio>
+                    </div>
+                    {% endif %}
+
+                    <button class="select-voice-btn" onclick="selectVoice('{{ voice.id }}')">선택</button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-voices">
+                    <div class="no-voices-icon">🎙️</div>
+                    <h2 class="no-voices-title">
+                        {% if selected_type_id %}
+                        해당 타입의 목소리가 없습니다
+                        {% else %}
+                        등록된 보이스가 없습니다
+                        {% endif %}
+                    </h2>
+                    <p class="no-voices-text">
+                        {% if selected_type_id %}
+                        다른 타입을 선택해보세요
+                        {% else %}
+                        새로운 보이스가 곧 추가될 예정입니다
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div id="voice_name" style="display: none;"></div>
+<div class="desktop-only">
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- <script>
+// 페이지 접근 제한 - 메인으로 리다이렉트
+(function() {
+    window.location.href = '/';
+})();
+</script> -->
+<script src="{% static 'js/voice/voice_list.js' %}"></script>
+<script>
+// CSRF 토큰 가져오기
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+// 즐겨찾기 토글 (페이지 새로고침 없음)
+function toggleFavorite(voiceId, button) {
+    fetch(`/mypage/toggle_myvoice_favorite/${voiceId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 버튼 아이콘 변경
+            button.textContent = data.is_favorite ? '⭐' : '☆';
+            button.dataset.favorite = data.is_favorite;
+            console.log('✅', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('❌ 즐겨찾기 토글 오류:', error);
+        alert('즐겨찾기 업데이트에 실패했습니다.');
+    });
+}
+
+// 책 선택 (페이지 새로고침 없음)
+function selectBook(voiceId, bookId) {
+    const formData = new FormData();
+    formData.append('book_id', bookId);
+
+    fetch(`/mypage/select_book/${voiceId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('✅', data.message, '-', data.book_name);
+        }
+    })
+    .catch(error => {
+        console.error('❌ 책 선택 오류:', error);
+        alert('책 선택에 실패했습니다.');
+    });
+}
+
+// 목소리 삭제 (페이지 새로고침 없음)
+function deleteVoice(voiceId, button) {
+    if (!confirm('정말로 삭제하시겠습니까?')) {
+        return;
+    }
+
+    fetch(`/mypage/delete/${voiceId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 카드 전체를 DOM에서 제거 (부드러운 페이드아웃 효과)
+            const card = button.closest('.myvoice-card-small');
+            card.style.transition = 'opacity 0.3s ease';
+            card.style.opacity = '0';
+            setTimeout(() => {
+                card.remove();
+
+                // 모든 카드가 삭제되었는지 확인
+                const remainingCards = document.querySelectorAll('.myvoice-card-small');
+                if (remainingCards.length === 0) {
+                    // 빈 상태 메시지 표시
+                    const myVoicesSection = document.querySelector('.my-voices-section');
+                    myVoicesSection.innerHTML = `
+                        <div class="section-header">💾 내 보이스 컬렉션</div>
+                        <div class="no-myvoice-small">
+                            <div class="no-myvoice-icon-small">🎙️</div>
+                            <p style="font-size: 14px; margin-bottom: 0;">저장된 보이스가 없습니다</p>
+                            <p style="font-size: 12px; color: var(--text-secondary);">오른쪽에서 목소리를 선택하세요</p>
+                        </div>
+                    `;
+                }
+            }, 300);
+            console.log('✅', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('❌ 삭제 오류:', error);
+        alert('삭제에 실패했습니다.');
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER - 소설 제목{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/book/book_profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="novel-title-wrapper" style="margin-top: 100px;">
+    <div class="novel-title-container">
+        {% if error %}
+        <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        <form action="" method="post" enctype="multipart/form-data" id="book_profile_form">
+            {% csrf_token %}
+
+            <!-- 소설 제목 -->
+            <div class="title-header">
+                <input type="text" name="novel_title" class="section-title" placeholder="📚 소설 제목을 입력하세요"
+                    value="{{ book.name|default:'' }}" required>
+            </div>
+
+            <div class="title-content">
+                <!-- 왼쪽: 표지 -->
+                <div class="novel-cover-section">
+                    <div class="cover-wrapper">
+                        <div class="cover-image" id="cover-preview">
+                            {% if book and book.cover_img %}
+                                <img src="{{ book.cover_img.url }}" id="preview-cover" alt="소설 표지" loading="lazy">
+                            {% else %}
+                                <img src="{% static 'images/default-novel-cover.jpg' %}" id="preview-cover" alt="소설 표지" loading="lazy">
+                            {% endif %}
+                            <div class="cover-overlay">
+                                <span>표지 선택</span>
+                            </div>
+                        </div>
+                        <input type="file" name="cover-image" id="book-cover-image" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 정보 -->
+                <div class="novel-info-section">
+                    <div class="info-card">
+                        <label class="info-label">📖 소설 줄거리</label>
+                        <textarea name="novel_description" placeholder="소설 줄거리를 입력하세요..."
+                            rows="5">{{ book.description }}</textarea>
+                    </div>
+
+                    <div class="info-card">
+                        <label class="info-label">🎭 장르 선택 (여러 개 선택 가능)</label>
+                        <div class="genre-grid">
+                            {% for genre in genres_list %}
+                            <label class="genre-option">
+                                <input type="checkbox" name="genres" value="{{ genre.id }}"
+                                    {% if book and genre in book.genres.all %}checked{% endif %}>
+                                <span class="genre-box" style="background-color: {{ genre.genres_color|default:'#FFF' }}">
+                                    {{ genre.name }}
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- 태그 검색/추가 -->
+                    <div class="info-card">
+                        <label class="info-label">🏷️ 태그 선택</label>
+                        <div class="tag-input-wrapper">
+                            <input type="text" id="tag-search" placeholder="태그 검색 또는 추가...">
+                            <button type="button" id="add-tag-btn">추가</button>
+                        </div>
+
+                        <div class="selected-tags" id="selected-tags">
+                            {% for tag in book.tags.all %}
+                            <input type="hidden" name="tags" value="{{ tag.id }}">
+                            <span class="selected-tag">{{ tag.name }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="tag-list-wrapper">
+                            <div class="tag-grid" id="tag-grid">
+                                {% for tag in tag_list %}
+                                <label class="tag-option">
+                                    <input type="checkbox" class="tag-checkbox" value="{{ tag.id }}"
+                                        {% if book and tag in book.tags.all %}checked{% endif %}>
+                                    <span>{{ tag.name }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 연재 주기 선택 -->
+                    <div class="info-card">
+                        <label class="info-label">📅 연재 주기</label>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <select name="episode_interval_weeks" style="
+                                padding: 12px 16px;
+                                background: var(--input-bg);
+                                border: 1px solid var(--border-color);
+                                border-radius: 8px;
+                                color: var(--text-primary);
+                                font-size: 14px;
+                                cursor: pointer;
+                                transition: all var(--transition-base);
+                            " onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                                <option value="1" {% if book.episode_interval_weeks == 1 %}selected{% endif %}>매주 (1주마다)</option>
+                                <option value="2" {% if book.episode_interval_weeks == 2 %}selected{% endif %}>격주 (2주마다)</option>
+                                <option value="3" {% if book.episode_interval_weeks == 3 %}selected{% endif %}>3주마다</option>
+                                <option value="4" {% if book.episode_interval_weeks == 4 %}selected{% endif %}>매월 (4주마다)</option>
+                            </select>
+                            <div style="font-size: 12px; color: var(--text-tertiary); padding: 0 4px;">
+                                💡 에피소드를 얼마나 자주 등록할 계획인지 선택하세요
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <button type="submit">저장</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/book/book_profile.js' %}"></script>
+<script src="{% static 'js/register/login.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER - AI 추천하기{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ai/ai_recommended.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ai-recommend-wrapper">
+    <div class="recommend-header">
+        <br><br>
+
+        <h1 class="recommend-title">🤖 AI 맞춤 추천</h1>
+        <p class="recommend-subtitle">당신을 위한 완벽한 책을 찾아드렸어요</p>
+    </div>
+
+    <div class="recommend-list">
+        {% for msg in chat_messages %}
+            {% if msg.type == "book" %}
+            <div class="recommend-item">
+
+
+                <!-- 책 커버 -->
+                <div class="book-cover-wrapper">
+                    {% if msg.book.cover_img %}
+                        <img src="{{ msg.book.cover_img.url }}" alt="{{ msg.book.name }}" class="book-cover">
+                    {% else %}
+                        <div class="book-cover-placeholder">
+                            <span>📚</span>
+                        </div>
+                    {% endif %}
+
+                </div>
+
+                <!-- 책 정보 -->
+                <div class="book-info">
+                    <h3 class="book-title">{{ msg.book.name }}</h3>
+                    <p class="book-author">{{ msg.book.author }}</p>
+
+                    <div class="book-meta-tags">
+                        <span class="meta-tag tag">🏷 {{ msg.book.tag_match }}</span>
+                        <span class="meta-tag genre">📚 {{ msg.book.genre_match }}</span>
+                        <span class="meta-tag score">⭐ {{ msg.book.book_score }}</span>
+                    </div>
+
+                    <!-- AI 추천 이유 -->
+                    <div class="ai-reason">
+                        <span class="ai-icon">🤖</span>
+                        <p>{{ msg.reason }}</p>
+                    </div>
+
+
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 나중에 "다시 추천해줘" 버튼, 자동 스크롤 등 확장 가능
+</script>
+{% endblock %}

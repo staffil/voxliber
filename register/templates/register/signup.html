@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% load static %}
+
+
+{% block title %}VOXLIBER - 회원가입{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/register/signup.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="signup-wrapper" style="margin-top: 100px;">
+    <div class="signup-container">
+        <!-- 헤더 섹션 -->
+        <div class="signup-header">
+            <h1 class="signup-title">프로필 설정</h1>
+            <p class="signup-subtitle">VOXLIBER에서 사용할 정보를 입력해주세요</p>
+        </div>
+        <form class="signup-form" id="signup-form" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+        <!-- 프로필 이미지 업로드 -->
+        <div class="profile-image-section">
+            <div class="profile-image-wrapper">
+                <div class="profile-image-preview" id="profile-preview">
+                    <img src="{% static 'img/default-avatar.png' %}" alt="프로필" id="preview-img">
+                    <div class="upload-overlay">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <span>사진 업로드</span>
+                    </div>
+                </div>
+                <input type="file" name="user-image" id="user-image" accept="image/*">
+            </div>
+        </div>
+
+        <!-- 입력 폼 -->
+
+            
+            <!-- 닉네임 -->
+            <div class="form-group">
+                <label class="form-label">
+                    <span class="label-icon">👤</span>
+                    닉네임
+                </label>
+                <input 
+                    type="text" 
+                    name="nickname" 
+                    class="form-input" 
+                    placeholder="사용하실 닉네임을 입력해주세요"
+                    required
+                    value="{{ user.nickname }}"
+                >
+            </div>
+
+            <!-- 생년월일 -->
+            <div class="form-group">
+                <label class="form-label">
+                    <span class="label-icon">🎂</span>
+                    생년월일
+                </label>
+                <input 
+                    type="date" 
+                    name="birthdate" 
+                    class="form-input date-input"
+                    required
+                    value="{{ user.birthdate|default_if_none:'' }}"
+                >
+            </div>
+
+            <!-- 성별 -->
+            <div class="form-group">
+                <label class="form-label">
+                    <span class="label-icon">⚧</span>
+                    성별
+                </label>
+                <div class="gender-options">
+                    <label class="gender-option">
+                        <input type="radio" name="gender" value="male" required>
+                        <span class="gender-box">
+                            <span class="gender-icon">👨</span>
+                            <span class="gender-text">남자</span>
+                        </span>
+                    </label>
+
+                    <label class="gender-option">
+                        <input type="radio" name="gender" value="female" required>
+                        <span class="gender-box">
+                            <span class="gender-icon">👩</span>
+                            <span class="gender-text">여자</span>
+                        </span>
+                    </label>
+
+                    <label class="gender-option">
+                        <input type="radio" name="gender" value="private" required>
+                        <span class="gender-box">
+                            <span class="gender-icon">🔒</span>
+                            <span class="gender-text">비공개</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 이용약관 동의 -->
+            <div class="form-group terms-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="terms_all" id="terms-all" class="checkbox-input">
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-text">전체 동의</span>
+                </label>
+
+                <div class="terms-divider"></div>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" name="terms_service" class="checkbox-input terms-required" required>
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-text">
+                        <span class="required-badge">[필수]</span>
+                        <a href="#" class="terms-link">이용약관</a> 동의
+                    </span>
+                </label>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" name="terms_privacy" class="checkbox-input terms-required" required>
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-text">
+                        <span class="required-badge">[필수]</span>
+                        <a href="#" class="terms-link">개인정보처리방침</a> 동의
+                    </span>
+                </label>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" name="terms_marketing" class="checkbox-input">
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-text">
+                        <span class="optional-badge">[선택]</span>
+                        마케팅 정보 수신 동의
+                    </span>
+                </label>
+            </div>
+
+            <!-- 제출 버튼 -->
+            <button type="submit" class="submit-btn">
+                <span>시작하기</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                </svg>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/register/signup.js' %}"></script>
+{% endblock %}
+
+

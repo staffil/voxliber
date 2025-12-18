@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}북 스니펫 작성 | VoxLiber{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/snippet/snippet_form.css' %}">
+<style>
+.snippet-card {
+    max-width: 500px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    background-color: #fff;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+.snippet-card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #111827;
+    text-align: center;
+}
+
+.snippet-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+    color: #374151;
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    resize: none;
+    font-size: 1rem;
+    color: #111827;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* TTS 미리듣기 */
+.audio-preview-box {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background: #f5f5f5;
+    display: none;
+}
+
+.audio-preview-title {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.audio-control {
+    width: 100%;
+}
+
+.btn-tts {
+    padding: 0.75rem;
+    background-color: #10b981;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-tts:hover {
+    background-color: #059669;
+}
+
+.btn-submit {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+    background-color: #4f46e5;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="snippet-card">
+    <h2>{{ snippet|default_if_none:"새 스니펫 작성" }}</h2>
+<form method="post" enctype="multipart/form-data" class="snippet-form">
+        {% csrf_token %}
+    <input type="hidden" name="action" value="submit_poem">
+
+        <!-- 한 문장 입력 -->
+        <label for="sentence" class="form-label">한 문장</label>
+        <textarea id="sentence" name="sentence" rows="3" required class="form-textarea">{{ snippet.sentence }}</textarea>
+        <div class="form-group">
+            <label for="voice" class="form-label">🎤 내 보이스 선택</label>
+            <select id="voice" name="voice" class="form-textarea">
+                {% for voice in my_voice_list %}
+                <option value="{{ voice.voice.voice_id }}">{{ voice.alias_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- TTS 생성 버튼 -->
+        <button type="button" id="generateTTSSnippetBtn" class="btn-tts">🎧 TTS 생성하기</button>
+
+        <!-- TTS 미리듣기 -->
+            <div id="audioSnippetPreviewBox" class="audio-preview-box" 
+                style="{% if snippet.audio_file %}display: block;{% else %}display: none;{% endif %}">
+                <div class="audio-preview-title">🎶 생성된 TTS 미리듣기</div>
+                <audio id="snippetTTS" controls class="audio-control"
+                    {% if snippet.audio_file %} src="{{ snippet.audio_file.url }}"{% endif %}></audio>
+            </div>
+
+
+        <!-- 제출 버튼 -->
+        <button type="submit" class="btn-submit">{{ snippet|yesno:"수정,작성" }}</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById("generateTTSSnippetBtn").addEventListener("click", async function () {
+
+    const sentence = document.getElementById("sentence").value.trim();
+const voiceId = document.getElementById("voice").value;
+
+    if (!sentence) {
+        alert("스니펫 문장을 먼저 입력해주세요.");
+        return;
+    }
+
+    this.disabled = true;
+    this.innerText = "🔄 생성 중...";
+
+    try {
+        const response = await fetch("/book/tts/generate/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+            },
+            body: JSON.stringify({
+                text: sentence,
+                language_code: "ko",
+                speed_value: "1.0",
+                voice_id: voiceId, 
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error("TTS 생성 실패");
+        }
+
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+
+        // 오디오 미리듣기 활성화
+        const audioBox = document.getElementById("audioSnippetPreviewBox");
+        document.getElementById("snippetTTS").src = audioUrl;
+        audioBox.style.display = "block";
+
+    } catch (err) {
+        console.error(err);
+        alert("TTS 생성 중 문제가 발생했습니다.");
+    } finally {
+        this.disabled = false;
+        this.innerText = "🎧 TTS 생성하기";
+    }
+});
+</script>
+{% endblock %}

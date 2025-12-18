@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER - 내 서재{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage/my_library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="library-container">
+  <!-- 헤더 -->
+  <div class="library-header">
+    <h1 class="library-title">내 서재</h1>
+    <p class="library-subtitle">나만의 독서 기록을 확인하세요</p>
+  </div>
+
+  <!-- 통계 카드 -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">전체 책</div>
+      <div class="stat-value">{{ stats.total }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">읽는 중</div>
+      <div class="stat-value">{{ stats.reading }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">완독</div>
+      <div class="stat-value">{{ stats.completed }}</div>
+    </div>
+  </div>
+
+  <!-- 필터 탭 -->
+  <div class="filter-tabs">
+    <a href="?status=all" class="filter-tab {% if filter_status == 'all' %}active{% endif %}">전체</a>
+    <a href="?status=reading" class="filter-tab {% if filter_status == 'reading' %}active{% endif %}">읽는 중</a>
+    <a href="?status=completed" class="filter-tab {% if filter_status == 'completed' %}active{% endif %}">완독</a>
+  </div>
+
+  <!-- 책 목록 -->
+  {% if reading_progress_list %}
+  <div class="books-grid">
+    {% for progress in reading_progress_list %}
+    <div class="book-progress-card">
+      <div class="book-cover-section">
+        {% if progress.book.cover_img %}
+          <img src="{{ progress.book.cover_img.url }}" alt="{{ progress.book.name }}" loading="lazy">
+        {% else %}
+          <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold;">
+            {{ progress.book.name|slice:":2" }}
+          </div>
+        {% endif %}
+
+        <div class="book-status-badge status-{{ progress.status }}">
+          {% if progress.status == 'reading' %}읽는 중
+          {% elif progress.status == 'completed' %}완독
+          {% elif progress.status == 'paused' %}일시중지
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="book-info-section">
+        <h3 class="book-title">{{ progress.book.name }}</h3>
+        <div class="book-meta">
+          {% for genre in progress.book.genres.all|slice:":2" %}
+            {{ genre.name }}{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        </div>
+
+        <div class="progress-section">
+          <div class="progress-info">
+            <span>{{ progress.last_read_content_number }}화 / {{ progress.book.contents.count }}화</span>
+            <span class="progress-percentage">{{ progress.get_progress_percentage }}%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: {{ progress.get_progress_percentage }}%"></div>
+          </div>
+        </div>
+
+        <div class="book-actions">
+<a href="{% url 'book:content_detail' progress.current_content.id %}" 
+   class="btn-action btn-continue">    
+        {% if progress.status == 'completed' %}다시 읽기{% else %}이어 읽기{% endif %}
+          </a>
+          <a href="{% url 'book:book_detail' progress.book.id %}" class="btn-action btn-secondary">상세 정보</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">📚</div>
+    <h3 class="empty-state-title">아직 읽은 책이 없습니다</h3>
+    <p class="empty-state-text">새로운 이야기를 시작해보세요!</p>
+    <a href="{% url 'main:main' %}" class="btn-browse">책 둘러보기</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 추후 AJAX로 진행 상황 업데이트 기능 추가 가능
+</script>
+{% endblock %}

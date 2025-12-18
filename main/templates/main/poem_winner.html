@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}수상작 | VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/poem/poem_winner.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<div class="winner-wrap">
+  <br>
+    <div class="winner-header">
+        <h1 class="winner-title">🏆 수상작 모아보기</h1>
+        <a href="/mypage/poem_list/" class="btn btn-secondary">
+            시 제작하기
+        </a>
+    </div>
+
+    {% if poem_list %}
+    <div class="poem-slider-wrapper">
+        <div class="poem-slider">
+            {% for poem in poem_list %}
+            <div class="poem-slide">
+                <!-- 배경 이미지 -->
+                {% if poem.image %}
+                <img src="{{ poem.image.url }}" alt="{{ poem.title }}" class="poem-slide-bg" loading="lazy">
+                {% else %}
+                <div class="poem-slide-bg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                {% endif %}
+                <div class="poem-slide-overlay"></div>
+
+                <!-- 콘텐츠 -->
+                <div class="poem-slide-content">
+                    <!-- 제목 -->
+                    <h2 class="poem-title">{{ poem.title }}</h2>
+
+                    <!-- 작성자 + 날짜 -->
+                    <div class="poem-meta">
+                        {{ poem.user.username }} · {{ poem.created_at|date:"Y.m.d H:i" }}
+                    </div>
+
+                    <!-- 전체 시 내용 -->
+                    <div class="poem-text">
+                        {{ poem.content|linebreaksbr }}
+                    </div>
+
+                    <!-- 오디오 -->
+                    {% if poem.poem_audio %}
+                    <div class="poem-audio-player">
+                        <button onclick="toggleWinnerPoemAudio(this)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </button>
+                        <div class="poem-audio-progress">
+                            <div class="poem-audio-bar">
+                                <div class="poem-audio-bar-fill"></div>
+                            </div>
+                            <div class="poem-audio-time">
+                                <span>0:00</span>
+                                <span>0:00</span>
+                            </div>
+                        </div>
+                        <audio src="{{ poem.poem_audio.url }}" preload="metadata"></audio>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Navigation Buttons -->
+        <button class="poem-nav poem-nav-prev" id="winnerPoemPrev" title="이전 시">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+            </svg>
+        </button>
+        <button class="poem-nav poem-nav-next" id="winnerPoemNext" title="다음 시">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+            </svg>
+        </button>
+
+        <!-- Controls -->
+        <div class="poem-controls">
+            <!-- Counter -->
+            <div class="poem-counter">
+                <span id="winnerPoemCurrentSlide">1</span> / <span id="winnerPoemTotalSlides">{{ poem_list|length }}</span>
+            </div>
+
+            <!-- Play/Pause Button -->
+            <button class="poem-play-pause" id="winnerPoemPlayPause" title="일시정지">
+                <svg id="winnerPoemPauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                </svg>
+                <svg id="winnerPoemPlayIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </button>
+
+            <!-- Indicators -->
+            <div class="poem-indicators">
+                {% for poem in poem_list %}
+                <span class="indicator"></span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>아직 수상작이 없습니다.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Winner Poem Slider
+document.addEventListener('DOMContentLoaded', () => {
+  const slider = document.querySelector('.poem-slider');
+  const indicators = document.querySelectorAll('.poem-indicators .indicator');
+  const slides = document.querySelectorAll('.poem-slide');
+  const prevBtn = document.getElementById('winnerPoemPrev');
+  const nextBtn = document.getElementById('winnerPoemNext');
+  const playPauseBtn = document.getElementById('winnerPoemPlayPause');
+  const playIcon = document.getElementById('winnerPoemPlayIcon');
+  const pauseIcon = document.getElementById('winnerPoemPauseIcon');
+  const currentSlideElem = document.getElementById('winnerPoemCurrentSlide');
+  const totalSlidesElem = document.getElementById('winnerPoemTotalSlides');
+
+  if (!slider || slides.length === 0) return;
+
+  let isDown = false;
+  let startX;
+  let scrollLeft;
+  let autoSlideInterval;
+  let isPlaying = true;
+  let currentIndex = 0;
+  let isScrolling = false;
+
+  if (totalSlidesElem) {
+    totalSlidesElem.textContent = slides.length;
+  }
+
+  // 드래그 이벤트
+  slider.addEventListener('mousedown', (e) => {
+    isDown = true;
+    slider.classList.add('active');
+    startX = e.pageX - slider.offsetLeft;
+    scrollLeft = slider.scrollLeft;
+    if (isPlaying) clearInterval(autoSlideInterval);
+  });
+
+  slider.addEventListener('mouseleave', () => {
+    isDown = false;
+    slider.classList.remove('active');
+  });
+
+  slider.addEventListener('mouseup', () => {
+    isDown = false;
+    slider.classList.remove('active');
+    if (isPlaying) startAutoSlide();
+  });
+
+  slider.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - slider.offsetLeft;
+    const walk = (x - startX);
+    slider.scrollLeft = scrollLeft - walk;
+    syncIndexFromScroll();
+  });
+
+  function goToSlide(index) {
+    if (isScrolling) return;
+    isScrolling = true;
+    currentIndex = index;
+    const slideWidth = slides[0].offsetWidth;
+    slider.scrollTo({ left: slideWidth * index, behavior: 'smooth' });
+    updateIndicator();
+    updateCounter();
+    setTimeout(() => { isScrolling = false; }, 600);
+  }
+
+  function updateIndicator() {
+    indicators.forEach((dot, i) => {
+      dot.classList.toggle('active', i === currentIndex);
+    });
+  }
+
+  function syncIndexFromScroll() {
+    const slideWidth = slides[0].offsetWidth;
+    const index = Math.round(slider.scrollLeft / slideWidth);
+    if (index !== currentIndex && index >= 0 && index < slides.length) {
+      currentIndex = index;
+      updateIndicator();
+      updateCounter();
+    }
+  }
+
+  function updateCounter() {
+    if (currentSlideElem) {
+      currentSlideElem.textContent = currentIndex + 1;
+    }
+  }
+
+  function nextSlide() {
+    currentIndex = (currentIndex + 1) % slides.length;
+    goToSlide(currentIndex);
+  }
+
+  function prevSlide() {
+    currentIndex = (currentIndex - 1 + slides.length) % slides.length;
+    goToSlide(currentIndex);
+  }
+
+  function startAutoSlide() {
+    if (autoSlideInterval) clearInterval(autoSlideInterval);
+    autoSlideInterval = setInterval(() => {
+      nextSlide();
+    }, 5000);
+  }
+
+  function stopAutoSlide() {
+    if (autoSlideInterval) {
+      clearInterval(autoSlideInterval);
+      autoSlideInterval = null;
+    }
+  }
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      prevSlide();
+      if (isPlaying) {
+        stopAutoSlide();
+        startAutoSlide();
+      }
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      nextSlide();
+      if (isPlaying) {
+        stopAutoSlide();
+        startAutoSlide();
+      }
+    });
+  }
+
+  if (playPauseBtn) {
+    playPauseBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      if (isPlaying) {
+        if (playIcon) playIcon.style.display = 'none';
+        if (pauseIcon) pauseIcon.style.display = 'block';
+        playPauseBtn.title = '일시정지';
+        startAutoSlide();
+      } else {
+        if (playIcon) playIcon.style.display = 'block';
+        if (pauseIcon) pauseIcon.style.display = 'none';
+        playPauseBtn.title = '재생';
+        stopAutoSlide();
+      }
+    });
+  }
+
+  indicators.forEach((indicator, index) => {
+    indicator.addEventListener('click', () => {
+      goToSlide(index);
+      if (isPlaying) {
+        stopAutoSlide();
+        startAutoSlide();
+      }
+    });
+  });
+
+  startAutoSlide();
+  updateIndicator();
+  updateCounter();
+});
+
+// Winner Poem Audio Player
+function toggleWinnerPoemAudio(button) {
+  const slide = button.closest('.poem-slide');
+  const audio = slide.querySelector('audio');
+  const playIcon = button.querySelector('svg path');
+  const progressFill = slide.querySelector('.poem-audio-bar-fill');
+  const timeSpans = slide.querySelectorAll('.poem-audio-time span');
+
+  // Stop other audios
+  document.querySelectorAll('.poem-slide audio').forEach(a => {
+    if (a !== audio && !a.paused) {
+      a.pause();
+      a.currentTime = 0;
+      const btn = a.closest('.poem-slide').querySelector('.poem-audio-player button svg path');
+      if (btn) btn.setAttribute('d', 'M8 5v14l11-7z');
+    }
+  });
+
+  if (audio.paused) {
+    audio.play();
+    playIcon.setAttribute('d', 'M6 4h4v16H6V4zm8 0h4v16h-4V4z');
+  } else {
+    audio.pause();
+    playIcon.setAttribute('d', 'M8 5v14l11-7z');
+  }
+
+  audio.addEventListener('loadedmetadata', () => {
+    timeSpans[1].textContent = formatTime(audio.duration);
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    const percent = (audio.currentTime / audio.duration) * 100;
+    progressFill.style.width = percent + '%';
+    timeSpans[0].textContent = formatTime(audio.currentTime);
+  });
+
+  audio.addEventListener('ended', () => {
+    playIcon.setAttribute('d', 'M8 5v14l11-7z');
+    progressFill.style.width = '0%';
+    audio.currentTime = 0;
+  });
+}
+
+function formatTime(seconds) {
+  if (!seconds || isNaN(seconds)) return '0:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+</script>
+{% endblock %}

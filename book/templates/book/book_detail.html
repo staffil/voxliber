@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ book.name }} - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/book/book_detail.css' %}">
+
+{% endblock %}
+
+{% block content %}
+<div class="book-detail-wrapper">
+    <div class="book-header">
+        <!-- 3D 책 커버 -->
+        <div class="book-cover-wrapper">
+            {% if book.cover_img %}
+                <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+            {% else %}
+                <div class="book-cover-placeholder">{{ book.name|slice:":2" }}</div>
+            {% endif %}
+        </div>
+
+        <div class="book-info-section">
+            <h1 class="book-title">{{ book.name }}</h1>
+
+            <div class="book-author">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span>{{ book.user.nickname }}</span>
+            </div>
+
+            <div class="book-genres">
+                {% for genre in book.genres.all %}
+                <span class="genre-tag" style="background-color: {{ genre.genres_color }}30; border-color: {{ genre.genres_color }}; color: {{ genre.genres_color }};">
+                    {{ genre.name }}
+                </span>
+                {% endfor %}
+
+
+            </div>
+
+            <div>
+                {% for tag in book.tags.all %}
+                <span class="book-tag">{{ tag.name }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="book-stats-row">
+                <div class="rating-display">
+                    <span class="rating-number">{{ avg_rating }}</span>
+                    <div>
+                        <div class="rating-stars">
+                            {% for i in "12345" %}
+                                <span class="star {% if forloop.counter <= avg_rating %}active{% endif %}">⭐</span>
+                            {% endfor %}
+                        </div>
+                        <div style="font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 4px;">{{ review_count }}개 리뷰</div>
+                    </div>
+                </div>
+
+                <div class="stat-item">
+                    <span class="stat-label">에피소드</span>
+                    <span class="stat-value">{{ contents|length }}개</span>
+                </div>
+
+                <div class="stat-item">
+                    <span class="stat-label">출간일</span>
+                    <span class="stat-value" style="font-size: 18px;">{{ book.created_at|date:"Y.m.d" }}</span>
+                </div>
+            </div>
+<div class="book-status">
+    {% if book.status == "ongoing" %}
+        <span class="status-badge ongoing">연재 중</span>
+    {% elif book.status == "paused" %}
+        <span class="status-badge paused">휴재</span>
+    {% else %}
+        <span class="status-badge ended">연재 종료</span>
+    {% endif %}
+</div>
+
+        </div>
+    </div>
+
+        <!-- 소개 오디오 업로드 -->
+        {% with first_episode=book.contents.first %}
+        {% if first_episode %}
+            <div class="intro-audio-wrapper">
+                <div class="intro-audio-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    </svg>
+                    <span>미리듣기 (1화)</span>
+                </div>
+
+                {% if first_episode.audio_file %}
+                    <!-- 1화 오디오 플레이어 -->
+                    <div class="intro-audio-player-box">
+                        <div class="custom-audio-player">
+                            <audio id="introAudio" style="display: none;" loading="lazy">
+                                <source src="{{ first_episode.audio_file.url }}" type="audio/mpeg">
+                            </audio>
+
+                            <div class="audio-controls-row">
+                                <button class="audio-play-btn" id="introPlayBtn" onclick="toggleIntroAudio()">
+                                    ▶
+                                </button>
+
+                                <div class="audio-progress-wrapper">
+                                    <div class="audio-progress-container" id="introProgressContainer">
+                                        <div class="audio-progress-bar" id="introProgressBar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+
+                                <div class="audio-time-info">
+                                    <span id="introCurrentTime">0:00</span>
+                                    <span>/</span>
+                                    <span id="introDuration">0:00</span>
+                                </div>
+
+                                <div class="audio-volume-control">
+                                    <button class="audio-volume-btn" id="introVolumeBtn" onclick="toggleIntroMute()">
+                                        🔊
+                                    </button>
+                                    <input type="range" class="audio-volume-slider" id="introVolumeSlider" min="0" max="100" value="100">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- <a href="{% url 'book:content_detail' first_episode.id %}" class="listen-full-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            전체 듣기
+                        </a> -->
+                    </div>
+
+                {% else %}
+                    <!-- 1화 오디오 없는 경우 -->
+                    <p class="no-audio-message">1화 오디오가 아직 준비되지 않았습니다.</p>
+                {% endif %}
+
+            </div>
+        {% endif %}
+        {% endwith %}
+<br>
+
+    <div class="content-section book-description">
+        <h2 class="section-title">작품 소개</h2>
+        <div style="font-size: 16px; line-height: 1.8; color: rgba(255,255,255,0.85);">
+            {{ book.description|linebreaks|default:"작품 소개가 아직 작성되지 않았습니다." }}
+        </div>
+    </div>
+
+    <!-- 작가 공지사항 -->
+    {% if announcements or request.user == book.user %}
+    <div class="announcements-section" style="margin: 40px 0; padding: 24px; background: var(--bg-secondary); border-radius: 16px; border: 1px solid var(--border-color);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 class="section-title">📢 작가의 말</h2>
+            {% if request.user == book.user %}
+            <button onclick="toggleAnnouncementForm()" style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                ➕ 공지 작성
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- 공지사항 작성 폼 (작가만) -->
+        {% if request.user == book.user %}
+        <div id="announcementForm" style="display: none; margin-bottom: 24px; padding: 20px; background: var(--bg-primary); border-radius: 12px; border: 1px solid var(--border-color);">
+            <form method="post" action="{% url 'book:create_announcement' book.id %}">
+                {% csrf_token %}
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">제목</label>
+                    <input type="text" name="title" placeholder="공지사항 제목" required style="width: 100%; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">내용</label>
+                    <textarea name="content" placeholder="공지사항 내용을 입력하세요..." required style="width: 100%; min-height: 120px; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; resize: vertical;"></textarea>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" name="is_pinned" style="width: 18px; height: 18px;">
+                        <span style="color: var(--text-primary); font-size: 14px;">📌 상단에 고정</span>
+                    </label>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="submit" style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">작성 완료</button>
+                    <button type="button" onclick="toggleAnnouncementForm()" style="padding: 12px 24px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">취소</button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- 공지사항 목록 -->
+        {% if announcements %}
+            {% for announcement in announcements %}
+            <div class="announcement-card" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px; {% if announcement.is_pinned %}border-color: var(--primary); background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);{% endif %}">
+                {% if announcement.is_pinned %}
+                <div style="display: inline-block; background: var(--primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-bottom: 8px;">📌 고정</div>
+                {% endif %}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">{{ announcement.title }}</h4>
+                    <span style="font-size: 12px; color: var(--text-secondary);">{{ announcement.created_at|date:"Y년 m월 d일" }}</span>
+                </div>
+                <div style="color: var(--text-primary); line-height: 1.6; margin-bottom: 12px;">
+                    {{ announcement.content|linebreaks }}
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid var(--border-color);">
+                    <span style="font-size: 13px; color: var(--text-secondary); font-style: italic;">- {{ announcement.author.nickname }}</span>
+                    {% if request.user == announcement.author %}
+                    <form method="post" action="{% url 'book:delete_announcement' announcement.id %}" style="margin: 0;" onsubmit="return confirm('정말 이 공지사항을 삭제하시겠습니까?');">
+                        {% csrf_token %}
+                        <button type="submit" style="padding: 6px 12px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">삭제</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            {% if request.user != book.user %}
+            <p style="text-align: center; color: var(--text-secondary); padding: 20px 0;">아직 작성된 공지사항이 없습니다.</p>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="content-section episodes-section">
+        <h2 class="section-title">에피소드 목록{% if request.user == book.user %} <span style="font-size: 14px; color: rgba(255,255,255,0.5); font-weight: normal;">(드래그하여 순서 변경 가능)</span>{% endif %}</h2>
+        {% if contents %}
+            <div class="episodes-grid" id="episodesGrid">
+            {% for content in contents %}
+                <div class="episode-wrapper" data-content-id="{{ content.id }}" {% if request.user == book.user %}draggable="true"{% endif %} style="display: flex; align-items: stretch; gap: 12px;">
+                    {% if request.user == book.user %}
+                    <div class="drag-handle" style="display: flex; align-items: center; cursor: grab; padding: 0 8px; color: rgba(255,255,255,0.3);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="16" y2="6"/>
+                            <line x1="8" y1="12" x2="16" y2="12"/>
+                            <line x1="8" y1="18" x2="16" y2="18"/>
+                        </svg>
+                    </div>
+                    {% endif %}
+                    <a href="{% url 'book:content_detail' content.id %}" class="episode-card" style="flex: 1; text-decoration: none;">
+                        <div class="episode-number">
+                            {% if content.episode_image %}
+                            <img src="{{ content.episode_image.url }}" alt="Episode {{ content.number }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" loading="lazy">
+                            {% else %}
+                            {{ content.number }}
+                            {% endif %}
+                        </div>
+                        <div class="episode-info">
+                            <div class="episode-title">{{ content.number }}, {{ content.title }}</div>
+                            <div class="episode-meta">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                                {{ content.created_at|date:"Y년 m월 d일" }}
+                            </div>
+                        </div>
+                        <div class="episode-play-icon">▶</div>
+                    </a>
+
+                    {% if request.user == book.user %}
+                    <form method="post" action="{% url 'book:delete_content' content.id %}" style="margin: 0; display: flex; align-items: center;" onsubmit="return confirm('정말 이 에피소드를 삭제하시겠습니까?');">
+                        {% csrf_token %}
+                        <button type="submit" style="padding: 10px 16px; background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.3); color: #ef4444; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; gap: 6px; height: fit-content;" onmouseover="this.style.background='rgba(220, 38, 38, 0.2)'" onmouseout="this.style.background='rgba(220, 38, 38, 0.1)'">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                <line x1="10" y1="11" x2="10" y2="17"/>
+                                <line x1="14" y1="11" x2="14" y2="17"/>
+                            </svg>
+                            삭제
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            </div>
+            
+        {% else %}
+        <p style="text-align: center; color: rgba(255,255,255,0.5); padding: 60px 0; font-size: 16px;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 16px; display: block; margin-left: auto; margin-right: auto;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            아직 작성된 에피소드가 없습니다.
+        </p>
+        {% endif %}
+        {% if contents.has_other_pages %}
+<div class="pagination" style="display: flex; justify-content: center; gap: 6px; margin-top: 32px;">
+
+    {# Previous #}
+    {% if contents.has_previous %}
+        <a href="?page={{ contents.previous_page_number }}" class="page-btn">이전</a>
+    {% else %}
+        <span class="page-btn disabled">이전</span>
+    {% endif %}
+
+    {# Page numbers #}
+    {% for i in contents.paginator.page_range %}
+        {% if i == contents.number %}
+            <span class="page-btn active">{{ i }}</span>
+        {% else %}
+            <a href="?page={{ i }}" class="page-btn">{{ i }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {# Next #}
+    {% if contents.has_next %}
+        <a href="?page={{ contents.next_page_number }}" class="page-btn">다음</a>
+    {% else %}
+        <span class="page-btn disabled">다음</span>
+    {% endif %}
+</div>
+{% endif %}
+    </div>
+    {% if request.user.is_authenticated and request.user != book.user %}
+    <div class="review-write-section">
+        <h3 style="margin-bottom: 16px; color: #fff;">⭐ 이 작품을 평가해주세요</h3>
+        <div class="star-rating-input" id="starRating" data-user-rating="{% if user_review %}{{ user_review.rating }}{% else %}5{% endif %}">
+            <span class="star" data-rating="1">☆</span>
+            <span class="star" data-rating="2">☆</span>
+            <span class="star" data-rating="3">☆</span>
+            <span class="star" data-rating="4">☆</span>
+            <span class="star" data-rating="5">☆</span>
+        </div>
+        <textarea id="reviewText" class="review-textarea" placeholder="이 작품에 대한 리뷰를 남겨주세요..." data-submit-url="{% url 'book:submit_review' book.id %}">{% if user_review %}{{ user_review.review_text }}{% endif %}</textarea>
+        <button class="submit-review-btn" onclick="submitReview()">{% if user_review %}리뷰 수정하기{% else %}리뷰 등록하기{% endif %}</button>
+    </div>
+    {% endif %}
+
+    {% if recent_reviews %}
+    <div class="content-section reviews-list">
+        <h2 class="section-title">최근 리뷰</h2>
+        {% for review in recent_reviews %}
+        <div class="review-item">
+            <div class="review-header">
+                <div class="reviewer-info">
+                    <span class="reviewer-name">{{ review.user.nickname }}</span>
+                    <span class="review-stars">{% for i in "12345" %}{% if forloop.counter <= review.rating %}⭐{% else %}☆{% endif %}{% endfor %}</span>
+                </div>
+                <span class="review-date">{{ review.created_at|date:"Y년 m월 d일" }}</span>
+            </div>
+            {% if review.review_text %}
+                <div class="review-text">{{ review.review_text }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="content-section comments-section">
+        <h2 class="section-title">댓글 ({{ comments.count }})</h2>
+        {% if request.user.is_authenticated %}
+        <div style="margin-bottom: 32px;">
+            <textarea id="commentInput" class="comment-input" placeholder="댓글을 남겨주세요..." data-submit-url="{% url 'book:submit_book_comment' book.id %}"></textarea>
+            <button class="submit-comment-btn" onclick="submitComment()">댓글 작성</button>
+        </div>
+        {% endif %}
+        <div id="commentsList">
+            {% for comment in comments %}
+            <div class="comment-item">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                    <span class="comment-author">{{ comment.user.nickname }}</span>
+                    <span class="comment-date">{{ comment.created_at|date:"Y.m.d H:i" }}</span>
+                </div>
+                <div class="comment-text">{{ comment.comment }}</div>
+                {% if request.user.is_authenticated %}
+                    <button class="reply-btn" onclick="toggleReplyForm({{ comment.id }})">답글</button>
+                {% endif %}
+                <div class="reply-form" id="replyForm{{ comment.id }}">
+                    <textarea class="comment-input" id="replyInput{{ comment.id }}" placeholder="답글을 입력하세요..." style="min-height: 100px; margin-top: 12px;"></textarea>
+                    <button class="submit-comment-btn" onclick="submitReply({{ comment.id }})" style="margin-top: 12px;">답글 작성</button>
+                </div>
+                {% for reply in comment.replies.all %}
+                <div class="comment-reply">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                        <span style="font-weight: 700; color: #667eea;">{{ reply.user.nickname }}</span>
+                        <span class="comment-date">{{ reply.created_at|date:"Y.m.d H:i" }}</span>
+                    </div>
+                    <div class="comment-text">{{ reply.comment }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% empty %}
+            <p style="text-align: center; color: rgba(255,255,255,0.5); padding: 60px 0; font-size: 16px;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.3; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                아직 댓글이 없습니다. 첫 댓글을 남겨보세요!
+            </p>
+            {% endfor %}
+        </div>
+        
+    </div>
+
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/book/book_detail.js' %}"></script>
+<script>
+// CSRF 토큰 가져오기
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+</script>
+{% endblock %}

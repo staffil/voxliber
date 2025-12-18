@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}내 북 스냅 - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home/main.css' %}">
+<link rel="stylesheet" href="{% static 'css/book/snap/my_snap.css' %}">
+
+{% endblock %}
+
+
+{% block content %}
+
+<!-- <script>
+// 페이지 접근 제한 - 메인으로 리다이렉트
+(function() {
+    window.location.href = '/';
+})();
+</script> -->
+
+<div class="snap-list-container">
+
+    <div class="snap-header">
+        <div class="snap-title">내 북 스냅</div>
+        <a href="/book/create_snap/" class="btn-primary-glow">+ 스냅 만들기</a>
+    </div>
+    <div class="bakc-btn-wrapper">
+        <a href="{% url 'mypage:my_profile' %}" class="back-btn">← 마이페이지로 돌아가기</a>
+    </div>
+    {% if book_snap_list %}
+    <div class="snap-grid">
+
+        {% for snap in book_snap_list %}
+        <div class="snap-card" onclick="location.href='/book/book-snap/{{ snap.id }}/'">
+
+            {% if snap.thumbnail %}
+                <img src="{{ snap.thumbnail.url }}" class="snap-thumb">
+            {% else %}
+                <img src="{% static 'img/default_thumb.jpg' %}" class="snap-thumb">
+            {% endif %}
+
+            <div class="snap-info">
+                <div class="snap-title-text">
+                    {{ snap.snap_title|default:"제목 없음" }}
+                </div>
+
+                <div class="snap-stats">
+                    <span>❤️ {{ snap.booksnap_like.count }}</span>
+                    <span>👁️ {{ snap.views }}</span>
+                </div>
+
+                <div class="snap-actions">
+                    <a href="/book/snap/{{ snap.id }}/edit/" class="btn-mini">수정</a>
+                    <a href="/book/snap/{{ snap.id }}/delete/" class="btn-mini" onclick="return confirm('진짜 삭제하시겠습니까?')">삭제</a>
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+
+    </div>
+    {% else %}
+        <div class="empty-box">
+            아직 만든 스냅이 없습니다.<br>
+            <a href="/book/create_snap/" class="btn-primary-glow" style="margin-top:15px; display:inline-block;">
+                스냅 만들기
+            </a>
+        </div>
+    {% endif %}
+
+
+
+</div>
+{% endblock %}

@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER - {{ genre.name }} 장르{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home/main.css' %}">
+<style>
+/* ==============================
+   장르별 작품 목록
+============================== */
+.genre-page-header {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 60px 2rem 20px;
+    text-align: center;
+}
+
+.genre-page-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text-primary, #fff);
+}
+
+/* ✅ padding은 section에서만 관리 */
+.genre-books-section {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 20px 2rem 40px;
+}
+
+.genre-books-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 2.2rem 1.8rem;
+}
+
+/* 전체 카드 링크 */
+.book-card-wrapper {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.3s ease;
+}
+
+.book-card-wrapper:hover {
+    transform: translateY(-6px);
+}
+
+/* 사진 블록 */
+.book-cover-block {
+    background: var(--bg-secondary, #1e1e1e);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+/* ✅ 이미지가 비율을 책임지게 변경 */
+.book-cover {
+    width: 100%;
+    aspect-ratio: 3 / 4.3;
+    object-fit: cover;
+    display: block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.book-card-wrapper:hover .book-cover-block {
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* 정보 블록 */
+.book-info-block {
+    margin-top: 1rem;
+    text-align: left;
+}
+
+.book-author {
+    font-size: 0.85rem;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.75));
+    margin-bottom: 0.4rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.book-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary, #fff);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+/* 빈 상태 */
+.empty-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+    font-size: 1.2rem;
+    padding: 6rem 2rem;
+}
+
+/* 페이지네이션 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin: 50px 0 30px;
+}
+
+.page-link {
+    color: var(--primary, #6366f1);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.1);
+    transition: all 0.3s;
+}
+
+.page-link:hover {
+    background: var(--primary, #6366f1);
+    color: white;
+}
+
+.current-page {
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    font-weight: 600;
+}
+
+/* ==============================
+   반응형
+============================== */
+@media (min-width: 1800px) {
+    .genre-books-grid {
+        gap: 2.5rem 2.2rem;
+    }
+}
+
+@media (max-width: 1439px) {
+    .genre-books-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (max-width: 1199px) {
+    .genre-books-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 1023px) {
+    .genre-books-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* 모바일 */
+@media (max-width: 767px) {
+    .genre-page-title {
+        font-size: 1.9rem;
+    }
+
+    .book-author {
+        font-size: 0.78rem;
+    }
+
+    .book-title {
+        font-size: 0.88rem;
+    }
+
+    .book-info-block {
+        margin-top: 0.8rem;
+    }
+}
+
+@media (max-width: 479px) {
+    .genre-page-title {
+        font-size: 1.7rem;
+    }
+
+    .pagination {
+        flex-direction: column;
+        gap: 12px;
+    }
+}
+
+/* Light Mode */
+body.light-mode .book-cover-block {
+    background: white;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .book-title {
+    color: #1f2937;
+}
+
+body.light-mode .book-author {
+    color: #6b7280;
+}
+
+/* ✅ 가로 스크롤 완전 차단 */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="genre-page-header">
+            <br>
+        <br>
+    <h1 class="genre-page-title">{{ genre.name }} 장르의 작품</h1>
+</div>
+
+<div class="genre-books-section">
+    <div class="genre-books-grid">
+        {% for book in page_obj %}
+        <a href="{% url 'book:book_detail' book.id %}" class="book-card-wrapper">
+            <!-- 사진만 있는 블록 -->
+            <div class="book-cover-block">
+                {% if book.cover_img %}
+                    <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" class="book-cover" loading="lazy">
+                {% else %}
+                    <img src="{% static 'images/book_placeholder.png' %}" alt="책 이미지 없음" class="book-cover" loading="lazy">
+                {% endif %}
+            </div>
+
+            <!-- 작가 이름과 책 제목만 있는 블록 -->
+            <div class="book-info-block">
+                <div class="book-title">{{ book.name }}</div>
+                <div class="book-author">{{ book.author|default:"작자 미상" }}</div>
+            </div>
+        </a>
+        {% empty %}
+        <p class="empty-message">등록된 작품이 없습니다.</p>
+        {% endfor %}
+    </div>
+
+    <!-- 페이지네이션 -->
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="page-link">◀ 이전</a>
+        {% endif %}
+
+        <span class="current-page">페이지 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="page-link">다음 ▶</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

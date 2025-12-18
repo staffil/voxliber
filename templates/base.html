@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}VOXLIBER{% endblock %}</title>
+
+  {% load static %}
+  <link rel="icon" type="image/png" href="{% static 'img/logo3.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/logo3.png' %}">
+  <link rel="stylesheet" href="{% static 'css/common/variables.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+  <!-- 로그인 상태 헤더 -->
+  <header>
+    {% include "common/loginHeader.html" %}
+
+  </header>
+    <!-- Mobile Side Menu -->
+  <div class="mobile-side-menu" id="mobileSideMenuGuest">
+    <div class="mobile-menu-overlay" onclick="closeMobileMenu('Guest')"></div>
+    <div class="mobile-menu-content">
+      <div class="mobile-menu-header">
+        <span class="menu-title">메뉴</span>
+        <button class="close-menu-btn" onclick="closeMobileMenu('Guest')">✕</button>
+      </div>
+
+            <!-- Mobile User Profile -->
+            <div class="mobile-user-section">
+                <a href="{% url 'mypage:my_profile' %}" class="mobile-user-profile">
+                    {% if user.user_img %}
+                        <img src="{{ user.user_img.url }}" alt="프로필" class="mobile-profile-img">
+                    {% else %}
+                        <img src="{% static 'img/default-avatar.png' %}" alt="프로필" class="mobile-profile-img">
+                    {% endif %}
+                    <div class="mobile-user-info">
+                        <div class="mobile-username">{{ user.nickname|default:user.email|default:"사용자" }}</div>
+                        <div class="mobile-profile-link">마이페이지 →</div>
+                    </div>
+                </a>
+            </div>
+
+            <nav class="mobile-nav">
+                <a href="{% url 'book:book_tos' %}" class="mobile-nav-item">
+                    <span class="nav-icon">📝</span>
+                    <span>이야기 만들기</span>
+                </a>
+                <a href="/book/book-snap/" class="mobile-nav-item">
+                    <span class="nav-icon">📸</span>
+                    <span>SNAP</span>
+                </a>
+                <a href="/book/author-dashboard/" class="mobile-nav-item">
+                    <span class="nav-icon">✍️</span>
+                    <span>작가 센터</span>
+                </a>
+                <a href="/mypage/library/" class="mobile-nav-item">
+                    <span class="nav-icon">📚</span>
+                    <span>내 서제</span>
+                </a>
+                <div class="mobile-menu-divider"></div>
+                <a href="{% url 'register:logout' %}" class="mobile-nav-item mobile-logout-btn">
+                    <span class="nav-icon">🚪</span>
+                    <span>로그아웃</span>
+                </a>
+
+            </nav>
+        </div>
+    </div>
+
+{% else %}
+  <!-- 비로그인 상태 헤더 -->
+  <header>
+    {% include "common/notLoginHeader.html" %}
+
+  </header>
+
+  <!-- 비로그인 상태 모바일 메뉴 -->
+  <div class="mobile-side-menu" id="mobileSideMenuGuest">
+    <div class="mobile-menu-overlay" onclick="closeMobileMenu('Guest')"></div>
+    <div class="mobile-menu-content">
+      <div class="mobile-menu-header">
+        <span class="menu-title">메뉴</span>
+        <button class="close-menu-btn" onclick="closeMobileMenu('Guest')">✕</button>
+      </div>
+      <nav class="mobile-nav">
+        <a href="#" class="mobile-nav-item" onclick="notLogin()">📝 이야기 만들기</a>
+        <a href="/book/book-snap/" class="mobile-nav-item">📸 SNAP</a>
+        <a href="#" class="mobile-nav-item">✍️ 작가 센터</a>
+        <div class="mobile-menu-divider"></div>
+        <button class="mobile-nav-item mobile-login-btn" onclick="openLogin()">🔑 로그인</button>
+      </nav>
+    </div>
+  </div>
+{% endif %}
+
+<!-- 페이지 컨텐츠 -->
+{% block content %}{% endblock %}
+
+<!-- 공통 JS -->
+<script>
+  function notLogin() {
+    alert("로그인을 먼저 해주세요.");
+    openLogin();
+  }
+
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light-mode');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) themeToggle.textContent = isLight ? '☀️' : '🌙';
+  }
+
+  (function() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') document.body.classList.add('light-mode');
+  })();
+
+  function toggleMobileMenu(type) {
+    const menuId = type === 'Logged' ? 'mobileSideMenuLogged' : 'mobileSideMenuGuest';
+    const menu = document.getElementById(menuId);
+    if (!menu) return; // 메뉴가 없으면 그냥 종료
+    menu.classList.toggle('active');
+    document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
+  }
+
+  function closeMobileMenu(type) {
+    const menuId = type === 'Logged' ? 'mobileSideMenuLogged' : 'mobileSideMenuGuest';
+    const menu = document.getElementById(menuId);
+    menu.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,587 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER - 마이페이지{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage/my_profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-wrapper">
+    <div class="profile-container">
+
+        <!-- 프로필 편집 폼 -->
+        <form method="post" enctype="multipart/form-data" class="profile-form" id="profileForm">
+            {% csrf_token %}
+            <input type="hidden" name="remove_avatar" id="removeAvatarInput" value="false">
+            <input type="hidden" name="remove_cover" id="removeCoverInput" value="false">
+
+            {% if messages %}
+            <div class="message-container">
+                {% for message in messages %}
+                <div class="message {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- 프로필 헤더 -->
+            <div class="profile-header">
+                <!-- 커버 이미지 -->
+                <div class="profile-cover" id="coverImageArea" {% if user.cover_img %}style="background-image: url('{{ user.cover_img.url }}');"{% endif %}>
+                    <div class="cover-gradient"></div>
+                </div>
+
+                <div class="profile-info">
+                    <div class="avatar-section">
+                        <div class="avatar-wrapper">
+                            {% if user.user_img %}
+                                <img src="{{ user.user_img.url }}" alt="프로필" class="avatar-img" id="avatarPreview" loading="lazy">
+                            {% else %}
+                                <img src="{% static 'img/default-avatar.png' %}" alt="프로필" class="avatar-img" id="avatarPreview" loading="lazy">
+                            {% endif %}
+                            <label class="avatar-edit" for="avatarInput">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                    <circle cx="12" cy="13" r="4"/>
+                                </svg>
+                            </label>
+                            <input type="file" name="user_img" id="avatarInput" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+
+                    <div class="user-details">
+                        <h1 class="user-nickname">{{ user.nickname|default:"닉네임 없음" }}</h1>
+                        <div class="user-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">{{ user.follow_count|default:0 }}</span>
+                                <span class="stat-label">팔로워</span>
+                            </div>
+                            <div class="stat-divider"></div>
+                            <div class="stat-item">
+                                <span class="stat-value">{{ books_count|default:0 }}</span>
+                                <span class="stat-label">작품</span>
+                            </div>
+                            <div class="stat-divider"></div>
+                            <div class="stat-item">
+                                <span class="stat-value">{{ user.created_at|date:"Y.m.d" }}</span>
+                                <span class="stat-label">가입일</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 기본 정보 -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        기본 정보
+                    </h2>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">
+                            닉네임
+                            <span class="required">*</span>
+                        </label>
+                        <input type="text" name="nickname" id="nickname" class="form-input"
+                               value="{{ user.nickname|default:'' }}" placeholder="닉네임을 입력하세요" required>
+                        <span class="input-counter"><span id="nicknameCount">{{ user.nickname|length|default:0 }}</span>/20</span>
+                    </div>
+
+                    <!-- <div class="form-group">
+                        <label class="form-label">사용자명</label>
+                        <input type="text" name="username" class="form-input"
+                               value="{{ user.username|default:'' }}" placeholder="사용자명을 입력하세요">
+                    </div> -->
+
+                    <div class="form-group full-width">
+                        <label class="form-label">이메일</label>
+                        <input type="email" class="form-input readonly"
+                               value="{{ user.email }}" readonly disabled>
+                        <span class="input-hint">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="16" x2="12" y2="12"/>
+                                <line x1="12" y1="8" x2="12.01" y2="8"/>
+                            </svg>
+                            이메일은 변경할 수 없습니다
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 개인 정보 -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="8.5" cy="7" r="4"/>
+                            <line x1="20" y1="8" x2="20" y2="14"/>
+                            <line x1="23" y1="11" x2="17" y2="11"/>
+                        </svg>
+                        개인 정보
+                    </h2>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">성별</label>
+                        <div class="gender-options">
+                            <label class="gender-option">
+                                <input type="radio" name="gender" value="M" {% if user.gender == 'M' %}checked{% endif %}>
+                                <span class="gender-box">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="10" cy="14" r="5"/>
+                                        <line x1="19" y1="5" x2="13.6" y2="10.4"/>
+                                        <polyline points="19 5 19 11"/>
+                                        <polyline points="19 5 13 5"/>
+                                    </svg>
+                                    남성
+                                </span>
+                            </label>
+                            <label class="gender-option">
+                                <input type="radio" name="gender" value="F" {% if user.gender == 'F' %}checked{% endif %}>
+                                <span class="gender-box">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="8" r="5"/>
+                                        <line x1="12" y1="13" x2="12" y2="21"/>
+                                        <line x1="9" y1="18" x2="15" y2="18"/>
+                                    </svg>
+                                    여성
+                                </span>
+                            </label>
+                            <label class="gender-option">
+                                <input type="radio" name="gender" value="O" {% if user.gender == 'O' %}checked{% endif %}>
+                                <span class="gender-box">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="12" y1="8" x2="12" y2="16"/>
+                                        <line x1="8" y1="12" x2="16" y2="12"/>
+                                    </svg>
+                                    기타
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">생년월일</label>
+                        <input type="date" name="birthdate" class="form-input"
+                               value="{{ user.birthdate|date:'Y-m-d'|default:'' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">나이</label>
+                        <input type="number" name="age" class="form-input"
+                               value="{{ user.age|default:'' }}" placeholder="나이" min="0" max="150">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 계정 정보 -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        계정 정보
+                    </h2>
+                </div>
+
+                <div class="account-info">
+                    <div class="info-row">
+                        <span class="info-label">로그인 방식</span>
+                        <span class="info-value">
+                            {% if user.oauth_provider %}
+                                <span class="oauth-badge {{ user.oauth_provider }}">
+                                    {{ user.oauth_provider|title }}
+                                </span>
+                            {% else %}
+                                <span class="oauth-badge email">이메일</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">계정 상태</span>
+                        <span class="info-value">
+                            <span class="status-badge {{ user.status }}">
+                                {% if user.status == 'active' %}활성{% elif user.status == 'inactive' %}비활성{% else %}정지{% endif %}
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 저장 버튼 -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    변경사항 저장
+                </button>
+            </div>
+
+        </form>
+
+        <!-- 내 작품 목록 -->
+        <div class="my-books-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    내 작품 ({{ books_count }})
+                    
+                </h2>
+                <div class="sibal-btn">
+                    <a href="{% url 'book:book_tos' %}" class="btn btn-secondary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    새 작품 등록
+                </a>
+                    <a href="/book/my-snap-list/" class="btn btn-secondary">
+                    쇼츠 만들기
+                </a>
+
+                <a href="/voice/voice_list/" class="btn btn-secondary">
+                    목소리 리스트
+                </a>
+
+                </div>
+            </div>
+
+
+            
+            {% if books %}
+            <div class="books-grid">
+                {% for book in books %}
+                <div class="book-card">
+                    <div class="book-card-header">
+                        <div class="book-cover-mini">
+                            {% if book.cover_img %}
+                                <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;" loading="lazy">
+                            {% else %}
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                                </svg>
+                            {% endif %}
+                        </div>
+                        <div class="book-card-info">
+                            <h3 class="book-card-title">{{ book.name }}</h3>
+                            <div class="book-card-meta">
+                                <span class="meta-badge">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                    {{ book.book_score }}
+                                </span>
+                                <span class="meta-badge">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <polyline points="14 2 14 8 20 8"/>
+                                    </svg>
+                                    {{ book.contents.count }}개 에피소드
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="book-card-genres">
+                        {% for genre in book.genres.all %}
+                        <span class="genre-mini-badge" style="background-color: {{ genre.genres_color }}30; color: {{ genre.genres_color }};">
+                            {{ genre.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+
+                    {% if book.description %}
+                    <div class="book-card-description">
+                        {{ book.description|truncatewords:15 }}
+                    </div>
+                    {% endif %}
+
+                    <div class="book-card-footer">
+                        <span class="book-date">{{ book.created_at|date:"Y.m.d" }}</span>
+                        <div class="book-card-actions">
+                            <a href="{% url 'book:book_detail' book.id %}" class="btn-icon" title="상세보기">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </a>
+                            <a href="{% url 'book:book_profile' %}?book_id={{ book.id }}" class="btn-icon" title="수정">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                                </svg>
+                            </a>
+                            <a href="{% url 'book:book_serialization' %}?book_id={{ book.id }}" class="btn-icon" title="집필">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                            </a>
+
+                            <button class="btn-icon btn-delete" data-book-id="{{ book.id }}" data-book-name="{{ book.name }}" title="삭제">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                    <line x1="10" y1="11" x2="10" y2="17"/>
+                                    <line x1="14" y1="11" x2="14" y2="17"/>
+                                </svg>
+                            </button>
+
+                            <!-- <a class="btn-icon btn-snippet" data-book-id="{{ book.id }}" data-book-name="{{ book.name }}" title="북 스니펫" href="{% url 'mypage:book_snippet_form' book.id %}?book_id={{ book.id }}">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+       
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/>
+                                <line x1="7" y1="12" x2="15" y2="12"/>
+                                <path d="M18 16c0 .55-.45 1-1 1s-1-.45-1-1 .45-1 1-1 1 .45 1 1z"/>
+                                <path d="M20 14c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"/>
+                            </svg>
+                        </a> -->
+
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-books">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                <p>아직 작성한 작품이 없습니다</p>
+                <a href="{% url 'book:book_profile' %}" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    첫 작품 등록하기
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<!-- 삭제 확인 모달 -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <h3>작품 삭제</h3>
+        </div>
+        <div class="modal-body">
+            <p>정말 <strong id="deleteBookName"></strong>을(를) 삭제하시겠습니까?</p>
+            <p class="warning-text">이 작업은 되돌릴 수 없으며, 모든 에피소드가 함께 삭제됩니다.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-cancel" id="cancelDelete">취소</button>
+            <button type="button" class="btn btn-danger" id="confirmDelete">삭제하기</button>
+        </div>
+    </div>
+    
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 아바타 이미지 미리보기
+document.getElementById('avatarInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert('파일 크기는 5MB 이하여야 합니다.');
+            this.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('avatarPreview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        document.getElementById('removeAvatarInput').value = 'false';
+    }
+});
+
+// 닉네임 글자수 카운터
+document.getElementById('nickname').addEventListener('input', function() {
+    const count = this.value.length;
+    document.getElementById('nicknameCount').textContent = count;
+    if (count > 20) {
+        this.value = this.value.substring(0, 20);
+        document.getElementById('nicknameCount').textContent = 20;
+    }
+});
+
+// 폼 제출 전 유효성 검사
+document.getElementById('profileForm').addEventListener('submit', function(e) {
+    const nickname = document.getElementById('nickname').value.trim();
+    if (!nickname) {
+        e.preventDefault();
+        alert('닉네임을 입력해주세요.');
+        document.getElementById('nickname').focus();
+        return false;
+    }
+});
+
+// 작품 삭제 기능
+const deleteModal = document.getElementById('deleteModal');
+const deleteBookName = document.getElementById('deleteBookName');
+const confirmDeleteBtn = document.getElementById('confirmDelete');
+const cancelDeleteBtn = document.getElementById('cancelDelete');
+const deleteBtns = document.querySelectorAll('.btn-delete');
+
+let bookIdToDelete = null;
+
+// 삭제 버튼 클릭
+deleteBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+        bookIdToDelete = this.dataset.bookId;
+        const bookName = this.dataset.bookName;
+
+        deleteBookName.textContent = bookName;
+        deleteModal.classList.add('active');
+    });
+});
+
+// 취소 버튼
+cancelDeleteBtn.addEventListener('click', function() {
+    deleteModal.classList.remove('active');
+    bookIdToDelete = null;
+});
+
+// 모달 배경 클릭
+deleteModal.addEventListener('click', function(e) {
+    if (e.target === deleteModal) {
+        deleteModal.classList.remove('active');
+        bookIdToDelete = null;
+    }
+});
+
+// 삭제 확인 버튼
+confirmDeleteBtn.addEventListener('click', async function() {
+    if (!bookIdToDelete) return;
+
+    try {
+        const response = await fetch(`/book/delete/${bookIdToDelete}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+
+        if (response.ok) {
+            showNotification('작품이 삭제되었습니다', 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showNotification('삭제 중 오류가 발생했습니다', 'error');
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        showNotification('삭제 중 오류가 발생했습니다', 'error');
+    }
+
+    deleteModal.classList.remove('active');
+    bookIdToDelete = null;
+});
+
+// CSRF 토큰 가져오기
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// 알림 표시 함수
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        padding: 16px 24px;
+        background: ${type === 'success' ? 'rgba(16, 185, 129, 0.9)' : type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(99, 102, 241, 0.9)'};
+        color: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+        font-size: 14px;
+        font-weight: 500;
+    `;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 3000);
+}
+
+// CSS 애니메이션 추가
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

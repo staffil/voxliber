@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ poem.title }} | VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage/poem/poem_detail.css' %}">
+<style>
+    .edit-mode textarea {
+        width: 100%;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        min-height: 200px;
+        font-size: 16px;
+        line-height: 1.7;
+    }
+
+    .edit-btn-box {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .edit-save {
+        padding: 10px 16px;
+        background: #4a73ff;
+        color: #fff;
+        border-radius: 8px;
+    }
+
+    .edit-cancel {
+        padding: 10px 16px;
+        background: #999;
+        color: white;
+        border-radius: 8px;
+    }
+
+    .poem-audio {
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 12px;
+        background: #f4f6fc;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="poem-wrapper">
+
+    <article class="poem-page">
+
+        <!-- 제목 영역 -->
+        <div class="poem-header">
+            <h1 id="titleDisplay" class="poem-title">{{ poem.title }}</h1>
+            <input id="titleInput" name="title" class="poem-title" type="text" 
+                   value="{{ poem.title }}" style="display:none;">
+
+            <div class="poem-meta">
+                <span>작성일 · {{ poem.created_at|date:"Y.m.d H:i" }}</span>
+            </div>
+        </div>
+
+        <!-- 수정 폼 -->
+        <form id="editForm" method="POST" style="display:none;">
+            {% csrf_token %}
+            <textarea name="content">{{ poem.content }}</textarea>
+            <input type="hidden" name="title" id="titleHidden">
+        </form>
+
+        <!-- 본문 -->
+        <section id="contentDisplay" class="poem-content">
+            {{ poem.content|linebreaks }}
+        </section>
+
+        <!-- 태그 -->
+        {% if poem.tags.exists %}
+        <section class="poem-tags">
+            {% for tag in poem.tags.all %}
+            <span class="tag">#{{ tag.name }}</span>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        <!-- 🔊 저장된 오디오 항상 표시 -->
+        {% if poem.poem_audio %}
+        <div class="poem-audio">
+            <h3>🎧 생성된 오디오</h3>
+            <audio controls src="{{ poem.poem_audio.url }}"></audio>
+        </div>
+        {% endif %}
+
+        <!-- 버튼 -->
+        <div class="poem-btn-box" id="btnViewMode">
+            <a href="{% url 'mypage:poem_list' %}" class="poem-btn back">← 목록으로</a>
+            <button class="poem-btn edit" id="editBtn" type="button">수정하기</button>
+            <a href="{% url 'mypage:poem_delete' poem.pk %}"
+               class="poem-btn delete"
+               onclick="return confirm('정말 삭제하시겠습니까?');">삭제</a>
+        </div>
+
+        <!-- 수정 버튼 -->
+        <div class="edit-btn-box" id="btnEditMode" style="display:none;">
+            <button class="edit-save" type="submit" form="editForm">저장하기</button>
+            <button class="edit-cancel" type="button" id="cancelBtn">취소</button>
+        </div>
+
+    </article>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const editBtn = document.getElementById("editBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+
+    const contentDisplay = document.getElementById("contentDisplay");
+    const editForm = document.getElementById("editForm");
+
+    const btnViewMode = document.getElementById("btnViewMode");
+    const btnEditMode = document.getElementById("btnEditMode");
+
+    const titleDisplay = document.getElementById("titleDisplay");
+    const titleInput = document.getElementById("titleInput");
+    const titleHidden = document.getElementById("titleHidden");
+
+    // 수정 모드 ON
+    editBtn.addEventListener("click", () => {
+        contentDisplay.style.display = "none";
+        editForm.style.display = "block";
+
+        titleDisplay.style.display = "none";
+        titleInput.style.display = "block";
+
+        btnViewMode.style.display = "none";
+        btnEditMode.style.display = "flex";
+    });
+
+    // 취소 → 보기 모드
+    cancelBtn.addEventListener("click", () => {
+        contentDisplay.style.display = "block";
+        editForm.style.display = "none";
+
+        titleDisplay.style.display = "block";
+        titleInput.style.display = "none";
+
+        btnViewMode.style.display = "flex";
+        btnEditMode.style.display = "none";
+    });
+
+    // 제목 저장용 hidden input 동기화
+    document.querySelector("form#editForm").addEventListener("submit", function() {
+        titleHidden.value = titleInput.value;
+    });
+});
+</script>
+{% endblock %}

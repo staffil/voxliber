@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}작가 센터 - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/book/author_dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+    <div class="dashboard-header">
+        <h1>📊 작가 센터</h1>
+        <p>작품의 통계와 독자 분석을 확인하세요</p>
+    </div>
+
+    {% if total_books > 0 %}
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-card-header"><div class="stat-icon primary">📚</div></div>
+            <div class="stat-card-value">{{ total_books }}</div>
+            <div class="stat-card-title">총 작품 수</div>
+            <div class="stat-card-subtitle">{{ total_contents }}개 에피소드</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-header"><div class="stat-icon success">👥</div></div>
+            <div class="stat-card-value">{{ total_readers }}</div>
+            <div class="stat-card-title">총 독자 수</div>
+            <div class="stat-card-subtitle">최근 30일: {{ recent_readers }}명</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-header"><div class="stat-icon warning">🎧</div></div>
+            <div class="stat-card-value">{{ total_audio_duration }}</div>
+            <div class="stat-card-title">총 오디오 길이</div>
+            <div class="stat-card-subtitle">전체 작품 합계</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-header"><div class="stat-icon info">⭐</div></div>
+            <div class="stat-card-value">{{ book_stats|length }}</div>
+            <div class="stat-card-title">활성 작품</div>
+            <div class="stat-card-subtitle">독자가 있는 작품</div>
+        </div>
+    </div>
+
+    <div class="book-stats-section">
+        <h2 class="section-title">작품별 통계</h2>
+
+        <div class="book-stats-grid">
+            {% for stat in book_stats %}
+            <div class="book-stat-card">
+
+                <div class="book-stat-header">
+                    <div class="book-cover-mini">
+                        {% if stat.book.cover_img %}
+                        <img src="{{ stat.book.cover_img.url }}" alt="{{ stat.book.name }}" loading="lazy">
+                        {% else %}
+                        <div class="book-cover-placeholder">📖</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="book-stat-info">
+                        <h3>{{ stat.book.name }}</h3>
+                        <div class="meta">
+                            <span>👥 {{ stat.reader_count }}명</span>
+                            <span>🎧 총 길이: {{ stat.book_duration }}</span>
+                            <span>⏱️ 총 청취: {{ stat.total_listening_formatted }}</span>
+                            <span>📊 진행률: {{ stat.avg_progress_percent }}%</span>
+                        </div>
+                    </div>
+
+
+                </div>
+<div class="status-buttons" data-book-id="{{ stat.book.id }}">
+    <button class="status-btn" data-status="ongoing"
+        {% if stat.book.status == "ongoing" %}disabled{% endif %}>연재 중</button>
+    <button class="status-btn" data-status="paused"
+        {% if stat.book.status == "paused" %}disabled{% endif %}>휴재</button>
+    <button class="status-btn" data-status="ended"
+        {% if stat.book.status == "ended" %}disabled{% endif %}>연재 종료</button>
+</div>
+
+
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <div class="chart-title">성별 분포</div>
+                        <canvas id="genderChart{{ forloop.counter }}"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">연령대 분포</div>
+                        <canvas id="ageChart{{ forloop.counter }}"></canvas>
+                    </div>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- JSON 데이터 전달 -->
+    <script id="book-stats-data" type="application/json">
+        {{ book_stats_json|safe }}
+    </script>
+
+    {% else %}
+    <div class="empty-state">
+        <svg width="120" height="120" viewBox="0 0 24 24">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <h2>아직 작성한 작품이 없습니다</h2>
+        <p>새로운 작품을 등록하고 독자들과 소통하세요!</p>
+        <a href="{% url 'book:book_profile' %}" class="btn-primary">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            첫 작품 등록하기
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const dataEl = document.getElementById("book-stats-data");
+    const stats = dataEl ? JSON.parse(dataEl.textContent) : [];
+
+    if (!stats.length) return;
+
+    stats.forEach((stat, i) => {
+        const id = i + 1;
+
+        /* --------------------------
+           성별 차트
+        --------------------------- */
+        const genderCtx = document.getElementById(`genderChart${id}`);
+        if (genderCtx) {
+            new Chart(genderCtx, {
+                type: "doughnut",
+                data: {
+                    labels: ["남성", "여성", "기타"],
+                    datasets: [{
+                        data: [
+                            stat.gender_data.M || 0,
+                            stat.gender_data.F || 0,
+                            stat.gender_data.O || 0
+                        ],
+                        backgroundColor: ["#3b82f6", "#ec4899", "#8b5cf6"],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { position: "bottom" }
+                    }
+                }
+            });
+        }
+
+        /* --------------------------
+           연령대 차트
+        --------------------------- */
+        const ageCtx = document.getElementById(`ageChart${id}`);
+        if (ageCtx) {
+            new Chart(ageCtx, {
+                type: "bar",
+                data: {
+                    labels: ["어린이", "10대", "20대", "30대", "40대", "50대+"],
+                    datasets: [{
+                        data: [
+                            stat.age_data["어린이"] || 0,
+                            stat.age_data["10대"] || 0,
+                            stat.age_data["20대"] || 0,
+                            stat.age_data["30대"] || 0,
+                            stat.age_data["40대"] || 0,
+                            stat.age_data["50대 이상"] || 0
+                        ],
+                        backgroundColor: "rgba(99, 102, 241, 0.8)",
+                        borderColor: "#6366f1",
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    });
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i=0; i<cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.querySelectorAll('.status-buttons').forEach(container => {
+    const bookId = container.dataset.bookId;
+    container.querySelectorAll('.status-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const newStatus = btn.dataset.status;
+            fetch(`/book/${bookId}/toggle_status/`, {
+                method: "POST",
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({status: newStatus})
+            })
+            .then(res => res.json())
+            .then(data => {
+                // 버튼 상태 업데이트
+                container.querySelectorAll('.status-btn').forEach(b => b.disabled = false);
+                btn.disabled = true;
+            })
+            .catch(err => console.error(err));
+        });
+    });
+});
+
+
+
+</script>
+{% endblock %}

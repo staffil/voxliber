@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ query }} 검색 결과 - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home/main.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/search_result.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="search-result-container">
+
+    <div class="search-header">
+        <h2>🔍 "{{ query }}" 검색 결과</h2>
+        <div class="search-stats">
+            총 {{ books_count|add:authors_count }}개 결과
+            (책 {{ books_count }}개, 작가 {{ authors_count }}명)
+        </div>
+    </div>
+
+    <!-- 🔍 Search (항상 빈칸) -->
+    <div class="search-container">
+        <div class="search-box">
+            <input
+                type="text"
+                id="searchInput"
+                class="search-input"
+                placeholder="작가, 태그, 작품을 검색하세요"
+                autocomplete="off"
+            >
+            <button class="search-btn" id="searchBtn">🔍</button>
+        </div>
+    </div>
+
+    <!-- 탭 네비게이션 -->
+    <div class="search-tabs">
+        <button class="search-tab active" data-tab="books">
+            책
+            <span class="search-tab-count">{{ books_count }}</span>
+        </button>
+        <button class="search-tab" data-tab="authors">
+            작가
+            <span class="search-tab-count">{{ authors_count }}</span>
+        </button>
+    </div>
+
+    <!-- ================= 책 탭 ================= -->
+    <div id="books-tab" class="tab-content active">
+        {% if books %}
+        <div class="books-grid">
+            {% for book in books %}
+            <a href="/book/detail/{{ book.id }}/" class="book-item">
+                <div class="book-cover-wrapper">
+                    {% if book.cover_img %}
+                    <img src="{{ book.cover_img }}" alt="{{ book.name }}" loading="lazy">
+                    {% else %}
+                    <div class="book-placeholder">
+                        {{ book.name|slice:":2"|upper }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="book-details">
+                    <h3>{{ book.name }}</h3>
+                    <p class="book-meta">
+                        {{ book.author }} • {{ book.contents_count }}화
+                        {% if book.score > 0 %}
+                        • ⭐ {{ book.score }}
+                        {% endif %}
+                    </p>
+
+                    {% if book.description %}
+                    <p class="book-desc">{{ book.description }}</p>
+                    {% endif %}
+
+                    <div class="book-genres">
+                        {% for g in book.genres %}
+                        <span class="genre-tag"
+                              style="background: {{ g.color }}22; color: {{ g.color }}">
+                            {{ g.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-results">
+            <div class="no-results-icon">📚</div>
+            <p class="no-results-text">
+                "{{ query }}"와 일치하는 책을 찾을 수 없습니다.
+            </p>
+            <p class="no-results-hint">다른 검색어를 시도해보세요.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ================= 작가 탭 ================= -->
+    <div id="authors-tab" class="tab-content">
+        {% if authors %}
+        <div class="authors-grid">
+            {% for author in authors %}
+            <div class="author-item">
+                <div class="author-header">
+                    <div class="author-avatar">
+                        {% if author.profile_img %}
+                        <img src="{{ author.profile_img }}"
+                             alt="{{ author.nickname }}"
+                             loading="lazy">
+                        {% else %}
+                        {{ author.nickname|slice:":1"|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="author-info">
+                        <h3>{{ author.nickname }}</h3>
+                        <div class="author-stats">
+                            📚 작품 {{ author.books_count }}개
+                        </div>
+                    </div>
+                </div>
+
+                {% if author.bio %}
+                <p class="author-bio">{{ author.bio }}</p>
+                {% endif %}
+
+                {% if author.representative_books %}
+                <div class="author-books">
+                    <div class="author-books-label">대표 작품</div>
+                    <div class="author-books-list">
+                        {% for book in author.representative_books %}
+                        <a href="/book/detail/{{ book.id }}/"
+                           class="author-book-mini">
+                            <div class="author-book-mini-cover">
+                                {% if book.cover_img %}
+                                <img src="{{ book.cover_img }}"
+                                     alt="{{ book.name }}"
+                                     loading="lazy">
+                                {% else %}
+                                <div class="book-placeholder">
+                                    {{ book.name|slice:":2"|upper }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="author-book-mini-title">
+                                {{ book.name }}
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-results">
+            <div class="no-results-icon">👤</div>
+            <p class="no-results-text">
+                "{{ query }}"와 일치하는 작가를 찾을 수 없습니다.
+            </p>
+            <p class="no-results-hint">다른 검색어를 시도해보세요.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+
+    /* 🔑 검색 결과 페이지에서는 항상 빈칸 */
+    if (searchInput) {
+        searchInput.value = '';
+    }
+
+    /* 검색 실행 */
+    function doSearch() {
+        const q = searchInput.value.trim();
+        if (!q) return;
+        window.location.href = `/search/?q=${encodeURIComponent(q)}`;
+    }
+
+    searchBtn.addEventListener('click', doSearch);
+    searchInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            doSearch();
+        }
+    });
+
+    /* 탭 전환 */
+    const tabs = document.querySelectorAll('.search-tab');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function () {
+            const target = this.dataset.tab;
+
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+
+            this.classList.add('active');
+            document.getElementById(`${target}-tab`).classList.add('active');
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}내 보이스 목록 | VoxLiber{% endblock %}
+
+{% block content %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/voice/my_voice.css' %}">
+{% endblock %}
+
+<!-- 페이지 헤더 -->
+<div class="page-header">
+    <h1 class="page-title">💾 내 보이스 컬렉션</h1>
+    <p class="page-subtitle">저장한 보이스를 관리하고 작품별로 설정하세요</p>
+</div>
+
+<div class="myvoice-container">
+    {% if my_voices %}
+    <div class="myvoice-grid">
+        {% for item in my_voices %}
+        <div class="myvoice-card">
+            <!-- 카드 헤더 (이미지 + 즐겨찾기) -->
+            <div class="card-header">
+                <form method="POST" action="{% url 'mypage:toggle_myvoice_favorite' item.id %}">
+                    {% csrf_token %}
+                    <button class="favorite-btn" type="submit">
+                        {% if item.is_favorite %}⭐{% else %}☆{% endif %}
+                    </button>
+                </form>
+
+                {% if item.voice.voice_image %}
+                <img src="{{ item.voice.voice_image.url }}" class="myvoice-img" alt="{{ item.alias_name }}" loading="lazy">
+                {% else %}
+                <img src="{% static 'default_voice.png' %}" class="myvoice-img" alt="{{ item.alias_name }}" loading="lazy">
+                {% endif %}
+            </div>
+
+            <!-- 보이스 정보 -->
+            <div class="voice-info">
+                <div class="myvoice-name">{{ item.alias_name }}</div>
+                <div class="myvoice-alias">{{ item.voice.voice_name }}</div>
+            </div>
+
+            <!-- 타입 배지 -->
+            {% if item.voice.types.all %}
+            <div class="voice-types">
+                {% for type in item.voice.types.all %}
+                <span class="type-badge">{{ type.name }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- 책 선택 -->
+            <div class="book-select-wrapper">
+                <label class="book-select-label">📚 적용할 작품</label>
+                <form method="POST" action="{% url 'mypage:select_book' item.id %}">
+                    {% csrf_token %}
+                    <select name="book_id" onchange="this.form.submit()" class="book-select">
+                        <option value="">전체 작품</option>
+                        {% for book in books %}
+                        <option value="{{ book.id }}" {% if item.book and book.id == item.book.id %}selected{% endif %}>
+                            {{ book.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+
+            <!-- 오디오 플레이어 -->
+            {% if item.voice.sample_audio %}
+            <div class="audio-player">
+                <button onclick="togglePlay(this)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </button>
+                <div class="progress-bar">
+                    <div class="progress"></div>
+                </div>
+                <span class="time">0:00 / 0:00</span>
+                <audio src="{{ item.voice.sample_audio.url }}" loading="lazy"></audio>
+            </div>
+            {% endif %}
+
+            <!-- 삭제 버튼 -->
+            <form method="POST" action="{% url 'mypage:delete_my_voice' item.id %}">
+                {% csrf_token %}
+                <button type="submit" class="delete-btn" onclick="return confirm('정말로 삭제하시겠습니까?')">🗑️ 삭제하기</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="myvoice-grid">
+        <div class="no-myvoice">
+            <div class="no-myvoice-icon">🎙️</div>
+            <h2 class="no-myvoice-title">저장된 보이스가 없습니다</h2>
+            <p class="no-myvoice-text">보이스 라이브러리에서 마음에 드는 목소리를 선택해보세요</p>
+            <a href="{% url 'voice:voice_list' %}" class="add-voice-btn">
+                ➕ 보이스 추가하기
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function togglePlay(btn) {
+    const player = btn.parentElement.querySelector('audio');
+    const allPlayers = document.querySelectorAll('.audio-player audio');
+    const allButtons = document.querySelectorAll('.audio-player button');
+
+    // 다른 플레이어 모두 정지
+    allPlayers.forEach((p, idx) => {
+        if (p !== player && !p.paused) {
+            p.pause();
+            allButtons[idx].innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+        }
+    });
+
+    // 현재 플레이어 토글
+    if (player.paused) {
+        player.play();
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>';
+    } else {
+        player.pause();
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    }
+
+    // 진행률 및 시간 업데이트
+    player.ontimeupdate = function() {
+        const progress = btn.parentElement.querySelector('.progress');
+        const percentage = (player.currentTime / player.duration * 100) || 0;
+        progress.style.width = percentage + '%';
+
+        const time = btn.parentElement.querySelector('.time');
+        const current = formatTime(player.currentTime);
+        const total = formatTime(player.duration);
+        time.textContent = `${current} / ${total}`;
+    };
+
+    // 재생 종료 시
+    player.onended = function() {
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+        const progress = btn.parentElement.querySelector('.progress');
+        progress.style.width = '0%';
+    };
+}
+
+function formatTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+</script>
+
+{% endblock %}

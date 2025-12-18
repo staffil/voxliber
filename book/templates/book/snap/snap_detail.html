@@ -1,0 +1,407 @@
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ snap.snap_title }} - VOXLIBER 쇼츠</title>
+    <link rel="stylesheet" href="{% static 'css/book/snap/snap_detail.css' %}">
+
+</head>
+<body>
+    <!-- 메인 쇼츠 컨테이너 -->
+    <div class="shorts-container">
+        <!-- 상단 헤더 -->
+        <div class="shorts-header">
+            <div class="header-left">
+                <a href="/" style="text-decoration: none;">
+                    <div class="logo">VOXLIBER</div>
+                </a>
+                <div class="shorts-badge">SNAP</div>
+            </div>
+            <button class="close-btn" onclick="window.location.href='/'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- 비디오 영역 -->
+        <div class="video-wrapper" id="videoWrapper">
+            {% if snap.snap_video %}
+                <video id="mainVideo" playsinline loop autoplay>
+                    <source src="{{ snap.snap_video.url }}" type="video/mp4">
+                </video>
+                <div class="play-overlay visible" id="playOverlay">
+                    <div class="play-icon">▶</div>
+                </div>
+                <div class="video-controls">
+    <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+
+    <div class="seekbar-container" id="seekBarContainer">
+        <div class="seekbar-progress" id="seekBarProgress"></div>
+    </div>
+</div>
+            {% elif snap.snap_image %}
+                <img src="{{ snap.snap_image.url }}" alt="{{ snap.snap_title }}">
+            {% elif snap.thumbnail %}
+                <img src="{{ snap.thumbnail.url }}" alt="{{ snap.snap_title }}">
+            {% else %}
+                <div style="text-align: center; color: rgba(255,255,255,0.5);">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📖</div>
+                    <div>미디어가 없습니다</div>
+                </div>
+            {% endif %}
+        </div>
+
+<!-- 오른쪽 액션 버튼들 -->
+<div class="actions-panel">
+    <!-- 좋아요 -->
+    <div class="action-btn" id="likeBtn" data-snap-id="{{ snap.id }}">
+        <div class="action-icon" id="likeIcon">
+            {% if user in snap.booksnap_like.all %}
+                ❤️
+            {% else %}
+                🤍
+            {% endif %}
+        </div>
+<div class="action-count" id="likeCount">{{ snap.booksnap_like.count }}</div>
+    </div>
+
+    <!-- 댓글 -->
+    <div class="action-btn" id="commentBtn" data-snap-id="{{ snap.id }}">
+        <div class="action-icon">💬</div>
+        <div class="action-count">{{ comments.count }}</div>
+    </div>
+
+    <!-- 공유 -->
+    <div class="action-btn" id="shareBtn">
+        <div class="action-icon">🔗</div>
+        <div class="action-count">공유</div>
+    </div>
+
+    <!-- 조회수 -->
+    <div class="action-btn" id="viewBtn" data-snap-id="{{ snap.id }}">
+        <div class="action-icon">👁️</div>
+        <div class="action-count" id="viewCount">{{ snap.views|default:0 }}</div>
+    </div>
+</div>
+
+
+        <!-- 하단 정보 영역 -->
+        <div class="info-panel">
+            <div class="author-info">
+                <div class="author-avatar">
+                    {% if snap.user.user_img %}
+                        <img src="{{ snap.user.user_img.url }}" alt="{{ snap.user.nickname }}">
+                    {% else %}
+                        {{ snap.user.nickname|slice:":1"|upper }}
+                    {% endif %}
+                </div>
+                <div class="author-name">{{ snap.user.nickname }}</div>
+
+            </div>
+            <div class="snap-title">{{ snap.snap_title }}</div>
+            <div class="snap-description">{{ snap.book_comment }}</div>
+<a href="{{ snap.book_link }}" class="arrow-link">책 보러 가기</a>
+        </div>
+
+
+    </div>
+
+    <!-- 댓글 패널 -->
+    <div class="comments-panel" id="commentsPanel">
+        <div class="comments-header">
+            <div class="comments-title">댓글 {{ comments.count }}개</div>
+            <button class="close-btn" onclick="toggleComments()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="comments-list" id="commentsList">
+            {% for comment in comments %}
+                <div class="comment-item">
+                    <div class="comment-author">{{ comment.user.nickname }}</div>
+                    <div class="comment-text">{{ comment.content }}</div>
+                    <div class="comment-time">{{ comment.created_at|timesince }} 전</div>
+                </div>
+            {% empty %}
+                <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 40px 20px;">
+                    첫 댓글을 남겨보세요!
+                </div>
+            {% endfor %}
+        </div>
+        {% if user.is_authenticated %}
+            <div class="comment-input-wrapper">
+                <input type="text" class="comment-input" id="commentInput" placeholder="댓글을 입력하세요..." onkeypress="handleCommentKeyPress(event)">
+            </div>
+        {% endif %}
+    </div>
+<script>
+const snapId = {{ snap.id }};
+const prevSnapId = {{ prev_snap_id|default:"null" }};
+const nextSnapId = {{ next_snap_id|default:"null" }};
+const video = document.getElementById('mainVideo');
+const playOverlay = document.getElementById('playOverlay');
+const videoWrapper = document.getElementById('videoWrapper');
+const closeCommentsBtn = document.querySelector('#commentsPanel .close-btn');
+const likeBtn = document.getElementById('likeBtn');
+const viewBtn = document.getElementById('viewBtn');
+const seekBarContainer = document.getElementById("seekBarContainer");
+const seekBarProgress = document.getElementById("seekBarProgress");
+const timeDisplay = document.getElementById("timeDisplay");
+
+// ===================== 조회수 증가 (중복 방지) =====================
+fetch(`/book/book-snap/${snapId}/view/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+})
+.then(res => res.json())
+.then(data => {
+    document.getElementById('viewCount').textContent = data.views;
+})
+.catch(err => console.error(err));
+
+// ===================== 비디오 컨트롤 =====================
+if (video) {
+    videoWrapper.addEventListener('click', function(e) {
+        // seekbar 클릭이면 재생/일시정지 토글 금지
+        if (e.target.closest('.seekbar-container') || e.target.closest('.seekbar-progress')) {
+            return;
+        }
+
+        if (e.target === video || e.target === playOverlay || e.target.closest('.play-overlay')) {
+            if (video.paused) {
+                video.play();
+                playOverlay.classList.remove('visible');
+            } else {
+                video.pause();
+                playOverlay.classList.add('visible');
+            }
+        }
+    });
+
+    video.addEventListener('play', () => playOverlay.classList.remove('visible'));
+    video.addEventListener('pause', () => playOverlay.classList.add('visible'));
+
+    // 비디오 로드 완료 시 자동 재생
+    video.addEventListener('loadeddata', () => {
+        video.play().then(() => {
+            playOverlay.classList.remove('visible');
+        }).catch(() => {
+            playOverlay.classList.add('visible');
+        });
+    });
+
+    // 즉시 재생 시도
+    video.play().catch(() => playOverlay.classList.add('visible'));
+}
+
+// ===================== 좋아요 토글 =====================
+likeBtn.addEventListener('click', function() {
+    fetch(`/book/book-snap/${snapId}/like/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('likeCount').textContent = data.likes;
+        document.getElementById('likeIcon').textContent = data.liked ? '❤️' : '🤍';
+    })
+    .catch(err => console.error(err));
+});
+
+// ===================== 댓글 토글 =====================
+document.getElementById('commentBtn').addEventListener('click', function() {
+    document.getElementById('commentsPanel').classList.toggle('open');
+});
+
+closeCommentsBtn.addEventListener('click', function() {
+    commentsPanel.classList.remove('open'); // 닫기
+});
+
+// ===================== 댓글 작성 =====================
+function toggleComments(event) {
+    if (event.key !== 'Enter') return;
+    const content = event.target.value.trim();
+    if (!content) return;
+
+    fetch(`/book/book-snap/${snapId}/comment/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: `content=${encodeURIComponent(content)}`
+    })
+    .then(res => res.json())
+    .then(data => {
+        const commentsList = document.getElementById('commentsList');
+        const commentHTML = `
+            <div class="comment-item">
+                <div class="comment-author">${data.user}</div>
+                <div class="comment-text">${data.content}</div>
+                <div class="comment-time">방금 전</div>
+            </div>
+        `;
+        commentsList.insertAdjacentHTML('afterbegin', commentHTML);
+        event.target.value = '';
+    })
+    .catch(err => console.error(err));
+}
+
+// ===================== 공유 =====================
+document.getElementById('shareBtn').addEventListener('click', function() {
+    const url = window.location.href;
+    if (navigator.share) {
+        navigator.share({ title: '{{ snap.snap_title }}', url });
+    } else {
+        navigator.clipboard.writeText(url);
+        alert('링크가 복사되었습니다!');
+    }
+});
+
+// ===================== 스냅 네비게이션 =====================
+function navigateSnap(snapId) {
+    window.location.href = `/book/book-snap/${snapId}/`;
+}
+
+// ===================== 드래그/스와이프/휠/키보드 =====================
+let startY = 0, startX = 0, isDragging = false, startTime = 0;
+
+function startDrag(e) {
+    // seekbar, 버튼, 링크, 입력 필드 등은 드래그에서 제외
+    if (e.target.closest('button, a, input, .action-btn, .video-controls, .seekbar-container')) return;
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    startX = e.touches ? e.touches[0].clientX : e.clientX;
+    startTime = Date.now();
+    isDragging = true;
+}
+
+function endDrag(e, isTouch) {
+    if (!isDragging) return;
+    const endY = isTouch ? e.changedTouches[0].clientY : e.clientY;
+    const endX = isTouch ? e.changedTouches[0].clientX : e.clientX;
+    const deltaY = startY - endY;
+    const deltaX = Math.abs(startX - endX);
+    const deltaTime = Date.now() - startTime;
+
+    if (Math.abs(deltaY) > deltaX && Math.abs(deltaY) > (isTouch ? 50 : 80) && deltaTime < (isTouch ? 500 : 800)) {
+        if (deltaY > 0 && nextSnapId) navigateSnap(nextSnapId);
+        else if (deltaY < 0 && prevSnapId) navigateSnap(prevSnapId);
+    }
+    isDragging = false;
+}
+
+// 터치 이벤트
+document.addEventListener('touchstart', startDrag, { passive: true });
+document.addEventListener('touchend', e => endDrag(e, true), { passive: true });
+
+// 마우스 이벤트
+document.addEventListener('mousedown', startDrag);
+document.addEventListener('mouseup', e => endDrag(e, false));
+document.addEventListener('mouseleave', () => isDragging = false);
+
+// 휠 스크롤 네비게이션
+let wheelTimeout, lastWheelTime = 0;
+document.addEventListener('wheel', function(e) {
+    const now = Date.now();
+    if (now - lastWheelTime < 500) return;
+
+    clearTimeout(wheelTimeout);
+    wheelTimeout = setTimeout(() => {
+        if (e.deltaY > 0 && nextSnapId) navigateSnap(nextSnapId);
+        else if (e.deltaY < 0 && prevSnapId) navigateSnap(prevSnapId);
+        lastWheelTime = Date.now();
+    }, 50);
+}, { passive: true });
+
+// 키보드
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowUp' && prevSnapId) navigateSnap(prevSnapId);
+    else if (e.key === 'ArrowDown' && nextSnapId) navigateSnap(nextSnapId);
+});
+
+
+function handleCommentKeyPress(event) {
+    if (event.key !== 'Enter') return;
+    const content = event.target.value.trim();
+    if (!content) return;
+
+    fetch(`/book/book-snap/${snapId}/comment/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: `content=${encodeURIComponent(content)}`
+    })
+    .then(res => res.json())
+    .then(data => {
+        const commentsList = document.getElementById('commentsList');
+        const commentHTML = `
+            <div class="comment-item">
+                <div class="comment-author">${data.user}</div>
+                <div class="comment-text">${data.content}</div>
+                <div class="comment-time">방금 전</div>
+            </div>
+        `;
+        commentsList.insertAdjacentHTML('afterbegin', commentHTML);
+        event.target.value = '';
+    })
+    .catch(err => console.error(err));
+}
+
+// ===================== CSRF =====================
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+function formatTime(t) {
+    const m = Math.floor(t / 60);
+    const s = Math.floor(t % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+// 메타데이터 로드 시 총 길이 표시
+video.addEventListener("loadedmetadata", () => {
+    timeDisplay.textContent = `00:00 / ${formatTime(video.duration)}`;
+});
+
+// 재생 중 진행 상황 업데이트 (book_detail 방식)
+video.addEventListener("timeupdate", () => {
+    const progress = (video.currentTime / video.duration) * 100;
+    seekBarProgress.style.width = progress + '%';
+    timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+});
+
+// 진행 바 클릭으로 탐색 (book_detail 방식 - 간단하고 확실함)
+seekBarContainer.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const rect = seekBarContainer.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    video.currentTime = percent * video.duration;
+});
+
+seekBarProgress.addEventListener("click", (e) => {
+    e.stopPropagation();
+});
+</script>
+
+</body>
+</html>

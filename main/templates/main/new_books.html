@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER - 뜨끈뜨끈한 신작{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home/main.css' %}">
+<style>
+/* ==============================
+   신작 목록
+============================== */
+.new-books-section {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 60px 1rem 40px;
+}
+
+.new-books-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 2rem 1.4rem;
+}
+
+/* 카드 */
+.book-card-wrapper {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.3s ease;
+    min-width: 0;
+}
+
+.book-card-wrapper:hover {
+    transform: translateY(-6px);
+}
+
+/* 사진 블록 */
+.book-cover-block {
+    width: 100%;
+    aspect-ratio: 3 / 4.3;
+    background: var(--bg-secondary, #1e1e1e);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.book-card-wrapper:hover .book-cover-block {
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.book-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 정보 블록 */
+.book-info-block {
+    margin-top: 0.8rem;
+    text-align: left;
+}
+
+.book-author {
+    font-size: 0.85rem;
+    color: var(--text-secondary, rgba(255,255,255,.75));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 빈 상태 */
+.empty-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 6rem 1rem;
+    color: var(--text-secondary, rgba(255,255,255,.6));
+}
+
+/* 페이지네이션 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 40px 0;
+    flex-wrap: wrap;
+}
+
+.page-link {
+    color: var(--primary, #6366f1);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.1);
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    background: var(--primary, #6366f1);
+    color: white;
+}
+
+.current-page {
+    color: var(--text-secondary, rgba(255,255,255,.7));
+}
+
+/* ==============================
+   반응형
+============================== */
+@media (max-width: 1439px) {
+    .new-books-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (max-width: 1199px) {
+    .new-books-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 1023px) {
+    .new-books-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* 🔥 모바일은 2열 */
+@media (max-width: 767px) {
+    .new-books-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.4rem 0.8rem;
+    }
+
+    .book-title {
+        font-size: 0.85rem;
+    }
+
+    .book-author {
+        font-size: 0.72rem;
+    }
+}
+
+/* 초소형 */
+@media (max-width: 479px) {
+    .new-books-section {
+        padding: 40px 0.8rem 30px;
+    }
+}
+
+/* Light Mode */
+body.light-mode .book-cover-block {
+    background: white;
+    border-color: rgba(0,0,0,.1);
+}
+
+body.light-mode .book-title {
+    color: #1f2937;
+}
+
+body.light-mode .book-author {
+    color: #6b7280;
+}
+
+/* 가로 스크롤 차단 */
+html, body {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="new-books-section">
+            <br>
+        <br>
+    <div class="new-books-grid">
+
+        {% for book in page_obj %}
+        <a href="{% url 'book:book_detail' book.id %}" class="book-card-wrapper">
+            <!-- 사진만 있는 블록 -->
+            <div class="book-cover-block">
+                {% if book.cover_img %}
+                    <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" class="book-cover" loading="lazy">
+                {% else %}
+                    <img src="{% static 'images/book_placeholder.png' %}" alt="책 이미지 없음" class="book-cover" loading="lazy">
+                {% endif %}
+            </div>
+
+            <!-- 작가 이름과 책 제목만 있는 블록 -->
+            <div class="book-info-block">
+                <div class="book-title">{{ book.name }}</div>
+                <div class="book-author">{{ book.author|default:"작자 미상" }}</div>
+            </div>
+        </a>
+        {% empty %}
+        <p class="empty-message">등록된 신작이 없습니다.</p>
+        {% endfor %}
+    </div>
+
+    <!-- 페이지네이션 -->
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="page-link">◀ 이전</a>
+        {% endif %}
+
+        <span class="current-page">페이지 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="page-link">다음 ▶</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 기존 오디오 플레이어와 Footer는 그대로 유지 -->
+<div id="bottom-audio-player" class="bottom-audio-player hidden">
+  <!-- 기존 코드 그대로 -->
+</div>
+
+<footer class="main-footer">
+  <!-- 기존 Footer 코드 그대로 -->
+</footer>
+{% endblock %}

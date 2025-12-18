@@ -1,0 +1,1836 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER - 소설 집필{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/book/book_serialization.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{% if request.user_agent.is_mobile %}
+    <script>
+        window.location.href = '/';
+    </script>
+    <div style="padding: 40px; text-align: center; color: white;">
+        📵 리다이렉트 중...
+    </div>
+{% else %}
+
+
+<div class="writing-wrapper">
+    <!-- 왼쪽 사이드바 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="book-title-small">{{ book.name }}</div>
+            <div class="episode-info">
+                <input type="text" id="episodeTitle" placeholder="에피소드 제목"
+                       style="width: 100%; padding: 8px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); margin-top: 10px;">
+            </div>
+            <div id="draftStatus" style="margin-top: 8px; font-size: 12px; color: var(--text-secondary); text-align: center; display: none;">
+                💾 임시저장됨
+            </div>
+        </div>
+
+        <div style="padding: 0 15px;">
+            <button type="button" class="add-page-btn" onclick="addPage()">
+                + 새 대사 추가
+            </button>
+            <button type="button" class="add-page-btn" onclick="openSoundEffectModal()" style="margin-top: 8px; background: #8b5cf6;">
+                🎵 사운드 이팩트 넣기
+            </button>
+            <button type="button" class="add-page-btn" onclick="openBackgroundMusicModal()" style="margin-top: 8px; background: #ec4899;">
+                🎼 배경음 넣기
+            </button>
+            <button type="button" class="add-page-btn" onclick="loadDraft()" id="loadDraftBtn" style="margin-top: 8px; background: #059669; display: none;">
+                📂 임시저장 불러오기
+            </button>
+        </div>
+
+        <!-- 배경음 트랙 -->
+        <div style="padding: 10px 15px; border-bottom: 1px solid #333;">
+            <div style="color: #ec4899; font-size: 12px; font-weight: 600; margin-bottom: 8px;">🎼 배경음 트랙</div>
+            <div id="backgroundTracksList" style="max-height: 120px; overflow-y: auto;">
+                <!-- 배경음 트랙이 여기에 표시됩니다 -->
+                <div style="color: #666; font-size: 11px; text-align: center; padding: 10px;">배경음이 없습니다</div>
+            </div>
+        </div>
+
+        <!-- 대사/이팩트 목록 -->
+        <div style="padding: 10px 15px 0; color: #888; font-size: 12px; font-weight: 600;">📝 대사 & 이팩트</div>
+        <div class="pages-list" id="pagesList" style="padding: 5px 10px;">
+            <!-- 대사 목록이 여기에 동적으로 추가됩니다 -->
+        </div>
+    </div>
+
+    <!-- 메인 에디터 -->
+    <div class="editor-main">
+        <div class="editor-header">
+            <div class="current-page-info">
+                <h2 id="currentPageTitle">대사 1 / 10</h2>
+                <div class="page-meta">최대 200자 권장</div>
+            </div>
+
+            <div class="header-actions">
+
+                <button type="button" class="btn btn-danger" onclick="destroyPage()" id="deletePageBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                    <path d="M10 11l4 4" />
+                    <path d="M14 11l-4 4" />
+                    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                    </svg>
+
+                    전체 삭제
+                </button>
+                <button type="button" class="btn btn-danger" onclick="deletePage()" id="deletePageBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    삭제
+                </button>
+
+
+                <!-- 오디오북 가이드 -->
+                <button type="button" class="btn btn-primary" onclick="audioBookGuide()">오디오북 가이드</button>
+
+                <button class="btn btn-primary" onclick="emotionFunc()" >감정 리스트</button>
+                <button type="button" class="btn btn-secondary" onclick="saveDraft()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    임시저장
+                </button>
+                <a href="{% url 'book:book_profile' %}?book_id={{ book.id }}" class="btn btn-secondary">뒤로가기</a>
+                <button type="button" class="btn btn-primary" onclick="goToPreview()">미리듣기</button>
+            </div>
+        </div>
+
+        <div class="editor-container">
+                    <div id="audioBookGuideView" style="display:none;">
+                        <!-- 여기에 가이드 내용 -->
+                    </div>
+        <div class="editor-wrapper">
+
+            <!-- 왼쪽: 대사/오디오 편집 -->
+            <div id="editorArea" class="panel-left"></div>
+
+            <!-- 오른쪽: 소설 미리적기 -->
+            <div id="writeArea" class="panel-right"></div>
+
+        </div>
+
+  
+            <div id="webaudioediter">
+
+            </div>
+        </div>
+    </div>
+
+<!-- 감정 리스트 출력 -->
+<div id="emotionViewContainer"></div>
+
+    <!-- 오른쪽 사이드바 - 나레이션 선택 -->
+    <div class="voice-sidebar">
+        <div class="voice-sidebar-header">
+            <h3>🎙️ 나레이션 선택</h3>
+        </div>
+        <div class="voice-list">
+ {% for voice in voice_list %}
+    <div class="voice-item active" data-voice-id="{{ voice.voice.voice_id }}" onclick="selectVoice(this)">
+        <div class="voice-item-content">
+            <div class="voice-name">{{ voice.alias_name }}</div>
+        </div>
+
+        {% if voice.voice.sample_audio %}
+        <button class="voice-play-btn" onclick="toggleVoicePlay(event, '{{ voice.voice.sample_audio.url }}')" title="샘플 듣기">
+            ...
+        </button>
+        {% endif %}
+    </div>
+{% empty %}
+    <div class="voice-item empty-voice-box" style="
+        padding: 20px;
+        background: #1a1f2e;
+        border: 1px solid #2a3144;
+        border-radius: 10px;
+        text-align: center;
+        color: #bbb;
+        margin-bottom: 12px;
+    ">
+        <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">
+            나레이션을 추가하고 책에 맞는 목소리르 지정해보세요!
+            <br>
+            <br>
+<a href="/voice/voice_list/" class="voice-list-btn">
+    나레이션 리스트
+</a>
+        </div>
+
+    </div>
+{% endfor %}
+
+
+        </div>
+        <!-- 숨겨진 오디오 플레이어 -->
+        <audio id="voiceSamplePlayer" style="display: none;" loading="lazy"></audio>
+        <div class="voice-settings">
+            <h4>🔊 음성 설정</h4>
+
+            <div class="setting-item">
+                <label>언어 선택</label>
+                <select id="languageSelect" onchange="updateLanguage(this.value)">
+                    <option value="ko">한국어 (Korean)</option>
+                    <option value="en">영어 (English)</option>
+                    <option value="ja">일본어 (Japanese)</option>
+                    <option value="zh">중국어 (Chinese)</option>
+                    <option value="es">스페인어 (Spanish)</option>
+                    <option value="fr">프랑스어 (French)</option>
+                    <option value="de">독일어 (German)</option>
+                </select>
+            </div>
+
+            <div class="setting-item">
+                <label>속도 <small style="color: #888;">(0.5x ~ 2.0x)</small></label>
+                <input type="range" id="speedSlider" min="0" max="100" value="33" oninput="updateSpeed(this.value)">
+                <span id="speedValue" style="min-width: 40px; display: inline-block;">1.0x</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 사운드 이팩트 모달 -->
+<div id="soundEffectModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay-bg); z-index: 9999; align-items: center; justify-content: center; overflow-y: auto;">
+    <div style="background: var(--bg-secondary); padding: 30px; border-radius: 16px; max-width: 900px; width: 90%; box-shadow: 0 10px 40px var(--shadow-color); margin: 20px auto; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="color: var(--text-primary); margin: 0;">🎵 사운드 이팩트</h3>
+            <button onclick="closeSoundEffectModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+        </div>
+
+        <!-- 탭 -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color);">
+            <button id="effectNewTab" onclick="showEffectTab('new')" style="padding: 10px 20px; background: none; border: none; color: var(--secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid var(--secondary);">새로 생성</button>
+            <button id="effectLibraryTab" onclick="showEffectTab('library')" style="padding: 10px 20px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;">라이브러리</button>
+            <button id="uploadLibraryTab" onclick="showEffectTab('upload')" style="padding: 10px 20px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;">오디오 올리기</button>
+        </div>
+
+        <!-- 새로 생성 탭 -->
+        <div id="effectNewContent">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">이팩트 이름</label>
+                <input type="text" id="effectName" placeholder="예: 폭발음" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">이팩트 설명</label>
+                <textarea id="effectDescription" placeholder="예: door knok sound ,해당 사운드 이펙트는 영어로 작성해 주세요." style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">길이 (초)</label>
+                <input type="number" id="effectDuration" value="5" min="1" max="22" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 5px;">💡 사운드 이팩트는 1-22초 사이로 설정할 수 있습니다</div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="closeSoundEffectModal()" class="btn btn-secondary" style="flex: 1;">취소</button>
+                <button onclick="generateSoundEffect()" class="btn btn-primary" style="flex: 1;">생성하기</button>
+            </div>
+        </div>
+
+        <!-- 라이브러리 탭 -->
+        <div id="effectLibraryContent" style="display: none;">
+            <div id="effectLibraryList" style="max-height: 400px; overflow-y: auto;">
+                <!-- 라이브러리 목록이 여기에 동적으로 추가됩니다 -->
+            </div>
+        </div>
+
+        <!-- 업로드 탭 -->
+        <div id="uploadLibraryContent" style="display: none;">
+            <div id="uploadEffectContainer" style="max-height: 400px; overflow-y: auto;">
+                <!-- 라이브러리 목록이 여기에 동적으로 추가됩니다 -->
+            </div>
+        </div>  
+    </div>
+</div>
+
+<!-- 배경음 모달 -->
+<div id="backgroundMusicModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay-bg); z-index: 9999; align-items: center; justify-content: center; overflow-y: auto;">
+    <div style="background: var(--bg-secondary); padding: 30px; border-radius: 16px; max-width: 900px; width: 90%; box-shadow: 0 10px 40px var(--shadow-color); margin: 20px auto; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="color: var(--text-primary); margin: 0;">🎼 배경음</h3>
+            <button onclick="closeBackgroundMusicModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+        </div>
+
+        <!-- 탭 -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color);">
+            <button id="musicNewTab" onclick="showMusicTab('new')" style="padding: 10px 20px; background: none; border: none; color: var(--accent); font-weight: 600; cursor: pointer; border-bottom: 2px solid var(--accent);">새로 생성</button>
+            <button id="musicLibraryTab" onclick="showMusicTab('library')" style="padding: 10px 20px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;">라이브러리</button>
+            <button id="musicUploadTab" onclick="showMusicTab('upload')" style="padding: 10px 20px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;">오디오 올리기</button>
+        </div>
+
+        <!-- 새로 생성 탭 -->
+        <div id="musicNewContent">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">배경음 이름</label>
+                <input type="text" id="musicName" placeholder="예: 긴장감 있는 배경음" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">배경음 설명</label>
+                <textarea id="musicDescription" placeholder="예: 서스펜스 장면을 위한 긴장감 있는 오케스트라 배경음" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">길이 (초)</label>
+                <input type="number" id="musicDuration" value="30" min="10" max="120" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="closeBackgroundMusicModal()" class="btn btn-secondary" style="flex: 1;">취소</button>
+                <button onclick="generateBackgroundMusic()" class="btn btn-primary" style="flex: 1;">생성하기</button>
+            </div>
+        </div>
+
+        <!-- 라이브러리 탭 -->
+        <div id="musicLibraryContent" style="display: none;">
+            <div id="musicLibraryList" style="max-height: 400px; overflow-y: auto;">
+                <!-- 라이브러리 목록이 여기에 동적으로 추가됩니다 -->
+            </div>
+        </div>
+
+        <div id="musicUploadContent" style="display: none;">
+            <div id="uploadMusicContainer" style="max-height: 400px; overflow-y: auto;">
+                
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endif %}
+
+<script src="{% static 'js/register/login.js' %}"></script>
+<script src="{% static 'js/csrf.js' %}"></script>
+<script src="{% static 'book/js/preview.js' %}"></script>
+<script src="{% static 'book/js/sound-effects.js' %}"></script>
+<script src="{% static 'book/js/background-music.js' %}"></script>
+<script src="{% static 'book/js/draft-manager.js' %}"></script>
+<script src="{% static 'book/js/emotion-effects.js' %}"></script>
+<script src="{% static 'js/book/webaudio-effects.js' %}"></script>
+
+<script>
+const bookId = {{ book.id }};
+let pages = []; // 대사와 사운드 이팩트만 포함
+let backgroundTracks = []; // 배경음 별도 관리 [{startPage: 0, endPage: 3, audioFile, audioUrl, musicName}]
+let currentPageIndex = 0;
+let globalNovelDraft = ''; // 전체 에피소드에 대한 소설 미리쓰기 (페이지별 구분 없이 하나)
+
+// 나레이션 설정
+let selectedVoiceId = '2EiwWnXFnvU5JabPnv8n'; // 기본값: 클로이
+let selectedLanguage = 'ko'; // 기본값: 한국어
+let voiceStability = 0.5;
+let voiceSimilarity = 0.5;
+let voiceSpeed = 0.5;
+
+// 음성 샘플 재생
+let currentPlayingBtn = null;
+const samplePlayer = document.getElementById('voiceSamplePlayer');
+
+function toggleVoicePlay(event, audioUrl) {
+    event.stopPropagation(); // voice-item 클릭 이벤트 방지
+
+    const btn = event.currentTarget;
+    const playIcon = btn.querySelector('.play-icon');
+    const pauseIcon = btn.querySelector('.pause-icon');
+
+    // 다른 버튼이 재생 중이면 멈춤
+    if (currentPlayingBtn && currentPlayingBtn !== btn) {
+        const otherPlayIcon = currentPlayingBtn.querySelector('.play-icon');
+        const otherPauseIcon = currentPlayingBtn.querySelector('.pause-icon');
+        otherPlayIcon.style.display = 'block';
+        otherPauseIcon.style.display = 'none';
+        currentPlayingBtn.classList.remove('playing');
+    }
+
+    // 현재 버튼 토글
+    if (samplePlayer.paused || samplePlayer.src !== window.location.origin + audioUrl) {
+        samplePlayer.src = audioUrl;
+        samplePlayer.play();
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = 'block';
+        btn.classList.add('playing');
+        currentPlayingBtn = btn;
+    } else {
+        samplePlayer.pause();
+        playIcon.style.display = 'block';
+        pauseIcon.style.display = 'none';
+        btn.classList.remove('playing');
+        currentPlayingBtn = null;
+    }
+}
+
+// 오디오 종료 시 아이콘 원래대로
+if (samplePlayer) {
+    samplePlayer.addEventListener('ended', function() {
+        if (currentPlayingBtn) {
+            const playIcon = currentPlayingBtn.querySelector('.play-icon');
+            const pauseIcon = currentPlayingBtn.querySelector('.pause-icon');
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+            currentPlayingBtn.classList.remove('playing');
+            currentPlayingBtn = null;
+        }
+    });
+}
+
+
+// 맞춤법 검사
+const text = document.getElementById('writeArea').innerText;
+
+
+
+// 나레이션 선택
+function selectVoice(element) {
+    // 모든 voice-item에서 active 제거
+    document.querySelectorAll('.voice-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // 선택된 항목에 active 추가
+    element.classList.add('active');
+    selectedVoiceId = element.getAttribute('data-voice-id');
+
+    console.log('선택된 목소리 ID:', selectedVoiceId);
+}
+
+// 언어 업데이트
+function updateLanguage(value) {
+    selectedLanguage = value;
+    console.log('선택된 언어:', selectedLanguage);
+}
+
+
+// 속도 업데이트
+    function updateSpeed(value) {
+        // value 0~100 → 0.5 ~ 2.0 매핑 (0.5=느리게, 1.0=보통, 2.0=빠르게)
+        const speed = (0.5 + (2.0 - 0.5) * (value / 100)).toFixed(2);
+        voiceSpeed = parseFloat(speed);  // 전역 변수도 업데이트!
+        document.getElementById("speedValue").innerText = speed + 'x';
+        console.log('🎚️ 속도 설정:', speed);
+    }
+
+    // 초기 표시값 설정 (value=33이면 speed=1.0)
+    updateSpeed(33);
+
+// 대사 데이터 구조
+function createPage(content = '', audioFile = null, isSoundEffect = false) {
+    return {
+        id: Date.now() + Math.random(),
+        content: content,
+        charCount: content.length,
+        audioFile: audioFile,
+        audioUrl: null,
+        isSoundEffect: isSoundEffect,  // 사운드 이팩트 여부
+        effectName: '',  // 사운드 이팩트 이름
+        novelDraft: ''  // 소설 미리쓰기 내용
+    };
+}
+
+// 모달 외부 클릭 시 닫기
+document.addEventListener('click', function(event) {
+    const soundModal = document.getElementById('soundEffectModal');
+    const musicModal = document.getElementById('backgroundMusicModal');
+    if (event.target === soundModal) {
+        closeSoundEffectModal();
+    }
+    if (event.target === musicModal) {
+        closeBackgroundMusicModal();
+    }
+});
+
+
+
+// IndexedDB 초기화
+let db = null;
+
+
+// 초기 대사 10개 생성
+async function initPages() {
+    // IndexedDB 초기화
+    try {
+        await initIndexedDB();
+    } catch (error) {
+        console.error('IndexedDB 초기화 실패:', error);
+    }
+
+    if (pages.length === 0) {
+        for (let i = 0; i < 10; i++) {
+            pages.push(createPage());
+        }
+    }
+    renderPagesList();
+    loadPage(0);
+
+    // 임시저장 존재 여부 체크
+    await checkDraftExists();
+}
+
+
+
+// 대사 목록 렌더링
+function renderPagesList() {
+    const pagesList = document.getElementById('pagesList');
+    pagesList.innerHTML = '';
+
+    pages.forEach((page, index) => {
+        const pageItem = document.createElement('div');
+        pageItem.className = `page-item ${index === currentPageIndex ? 'active' : ''}`;
+        pageItem.setAttribute('draggable', 'true');
+        pageItem.setAttribute('data-index', index);
+        pageItem.onclick = () => loadPage(index);
+
+        // 드래그 이벤트 리스너
+        pageItem.addEventListener('dragstart', handleDragStart);
+        pageItem.addEventListener('dragover', handleDragOver);
+        pageItem.addEventListener('drop', handleDrop);
+        pageItem.addEventListener('dragend', handleDragEnd);
+        pageItem.addEventListener('dragenter', handleDragEnter);
+        pageItem.addEventListener('dragleave', handleDragLeave);
+
+        // 사운드 이팩트 카드인 경우
+        if (page.isSoundEffect) {
+            pageItem.style.background = '#2d1b4e'; // 보라색 배경
+            pageItem.style.borderLeft = '4px solid #8b5cf6';
+
+            pageItem.innerHTML =
+                '<div class="page-item-header">' +
+                    '<span class="page-number" style="color: #c4b5fd;">🎵 사운드 이팩트</span>' +
+                '</div>' +
+                '<div class="page-preview" style="color: #c4b5fd; font-weight: 600;">' + page.effectName + '</div>' +
+                '<div style="font-size: 11px; color: #a78bfa; margin-top: 4px;">오디오 준비됨</div>';
+        } else {
+            // 일반 대사 카드
+            const preview = page.content.substring(0, 30) || '내용을 작성하세요';
+            const previewClass = page.content ? '' : 'empty';
+            const hasAudio = page.audioFile || page.audioUrl;
+
+            pageItem.innerHTML =
+                '<div class="page-item-header">' +
+                    '<span class="page-number">대사 ' + (index + 1) + '</span>' +
+                    '<span class="char-count-small">' + page.charCount + '자</span>' +
+                '</div>' +
+                '<div class="page-preview ' + previewClass + '">' + preview + '</div>' +
+                (hasAudio ? '<div style="font-size: 11px; color: #6366f1; margin-top: 4px;">🎵 오디오 있음</div>' : '');
+        }
+
+        pagesList.appendChild(pageItem);
+    });
+}
+
+// 드래그 시작
+function handleDragStart(e) {
+    draggedIndex = parseInt(e.currentTarget.getAttribute('data-index'));
+    e.currentTarget.style.opacity = '0.5';
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+}
+
+// 드래그 오버
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+// 드래그 진입
+function handleDragEnter(e) {
+    const targetIndex = parseInt(e.currentTarget.getAttribute('data-index'));
+    if (draggedIndex !== targetIndex) {
+        e.currentTarget.style.borderTop = '3px solid #6366f1';
+    }
+}
+
+// 드래그 이탈
+function handleDragLeave(e) {
+    e.currentTarget.style.borderTop = '';
+}
+
+// 드롭
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+    e.preventDefault();
+
+    const targetIndex = parseInt(e.currentTarget.getAttribute('data-index'));
+
+    if (draggedIndex !== null && draggedIndex !== targetIndex) {
+        // 배열에서 항목 이동
+        const draggedItem = pages[draggedIndex];
+        pages.splice(draggedIndex, 1);
+        pages.splice(targetIndex, 0, draggedItem);
+
+        // currentPageIndex 업데이트
+        if (currentPageIndex === draggedIndex) {
+            currentPageIndex = targetIndex;
+        } else if (draggedIndex < currentPageIndex && targetIndex >= currentPageIndex) {
+            currentPageIndex--;
+        } else if (draggedIndex > currentPageIndex && targetIndex <= currentPageIndex) {
+            currentPageIndex++;
+        }
+
+        // UI 업데이트
+        renderPagesList();
+        loadPage(currentPageIndex, true); // skipSave = true
+    }
+
+    e.currentTarget.style.borderTop = '';
+    return false;
+}
+
+// 드래그 종료
+function handleDragEnd(e) {
+    e.currentTarget.style.opacity = '1';
+    e.currentTarget.style.borderTop = '';
+
+    // 모든 카드의 스타일 초기화
+    document.querySelectorAll('.page-item').forEach(item => {
+        item.style.borderTop = '';
+    });
+}
+
+
+// 현재 페이지 저장
+function saveCurrentPage() {
+    const textarea = document.getElementById('pageContent');
+    const novelTextarea = document.getElementById('novelDraft');
+
+    if (textarea && pages[currentPageIndex]) {
+        const content = textarea.value;
+        pages[currentPageIndex].content = content;
+        pages[currentPageIndex].charCount = content.length;
+        console.log('💾 saveCurrentPage() 호출 - 페이지', currentPageIndex + 1, '저장됨, 텍스트 길이:', content.length, '자');
+    } else {
+        console.warn('⚠️ saveCurrentPage() - textarea 또는 페이지를 찾을 수 없음');
+    }
+
+    // 소설 미리쓰기 내용도 저장 (전역, 페이지별 구분 없음)
+    if (novelTextarea) {
+        const novelContent = novelTextarea.value;
+        // 빈 값으로 덮어쓰지 않도록 보호: textarea가 비어있고 globalNovelDraft에 값이 있다면 저장하지 않음
+        if (novelContent || !globalNovelDraft) {
+            globalNovelDraft = novelContent;
+            // localStorage에도 백업 저장 (페이지 인덱스 없이)
+            localStorage.setItem(`novelDraft_${bookId}`, novelContent);
+            console.log('📖 소설 미리쓰기 저장됨, 길이:', novelContent.length, '자');
+        } else {
+            console.log('⚠️ 소설 미리쓰기 textarea가 비어있지만 globalNovelDraft에 값이 있어 저장 건너뜀 (덮어쓰기 방지)');
+        }
+    }
+}
+
+
+// 페이지 로드
+function loadPage(index, skipSave = false) {
+    // 이전 페이지 저장 (skipSave가 false일 때만)
+    if (!skipSave && currentPageIndex !== index) {
+        saveCurrentPage();
+    }
+
+    currentPageIndex = index;
+    const page = pages[index];
+
+    const editorArea = document.getElementById('editorArea');
+    const writeArea = document.getElementById('writeArea');
+
+    // 저장된 소설 미리쓰기 미리 가져오기 (DOM 생성 전)
+    const savedNovelDraft = globalNovelDraft || localStorage.getItem(`novelDraft_${bookId}`) || '';
+
+    writeArea.innerHTML = `
+        <div class="write-panel-header">
+            📘 소설 미리 작성
+            <span id="novelDraftStatus" style="font-size: 11px; color: #888; margin-left: 10px;"></span>
+        </div>
+        <textarea id="novelDraft" placeholder="여기에 소설 내용을 미리 작성하세요..."></textarea>
+    `;
+
+    // 소설 미리쓰기 불러오기 및 자동저장 설정 (즉시 실행, setTimeout 제거)
+    const novelTextarea = document.getElementById('novelDraft');
+    const novelDraftStatus = document.getElementById('novelDraftStatus');
+
+    if (novelTextarea) {
+        // 저장된 소설 미리쓰기 불러오기 (전역, 페이지별 구분 없음)
+        novelTextarea.value = savedNovelDraft;
+
+        console.log(`📖 소설 미리쓰기 불러오기 (전체 에피소드):`, {
+            'globalNovelDraft 있음': !!globalNovelDraft,
+            'localStorage 있음': !!localStorage.getItem(`novelDraft_${bookId}`),
+            '불러온 길이': savedNovelDraft.length,
+            '미리보기': savedNovelDraft.substring(0, 50)
+        });
+
+        if (savedNovelDraft) {
+            globalNovelDraft = savedNovelDraft;
+            novelDraftStatus.textContent = '✓ 저장된 내용 불러옴';
+            novelDraftStatus.style.color = '#10b981';
+            setTimeout(() => {
+                novelDraftStatus.textContent = '';
+            }, 3000);
+        }
+
+        // 자동 저장 (디바운싱)
+        let novelDraftTimeout;
+        novelTextarea.addEventListener('input', function() {
+            clearTimeout(novelDraftTimeout);
+            novelDraftStatus.textContent = '입력 중...';
+            novelDraftStatus.style.color = '#fbbf24';
+
+            novelDraftTimeout = setTimeout(() => {
+                const draftContent = novelTextarea.value;
+
+                // 전역 변수에 저장 (페이지별 구분 없음)
+                globalNovelDraft = draftContent;
+
+                // localStorage에도 백업 저장 (페이지 인덱스 없이)
+                localStorage.setItem(`novelDraft_${bookId}`, draftContent);
+
+                novelDraftStatus.textContent = '✓ 자동 저장됨';
+                novelDraftStatus.style.color = '#10b981';
+
+                console.log(`💾 소설 미리쓰기 자동 저장됨 (전체 에피소드), 길이: ${draftContent.length}자`);
+
+                // 3초 후 상태 메시지 숨김
+                setTimeout(() => {
+                    novelDraftStatus.textContent = '';
+                }, 3000);
+            }, 1000); // 1초 대기 후 저장
+        });
+    } else {
+        console.error('❌ novelDraft textarea를 찾을 수 없습니다');
+    }
+
+
+    // 사운드 이팩트 카드인 경우 - 특별한 UI 표시
+    if (page.isSoundEffect) {
+        document.getElementById('currentPageTitle').textContent = '🎵 사운드 이팩트 / ' + pages.length;
+
+        editorArea.innerHTML =
+            '<div class="editor-toolbar" style="background: #2d1b4e; border-bottom: 1px solid #8b5cf6;">' +
+                '<span style="color: #c4b5fd; font-size: 14px;">🎵 사운드 이팩트</span>' +
+            '</div>' +
+            '<div class="page-editor" style="background: #1a1a2e; text-align: center; padding: 60px 30px;">' +
+                '<div style="margin-bottom: 30px;">' +
+                    '<div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px;">🎵</div>' +
+                    '<h3 style="color: #fff; font-size: 24px; margin-bottom: 10px;">' + page.effectName + '</h3>' +
+                    '<p style="color: #888; font-size: 14px;">사운드 이팩트 카드</p>' +
+                '</div>' +
+                '<div style="max-width: 500px; margin: 0 auto; background: #16213e; padding: 20px; border-radius: 12px;">' +
+                    '<audio controls style="width: 100%; margin-bottom: 15px;" id="pageAudioPlayer" loading="lazy">' +
+                        '<source src="' + page.audioUrl + '" type="audio/mp3">' +
+                    '</audio>' +
+                    '<div style="font-size: 13px; color: #6366f1;">✓ 사운드 이팩트가 준비되었습니다</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="editor-footer">' +
+                '<div class="footer-info" style="color: #888;">' +
+                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                        '<circle cx="12" cy="12" r="10"/>' +
+                        '<path d="M12 6v6l4 2"/>' +
+                    '</svg>' +
+                    ' 사운드 이팩트는 자동으로 저장됩니다' +
+                '</div>' +
+                '<div class="pagination-controls">' +
+                    '<button class="btn btn-secondary" onclick="prevPage()" ' + (index === 0 ? 'disabled' : '') + '>← 이전</button>' +
+                    '<button class="btn btn-secondary" onclick="nextPage()" ' + (index === pages.length - 1 ? 'disabled' : '') + '>다음 →</button>' +
+                '</div>' +
+            '</div>';
+    } else {
+        // 일반 대사 카드 UI
+        document.getElementById('currentPageTitle').textContent = '대사 ' + (index + 1) + ' / ' + pages.length;
+
+        const hasAudio = page.audioFile || page.audioUrl;
+
+        let audioSection = '';
+        if (hasAudio) {
+            audioSection = `
+                <div style="background: linear-gradient(135deg, #1e2a3a 0%, #2d1b4e 100%); padding: 20px; border-radius: 16px; margin-bottom: 15px; border: 1px solid rgba(138, 99, 210, 0.3); box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+                    <audio id="pageAudioPlayer" style="display: none;">
+                        <source src="${page.audioUrl}" type="audio/mp3">
+                    </audio>
+
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <button id="playPauseBtn" onclick="togglePlayPause()" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #8a63d2 0%, #b794f6 100%); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(138, 99, 210, 0.4); transition: all 0.3s ease;">
+                            <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="white" style="display: none;">
+                                <rect x="6" y="4" width="4" height="16"/>
+                                <rect x="14" y="4" width="4" height="16"/>
+                            </svg>
+                        </button>
+
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span id="currentTime" style="color: #b794f6; font-size: 13px; font-weight: 600;">0:00</span>
+                                <span id="totalTime" style="color: #888; font-size: 13px;">0:00</span>
+                            </div>
+                            <div id="progressBarContainer" onclick="seekAudio(event)" style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; cursor: pointer; position: relative; overflow: hidden;">
+                                <div id="progressBar" style="height: 100%; background: linear-gradient(90deg, #8a63d2 0%, #b794f6 100%); border-radius: 3px; width: 0%; transition: width 0.1s linear; position: relative;">
+                                    <div style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; background: white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 15px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b794f6" stroke-width="2">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                            <input type="range" id="volumeSlider" min="0" max="100" value="100" oninput="changeVolume(this.value)" style="flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); outline: none; -webkit-appearance: none;">
+                        </div>
+
+                        <select id="speedSelect" onchange="changeSpeed(this.value)" style="padding: 6px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 12px; cursor: pointer; outline: none;">
+                            <option value="0.5">0.5x</option>
+                            <option value="0.75">0.75x</option>
+                            <option value="1" selected>1x</option>
+                            <option value="1.25">1.25x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2">2x</option>
+                        </select>
+
+                        <button onclick="downloadAudio('${page.audioUrl}')" style="padding: 6px 12px; background: rgba(138, 99, 210, 0.2); border: 1px solid rgba(138, 99, 210, 0.4); border-radius: 8px; color: #b794f6; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(138, 99, 210, 0.3)'" onmouseout="this.style.background='rgba(138, 99, 210, 0.2)'">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            다운로드
+                        </button>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 15px; padding: 12px; background: rgba(138, 99, 210, 0.1); border-radius: 10px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        <span style="font-size: 13px; color: #10b981; font-weight: 500;">오디오가 추가되었습니다</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            audioSection = '<div style="font-size: 14px; color: #888; margin-bottom: 12px;">이 페이지에 배경음악이나 나레이션을 추가하세요</div>';
+        }
+
+        let audioRemoveBtn = hasAudio ? '<button class="btn btn-danger" style="padding: 6px 12px; font-size: 13px;" onclick="removeAudio()">오디오 제거</button>' : '';
+
+        editorArea.innerHTML =
+            '<div class="editor-toolbar">' +
+                '<span style="color: #888; font-size: 14px;">🎶 대사 ' + (index + 1) + '</span>' +
+                '<span class="char-count-display">' +
+                    '<span id="currentCharCount">' + page.charCount + '</span> / 200자' +
+                    '<span id="charWarning" style="display: none;" class="char-limit-warning">(권장 글자 수 초과)</span>' +
+                '</span>' +
+            '</div>' +
+            '<div class="page-editor">' +
+                '<div style="display: flex; gap: 6px; padding: 8px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05); border-radius: 8px 8px 0 0; flex-wrap: wrap;">' +
+                    '<button type="button" class="format-btn" onclick="formatText(\'bold\')" title="굵게 (Ctrl+B)">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">' +
+                            '<path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>' +
+                            '<path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>' +
+                        '</svg>' +
+                    '</button>' +
+                    '<button type="button" class="format-btn" onclick="formatText(\'italic\')" title="기울임 (Ctrl+I)">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">' +
+                            '<path d="M19 4h-9l-3 18h9l3-18z"/>' +
+                        '</svg>' +
+                    '</button>' +
+                    '<button type="button" class="format-btn" onclick="formatText(\'underline\')" title="밑줄 (Ctrl+U)">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                            '<path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/>' +
+                            '<line x1="4" y1="21" x2="20" y2="21"/>' +
+                        '</svg>' +
+                    '</button>' +
+                    '<div style="width: 1px; height: 20px; background: rgba(255,255,255,0.1); margin: 0 2px;"></div>' +
+                    '<button type="button" class="format-btn" onclick="formatText(\'bigger\')" title="글씨 크게 (Shift + =)">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                            '<text x="12" y="18" font-size="18" font-weight="bold" text-anchor="middle" fill="currentColor">A</text>' +
+                            '<path d="M16 8l2-2 2 2" stroke-width="1.5"/>' +
+                        '</svg>' +
+                    '</button>' +
+                    '<button type="button" class="format-btn" onclick="formatText(\'smaller\')" title="글씨 작게 (Shift + -)">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                            '<text x="12" y="16" font-size="12" text-anchor="middle" fill="currentColor">A</text>' +
+                            '<path d="M16 18l2 2 2-2" stroke-width="1.5"/>' +
+                        '</svg>' +
+                    '</button>' +
+                    '<div style="width: 1px; height: 20px; background: rgba(255,255,255,0.1); margin: 0 2px;"></div>' +
+                    '<button type="button" class="format-btn" onclick="formatText(\'strikethrough\')" title="취소선 (Shift+S)">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                            '<line x1="4" y1="12" x2="20" y2="12"/>' +
+                            '<path d="M9 5h6M9 19h6"/>' +
+                        '</svg>' +
+                    '</button>' +
+                    '<button type="button" class="format-btn" onclick="formatText(\'highlight\')" title="하이라이트 (Shift+H)">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                            '<rect x="6" y="8" width="12" height="8" fill="rgba(255,255,0,0.3)" stroke="none"/>' +
+                            '<path d="M8 14l-2 6h12l-2-6"/>' +
+                        '</svg>' +
+                    '</button>' +
+                    '<span style="color: #666; font-size: 11px; margin-left: auto; align-self: center;">텍스트 선택 후 버튼 클릭 또는 단축키 사용</span>' +
+                '</div>' +
+                '<textarea id="pageContent" placeholder="이 페이지의 내용을 작성하세요...&#10;&#10;팁:&#10;- 한 페이지에 한 장면이나 한 단락을 작성하세요&#10;- 200자 이내로 작성하면 읽기 편합니다&#10;- **굵게**, *기울임*, __밑줄__, ++크게++, --작게--, ~~취소선~~, ==하이라이트== 사용 가능" oninput="updateCharCount()"></textarea>' +
+            '</div>' +
+            '<div style="background: #16213e; padding: 20px; border-radius: 12px; margin-top: 20px;">' +
+                '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">' +
+                    '<h4 style="color: #fff; font-size: 16px; margin: 0;">🎵 페이지 오디오</h4>' +
+                    audioRemoveBtn +
+                '</div>' +
+                '<div style="display: flex; gap: 10px; margin-bottom: 10px;">' +
+                    '<input type="file" id="audioFileInput" accept="audio/*" style="display: none;" onchange="handleAudioUpload(event)">' +
+                    '<button class="btn btn-secondary" style="flex: 1;" onclick="generatePageTTS(event)">'+
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+                            '<polygon points="5 3 19 12 5 21 5 3"/>'+
+                        '</svg>'+
+                        '전체 TTS 생성'+
+                    '</button>' +
+                '</div>' +
+audioSection + getFilter()
+
+                '<div style="font-size: 12px; color: #666; margin-top: 8px; text-align: center;">' +
+                    '💡 텍스트를 드래그로 선택한 후 버튼을 클릭하세요' +
+                '</div>' +
+            '</div>' +
+            '<div class="editor-footer">' +
+                '<div class="footer-info">' +
+                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                        '<circle cx="12" cy="12" r="10"/>' +
+                        '<path d="M12 6v6l4 2"/>' +
+                    '</svg>' +
+                    ' 자동 저장됨' +
+                '</div>' +
+                '<div class="pagination-controls">' +
+                    '<button class="btn btn-secondary" onclick="prevPage()" ' + (index === 0 ? 'disabled' : '') + '>← 이전</button>' +
+                    '<button class="btn btn-secondary" onclick="nextPage()" ' + (index === pages.length - 1 ? 'disabled' : '') + '>다음 →</button>' +
+                '</div>' +
+            '</div>';
+
+        // textarea의 value를 JavaScript로 직접 설정 (HTML 이스케이핑 문제 방지)
+        setTimeout(() => {
+            const textarea = document.getElementById('pageContent');
+                initAudioFilters();
+            if (textarea) {
+                textarea.value = page.content;
+                console.log('✅ loadPage() - textarea에 텍스트 설정:', page.content.length, '자');
+            }
+            // 오디오 플레이어 초기화
+            initAudioPlayer();
+        }, 50);
+    }
+
+    renderPagesList();
+}
+
+function updateCharCount() {
+    const textarea = document.getElementById('pageContent');
+    let charCount = textarea.value.length;
+
+    // 200자 이상이면 자르기
+    if (charCount > 200) {
+        textarea.value = textarea.value.substring(0, 200);
+        charCount = 200; // 잘라낸 후 글자 수 재설정
+    }
+
+    document.getElementById('currentCharCount').textContent = charCount;
+
+    const warning = document.getElementById('charWarning');
+    if (charCount >= 200) {
+        warning.style.display = 'inline';
+    } else {
+        warning.style.display = 'none';
+    }
+
+    // 실시간 저장
+    pages[currentPageIndex].content = textarea.value;
+    pages[currentPageIndex].charCount = charCount;
+
+    // 사이드바 업데이트
+    renderPagesList();
+}
+
+
+
+
+// ========= Web Audio 필터 UI (=버튼+필터 설정 모음) =========
+function getFilter() {
+    return `
+        <div id="webaudioUI" style="margin-top:15px; padding:10px; background:#252836; border-radius:8px; color:#fff;">
+            <h5 style="margin-bottom:8px;">🎧 목소리 효과</h5>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                <button class="btn btn-secondary voice-btn" data-voice="normal">기본</button>
+                <button class="btn btn-secondary voice-btn" data-voice="phone">전화</button>
+                <button class="btn btn-secondary voice-btn" data-voice="cave">동굴</button>
+                <button class="btn btn-secondary voice-btn" data-voice="underwater">물속</button>
+                <button class="btn btn-secondary voice-btn" data-voice="robot">로봇</button>
+                <button class="btn btn-secondary voice-btn" data-voice="ghost">유령</button>
+                <button class="btn btn-secondary voice-btn" data-voice="child">어린이</button>
+                <button class="btn btn-secondary voice-btn" data-voice="old">노인</button>
+                <button class="btn btn-secondary voice-btn" data-voice="echo">메아리</button>
+                <button class="btn btn-secondary voice-btn" data-voice="whisper">속삭임</button>
+                <button class="btn btn-secondary voice-btn" data-voice="radio">라디오</button>
+                <button class="btn btn-secondary voice-btn" data-voice="megaphone">확성기</button>
+                <button class="btn btn-secondary voice-btn" data-voice="protoss">신성한 목소리</button>
+                <button class="btn btn-secondary voice-btn" data-voice="demon">악마</button>
+                <button class="btn btn-secondary voice-btn" data-voice="angel">천사</button>
+                <button class="btn btn-secondary voice-btn" data-voice="vader">다스베이더</button>
+                <button class="btn btn-secondary voice-btn" data-voice="giant">거인</button>
+                <button class="btn btn-secondary voice-btn" data-voice="tiny">꼬마요정</button>
+                <button class="btn btn-secondary voice-btn" data-voice="possessed">빙의</button>
+                <button class="btn btn-secondary voice-btn" data-voice="horror">호러</button>
+                <button class="btn btn-secondary voice-btn" data-voice="helium">헬륨</button>
+                <button class="btn btn-secondary voice-btn" data-voice="timewarp">시간왜곡</button>
+                <button class="btn  btn-secondary voice-btn" data-voice="glitch">글리치 AI</button>
+                <button class="btn  btn-secondary voice-btn" data-voice="choir">성가대</button>
+                <button class="btn  btn-secondary    voice-btn" data-voice="hyperpop">Hyperpop</button>
+                <button class="btn  btn-secondary voice-btn" data-voice="vaporwave">Vaporwave</button>
+                <button class="btn  btn-secondary    voice-btn" data-voice="darksynth">Dark Synth</button>
+                <button class="btn  btn-secondary  voice-btn" data-voice="lofi-girl">Lo-Fi Girl</button>
+                <button class="btn  btn-secondary   voice-btn" data-voice="bitcrush-voice">Bitcrush</button>
+                <button class="btn  btn-secondary  voice-btn" data-voice="portal">Portal</button>
+                <button class="btn  btn-secondary   voice-btn" data-voice="neoncity">Neon City</button>
+                <button class="btn  btn-secondary   voice-btn" data-voice="ghost-in-machine">Ghost AI</button>
+            </div>
+
+            <h5>필터 선택</h5>
+            <label>필터:
+                <select id="filterType">
+                    <option value="allpass">All-pass</option>
+                    <option value="lowpass">Low-pass</option>
+                    <option value="highpass">High-pass</option>
+                    <option value="bandpass">Band-pass</option>
+                    <option value="notch">Notch</option>
+                </select>
+            </label>
+
+            <div style="margin-top:5px;">
+                <label>Freq: <input type="number" id="filterFrequency" value="1000"></label>
+                <label style="margin-left:10px;">Q: <input type="number" id="filterQ" value="1"></label>
+                <label style="margin-left:10px;">Gain: <input type="number" id="filterGain" value="0"></label>
+            </div>
+
+            <div style="margin-top:10px;">
+                <label style="color:#fff;">🔊 볼륨:
+                    <input type="range" id="masterVolume" min="0" max="2" step="0.01" value="1" style="width:200px;">
+                </label>
+            </div>
+
+            <button onclick="saveFilteredAudio()" class="btn btn-purple" style="margin-top:10px;">
+                🎧 현재 효과로 오디오 저장
+            </button>
+        </div>
+    `;
+}
+
+
+// 페이지 추가
+function addPage() {
+    saveCurrentPage();
+    const newPage = createPage();
+
+    // 현재 페이지 바로 뒤에 추가
+    pages.splice(currentPageIndex + 1, 0, newPage);
+
+    // 현재 페이지 인덱스를 새로 추가한 페이지로 이동
+    currentPageIndex = currentPageIndex + 1;
+
+    renderPagesList();
+    loadPage(currentPageIndex);
+}
+
+// 페이지 삭제
+function deletePage() {
+    if (pages.length <= 1) {
+        alert('최소 1개의 페이지가 필요합니다.');
+        return;
+    }
+
+    if (!confirm(`페이지 ${currentPageIndex + 1}을(를) 삭제하시겠습니까?`)) {
+        return;
+    }
+
+    pages.splice(currentPageIndex, 1);
+
+    if (currentPageIndex >= pages.length) {
+        currentPageIndex = pages.length - 1;
+    }
+
+    loadPage(currentPageIndex);
+    console.log("pages:", pages);
+console.log("currentPageIndex:", currentPageIndex);
+}
+
+function destroyPage() {
+        location.reload();
+
+}
+
+// 이전/다음 페이지
+function prevPage() {
+    if (currentPageIndex > 0) {
+        loadPage(currentPageIndex - 1);
+    }
+}
+
+function nextPage() {
+    if (currentPageIndex < pages.length - 1) {
+        loadPage(currentPageIndex + 1);
+    }
+}
+
+// 에피소드 저장
+async function saveEpisode() {
+    console.log("🎬 saveEpisode 함수 호출됨");
+    saveCurrentPage();
+
+    const episodeTitle = document.getElementById('episodeTitle').value.trim();
+    console.log("📝 에피소드 제목:", episodeTitle);
+
+    if (!episodeTitle) {
+        alert('에피소드 제목을 입력해주세요.');
+        return;
+    }
+
+    // 모든 페이지 내용을 합침
+    const fullContent = pages.map(page => page.content).join('\n\n---\n\n');
+
+    if (!fullContent.trim()) {
+        alert('최소 하나의 페이지에 내용을 작성해주세요.');
+        return;
+    }
+
+    // 마지막 에피소드 번호 가져오기
+    const contentNumber = {{ latest_episode_number|default:0 }} + 1;
+
+    // 저장 버튼 비활성화
+    const saveBtn = document.querySelector('.publish-btn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = '저장 중...';
+    }
+
+    try {
+        // FormData로 오디오 파일들과 함께 전송
+        const formData = new FormData();
+        formData.append('book_id', bookId);
+        formData.append('content_number', contentNumber);
+        formData.append('content_title', episodeTitle);
+        formData.append('content_text', fullContent);
+        formData.append('voice_id', selectedVoiceId);
+        formData.append('language_code', selectedLanguage);
+        formData.append('speed_value', voiceSpeed);  // 전역 변수 사용 (숫자로 전송)  
+
+
+        // 각 대사의 오디오 파일과 텍스트 추가
+        pages.forEach((page, index) => {
+            if (page.audioFile) {
+                formData.append(`audio_${index}`, page.audioFile);
+                console.log(`📎 대사 ${index + 1}의 오디오 파일 추가됨`);
+            }
+            // 페이지 텍스트도 함께 전송 (타임스탬프 매핑용) - 사운드 이팩트는 빈 문자열로 전송
+            formData.append(`page_text_${index}`, page.isSoundEffect ? '' : (page.content || ''));
+        });
+
+        // 배경음 정보 추가
+        if (backgroundTracks && backgroundTracks.length > 0) {
+            // 배경음 트랙 개수
+            formData.append('background_tracks_count', backgroundTracks.length);
+
+            // 각 배경음 파일과 정보 추가
+            backgroundTracks.forEach((track, index) => {
+                if (track.audioFile) {
+                    formData.append(`background_audio_${index}`, track.audioFile);
+                    formData.append(`background_start_${index}`, track.startPage);
+                    formData.append(`background_end_${index}`, track.endPage);
+                    formData.append(`background_name_${index}`, track.musicName);
+                    formData.append(`background_volume_${index}`, track.volume ?? 1);
+                    console.log(`🎼 배경음 ${index + 1}: ${track.musicName} (대사 ${track.startPage + 1} ~ ${track.endPage + 1}), 볼륨: ${(track.volume ?? 1) * 100}%`);
+                }
+            });
+        } else {
+            formData.append('background_tracks_count', 0);
+        }
+
+        const response = await fetch('{% url "book:book_serialization" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // 발행 성공 시 임시저장 삭제
+            clearDraft();
+
+            alert(data.message || '에피소드가 발행되었습니다!');
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+            } else {
+                window.location.href = `{% url 'book:book_profile' %}?book_id=${bookId}`;
+            }
+        } else {
+            alert(data.error || '에피소드 발행에 실패했습니다.');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '📤 에피소드 발행';
+            }
+        }
+    } catch (error) {
+        console.error('저장 오류:', error);
+        alert('에피소드 저장 중 오류가 발생했습니다: ' + error.message);
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '📤 에피소드 발행';
+        }
+    }
+}
+
+
+// 오디오 파일 업로드 처리
+function handleAudioUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('audio/')) {
+        alert('오디오 파일만 업로드할 수 있습니다.');
+        return;
+    }
+
+    // 파일 크기 체크 (10MB 제한)
+    if (file.size > 10 * 1024 * 1024) {
+        alert('파일 크기는 10MB 이하여야 합니다.');
+        return;
+    }
+
+    // 파일을 URL로 변환
+    const audioUrl = URL.createObjectURL(file);
+    pages[currentPageIndex].audioFile = file;
+    pages[currentPageIndex].audioUrl = audioUrl;
+
+    // 페이지 다시 로드
+    loadPage(currentPageIndex);
+}
+
+
+
+// 전체 페이지 TTS로 오디오 생성
+async function generatePageTTS(event) {
+    event.preventDefault(); // 혹시 form 안에 있으면 기본 동작 막기
+    const btn = event.target.closest('button'); // 클릭한 버튼 찾기
+    const textarea = document.getElementById('pageContent');
+
+    if (!textarea) {
+        alert('페이지 내용을 찾을 수 없습니다.');
+        return;
+    }
+
+    const pageContent = textarea.value.trim();
+
+    if (!pageContent) {
+        alert('페이지에 내용을 먼저 작성해주세요.');
+        return;
+    }
+
+    // 버튼 상태 변경
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '🔄 생성 중...';
+
+    try {
+        const response = await fetch('/book/tts/generate/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                text: pageContent,
+                voice_id: selectedVoiceId,
+                language_code: selectedLanguage,
+                speed_value: voiceSpeed  // 전역 변수 사용 (숫자로 전송)
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('TTS 생성 실패');
+        }
+
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audioFile = new File([blob], `page_${currentPageIndex + 1}_tts.mp3`, { type: 'audio/mp3' });
+
+        // 현재 페이지에 저장
+        pages[currentPageIndex].audioFile = audioFile;
+        pages[currentPageIndex].audioUrl = audioUrl;
+
+        // 페이지 다시 렌더링
+        loadPage(currentPageIndex);
+
+    } catch (err) {
+        console.error(err);
+        alert(err.message);
+    } finally {
+        // 버튼 원래 상태 복원
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+
+// 오디오 제거
+function removeAudio() {
+    if (!confirm('이 페이지의 오디오를 제거하시겠습니까?')) {
+        return;
+    }
+
+    if (pages[currentPageIndex].audioUrl) {
+        URL.revokeObjectURL(pages[currentPageIndex].audioUrl);
+    }
+
+    pages[currentPageIndex].audioFile = null;
+    pages[currentPageIndex].audioUrl = null;
+
+    loadPage(currentPageIndex);
+}
+
+// 자동 임시저장 (30초마다)
+let autoSaveInterval = null;
+
+
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    initPages();
+    startAutoSave(); // 자동 저장 시작
+});
+
+// 페이지 떠날 때 경고 및 자동 저장
+window.addEventListener('beforeunload', function(e) {
+    const hasContent = pages.some(page => page.content.trim() !== '');
+    if (hasContent) {
+        // 떠나기 전 마지막 자동 저장
+        saveDraft();
+
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+
+const audioBookGuideData = {{ guide_list|safe }};
+
+
+// 카테고리 목록 (모델의 choices 기반)
+const guideCategories = [
+    {key: "soundEffect", label: "사운드 이펙트"},
+    {key: "musicSound", label: "배경음"},
+    {key: "page", label: "대사"},
+    {key: "voiceGenerate", label: "보이스 생성"},
+    {key: "voiceChoice", label: "보이스 선택하기"},
+    {key: "save", label: "임시저장"},
+    {key: "emotionList", label: "감정 리스트"},
+    {key: "etc", label: "기타"},
+];
+
+
+function audioBookGuide(selectedCategory) {
+    const view = document.getElementById("audioBookGuideView");
+
+    // 오버레이 카드 스타일 적용
+    view.style.display = "flex";
+    view.style.position = "fixed";
+    view.style.top = 0;
+    view.style.left = 0;
+    view.style.width = "100%";
+    view.style.height = "100%";
+    view.style.background = "rgba(0,0,0,0.55)";
+    view.style.backdropFilter = "blur(6px)";
+    view.style.zIndex = 30;
+    view.style.justifyContent = "center";
+    view.style.alignItems = "center";
+    view.style.padding = "20px";
+
+    // serialize
+    let guides = audioBookGuideData.map(g => ({
+        id: g.pk,
+        ...g.fields
+    }));
+
+    // 기본 카테고리 자동 선택
+    if (!selectedCategory) selectedCategory = guideCategories[0].key;
+    guides = guides.filter(g => g.category === selectedCategory);
+
+    // 카테고리 탭 HTML
+    let categoryTabsHTML = `
+        <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+            ${guideCategories.map(cat => `
+                <button 
+                    onclick="audioBookGuide('${cat.key}')"
+                    style="
+                        padding: 8px 14px;
+                        border-radius: 20px;
+                        border: 1px solid rgba(255,255,255,0.15);
+                        background: ${selectedCategory === cat.key ? 'white' : 'rgba(255,255,255,0.1)'};
+                        color: ${selectedCategory === cat.key ? '#111' : 'white'};
+                        cursor:pointer;
+                        transition: .2s;
+                    "
+                >${cat.label}</button>
+            `).join("")}
+        </div>
+    `;
+
+    // 리스트 HTML
+    let guideListHTML = guides.length ? `
+        <div style="
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            max-height: 60vh;
+            overflow-y: auto;
+        ">
+            ${guides.map(g => `
+                <div style="
+                    background: rgba(255,255,255,0.03);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    border: 1px solid rgba(255,255,255,0.05);
+                ">
+                    ${g.guide_video ? `
+                        <div style="width:100%; background:#000;">
+                            <video
+                                controls
+                                style="width:100%; max-height:300px; display:block;"
+                                preload="metadata"
+                            >
+                                <source src="${g.guide_video}" type="video/mp4">
+                                브라우저가 비디오를 지원하지 않습니다.
+                            </video>
+                        </div>
+                    `: ''}
+
+                    <div style="padding:15px;">
+                        <div style="font-size:18px; font-weight:700; color:#fff; margin-bottom:8px;">
+                            ${g.title}
+                        </div>
+
+                        <div style="opacity:0.8; font-size:14px; line-height:1.6; color:#ccc;">
+                            ${g.short_description || g.description || ''}
+                        </div>
+
+                        ${g.video_url ? `
+                            <div style="margin-top:12px;">
+                                <a href="${g.video_url}" target="_blank"
+                                    style="
+                                        display:inline-flex;
+                                        align-items:center;
+                                        gap:6px;
+                                        padding:8px 16px;
+                                        background:linear-gradient(135deg, #8b5cf6, #6366f1);
+                                        color:white;
+                                        border-radius:8px;
+                                        font-size:13px;
+                                        font-weight:600;
+                                        text-decoration:none;
+                                        transition: transform 0.2s;
+                                    "
+                                    onmouseover="this.style.transform='translateY(-2px)'"
+                                    onmouseout="this.style.transform='translateY(0)'"
+                                >
+                                    ▶ 외부 영상 보기
+                                </a>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join("")}
+        </div>
+    ` : `
+        <div style="padding:40px; text-align:center; opacity:0.5;">
+            선택한 카테고리에 가이드가 없습니다.
+        </div>
+    `;
+
+    // 최종 렌더링 (중앙 카드 박스)
+    view.innerHTML = `
+        <div style="
+            position: relative;
+            width: 600px;
+            max-width: 95%;
+            background: rgba(20,20,20,0.85);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        ">
+            <h2 style="margin-bottom:15px; font-size:20px;">오디오북 가이드</h2>
+
+            <!-- 닫기 버튼 -->
+            <button 
+                onclick="document.getElementById('audioBookGuideView').style.display='none'"
+                style="
+                    position:absolute;
+                    top:12px;
+                    right:12px;
+                    background:rgba(255,255,255,0.15);
+                    border:none;
+                    color:white;
+                    font-size:18px;
+                    width:32px;
+                    height:32px;
+                    border-radius:50%;
+                    cursor:pointer;
+                "
+            >×</button>
+
+            ${categoryTabsHTML}
+            ${guideListHTML}
+        </div>
+    `;
+}
+
+// 텍스트 포맷팅 함수
+function formatText(type) {
+    const textarea = document.getElementById('pageContent');
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+
+    if (!selectedText) {
+        alert('먼저 텍스트를 선택해주세요.');
+        return;
+    }
+
+    let formattedText = '';
+
+    switch(type) {
+        case 'bold':
+            formattedText = `**${selectedText}**`;
+            break;
+        case 'italic':
+            formattedText = `*${selectedText}*`;
+            break;
+        case 'underline':
+            formattedText = `__${selectedText}__`;
+            break;
+        case 'bigger':
+            formattedText = `++${selectedText}++`;
+            break;
+        case 'smaller':
+            formattedText = `--${selectedText}--`;
+            break;
+        case 'strikethrough':
+            formattedText = `~~${selectedText}~~`;
+            break;
+        case 'highlight':
+            formattedText = `==${selectedText}==`;
+            break;
+    }
+
+    // 선택된 텍스트를 포맷팅된 텍스트로 교체
+    const newValue = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+    textarea.value = newValue;
+
+    // 커서 위치 조정
+    const newCursorPos = start + formattedText.length;
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+    textarea.focus();
+
+    // 글자 수 업데이트
+    updateCharCount();
+}
+
+// 키보드 단축키 지원
+document.addEventListener('keydown', function(e) {
+    const textarea = document.getElementById('pageContent');
+    if (!textarea || document.activeElement !== textarea) return;
+
+    // Ctrl/Cmd + 키 조합
+    if (e.ctrlKey || e.metaKey) {
+        switch(e.key.toLowerCase()) {
+            case 'b':
+                e.preventDefault();
+                formatText('bold');
+                break;
+            case 'i':
+                e.preventDefault();
+                formatText('italic');
+                break;
+            case 'u':
+                e.preventDefault();
+                formatText('underline');
+                break;
+        }
+    }
+
+    // Shift + 키 조합
+    if (e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        switch(e.key) {
+            case '+':
+            case '=':  // = 키 (Shift 없이)
+                e.preventDefault();
+                formatText('bigger');
+                break;
+            case '_':
+            case '-':  // - 키 (Shift 없이)
+                e.preventDefault();
+                formatText('smaller');
+                break;
+            case 'S':
+                e.preventDefault();
+                formatText('strikethrough');
+                break;
+            case 'H':
+                e.preventDefault();
+                formatText('highlight');
+                break;
+        }
+    }
+});
+
+// ========= 커스텀 오디오 플레이어 컨트롤 함수들 =========
+
+// 재생/일시정지 토글
+function togglePlayPause() {
+    const audio = document.getElementById('pageAudioPlayer');
+    const playIcon = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+
+    if (!audio) return;
+
+    if (audio.paused) {
+        audio.play();
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = 'block';
+        playPauseBtn.style.transform = 'scale(1.05)';
+    } else {
+        audio.pause();
+        playIcon.style.display = 'block';
+        pauseIcon.style.display = 'none';
+        playPauseBtn.style.transform = 'scale(1)';
+    }
+}
+
+// 시간 포맷팅 (초 → 분:초)
+function formatTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// 프로그레스 바 클릭으로 탐색
+function seekAudio(event) {
+    const audio = document.getElementById('pageAudioPlayer');
+    const progressBarContainer = document.getElementById('progressBarContainer');
+
+    if (!audio || !progressBarContainer) return;
+
+    const rect = progressBarContainer.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percentage = clickX / rect.width;
+
+    audio.currentTime = percentage * audio.duration;
+}
+
+// 볼륨 조절
+function changeVolume(value) {
+    const audio = document.getElementById('pageAudioPlayer');
+    if (!audio) return;
+
+    audio.volume = value / 100;
+}
+
+// 재생 속도 조절
+function changeSpeed(value) {
+    const audio = document.getElementById('pageAudioPlayer');
+    if (!audio) return;
+
+    audio.playbackRate = parseFloat(value);
+}
+
+// 오디오 다운로드
+function downloadAudio(url) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'audio_' + Date.now() + '.mp3';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+// 오디오 이벤트 리스너 설정 (페이지 로드 시 자동 호출)
+function initAudioPlayer() {
+    const audio = document.getElementById('pageAudioPlayer');
+    if (!audio) return;
+
+    const progressBar = document.getElementById('progressBar');
+    const currentTimeEl = document.getElementById('currentTime');
+    const totalTimeEl = document.getElementById('totalTime');
+
+    // 메타데이터 로드 시 총 시간 설정
+    audio.addEventListener('loadedmetadata', () => {
+        if (totalTimeEl) {
+            totalTimeEl.textContent = formatTime(audio.duration);
+        }
+    });
+
+    // 재생 중 시간 업데이트
+    audio.addEventListener('timeupdate', () => {
+        if (currentTimeEl) {
+            currentTimeEl.textContent = formatTime(audio.currentTime);
+        }
+
+        if (progressBar && audio.duration) {
+            const percentage = (audio.currentTime / audio.duration) * 100;
+            progressBar.style.width = percentage + '%';
+        }
+    });
+
+    // 재생 종료 시 아이콘 리셋
+    audio.addEventListener('ended', () => {
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+
+        if (playIcon && pauseIcon && playPauseBtn) {
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+            playPauseBtn.style.transform = 'scale(1)';
+        }
+    });
+
+    console.log('🎵 커스텀 오디오 플레이어 초기화 완료');
+}
+
+// 페이지 로드 시마다 오디오 플레이어 초기화 (loadPage 함수 내에서도 호출됨)
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initAudioPlayer, 100);
+});
+
+</script>
+
+<style>
+.format-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(138, 99, 210, 0.1);
+    border: 1px solid rgba(138, 99, 210, 0.3);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.format-btn:hover {
+    background: rgba(138, 99, 210, 0.25);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.format-btn:active {
+    transform: translateY(0);
+}
+
+.format-btn svg {
+    opacity: 0.8;
+}
+
+.format-btn:hover svg {
+    opacity: 1;
+}
+
+/* 커스텀 오디오 플레이어 - 볼륨 슬라이더 스타일 */
+#volumeSlider {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+#volumeSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8a63d2 0%, #b794f6 100%);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+#volumeSlider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 3px 8px rgba(138, 99, 210, 0.5);
+}
+
+#volumeSlider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8a63d2 0%, #b794f6 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+#volumeSlider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 3px 8px rgba(138, 99, 210, 0.5);
+}
+
+/* Play/Pause 버튼 hover 효과 */
+#playPauseBtn:hover {
+    box-shadow: 0 6px 20px rgba(138, 99, 210, 0.6);
+    transform: scale(1.05);
+}
+
+#playPauseBtn:active {
+    transform: scale(0.95);
+}
+
+/* 프로그레스 바 hover 효과 */
+#progressBarContainer:hover {
+    height: 8px;
+    transition: height 0.2s ease;
+}
+
+#progressBarContainer:hover #progressBar > div {
+    width: 14px;
+    height: 14px;
+}
+</style>
+
+{% endblock %}

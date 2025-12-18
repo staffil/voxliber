@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}북 스냅 수정 - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/book/snap/create_snap.css' %}">
+{% endblock %}
+
+
+{% block content %}
+
+<!-- <script>
+// 페이지 접근 제한 - 메인으로 리다이렉트
+(function() {
+    window.location.href = '/';
+})();
+</script> -->
+
+<div class="snap-container">
+
+    <!-- LEFT: Preview -->
+    <div class="snap-preview-wrapper">
+        <div class="snap-preview" id="snap-preview">
+            {% if snap.snap_video %}
+                <video src="{{ snap.snap_video.url }}" controls></video>
+            {% elif snap.thumbnail %}
+                <img src="{{ snap.thumbnail.url }}" alt="스냅 썸네일">
+            {% else %}
+                9:16 미리보기
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- RIGHT: Form -->
+    <form method="POST" enctype="multipart/form-data" class="snap-form">
+        {% csrf_token %}
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 class="section-title">📝 스냅 수정하기</h2>
+            <a href="{% url 'book:my_book_snap_list' %}" class="back-btn" style="padding: 8px 16px; background: rgba(255,255,255,0.1); border-radius: 8px; text-decoration: none; color: var(--text); font-size: 14px;">← 뒤로가기</a>
+        </div>
+
+        {% if error %}
+            <div class="message error">{{ error }}</div>
+        {% endif %}
+
+        <div class="input-group">
+            <label class="input-label">이미지 업로드</label>
+            <input type="file" name="image" accept="image/*" id="image-input" class="input-field">
+            {% if snap.thumbnail %}
+                <div style="font-size: 12px; color: #888; margin-top: 5px;">
+                    현재 이미지: {{ snap.thumbnail.name|slice:":30" }}...
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">비디오 업로드 (선택)</label>
+            <input type="file" name="video" accept="video/*" id="video-input" class="input-field">
+            {% if snap.snap_video %}
+                <div style="font-size: 12px; color: #888; margin-top: 5px;">
+                    현재 비디오: {{ snap.snap_video.name|slice:":30" }}...
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- 링크 입력 -->
+        <div class="input-group">
+            <label class="input-label">연결할 책 링크</label>
+            <select name="book_link" id="book_link" class="input-field">
+                <option value="">선택 안 함</option>
+                {% for url, name in select_link %}
+                    <option value="{{ url }}" {% if snap.book_link == url %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">타 링크 선택 (연결할 책을 우선 링크로 합니다)</label>
+            <input type="url" name="link" placeholder="https://example.com" class="input-field" value="{{ snap.book_link }}">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">제목</label>
+            <input type="text" name="title" class="input-field" placeholder="스냅 제목 입력" value="{{ snap.snap_title }}">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">설명</label>
+            <textarea name="description" class="input-field" placeholder="설명 입력">{{ snap.book_comment }}</textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button class="submit-btn" type="submit" style="flex: 1;">수정 완료</button>
+            <a href="/snap/{{ snap.id }}/delete/"
+               onclick="return confirm('정말 삭제하시겠습니까?')"
+               class="submit-btn"
+               style="flex: 1; background: #dc2626; text-align: center; display: inline-block; line-height: 50px; text-decoration: none;">
+                삭제하기
+            </a>
+        </div>
+
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const previewBox = document.getElementById("snap-preview");
+
+/* 이미지 프리뷰 */
+document.getElementById("image-input").addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = e => {
+        previewBox.innerHTML = `<img src="${e.target.result}" />`;
+    };
+    reader.readAsDataURL(file);
+});
+
+/* 비디오 프리뷰 */
+document.getElementById("video-input").addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    previewBox.innerHTML = `<video src="${url}" controls></video>`;
+});
+</script>
+{% endblock %}
