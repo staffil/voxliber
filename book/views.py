@@ -693,13 +693,13 @@ def book_detail(request, book_id):
         Books.objects.select_related('user').prefetch_related(
             'genres',
             'tags',
-            Prefetch('contents', queryset=Content.objects.filter(is_publish=True).order_by('-number'))
+            Prefetch('contents', queryset=Content.objects.all().order_by('-number'))
         ),
         id=book_id
     )
 
-    # 발행된 컨텐츠만 가져오기
-    contents = book.contents.filter(is_publish=True).order_by('-number')
+    # 컨텐츠 가져오기
+    contents = book.contents.all().order_by('-number')
 
     paginator = Paginator(contents, 10)
     page = request.GET.get('page')

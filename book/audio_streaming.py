@@ -7,7 +7,7 @@ import os
 import mimetypes
 from django.http import StreamingHttpResponse, HttpResponse
 from django.shortcuts import get_object_or_404
-from book.models import Contents
+from book.models import Content
 
 
 def stream_audio(request, content_id):
@@ -15,7 +15,7 @@ def stream_audio(request, content_id):
     오디오 파일을 스트리밍으로 제공
     Range Request를 지원하여 탐색 가능
     """
-    content = get_object_or_404(Contents, id=content_id, is_publish=True)
+    content = get_object_or_404(Content, id=content_id)
 
     if not content.audio_file:
         return HttpResponse('Audio file not found', status=404)
