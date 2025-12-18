@@ -13,15 +13,19 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
-load_dotenv()
-BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
-COLAB_TTS_URL = os.getenv(
-    'COLAB_TTS_URL',
-    'https://xxxx.ngrok-free.app'  # 기본값
-)
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# 환경변수 로드
+load_dotenv(BASE_DIR / ".env")
+
+# 외부 서비스 URL
+EXTERNAL_TTS_URL = os.getenv('EXTERNAL_TTS_URL')
+if not EXTERNAL_TTS_URL and not os.getenv('DEBUG', 'False') == 'True':
+    raise ValueError("⚠️ EXTERNAL_TTS_URL environment variable must be set in production!")
+
+# 로그인 설정
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 APPEND_SLASH = False
@@ -30,23 +34,35 @@ APPEND_SLASH = False
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-4q07*j%nngs$zmv6m%*c(&3#8n=!)xnz_wjv@a=53mmaejhe7%"
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    if os.getenv('DEBUG', 'False') == 'True':
+        # 개발 환경에서만 기본값 사용
+        SECRET_KEY = "django-insecure-4q07*j%nngs$zmv6m%*c(&3#8n=!)xnz_wjv@a=53mmaejhe7%"
+    else:
+        raise ValueError("⚠️ DJANGO_SECRET_KEY environment variable must be set in production!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'  # 기본값 False로 변경
 
+# 프로덕션 호스트
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '10.0.2.2',  # 안드로이드 에뮬레이터용
-    '192.168.0.*',
-    '192.168.35.235',  # 현재 PC IP (고정)
-    '192.168.35.66',   # 이전 PC IP
-    '192.168.35.152',  # 이전 PC IP
-    '192.168.35.173',  # 이전 PC IP
-        'voxliber.ink',
+    'voxliber.ink',
     'www.voxliber.ink',
 ]
+
+# 개발 환경
+if DEBUG:
+    ALLOWED_HOSTS.extend([
+        'localhost',
+        '127.0.0.1',
+        '10.0.2.2',  # 안드로이드 에뮬레이터용
+    ])
+
+# AWS EC2 IP 추가
+ec2_ip = os.getenv('AWS_EC2_IP')
+if ec2_ip:
+    ALLOWED_HOSTS.append(ec2_ip)
 
 
 # Application definition
@@ -109,20 +125,10 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "voxliber.wsgi.application"
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / "static"]
 
+# Media files (업로드된 파일)
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
 
 AUTH_USER_MODEL = 'register.Users'
 
@@ -158,11 +164,30 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# 프로덕션: collectstatic으로 정적 파일을 모을 디렉토리
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 STATICFILES_DIRS = [
     BASE_DIR / "static",  # voxliber/static을 가리켜야 합니다
 ]
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
+
+# 프로덕션 보안 설정
+SESSION_COOKIE_SECURE = not DEBUG  # HTTPS에서만 쿠키 전송
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG  # HTTP를 HTTPS로 리다이렉트
+
+# CSRF 신뢰 도메인 (프로덕션)
+CSRF_TRUSTED_ORIGINS = [
+    'https://voxliber.ink',
+    'https://www.voxliber.ink',
+]
+
+# 개발 환경에서만 localhost 추가
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS.extend([
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+    ])
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -179,23 +204,42 @@ REST_FRAMEWORK = {
     ],
 }
 
-# 데이터 베이스
+# 데이터베이스 설정
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'voxliber',
-        'USER': 'chung',
-        'PASSWORD': 'kch62213!',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.getenv('DB_NAME', 'voxliber'),
+        'USER': os.getenv('DB_USER', 'chung'),
+        'PASSWORD': os.getenv('DB_PASSWORD') or ('kch62213!' if DEBUG else None),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '3306'),
         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
         }
     }
 }
 
-# CORS 설정 (Flutter 웹 앱 연동)
-CORS_ALLOW_ALL_ORIGINS = True  # 개발 환경에서 모든 출처 허용
+# 프로덕션 환경에서 DB 비밀번호 필수 확인
+if not DEBUG and not DATABASES['default']['PASSWORD']:
+    raise ValueError("⚠️ DB_PASSWORD environment variable must be set in production!")
+
+# CORS 설정 (안드로이드 앱, 웹 앱 연동)
+CORS_ALLOWED_ORIGINS = [
+    'https://voxliber.ink',
+    'https://www.voxliber.ink',
+]
+
+# 개발 환경에서만 localhost 허용
+if DEBUG:
+    CORS_ALLOWED_ORIGINS.extend([
+        'http://localhost:3000',
+        'http://localhost:8000',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:8000',
+    ])
+
+CORS_ALLOW_ALL_ORIGINS = False  # 명시적으로 비활성화
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',

@@ -685,11 +685,21 @@ def get_background_music_library(request):
 # 책 상세보기
 def book_detail(request, book_id):
     from book.models import BookReview, BookComment, ReadingProgress, AuthorAnnouncement
-    from django.db.models import Avg
+    from django.db.models import Avg, Prefetch
     from django.core.paginator import Paginator
 
-    book = get_object_or_404(Books, id=book_id)
-    contents = book.contents.all().order_by('-number')
+    # ✅ 쿼리 최적화: select_related, prefetch_related 적용
+    book = get_object_or_404(
+        Books.objects.select_related('user').prefetch_related(
+            'genres',
+            'tags',
+            Prefetch('contents', queryset=Content.objects.filter(is_publish=True).order_by('-number'))
+        ),
+        id=book_id
+    )
+
+    # 발행된 컨텐츠만 가져오기
+    contents = book.contents.filter(is_publish=True).order_by('-number')
 
     paginator = Paginator(contents, 10)
     page = request.GET.get('page')
@@ -726,7 +736,11 @@ def book_detail(request, book_id):
 # 내 작품 관리
 @login_required
 def my_books(request):
-    books = Books.objects.filter(user=request.user).order_by('-created_at')
+    # ✅ 쿼리 최적화: prefetch_related 적용
+    books = Books.objects.filter(user=request.user).prefetch_related(
+        'genres',
+        'tags'
+    ).order_by('-created_at')
 
     context = {
         "books": books,

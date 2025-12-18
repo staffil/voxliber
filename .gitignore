@@ -1,20 +1,48 @@
-
+# 환경변수 파일
 .env
+.env.local
+.env.*.local
+
+# 외부 서비스
 colab/
 
 # Python
 *.pyc
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
 
 # Database
 db.sqlite3
+*.db
 
 # Media/Static
 media/
 static/
+staticfiles/
+
+# 로그
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Windows 특수 파일
 nul
+Thumbs.db
+Desktop.ini
+
+# Mac
+.DS_Store
 
 
 

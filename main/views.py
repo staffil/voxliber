@@ -41,9 +41,10 @@ def main(request):
     ).select_related('user').prefetch_related('genres').order_by('-last_content_time')[:20]
 
     # 🔥 인기 작품 (평점과 에피소드 수를 고려한 종합 점수)
-
     popular_books = (
         Books.objects
+        .select_related('user')
+        .prefetch_related('genres')
         .annotate(
             total_listened=Sum('listening_stats__listened_seconds'),
             listener_count=Count('listening_stats__user', distinct=True),
