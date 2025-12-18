@@ -44,6 +44,8 @@ ALLOWED_HOSTS = [
     '192.168.35.66',   # 이전 PC IP
     '192.168.35.152',  # 이전 PC IP
     '192.168.35.173',  # 이전 PC IP
+        'voxliber.ink',
+    'www.voxliber.ink',
 ]
 
 
