@@ -1,0 +1,384 @@
+/* ========================================
+   실시간 인기 차트 (Ranking)
+   ======================================== */
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border-radius:13px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: var(--spacing-sm);
+  animation: pulse 2s infinite;
+}
+.live-indicator::before {
+  content: '●';
+  font-size: 10px;
+  animation: blink 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+}
+.ranking-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+.ranking-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  transform: translateX(8px);
+  box-shadow: var(--shadow-lg);
+}
+.rank-number {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 900;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+.rank-number.rank-1 {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: white;
+  box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
+}
+.rank-number.rank-2 {
+  background: linear-gradient(135deg, #d1d5db, #9ca3af);
+  color: white;
+  box-shadow: 0 4px 15px rgba(156, 163, 175, 0.4);
+}
+.rank-number.rank-3 {
+  background: linear-gradient(135deg, #fb923c, #ea580c);
+  color: white;
+  box-shadow: 0 4px 15px rgba(251, 146, 60, 0.4);
+}
+.rank-cover {
+  width: 70px;
+  height: 70px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-md);
+}
+.rank-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 13px;
+}
+.rank-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+}
+.rank-info {
+  flex: 1;
+  min-width: 0;
+}
+.rank-info h4 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rank-meta {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+.rank-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-shrink: 0;
+}
+.rank-score {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+.rank-change {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+}
+.rank-change.up {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+.rank-change.down {
+  color: #6b7280;
+  background: rgba(107, 114, 128, 0.1);
+}
+.ranking-item-wrapper {
+  position: relative;
+}
+.rank-cover {
+  position: relative;
+}
+.rank-cover .rank-preview {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 7px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.95);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  z-index: 5;
+  transition: all 0.3s ease;
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+}
+.rank-cover:hover .rank-preview {
+  opacity: 1;
+  visibility: visible;
+}
+.rank-cover .rank-preview:hover {
+  background: rgba(79, 70, 229, 1);
+  transform: translate(-50%, -50%) scale(1.15);
+}
+/* Ranking Section - Responsive (절반 크기 기준 재작업) */
+
+/* 데스크탑 기본 (1201px 이상) - 기존 크기 유지 */
+@media (min-width: 1201px) {
+  .rank-number {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+  }
+  .rank-cover {
+    width: 70px;
+    height: 70px;
+  }
+  .rank-info h4 {
+    font-size: 18px;
+  }
+  .rank-meta {
+    font-size: 13px;
+  }
+  .rank-score {
+    font-size: 16px;
+  }
+  .rank-change {
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+  .rank-preview {
+    padding: 7px;
+  }
+}
+
+/* 태블릿 ~ 큰 모바일 (1200px 이하) - 약 80% 크기 */
+@media (max-width: 1200px) {
+  .ranking-item {
+    gap: calc(var(--spacing-lg) * 0.8);
+    padding: calc(var(--spacing-lg) * 0.8);
+  }
+  .rank-number {
+    width: 42px;
+    height: 42px;
+    font-size: 22px;
+  }
+  .rank-cover {
+    width: 62px;
+    height: 62px;
+  }
+  .rank-info h4 {
+    font-size: 17px;
+  }
+  .rank-meta {
+    font-size: 12.5px;
+  }
+  .rank-score {
+    font-size: 15px;
+  }
+  .rank-change {
+    font-size: 13px;
+    padding: 5px 9px;
+  }
+  .rank-preview {
+    padding: 6px;
+  }
+}
+
+/* 중간 태블릿 (992px 이하) - 약 70% 크기 */
+@media (max-width: 992px) {
+  .ranking-item {
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+  .rank-number {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+  .rank-cover {
+    width: 58px;
+    height: 58px;
+  }
+  .rank-info h4 {
+    font-size: 16px;
+  }
+  .rank-meta {
+    font-size: 12px;
+  }
+  .rank-score {
+    font-size: 14.5px;
+  }
+  .rank-change {
+    font-size: 12.5px;
+    padding: 5px 8px;
+  }
+  .rank-preview {
+    padding: 6px;
+  }
+}
+
+/* 작은 태블릿 / 큰 모바일 (768px 이하) - 약 60% 크기 */
+@media (max-width: 768px) {
+  .live-indicator {
+    font-size: 11px;
+    padding: 5px 12px;
+    gap: 5px;
+  }
+  .live-indicator::before {
+    font-size: 9px;
+  }
+
+  .ranking-list {
+    gap: var(--spacing-md);
+  }
+  .ranking-item {
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+  .rank-number {
+    width: 38px;
+    height: 38px;
+    font-size: 19px;
+  }
+  .rank-cover {
+    width: 54px;
+    height: 54px;
+  }
+  .rank-info h4 {
+    font-size: 15.5px;
+  }
+  .rank-meta {
+    font-size: 11.5px;
+  }
+  .rank-stats {
+    gap: var(--spacing-sm);
+  }
+  .rank-score {
+    font-size: 14px;
+  }
+  .rank-change {
+    font-size: 12px;
+    padding: 4px 7px;
+  }
+  .rank-preview {
+    padding: 5.5px;
+  }
+}
+
+/* 모바일 (480px 이하) - 정확히 절반 크기 */
+@media (max-width: 480px) {
+  .live-indicator {
+    font-size: 10px;
+    padding: 4px 10px;
+    gap: 4px;
+  }
+  .live-indicator::before {
+    font-size: 8px;
+  }
+
+  .ranking-item {
+    gap: calc(var(--spacing-md) * 0.8);
+    padding: calc(var(--spacing-md) * 0.8);
+  }
+  .rank-number {
+    width: 24px;     /* 기존 48px → 절반 */
+    height: 24px;
+    font-size: 14px;  /* 기존 24px → 절반 수준 */
+  }
+  .rank-cover {
+    width: 35px;      /* 기존 70px → 절반 */
+    height: 35px;
+  }
+  .rank-cover img {
+    border-radius: 8px;
+  }
+  .rank-placeholder {
+    font-size: 18px;
+  }
+  .rank-info h4 {
+    font-size: 13px;  /* 기존 18px → 약 70%지만 전체적으로 절반 느낌 */
+  }
+  .rank-meta {
+    font-size: 10px;
+  }
+  .rank-stats {
+    gap: 8px;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .rank-score {
+    font-size: 12px;
+  }
+  .rank-change {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  .rank-preview {
+    padding: 4px;     /* 기존 7px → 절반 수준 */
+  }
+  .rank-preview:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}

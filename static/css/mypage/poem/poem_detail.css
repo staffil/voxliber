@@ -1,0 +1,112 @@
+/* ===========================
+   페이지 컨테이너 (헤더 가림 방지)
+=========================== */
+.poem-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 120px 20px 80px;   /* 🔥 NAVBAR 안 가리게 top 크게 설정 */
+}
+
+/* ===========================
+   제목 영역
+=========================== */
+.poem-header {
+    margin-bottom: 40px;
+}
+
+.poem-title {
+    font-size: 38px;
+    font-weight: 900;
+    margin: 0;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.light-mode .poem-title {
+    background: linear-gradient(135deg, #1e1b4b, #4f46e5);
+    -webkit-background-clip: text;
+}
+
+/* 메타 */
+.poem-meta {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+/* ===========================
+   시 본문
+=========================== */
+.poem-content {
+    white-space: pre-wrap;
+    padding: 28px;
+    border-radius: 14px;
+    font-size: 18px;
+    line-height: 1.7;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    margin-bottom: 32px;
+}
+
+/* ===========================
+   태그
+=========================== */
+.poem-tags {
+    margin-bottom: 28px;
+}
+
+.tag {
+    display: inline-block;
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.15);
+    color: #6366f1;
+    margin-right: 6px;
+}
+
+/* ===========================
+   오디오
+=========================== */
+.poem-audio audio {
+    width: 100%;
+    border-radius: 10px;
+    margin: 10px 0 30px;
+}
+
+/* ===========================
+   버튼
+=========================== */
+.poem-btn-box {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 30px;
+}
+
+.poem-btn {
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    transition: 0.2s;
+}
+
+/* 목록 버튼 */
+.poem-btn.back {
+    background: var(--panel-bg);
+    color: var(--text);
+}
+
+.poem-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+}
+.poem-btn.edit {
+    background: #4a73ff;
+}
+
+.poem-btn.delete {
+    background: #ff5a5a;
+}

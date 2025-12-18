@@ -1,0 +1,226 @@
+/* ===============================
+   검색 결과 전체 컨테이너
+=============================== */
+.search-result-container {
+    max-width: 1200px;
+    margin: 120px auto 60px;
+    padding: 0 16px;
+}
+
+/* ===============================
+   헤더
+=============================== */
+.search-header {
+    margin-bottom: 40px;
+}
+
+.search-header h2 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.search-stats {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* ===============================
+   탭
+=============================== */
+.search-tabs {
+    display: flex;
+    gap: 16px;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 32px;
+}
+
+.search-tab {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.search-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.search-tab-count {
+    margin-left: 6px;
+    padding: 2px 8px;
+    font-size: 12px;
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+}
+
+.search-tab.active .search-tab-count {
+    background: var(--primary);
+    color: #fff;
+}
+
+/* ===============================
+   탭 콘텐츠
+=============================== */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* ===============================
+   📚 책 그리드 (문제 해결 핵심)
+=============================== */
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 데스크탑 기본 */
+    gap: 24px;
+}
+
+/* 책 카드 */
+.book-item {
+    display: block;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    overflow: hidden;
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    transition: all 0.25s ease;
+}
+
+.book-item:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* 커버 */
+.book-cover-wrapper {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    background: var(--bg-tertiary);
+    overflow: hidden;
+}
+
+.book-cover-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 정보 */
+.book-details {
+    padding: 14px;
+}
+
+.book-details h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.book-desc {
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.4;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* ===============================
+   작가 그리드
+=============================== */
+.authors-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.author-item {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 20px;
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    transition: all 0.25s ease;
+}
+
+.author-item:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+}
+
+/* ===============================
+   반응형 (여기 중요)
+=============================== */
+
+/* 태블릿 */
+@media (max-width: 1024px) {
+    .books-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .authors-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* 모바일 */
+@media (max-width: 767px) {
+    .books-grid {
+        grid-template-columns: repeat(2, 1fr); /* ✅ 무조건 2열 */
+        gap: 16px;
+    }
+
+    .authors-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .search-header h2 {
+        font-size: 24px;
+    }
+}
+
+/* 초소형 */
+@media (max-width: 480px) {
+    .books-grid {
+        gap: 12px;
+    }
+
+    .book-details {
+        padding: 12px;
+    }
+
+    .book-details h3 {
+        font-size: 14px;
+    }
+}
+
+/* ===============================
+   가로 스크롤 방지
+=============================== */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}

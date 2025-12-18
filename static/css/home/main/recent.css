@@ -1,0 +1,188 @@
+/* ========================================
+   최근 본 작품 섹션
+   ======================================== */
+.recent-section {
+  margin-bottom: var(--spacing-2xl);
+}
+.recent-books-carousel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-xl);
+  overflow-x: auto;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(110px, 1fr);
+}
+.recent-book-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.recent-book-card {
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  transition: transform 0.3s ease;
+}
+.recent-book-card:hover {
+  transform: translateY(-8px);
+}
+.recent-book-card-wrapper .preview-audio-btn {
+  margin-top: 0;
+}
+.recent-cover .recent-preview {
+  position: absolute;
+  top: 13%;
+  left: 78%;
+  transform: translate(-50%, -50%);
+  padding: 6px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.95);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  z-index: 5;
+  transition: all 0.3s ease;
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+}
+.recent-cover:hover .recent-preview {
+  opacity: 1;
+  visibility: visible;
+}
+.recent-cover .recent-preview:hover {
+  background: rgba(79, 70, 229, 1);
+  transform: translate(-50%, -50%) scale(1.15);
+}
+.recent-cover {
+  position: relative;
+  width: 100%;
+  padding-top: 140%;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  border-radius: 5px 10px 10px 0px;
+}
+.recent-cover img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px 10px 10px 0px;
+}
+.recent-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+}
+.recent-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+.recent-info {
+  padding: 0 var(--spacing-xs);
+}
+.recent-info h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-info p {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* Recent Section - Responsive */
+@media (max-width: 1200px) {
+  .recent-books-carousel {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    grid-auto-columns: minmax(90px, 1fr);
+    gap: calc(var(--spacing-lg) * 0.8);
+  }
+  .recent-cover {
+    padding-top: 115%;
+    border-radius: 4px 8px 8px 0px;
+  }
+  .recent-info h4 {
+    font-size: 14px;
+  }
+  .recent-info p {
+    font-size: 12px;
+  }
+  .recent-preview {
+    padding: 5px;
+    top: 12%;
+    left: 75%;
+  }
+}
+@media (max-width: 992px) {
+  .recent-books-carousel {
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+    grid-auto-columns: minmax(85px, 1fr);
+    gap: calc(var(--spacing-md) * 0.8);
+  }
+  .recent-cover {
+    padding-top: 110%;
+  }
+  .recent-info h4 {
+    font-size: 13px;
+  }
+  .recent-info p {
+    font-size: 11px;
+  }
+  .recent-preview {
+    padding: 4px;
+    top: 12%;
+    left: 75%;
+  }
+}
+@media (max-width: 768px) {
+  .recent-books-carousel {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    grid-auto-columns: minmax(80px, 1fr);
+    gap: calc(var(--spacing-md) * 0.7);
+  }
+  .recent-cover {
+    padding-top: 105%;
+  }
+  .recent-info h4 {
+    font-size: 12px;
+  }
+  .recent-info p {
+    font-size: 10px;
+  }
+  .recent-preview {
+    padding: 3px;
+    top: 11%;
+    left: 75%;
+  }
+}

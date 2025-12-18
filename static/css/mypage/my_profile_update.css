@@ -1,0 +1,533 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+/* CSS 변수 */
+:root {
+    --primary: #6366f1;
+    --secondary: #8b5cf6;
+    --accent: #ec4899;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --border: rgba(255, 255, 255, 0.1);
+    --card-bg: rgba(30, 41, 59, 0.6);
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --hover-bg: rgba(255, 255, 255, 0.08);
+}
+
+/* 전역 스타일 */
+.update-wrapper * {
+    box-sizing: border-box;
+}
+
+.update-wrapper {
+    min-height: 100vh;
+    padding: 100px 20px 80px;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+}
+
+.update-container {
+    max-width: 800px;
+    margin: 0 auto;
+    animation: fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 페이지 헤더 */
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: var(--hover-bg);
+    border-color: var(--primary);
+    transform: translateX(-4px);
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+}
+
+/* 폼 섹션 */
+.form-section {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.form-section:hover {
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.section-header {
+    margin-bottom: 28px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+}
+
+.section-title svg {
+    color: var(--primary);
+}
+
+/* 아바타 업로드 영역 */
+.avatar-upload-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+.avatar-preview-wrapper {
+    position: relative;
+    width: 150px;
+    height: 150px;
+}
+
+.avatar-preview {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.avatar-preview-wrapper:hover .avatar-preview {
+    border-color: var(--primary);
+}
+
+.avatar-upload-controls {
+    display: flex;
+    gap: 12px;
+}
+
+.upload-btn,
+.remove-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.upload-btn {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+.remove-btn {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+.remove-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.upload-hint {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* 커버 이미지 업로드 */
+.cover-upload-area {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.cover-preview-wrapper {
+    width: 100%;
+    height: 180px;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.cover-preview {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+    background-size: cover;
+    background-position: center;
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+}
+
+.cover-preview-wrapper:hover .cover-preview {
+    border-color: var(--primary);
+}
+
+.cover-upload-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+/* 폼 그리드 */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group.full-width {
+    grid-column: span 2;
+}
+
+.form-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.required {
+    color: var(--danger);
+}
+
+.form-input {
+    padding: 14px 18px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    background: var(--hover-bg);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-input::placeholder {
+    color: #64748b;
+}
+
+.form-input.readonly {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.input-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.input-counter {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+/* 성별 옵션 */
+.gender-options {
+    display: flex;
+    gap: 12px;
+}
+
+.gender-option {
+    cursor: pointer;
+    flex: 1;
+}
+
+.gender-option input {
+    display: none;
+}
+
+.gender-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 20px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.gender-option:hover .gender-box {
+    background: var(--hover-bg);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.gender-option input:checked + .gender-box {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--primary);
+    color: var(--text);
+}
+
+.gender-option input:checked + .gender-box svg {
+    color: var(--primary);
+}
+
+/* 액션 버튼 */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 32px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.btn-secondary:hover {
+    background: var(--hover-bg);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5);
+}
+
+/* 메시지 */
+.message-container {
+    margin-bottom: 24px;
+}
+
+.message {
+    padding: 16px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.message.success {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #6ee7b7;
+}
+
+.message.error {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .update-wrapper {
+        padding: 80px 15px 60px;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+    }
+
+    .page-title {
+        font-size: 22px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group.full-width {
+        grid-column: span 1;
+    }
+
+    .form-section {
+        padding: 24px;
+    }
+
+    .gender-options {
+        flex-direction: column;
+    }
+
+    .avatar-upload-controls {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .upload-btn,
+    .remove-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+    }
+}
+
+/* 라이트 모드 */
+body.light-mode {
+    --text: #0f172a;
+    --text-secondary: #475569;
+    --border: rgba(0, 0, 0, 0.1);
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --input-bg: rgba(0, 0, 0, 0.03);
+    --hover-bg: rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .form-section,
+body.light-mode .back-btn {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .avatar-preview {
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .form-input {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #0f172a;
+}
+
+body.light-mode .form-input:focus {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .form-input.readonly {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .gender-box {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .remove-btn {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .btn-secondary {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #0f172a;
+}
+
+body.light-mode .btn-primary {
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2);
+}
+
+body.light-mode .btn-primary:hover {
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.3);
+}
+
+body.light-mode .message.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+body.light-mode .message.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}

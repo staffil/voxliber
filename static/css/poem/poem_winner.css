@@ -1,0 +1,753 @@
+/* Poem Winner - Enhanced Responsive Slider */
+
+.winner-wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+    min-height: 100vh;
+}
+
+.winner-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.winner-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+}
+
+/* Poem Slider Wrapper */
+.poem-slider-wrapper {
+    position: relative;
+    margin-top: 30px;
+}
+
+.poem-slider {
+    display: flex;
+    overflow: hidden;
+    scroll-behavior: smooth;
+    cursor: grab;
+    border-radius: 20px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+}
+
+.poem-slider.active {
+    cursor: grabbing;
+}
+
+/* Poem Slide */
+.poem-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 550px;
+    position: relative;
+    overflow: hidden;
+}
+
+.poem-slide-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.poem-slide-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.2) 0%,
+        rgba(0, 0, 0, 0.5) 50%,
+        rgba(0, 0, 0, 0.8) 100%
+    );
+}
+
+.poem-slide-content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: white;
+}
+
+.poem-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.poem-title::before {
+    content: '🏆';
+    font-size: 2rem;
+}
+
+.poem-meta {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 24px;
+    font-weight: 500;
+}
+
+.poem-text {
+    font-size: 1.15rem;
+    line-height: 2;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border-left: 4px solid #fbbf24;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.poem-text::-webkit-scrollbar {
+    width: 6px;
+}
+
+.poem-text::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.poem-text::-webkit-scrollbar-thumb {
+    background: rgba(251, 191, 36, 0.6);
+    border-radius: 3px;
+}
+
+.poem-text::-webkit-scrollbar-thumb:hover {
+    background: rgba(251, 191, 36, 0.8);
+}
+
+/* Poem Audio Player */
+.poem-audio-player {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.poem-audio-player button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+}
+
+.poem-audio-player button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(251, 191, 36, 0.5);
+}
+
+.poem-audio-progress {
+    flex: 1;
+}
+
+.poem-audio-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.poem-audio-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    width: 0%;
+    transition: width 0.1s;
+}
+
+.poem-audio-time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 500;
+}
+
+/* Navigation Buttons */
+.poem-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(251, 191, 36, 0.95);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.poem-nav:hover {
+    background: rgba(251, 191, 36, 1);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+}
+
+.poem-nav-prev {
+    left: -30px;
+}
+
+.poem-nav-next {
+    right: -30px;
+}
+
+/* Controls */
+.poem-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 24px;
+    padding: 18px 24px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.poem-counter {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text, #f1f5f9);
+}
+
+.poem-play-pause {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.poem-play-pause:hover {
+    background: rgba(251, 191, 36, 0.35);
+    transform: scale(1.08);
+}
+
+.poem-indicators {
+    display: flex;
+    gap: 10px;
+}
+
+.poem-indicators .indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.poem-indicators .indicator.active {
+    background: #fbbf24;
+    width: 28px;
+    border-radius: 5px;
+}
+
+.poem-indicators .indicator:hover {
+    background: rgba(251, 191, 36, 0.7);
+}
+
+/* Empty State */
+.empty-state {
+    width: 100%;
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-state p {
+    color: var(--text-secondary, #94a3b8);
+    font-size: 1.1rem;
+}
+
+/* Light Mode */
+body.light-mode .poem-slide-overlay {
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(0, 0, 0, 0.5) 50%,
+        rgba(0, 0, 0, 0.8) 100%
+    );
+}
+
+body.light-mode .poem-counter {
+    color: #1f2937;
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+/* Desktop Large (1200px ~ 1439px) */
+@media (max-width: 1439px) {
+    .winner-wrap {
+        max-width: 1200px;
+    }
+
+    .poem-slide {
+        height: 520px;
+    }
+
+    .poem-slide-content {
+        padding: 44px;
+    }
+
+    .poem-title {
+        font-size: 2.1rem;
+    }
+
+    .poem-text {
+        font-size: 1.1rem;
+        max-height: 260px;
+    }
+}
+
+/* Tablet Large (1024px ~ 1199px) */
+@media (max-width: 1199px) {
+    .winner-wrap {
+        padding: 3.5rem 2rem;
+    }
+
+    .winner-title {
+        font-size: 2.75rem;
+    }
+
+    .poem-slide {
+        height: 480px;
+    }
+
+    .poem-slide-content {
+        padding: 40px;
+    }
+
+    .poem-title {
+        font-size: 2rem;
+    }
+
+    .poem-text {
+        font-size: 1.05rem;
+        max-height: 220px;
+        padding: 18px;
+    }
+
+    .poem-nav-prev {
+        left: 10px;
+    }
+
+    .poem-nav-next {
+        right: 10px;
+    }
+}
+
+/* Tablet (768px ~ 1023px) */
+@media (max-width: 1023px) {
+    .winner-wrap {
+        padding: 3rem 1.5rem;
+    }
+
+    .winner-title {
+        font-size: 2.5rem;
+    }
+
+    .btn-secondary {
+        padding: 10px 24px;
+        font-size: 0.95rem;
+    }
+
+    .poem-slider {
+        border-radius: 16px;
+    }
+
+    .poem-slide {
+        height: 450px;
+    }
+
+    .poem-slide-content {
+        padding: 36px;
+    }
+
+    .poem-title {
+        font-size: 1.85rem;
+        margin-bottom: 12px;
+    }
+
+    .poem-title::before {
+        font-size: 1.75rem;
+    }
+
+    .poem-meta {
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+    }
+
+    .poem-text {
+        font-size: 1rem;
+        max-height: 200px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .poem-audio-player {
+        padding: 14px 18px;
+    }
+
+    .poem-audio-player button {
+        width: 46px;
+        height: 46px;
+    }
+
+    .poem-nav {
+        width: 46px;
+        height: 46px;
+    }
+
+    .poem-controls {
+        gap: 20px;
+        padding: 16px 20px;
+    }
+}
+
+/* Mobile Large (640px ~ 767px) */
+@media (max-width: 767px) {
+    .winner-wrap {
+        padding: 2.5rem 1rem;
+    }
+
+    .winner-title {
+        font-size: 2.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .btn-secondary {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+
+    .poem-slide {
+        height: 420px;
+    }
+
+    .poem-slide-content {
+        padding: 30px;
+    }
+
+    .poem-title {
+        font-size: 1.6rem;
+        margin-bottom: 10px;
+        gap: 10px;
+    }
+
+    .poem-title::before {
+        font-size: 1.5rem;
+    }
+
+    .poem-meta {
+        font-size: 0.9rem;
+        margin-bottom: 16px;
+    }
+
+    .poem-text {
+        font-size: 0.95rem;
+        line-height: 1.8;
+        max-height: 180px;
+        padding: 14px;
+        margin-bottom: 16px;
+    }
+
+    .poem-audio-player {
+        padding: 12px 16px;
+        gap: 14px;
+    }
+
+    .poem-audio-player button {
+        width: 44px;
+        height: 44px;
+    }
+
+    .poem-nav {
+        width: 44px;
+        height: 44px;
+    }
+
+    .poem-nav-prev {
+        left: 8px;
+    }
+
+    .poem-nav-next {
+        right: 8px;
+    }
+
+    .poem-controls {
+        gap: 16px;
+        padding: 14px 18px;
+    }
+
+    .poem-counter {
+        font-size: 0.95rem;
+    }
+
+    .poem-play-pause {
+        width: 42px;
+        height: 42px;
+    }
+
+    .poem-indicators {
+        gap: 8px;
+    }
+
+    .poem-indicators .indicator {
+        width: 8px;
+        height: 8px;
+    }
+
+    .poem-indicators .indicator.active {
+        width: 24px;
+    }
+}
+
+/* Mobile (480px ~ 639px) */
+@media (max-width: 639px) {
+    .winner-wrap {
+        padding: 2rem 1rem;
+    }
+
+    .winner-title {
+        font-size: 2rem;
+    }
+
+    .poem-slide {
+        height: 400px;
+    }
+
+    .poem-slide-content {
+        padding: 24px;
+    }
+
+    .poem-title {
+        font-size: 1.4rem;
+    }
+
+    .poem-text {
+        font-size: 0.9rem;
+        max-height: 160px;
+        padding: 12px;
+    }
+
+    .poem-audio-player {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 14px;
+    }
+
+    .poem-audio-player button {
+        width: 42px;
+        height: 42px;
+    }
+
+    .poem-audio-progress {
+        width: 100%;
+    }
+
+    .poem-nav {
+        width: 40px;
+        height: 40px;
+    }
+
+    .poem-controls {
+        flex-wrap: wrap;
+        gap: 14px;
+        padding: 12px 16px;
+    }
+}
+
+/* Mobile Small (< 480px) */
+@media (max-width: 479px) {
+    .winner-wrap {
+        padding: 1.5rem 0.75rem;
+    }
+
+    .winner-header {
+        margin-bottom: 2rem;
+    }
+
+    .winner-title {
+        font-size: 1.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .btn-secondary {
+        padding: 8px 18px;
+        font-size: 0.85rem;
+    }
+
+    .poem-slider {
+        border-radius: 12px;
+    }
+
+    .poem-slide {
+        height: 380px;
+    }
+
+    .poem-slide-content {
+        padding: 20px;
+    }
+
+    .poem-title {
+        font-size: 1.25rem;
+        margin-bottom: 8px;
+        gap: 8px;
+    }
+
+    .poem-title::before {
+        font-size: 1.25rem;
+    }
+
+    .poem-meta {
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+    }
+
+    .poem-text {
+        font-size: 0.85rem;
+        line-height: 1.7;
+        max-height: 140px;
+        padding: 10px;
+        margin-bottom: 12px;
+        border-left-width: 3px;
+    }
+
+    .poem-audio-player {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .poem-audio-player button {
+        width: 38px;
+        height: 38px;
+    }
+
+    .poem-audio-player button svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .poem-audio-time {
+        font-size: 0.8rem;
+    }
+
+    .poem-nav {
+        width: 36px;
+        height: 36px;
+    }
+
+    .poem-nav svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .poem-nav-prev {
+        left: 6px;
+    }
+
+    .poem-nav-next {
+        right: 6px;
+    }
+
+    .poem-controls {
+        gap: 12px;
+        padding: 10px 12px;
+        margin-top: 16px;
+    }
+
+    .poem-counter {
+        font-size: 0.9rem;
+    }
+
+    .poem-play-pause {
+        width: 38px;
+        height: 38px;
+    }
+
+    .poem-indicators {
+        gap: 6px;
+    }
+
+    .poem-indicators .indicator {
+        width: 7px;
+        height: 7px;
+    }
+
+    .poem-indicators .indicator.active {
+        width: 20px;
+    }
+}

@@ -1,0 +1,330 @@
+/* ========================================
+   Promo Banner - Enhanced Slider (반응형 재작업)
+   ======================================== */
+.promo-container-wrapper {
+  position: relative;
+  margin-top: 30px;
+    overflow: visible; 
+}
+.promo-container {
+  display: flex;
+  overflow: hidden;
+  scroll-behavior: smooth;
+  cursor: grab;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  
+}
+.promo-container.active {
+  cursor: grabbing;
+}
+.promo-banner {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 400px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.promo-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+.promo-banner:hover img {
+  transform: scale(1.08);
+}
+
+/* Prev/Next 버튼 */
+.promo-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.promo-nav:hover {
+  background: #fff;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+.promo-nav-prev {
+  left: 20px;
+}
+.promo-nav-next {
+  right: 20px;
+}
+.promo-nav svg {
+  color: #333;
+  width: 24px;
+  height: 24px;
+}
+
+/* 하단 컨트롤 (카운터, 플레이/일시정지, 인디케이터) */
+.promo-controls {
+  position: absolute;
+  bottom: -50px;
+  left: 0;                     /* 버그 수정: left: 100; → left: 0; */
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 0 20px;
+  z-index: 10;
+}
+.promo-counter {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.promo-counter #currentSlide {
+  color: #6366f1;
+  font-size: 16px;
+  font-weight: 700;
+}
+.promo-play-pause {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.promo-play-pause:hover {
+  background: rgba(0, 0, 0, 0.85);
+  transform: scale(1.1);
+}
+.promo-play-pause svg {
+  color: #fff;
+  width: 20px;
+  height: 20px;
+}
+.promo-indicators {
+  display: flex;
+  gap: 8px;
+}
+.promo-indicators .indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.promo-indicators .indicator:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+  transform: scale(1.2);
+}
+.promo-indicators .indicator.active {
+  width: 24px;
+  background-color: #6366f1;
+}
+
+/* Promo Banner Responsive - 점진적 축소 */
+@media (max-width: 1200px) {
+  .promo-banner {
+    height: 360px;
+  }
+  .promo-nav {
+    width: 48px;
+    height: 48px;
+  }
+  .promo-nav-prev { left: 18px; }
+  .promo-nav-next { right: 18px; }
+}
+
+@media (max-width: 992px) {
+  .promo-banner {
+    height: 320px;
+  }
+  .promo-nav {
+    width: 46px;
+    height: 46px;
+  }
+  .promo-nav svg {
+    width: 22px;
+    height: 22px;
+  }
+  .promo-controls {
+    gap: 16px;
+  }
+  .promo-counter {
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .promo-banner {
+    height: 260px;
+  }
+  .promo-controls {
+    bottom: 12px;              /* 배너 안쪽 하단으로 이동 (공간 절약) */
+    left: 50%;
+    transform: translateX(-50%);
+    width: fit-content;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    border-radius: 30px;
+    gap: 12px;
+  }
+  .promo-nav {
+    width: 42px;
+    height: 42px;
+  }
+  .promo-nav-prev { left: 12px; }
+  .promo-nav-next { right: 12px; }
+  .promo-nav svg {
+    width: 20px;
+    height: 20px;
+  }
+  .promo-counter {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .promo-counter #currentSlide {
+    font-size: 14px;
+  }
+  .promo-play-pause {
+    width: 36px;
+    height: 36px;
+  }
+  .promo-play-pause svg {
+    width: 18px;
+    height: 18px;
+  }
+  .promo-indicators .indicator {
+    width: 7px;
+    height: 7px;
+  }
+  .promo-indicators .indicator.active {
+    width: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .promo-banner {
+    height: 180px;             /* 모바일에서 매우 컴팩트 */
+  }
+  .promo-controls {
+    bottom: 8px;
+    gap: 10px;
+    padding: 6px 12px;
+  }
+  .promo-nav {
+    width: 38px;
+    height: 38px;
+  }
+  .promo-nav-prev { left: 8px; }
+  .promo-nav-next { right: 8px; }
+  .promo-nav svg {
+    width: 18px;
+    height: 18px;
+  }
+  .promo-counter {
+ display: none;
+
+  }
+  .promo-counter #currentSlide {
+    font-size: 7px;
+  }
+  .promo-play-pause {
+    width: 32px;
+    height: 32px;
+  }
+  .promo-indicators .indicator {
+    width: 6px;
+    height: 6px;
+  }
+  .promo-indicators .indicator.active {
+    width: 18px;
+  }
+}
+
+/* ========================================
+   Ultra Small Devices (≤ 310px)
+======================================== */
+@media (max-width: 310px) {
+  .promo-banner {
+    height: 150px; /* 더 낮게 */
+  }
+
+  /* 네비 버튼 최소화 */
+  .promo-nav {
+    width: 32px;
+    height: 32px;
+  }
+  .promo-nav-prev {
+    left: 6px;
+  }
+  .promo-nav-next {
+    right: 6px;
+  }
+  .promo-nav svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* 하단 컨트롤 완전 압축 */
+  .promo-controls {
+    bottom: 6px;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 20px;
+  }
+  .promo-counter #currentSlide {
+    font-size: 10px;
+  }
+  /* 카운터 */
+  .promo-counter {
+ display: none;
+  }
+  .promo-counter #currentSlide {
+    font-size: 11px;
+  }
+
+  /* 플레이 버튼 */
+  .promo-play-pause {
+    width: 28px;
+    height: 28px;
+  }
+  .promo-play-pause svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* 인디케이터 최소화 */
+  .promo-indicators {
+    gap: 4px;
+  }
+  .promo-indicators .indicator {
+    width: 5px;
+    height: 5px;
+  }
+  .promo-indicators .indicator.active {
+    width: 14px;
+  }
+}

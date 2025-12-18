@@ -1,0 +1,235 @@
+/* Poem Create - Modern Form Design */
+
+.poem-write-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+    min-height: 100vh;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.page-description {
+    text-align: center;
+    color: #6b7280;
+    font-size: 1.1rem;
+    margin-bottom: 3rem;
+}
+
+.poem-form {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.form-group {
+    margin-bottom: 2rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--text, #374151);
+}
+
+.form-input,
+.form-textarea,
+.voice-select {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid rgba(99, 102, 241, 0.2);
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text, #1f2937);
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.voice-select:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.form-textarea {
+    min-height: 300px;
+    resize: vertical;
+    line-height: 1.8;
+    font-family: inherit;
+}
+
+.voice-select {
+    cursor: pointer;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #6366f1;
+}
+
+.checkbox-group label {
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.button-group {
+    display: flex;
+    gap: 16px;
+    margin-top: 2rem;
+}
+
+.btn-tts,
+.btn-submit {
+    flex: 1;
+    padding: 16px 32px;
+    border-radius: 12px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-tts {
+    background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+    color: white;
+}
+
+.btn-tts:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+}
+
+.btn-tts:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-submit {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+}
+
+.audio-preview-box {
+    margin-top: 2rem;
+    padding: 24px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.audio-preview-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    color: #6366f1;
+}
+
+.audio-preview-box audio {
+    width: 100%;
+    border-radius: 12px;
+}
+
+/* Dark Mode */
+body:not(.light-mode) .poem-form {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body:not(.light-mode) .form-input,
+body:not(.light-mode) .form-textarea,
+body:not(.light-mode) .voice-select {
+    background: rgba(255, 255, 255, 0.05);
+    color: #f1f5f9;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+body:not(.light-mode) .form-group label {
+    color: #f1f5f9;
+}
+
+/* Light Mode */
+body.light-mode .poem-form {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .form-input,
+body.light-mode .form-textarea,
+body.light-mode .voice-select {
+    background: white;
+    color: #1f2937;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .poem-write-container {
+        padding: 3rem 1.5rem;
+    }
+
+    .page-title {
+        font-size: 2rem;
+    }
+
+    .poem-form {
+        padding: 28px;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+
+    .btn-tts,
+    .btn-submit {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-title {
+        font-size: 1.75rem;
+    }
+
+    .poem-form {
+        padding: 20px;
+    }
+
+    .form-textarea {
+        min-height: 250px;
+    }
+}

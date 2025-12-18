@@ -1,0 +1,674 @@
+/* ========================================
+   인트로 오디오 (Intro Audio)
+   ======================================== */
+.intro-audio-wrapper {
+    background: #1a1a2e;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #2b2b3d;
+    margin-bottom: 30px;
+}
+body.light-mode .intro-audio-wrapper {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+}
+.intro-audio-empty {
+    text-align: center;
+    color: #aaa;
+    padding: 20px 10px;
+}
+.intro-audio-upload-btn {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 16px;
+    background: #6366f1;
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+.intro-audio-upload-btn:hover {
+    background: #4f46e5;
+}
+.intro-audio-player-box audio {
+    width: 100%;
+}
+.intro-audio-desc {
+    margin-top: 8px;
+    color: #bbb;
+    font-size: 14px;
+}
+
+/* ========================================
+   미리듣기 버튼 스타일
+   ======================================== */
+.preview-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+.preview-audio-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+}
+.preview-audio-btn:active {
+  transform: translateY(0);
+}
+.preview-audio-btn svg {
+  flex-shrink: 0;
+}
+.preview-audio-btn .rank-preview{
+  width: 30px;
+  height: 30px;
+}
+
+/* ========================================
+   하단 오디오 플레이어 - Music Platform Style
+   ======================================== */
+.bottom-audio-player {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: transparent;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
+  z-index: 10000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(180deg, rgba(55, 34, 127, 0.5) 10%, rgba(48, 15, 61, 0.5) 100%);
+}
+body.light-mode .bottom-audio-player {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 10%, rgba(248, 248, 248, 0.98) 100%);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  color: #1a1a1a;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+}
+.bottom-audio-player.hidden {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+.player-track-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 0 0 300px;
+  min-width: 0;
+}
+.player-cover {
+  position: relative;
+  width: 100px;
+  height:100px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.player-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 2px 20px 0px 20px;
+}
+.player-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  font-size: 28px;
+}
+.player-text-info {
+  min-width: 0;
+  flex: 1;
+}
+.player-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.light-mode .player-title {
+  color: #1a1a1a;
+}
+.player-subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.light-mode .player-subtitle {
+  color: rgba(0, 0, 0, 0.6);
+}
+.player-controls-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 600px;
+  min-width: 0;
+}
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.control-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+body.light-mode .control-btn {
+  color: rgba(0, 0, 0, 0.7);
+}
+.control-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+body.light-mode .control-btn:hover {
+  color: #000;
+  background: rgba(0, 0, 0, 0.05);
+}
+.control-btn:active {
+  transform: scale(0.95);
+}
+.control-btn-play {
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  color: #000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+body.light-mode .control-btn-play {
+  background: #1a1a1a;
+  color: #fff;
+}
+.control-btn-play:hover {
+  background: #f0f0f0;
+  transform: scale(1.08);
+}
+body.light-mode .control-btn-play:hover {
+  background: #2a2a2a;
+}
+.player-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.time-current,
+.time-total {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+  text-align: center;
+}
+body.light-mode .time-current,
+body.light-mode .time-total {
+  color: rgba(0, 0, 0, 0.6);
+}
+.progress-bar-container {
+  flex: 1;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.progress-bar-bg {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: visible;
+}
+body.light-mode .progress-bar-bg {
+  background: rgba(0, 0, 0, 0.15);
+}
+.progress-bar-container:hover .progress-bar-bg {
+  height: 6px;
+}
+.progress-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+}
+.progress-bar-handle {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+body.light-mode .progress-bar-handle {
+  background: #1a1a1a;
+}
+.progress-bar-container:hover .progress-bar-handle {
+  opacity: 1;
+}
+.player-volume-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 180px;
+  justify-content: flex-end;
+}
+.volume-slider {
+  width: 100px;
+}
+.volume-slider input[type="range"] {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+body.light-mode .volume-slider input[type="range"] {
+  background: rgba(0, 0, 0, 0.15);
+}
+.volume-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+body.light-mode .volume-slider input[type="range"]::-webkit-slider-thumb {
+  background: #1a1a1a;
+}
+.volume-slider input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+body.light-mode .volume-slider input[type="range"]::-moz-range-thumb {
+  background: #1a1a1a;
+}
+.close-btn {
+  width: 32px;
+  height: 32px;
+}
+
+
+/* Intro Audio + Preview Button + Bottom Audio Player - Responsive (절반 크기 기준 재작업) */
+
+/* 데스크탑 기본 (1201px 이상) - 기존 크기 유지 */
+@media (min-width: 1201px) {
+  .intro-audio-wrapper {
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+  }
+  .intro-audio-empty {
+    padding: 20px 10px;
+  }
+  .intro-audio-upload-btn {
+    padding: 10px 16px;
+  }
+  .intro-audio-desc {
+    font-size: 14px;
+  }
+
+  .preview-audio-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    gap: 6px;
+  }
+  .preview-audio-btn .rank-preview {
+    width: 30px;
+    height: 30px;
+  }
+
+  .bottom-audio-player {
+    height: 120px;
+    padding: 0 24px;
+  }
+  .player-cover {
+    width: 100px;
+    height: 100px;
+  }
+  .player-title {
+    font-size: 20px;
+  }
+  .player-subtitle {
+    font-size: 12px;
+  }
+  .control-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .control-btn-play {
+    width: 40px;
+    height: 40px;
+  }
+  .volume-slider {
+    width: 100px;
+  }
+  .volume-slider input[type="range"]::-webkit-slider-thumb,
+  .volume-slider input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+  }
+  .close-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* 태블릿 ~ 큰 모바일 (1200px 이하) - 약 80% 크기 */
+@media (max-width: 1200px) {
+  .intro-audio-wrapper {
+    padding: 18px;
+    border-radius: 11px;
+    margin-bottom: 26px;
+  }
+  .intro-audio-upload-btn {
+    padding: 9px 15px;
+  }
+  .intro-audio-desc {
+    font-size: 13.5px;
+  }
+
+  .preview-audio-btn {
+    padding: 7px 15px;
+    font-size: 12.5px;
+    gap: 5px;
+  }
+  .preview-audio-btn .rank-preview {
+    width: 28px;
+    height: 28px;
+  }
+
+  .bottom-audio-player {
+    height: 100px;
+    padding: 0 20px;
+  }
+  .player-track-info {
+    flex: 0 0 260px;
+    gap: 14px;
+  }
+  .player-cover {
+    width: 85px;
+    height: 85px;
+  }
+  .player-title {
+    font-size: 18px;
+  }
+  .player-subtitle {
+    font-size: 11.5px;
+  }
+  .control-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .control-btn-play {
+    width: 38px;
+    height: 38px;
+  }
+  .volume-slider {
+    width: 90px;
+  }
+}
+
+/* 중간 태블릿 (992px 이하) - 약 70% 크기 */
+@media (max-width: 992px) {
+  .intro-audio-wrapper {
+    padding: 16px;
+    border-radius: 10px;
+  }
+  .intro-audio-upload-btn {
+    padding: 8px 14px;
+  }
+  .intro-audio-desc {
+    font-size: 13px;
+  }
+
+  .preview-audio-btn {
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+  .preview-audio-btn .rank-preview {
+    width: 26px;
+    height: 26px;
+  }
+
+  .bottom-audio-player {
+    height: 90px;
+  }
+  .player-track-info {
+    flex: 0 0 220px;
+    gap: 12px;
+  }
+  .player-cover {
+    width: 70px;
+    height: 70px;
+  }
+  .player-title {
+    font-size: 16px;
+  }
+  .player-subtitle {
+    font-size: 11px;
+  }
+  .control-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .control-btn-play {
+    width: 36px;
+    height: 36px;
+  }
+  .volume-slider {
+    width: 80px;
+  }
+}
+
+/* 작은 태블릿 / 큰 모바일 (768px 이하) - 약 60% 크기 */
+@media (max-width: 768px) {
+  .intro-audio-wrapper {
+    padding: 14px;
+    border-radius: 9px;
+    margin-bottom: 20px;
+  }
+  .intro-audio-empty {
+    padding: 16px 8px;
+  }
+  .intro-audio-upload-btn {
+    padding: 7px 13px;
+    font-size: 14px;
+  }
+  .intro-audio-desc {
+    font-size: 12.5px;
+  }
+
+  .preview-audio-btn {
+    padding: 6px 12px;
+    font-size: 11.5px;
+    gap: 5px;
+  }
+  .preview-audio-btn .rank-preview {
+    width: 24px;
+    height: 24px;
+  }
+
+  .bottom-audio-player {
+    height: 80px;
+    padding: 0 16px;
+  }
+  .player-track-info {
+    flex: 0 0 180px;
+    gap: 10px;
+  }
+  .player-cover {
+    width: 55px;
+    height: 55px;
+  }
+  .player-title {
+    font-size: 14px;
+  }
+  .player-subtitle {
+    font-size: 10.5px;
+  }
+  .player-controls {
+    gap: 10px;
+  }
+  .control-btn {
+    width: 30px;
+    height: 30px;
+  }
+  .control-btn-play {
+    width: 34px;
+    height: 34px;
+  }
+  .player-volume-section {
+    flex: 0 0 auto;
+  }
+  .volume-slider {
+    display: none;
+  }
+  .time-current,
+  .time-total {
+    font-size: 10px;
+    min-width: 35px;
+  }
+}
+
+/* 모바일 (480px 이하) - 정확히 절반 크기 */
+@media (max-width: 480px) {
+  .intro-audio-wrapper {
+    padding: 10px;              /* 기존 20px → 절반 */
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+  .intro-audio-empty {
+    padding: 10px 5px;
+  }
+  .intro-audio-upload-btn {
+    padding: 6px 10px;           /* 기존 10px 16px → 절반 수준 */
+    font-size: 13px;
+  }
+  .intro-audio-desc {
+    font-size: 12px;             /* 기존 14px → 약 86% */
+  }
+
+  .preview-audio-btn {
+    padding: 5px 10px;           /* 기존 8px 16px → 절반 수준 */
+    font-size: 11px;
+    gap: 4px;
+  }
+  .preview-audio-btn .rank-preview {
+    width: 20px;                 /* 기존 30px → 약 2/3지만 전체 느낌 절반 */
+    height: 20px;
+  }
+  .preview-audio-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .bottom-audio-player {
+    height: 60px;                /* 기존 120px → 정확히 절반 */
+    padding: 0 10px;
+  }
+  .player-track-info {
+    flex: 0 0 120px;
+    gap: 6px;
+  }
+  .player-cover {
+    width: 50px;                 /* 기존 100px → 절반 */
+    height: 50px;
+    border-radius: 6px;
+  }
+  .player-cover-placeholder {
+    font-size: 20px;
+  }
+  .player-title {
+    font-size: 12px;             /* 기존 20px → 60% */
+  }
+  .player-subtitle {
+    display: none;               /* 공간 부족으로 숨김 (기존 코드와 동일) */
+  }
+  .player-controls {
+    gap: 8px;
+  }
+  .control-btn {
+    width: 28px;                 /* 기존 36px → 약 78% */
+    height: 28px;
+  }
+  .control-btn-play {
+    width: 32px;                 /* 기존 40px → 80% */
+    height: 32px;
+  }
+  #prevBtn,
+  #nextBtn {
+    display: none;
+  }
+  .player-progress {
+    gap: 6px;
+  }
+  .time-current,
+  .time-total {
+    font-size: 9px;
+    min-width: 28px;
+  }
+  .progress-bar-container:hover .progress-bar-bg {
+    height: 5px;
+  }
+  .progress-bar-handle {
+    width: 10px;
+    height: 10px;
+  }
+  .close-btn {
+    width: 28px;
+    height: 28px;
+  }
+}

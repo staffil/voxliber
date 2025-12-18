@@ -1,0 +1,506 @@
+    :root {
+        --primary-gradient: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+        --card-bg: #16213e;
+        --card-hover-shadow: 0 16px 40px rgba(139, 92, 246, 0.3);
+        --border-color: #2d3561;
+        --text-primary: #ffffff;
+        --text-secondary: #cbd5e1;
+        --bg-main: #0f172a;
+        --success-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        --danger-gradient: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+    }
+
+    body {
+        background: var(--bg-main);
+        color: var(--text-primary);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin-top: 80px;
+    }
+
+    /* 페이지 헤더 */
+    .page-header {
+        padding: 40px 60px 30px;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+        border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    }
+
+    .page-title {
+        font-size: 36px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #a78bfa, #c4b5fd);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .page-subtitle {
+        font-size: 16px;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    /* 컨테이너 */
+    .myvoice-container {
+        padding: 48px 60px;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .myvoice-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 32px;
+    }
+
+    /* 보이스 카드 */
+    .myvoice-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(139, 92, 246, 0.1);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .myvoice-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(99, 102, 241, 0.05));
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        pointer-events: none;
+    }
+
+    .myvoice-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--card-hover-shadow);
+        border-color: rgba(139, 92, 246, 0.5);
+    }
+
+    .myvoice-card:hover::before {
+        opacity: 1;
+    }
+
+    /* 카드 헤더 (이미지 + 즐겨찾기) */
+    .card-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .favorite-btn {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: rgba(22, 33, 62, 0.9);
+        border: 2px solid rgba(139, 92, 246, 0.3);
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        font-size: 24px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+    }
+
+    .favorite-btn:hover {
+        transform: scale(1.1) rotate(12deg);
+        border-color: rgba(139, 92, 246, 0.6);
+        box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
+    }
+
+    .myvoice-img {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid transparent;
+        background: linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
+                    var(--primary-gradient) border-box;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+    }
+
+    .myvoice-card:hover .myvoice-img {
+        transform: scale(1.05);
+        box-shadow: 0 12px 32px rgba(139, 92, 246, 0.5);
+    }
+
+    /* 보이스 정보 */
+    .voice-info {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .myvoice-name {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+
+    .myvoice-alias {
+        font-size: 14px;
+        color: var(--text-secondary);
+        padding: 6px 12px;
+        background: rgba(139, 92, 246, 0.15);
+        border-radius: 12px;
+        display: inline-block;
+        font-weight: 600;
+    }
+
+    /* 타입 배지 */
+    .voice-types {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+        justify-content: center;
+    }
+
+    .type-badge {
+        padding: 6px 14px;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(99, 102, 241, 0.25));
+        border: 1px solid rgba(139, 92, 246, 0.6);
+        border-radius: 16px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #c4b5fd;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        transition: all 0.3s ease;
+    }
+
+    /* 책 선택 */
+    .book-select-wrapper {
+        margin-bottom: 16px;
+    }
+
+    .book-select-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .book-select {
+        width: 100%;
+        padding: 12px 16px;
+        border-radius: 12px;
+        border: 2px solid var(--border-color);
+        background: rgba(15, 23, 42, 0.8);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        outline: none;
+    }
+
+    .book-select:hover {
+        border-color: #8b5cf6;
+        background: rgba(15, 23, 42, 1);
+    }
+
+    .book-select:focus {
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    }
+
+    /* 오디오 플레이어 */
+    .audio-player {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(22, 33, 62, 0.6));
+        padding: 14px 18px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .audio-player::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+
+    .audio-player:hover {
+        border-color: rgba(139, 92, 246, 0.5);
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(22, 33, 62, 0.8));
+    }
+
+    .audio-player:hover::before {
+        opacity: 1;
+    }
+
+    .audio-player button {
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+        position: relative;
+        z-index: 1;
+    }
+
+    .audio-player button:hover {
+        transform: scale(1.15) rotate(5deg);
+        box-shadow: 0 8px 24px rgba(139, 92, 246, 0.6);
+    }
+
+    .audio-player button:active {
+        transform: scale(1.05);
+    }
+
+    .progress-bar {
+        flex: 1;
+        height: 10px;
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 5px;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .progress-bar:hover {
+        height: 12px;
+        border-color: rgba(139, 92, 246, 0.4);
+    }
+
+    .progress {
+        height: 100%;
+        width: 0%;
+        background: var(--primary-gradient);
+        transition: width 0.1s linear;
+        box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+        position: relative;
+    }
+
+    .progress::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        height: 14px;
+        background: white;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .progress-bar:hover .progress::after {
+        opacity: 1;
+    }
+
+    .time {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 700;
+        min-width: 90px;
+        text-align: right;
+        letter-spacing: 0.5px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* 삭제 버튼 */
+    .delete-btn {
+        width: 100%;
+        padding: 12px 20px;
+        background: var(--danger-gradient);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        letter-spacing: 0.3px;
+    }
+
+    .delete-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(239, 68, 68, 0.5);
+    }
+
+    .delete-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Empty State */
+    .no-myvoice {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 80px 24px;
+    }
+
+    .no-myvoice-icon {
+        font-size: 80px;
+        margin-bottom: 24px;
+        opacity: 0.5;
+    }
+
+    .no-myvoice-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .no-myvoice-text {
+        font-size: 16px;
+        color: var(--text-secondary);
+        margin-bottom: 32px;
+    }
+
+    .add-voice-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 32px;
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 16px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+    }
+
+    .add-voice-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 28px rgba(139, 92, 246, 0.6);
+    }
+
+    /* Light Mode */
+    body.light-mode {
+        --card-bg: #ffffff;
+        --card-hover-shadow: 0 16px 40px rgba(139, 92, 246, 0.2);
+        --border-color: #e2e8f0;
+        --text-primary: #0f172a;
+        --text-secondary: #64748b;
+        --bg-main: #f8fafc;
+    }
+
+    body.light-mode .page-header {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%);
+        border-bottom-color: rgba(139, 92, 246, 0.1);
+    }
+
+    body.light-mode .myvoice-card {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    body.light-mode .myvoice-card:hover {
+        box-shadow: 0 16px 40px rgba(139, 92, 246, 0.15);
+    }
+
+    body.light-mode .favorite-btn {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    body.light-mode .book-select {
+        background: rgba(248, 250, 252, 0.8);
+        border-color: var(--border-color);
+    }
+
+    body.light-mode .book-select:hover {
+        background: rgba(248, 250, 252, 1);
+    }
+
+    body.light-mode .audio-player {
+        background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 0.8));
+        border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    body.light-mode .audio-player:hover {
+        background: linear-gradient(135deg, rgba(248, 250, 252, 1), rgba(255, 255, 255, 1));
+    }
+
+    body.light-mode .progress-bar {
+        background: rgba(226, 232, 240, 0.9);
+        border-color: rgba(139, 92, 246, 0.2);
+    }
+
+    body.light-mode .progress-bar:hover {
+        border-color: rgba(139, 92, 246, 0.4);
+    }
+
+    body.light-mode .type-badge {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1));
+        border-color: rgba(139, 92, 246, 0.4);
+        color: #7c3aed;
+    }
+
+    body.light-mode .myvoice-alias {
+        background: rgba(139, 92, 246, 0.1);
+        color: #7c3aed;
+    }
+
+    /* 반응형 */
+    @media (max-width: 768px) {
+        .page-header,
+        .myvoice-container {
+            padding-left: 24px;
+            padding-right: 24px;
+        }
+
+        .page-title {
+            font-size: 28px;
+        }
+
+        .myvoice-grid {
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 24px;
+        }
+
+        .favorite-btn {
+            top: 0;
+            right: 0;
+        }
+    }
