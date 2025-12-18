@@ -1,7 +1,35 @@
-# 모든 텍스트 파일을 LF로 통일
+# Git 줄바꿈 문자 처리 설정
+# 모든 텍스트 파일을 저장소에 LF로 저장
 * text=auto eol=lf
 
-# 특정 파일만 지정 가능
+# Python 파일
+*.py text eol=lf
+
+# 웹 파일
 *.html text eol=lf
 *.css text eol=lf
 *.js text eol=lf
+*.json text eol=lf
+
+# 설정 파일
+*.md text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.env* text eol=lf
+
+# Windows 배치 파일
+*.bat text eol=crlf
+
+# 바이너리 파일
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.mp3 binary
+*.mp4 binary
+*.pdf binary
+*.db binary
+*.sqlite3 binary
