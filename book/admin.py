@@ -75,16 +75,27 @@ class VoiceListAdmin(admin.ModelAdmin):
     get_types.short_description = "음성 유형"
 
 
+
+
 @admin.register(VoiceType)
 class VoiceTypeAdmin(admin.ModelAdmin):
-    list_display = ("voice_id", "name")
+    list_display = ("id", "name")
     search_fields = ("name",)
-    ordering = ("voice_id",)
+    ordering = ("id",)
 
-    fieldsets=(
-        ('기본 정보',{
-            'fileds': ('voice_id', 'name')
-        })
+    readonly_fields = ("id",)
+
+    fieldsets = (
+        ("기본 정보", {
+            "fields": ("id", "name"),
+        }),
+        ("상세 정보", {
+            "description": (
+                "음성 분류용 타입입니다.\n"
+                "예: User Voice, Default Voice, AI Narration 등"
+            ),
+            "fields": (),
+        }),
     )
 
     
