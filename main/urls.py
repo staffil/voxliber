@@ -2,6 +2,7 @@ from django.urls import path
 from main import views  
 from django.conf import settings
 from django.conf.urls.static import static
+
 app_name = "main"
 
 urlpatterns = [
@@ -27,6 +28,7 @@ urlpatterns = [
     path('youth_protection/', views.youth_protection, name='youth_protection'),
     path('copyright_policy/', views.copyright_policy, name='copyright_policy'),
     path('faq/', views.faq, name='faq'),
+
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import TemplateView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -27,6 +28,10 @@ urlpatterns = [
     path("book/", include(("book.urls", "book"), namespace="book")),
     path("mypage/", include(("mypage.urls", "mypage"), namespace="mypage")),
     path("voice/", include(("voice.urls", "voice"), namespace="voice")),
+    path("robots.txt", TemplateView.as_view(
+        template_name="robots.txt",
+        content_type="text/plain"
+    )),
 ]
 
 # 개발 환경에서 미디어 파일 서빙
