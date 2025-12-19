@@ -49,8 +49,8 @@
   border: 2px solid transparent;
 }
 .ranking-item:hover {
-  background: var(--bg-hover);
-  border-color: var(--accent-primary);
+  background: var(--card-hover);
+  border-color: var(--primary);
   transform: translateX(8px);
   box-shadow: var(--shadow-lg);
 }
@@ -103,7 +103,7 @@
   align-items: center;
   justify-content: center;
   font-size: 32px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
 }
 .rank-info {
   flex: 1;
@@ -132,7 +132,7 @@
 .rank-score {
   font-size: 16px;
   font-weight: 700;
-  color: var(--accent-primary);
+  color: var(--primary);
 }
 .rank-change {
   font-size: 14px;

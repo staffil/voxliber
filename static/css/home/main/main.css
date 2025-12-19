@@ -1,51 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
 
 /* ========================================
-   기본 변수 정의
+   주석: CSS 변수는 variables.css에서 전역으로 정의됨
+   이 파일에서는 중복 정의하지 않음
    ======================================== */
-:root {
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
-  --spacing-3xl: 64px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
-  --radius-full: 9999px;
-  --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
-  --gradient-text: linear-gradient(135deg, #6366f1, #a78bfa);
-  --transition-base: 0.3s ease;
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
-  --primary: #6366f1;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-tertiary: #94a3b8;
-  --card-bg: rgba(255, 255, 255, 0.8);
-  --card-hover: rgba(255, 255, 255, 0.95);
-  --glass-bg: rgba(255, 255, 255, 0.15);
-  --glass-hover: rgba(255, 255, 255, 0.25);
-  --border-color: rgba(0, 0, 0, 0.1);
-  --bg-secondary: #f8fafc;
-  --bg-tertiary: #e2e8f0;
-}
-
-/* 다크모드 오버라이드 */
-body.dark-mode {
-  --text-primary: #f1f5f9;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #94a3b8;
-  --card-bg: rgba(30, 41, 59, 0.8);
-  --card-hover: rgba(51, 65, 85, 0.9);
-  --glass-bg: rgba(15, 23, 42, 0.3);
-  --glass-hover: rgba(15, 23, 42, 0.5);
-  --border-color: rgba(255, 255, 255, 0.1);
-  --bg-secondary: #0f172a;
-  --bg-tertiary: #1e293b;
-}
 
 /* 기본 바디 */
 body {

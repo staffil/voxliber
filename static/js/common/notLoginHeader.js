@@ -66,7 +66,7 @@
 
 function openLogin() {
     const modalHTML = `
-    <div id="login-modal">
+    <div id="login-modal" class="login-modal-context">
         <div class="modal-overlay" onclick="closeLogin()"></div>
         <div class="modal-content">
             <button class="close-btn" onclick="closeLogin()">X</button>

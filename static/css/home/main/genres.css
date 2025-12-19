@@ -74,11 +74,11 @@
   border-radius: 4px;
 }
 .genre-carousel::-webkit-scrollbar-thumb {
-  background: var(--accent-primary);
+  background: var(--primary);
   border-radius: 4px;
 }
 .genre-carousel::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-secondary);
+  background: var(--secondary);
 }
 
 /* Genre Book Card */
@@ -155,7 +155,7 @@ body.light-mode .genre-book-cover {
   transition: color 0.2s;
 }
 .genre-book-card:hover .genre-book-info h4 {
-  color: var(--accent-primary);
+  color: var(--primary);
 }
 .genre-book-author {
   font-size: 13px;
@@ -206,14 +206,14 @@ body.light-mode .genre-preview {
   transform: scale(1);
 }
 .genre-preview:hover {
-  background: var(--accent-primary);
+  background: var(--primary);
   transform: scale(1.1);
 }
 .genre-preview:hover svg {
   color: white;
 }
 .genre-preview svg {
-  color: var(--accent-primary);
+  color: var(--primary);
   transition: color 0.2s;
 }
 

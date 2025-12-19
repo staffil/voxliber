@@ -7,6 +7,9 @@
   padding: var(--spacing-2xl);
   margin: var(--spacing-2xl) 0;
 }
+body.light-mode .spotlight-section {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
+}
 .spotlight-carousel {
   display: grid;
   grid-auto-flow: column;
@@ -79,7 +82,7 @@
   align-items: center;
   justify-content: center;
   font-size: 80px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
 }
 .spotlight-overlay {
   position: absolute;
@@ -115,7 +118,7 @@
 }
 .spotlight-author {
   font-size: 14px;
-  color: var(--accent-primary);
+  color: var(--primary);
   font-weight: 600;
   margin-bottom: var(--spacing-md);
 }
@@ -144,7 +147,7 @@
   align-items: center;
   justify-content: center;
   padding: 14px 28px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   color: white;
   border-radius: var(--radius-lg);
   font-weight: 600;
