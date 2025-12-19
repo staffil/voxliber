@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Genres, Tags, Books, BookTag, Content, BookReview, BookComment, ContentComment, ReadingProgress, VoiceList, SoundEffectLibrary, BackgroundMusicLibrary, BookSnap, AuthorAnnouncement, AudioBookGuide, APIKey
+from .models import Genres, Tags, Books, BookTag, Content, BookReview, BookComment, ContentComment, ReadingProgress, VoiceList, SoundEffectLibrary, BackgroundMusicLibrary, BookSnap, AuthorAnnouncement, AudioBookGuide, APIKey, VoiceType
 
 
 @admin.register(Genres)
@@ -47,7 +47,7 @@ class ReadingProgressAdmin(admin.ModelAdmin):
         return f"{obj.get_progress_percentage()}%"
     get_progress_percentage.short_description = '진행률'
 
-
+# 목소리 리스트
 @admin.register(VoiceList)
 class VoiceListAdmin(admin.ModelAdmin):
     list_display = ['voice_name', 'voice_id', 'language_code', 'created_at', 'get_types']
@@ -74,6 +74,21 @@ class VoiceListAdmin(admin.ModelAdmin):
         return ", ".join([t.name for t in obj.types.all()])
     get_types.short_description = "음성 유형"
 
+
+@admin.register(VoiceType)
+class VoiceTypeAdmin(admin.ModelAdmin):
+    list_display = ("id", "name")
+    search_fields = ("name",)
+    ordering = ("id",)
+
+    fieldsets=(
+        ('기본 정보',{
+            'fileds': ('id', 'name')
+        })
+    )
+
+    
+    
 
 
 @admin.register(SoundEffectLibrary)
