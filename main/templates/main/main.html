@@ -24,7 +24,7 @@
   <div class="main-content-wrapper">
 <div class="promo-container-wrapper">
   <!-- 슬라이더 -->
-  <div class="promo-container">
+  <!-- <div class="promo-container">
       {% for advertisment in advertisment_list %}
       <div class="promo-banner">
           <a href="{{ advertisment.link }}">
@@ -34,7 +34,6 @@
       {% endfor %}
   </div>
 
-  <!-- 슬라이더 컨트롤 -->
   <button class="promo-nav promo-nav-prev" id="promoPrev" title="이전 광고">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
       <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
@@ -47,14 +46,11 @@
     </svg>
   </button>
 
-  <!-- 하단 컨트롤 바 -->
   <div class="promo-controls">
-    <!-- 슬라이드 카운터 -->
     <div class="promo-counter">
       <span id="currentSlide">1</span> / <span id="totalSlides">{{ advertisment_list|length }}</span>
     </div>
 
-    <!-- 일시정지/재생 버튼 -->
     <button class="promo-play-pause" id="promoPlayPause" title="일시정지">
       <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
         <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
@@ -64,7 +60,6 @@
       </svg>
     </button>
 
-    <!-- 인디케이터 -->
     <div class="promo-indicators">
         {% for advertisment in advertisment_list %}
             <span class="indicator"></span>
@@ -72,7 +67,7 @@
     </div>
   </div>
 </div>
-
+ -->
 
   <!-- 
 <br>
@@ -125,7 +120,28 @@
 </div>
 -->
 
-
+    <section class="hero-section">
+      <div class="hero-background">
+        {% for news in news_list %}
+          {% if news.news_img %}
+            <img src="{{ news.news_img.url }}" alt="VOXLIBER" loading="lazy">
+          {% else %}
+            <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
+          {% endif %}
+        {% empty %}
+          <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
+        {% endfor %}
+      </div>
+      <div class="hero-overlay" style="border-radius: 15px;"></div>
+      <div class="hero-content">
+        <h1 class="hero-title">목소리로 듣는 이야기</h1>
+        <p class="hero-subtitle">AI가 만드는 오디오북으로 새로운 독서 경험을 시작하세요</p>
+        <a href="book/book_tos/" class="hero-cta" onclick="openLogin(); return false;">
+          <span>작품 만들기</span>
+          <span>→</span>
+        </a>
+      </div>
+    </section>
 
     <!-- 최근 본 소설 -->
 {% if request.user.is_authenticated %}
@@ -226,7 +242,7 @@
 
 
     <!-- 히어로 섹션 -->
-    <section class="hero-section">
+    <!-- <section class="hero-section">
       <div class="hero-background">
         {% for news in news_list %}
           {% if news.news_img %}
@@ -247,7 +263,7 @@
           <span>→</span>
         </a>
       </div>
-    </section>
+    </section> -->
 
 <!-- 시 응모작 winner - Slider -->
    <!-- 
@@ -1197,6 +1213,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 {% block extra_js %}
 <script src="{% static 'js/home/main.js' %}"></script>
+<script src="{% static 'js/common/login_btn.js' %}"></script>
+
 <script>
   
 // 최근 청취 기록 - 이어듣기 기능

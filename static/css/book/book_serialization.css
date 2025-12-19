@@ -5,6 +5,108 @@
     padding-top: 80px;
 }
 
+#deletePageBtn {
+    font-size: 8px;
+    width: 70px;
+    height: 30px;
+    display: flex;
+    justify-content: center; /* 가로 중앙 */
+    align-items: center;     /* 세로 중앙 */
+    padding: 4px;
+}
+
+
+.format-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(138, 99, 210, 0.1);
+    border: 1px solid rgba(138, 99, 210, 0.3);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.format-btn:hover {
+    background: rgba(138, 99, 210, 0.25);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.format-btn:active {
+    transform: translateY(0);
+}
+
+.format-btn svg {
+    opacity: 0.8;
+}
+
+.format-btn:hover svg {
+    opacity: 1;
+}
+
+/* 커스텀 오디오 플레이어 - 볼륨 슬라이더 스타일 */
+#volumeSlider {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+#volumeSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8a63d2 0%, #b794f6 100%);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+#volumeSlider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 3px 8px rgba(138, 99, 210, 0.5);
+}
+
+#volumeSlider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8a63d2 0%, #b794f6 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+#volumeSlider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 3px 8px rgba(138, 99, 210, 0.5);
+}
+
+/* Play/Pause 버튼 hover 효과 */
+#playPauseBtn:hover {
+    box-shadow: 0 6px 20px rgba(138, 99, 210, 0.6);
+    transform: scale(1.05);
+}
+
+#playPauseBtn:active {
+    transform: scale(0.95);
+}
+
+/* 프로그레스 바 hover 효과 */
+#progressBarContainer:hover {
+    height: 8px;
+    transition: height 0.2s ease;
+}
+
+#progressBarContainer:hover #progressBar > div {
+    width: 14px;
+    height: 14px;
+}
 /* 왼쪽 사이드바 - 대사 목록 */
 .sidebar {
     width: 250px;
@@ -1059,31 +1161,305 @@ body.light-mode .section-container {
 }
 
 /* ================================
-   미디어 쿼리 - 반응형
+   반응형 CSS - 태블릿 세로 모드 전용 (최종 컴팩트 버전)
+   디자인 스타일 완전 유지 + 공간 최대한 확보
    ================================ */
-@media (max-width: 1200px) {
+
+/* 1000px 이하에서는 전체 인터페이스 숨김 (데스크톱 전용 제한) */
+@media (max-width: 1000px) {
+    .writing-wrapper {
+        display: none !important;
+    }
+}
+
+/* 태블릿 세로 모드 전용 반응형 (높이 900px 이하 + 세로 방향) */
+@media (max-height: 900px) and (orientation: portrait) {
+    /* 전체 상단 패딩 증가 → 고정 헤더/탭 아래로 내용이 안 가려지게 */
+    .writing-wrapper {
+        padding-top: 135px;
+    }
+
+    /* 왼쪽 사이드바 - 극도로 컴팩트 */
+    .sidebar {
+        width: 175px; /* 기존 250px → 175px */
+    }
+
+    .sidebar-header {
+        padding: 10px 12px;
+    }
+
+    .book-title-small {
+        font-size: 14.5px;
+        margin-bottom: 4px;
+    }
+
+    .episode-info {
+        font-size: 10.8px;
+    }
+
+    #episodeTitle {
+        padding: 6px;
+        font-size: 12px;
+        margin-top: 6px;
+    }
+
+    .add-page-btn {
+        padding: 7px;
+        margin: 7px 0;
+        font-size: 12px;
+        gap: 4px;
+    }
+
+    .pages-list {
+        padding: 4px;
+    }
+
+    .page-item {
+        padding: 6px;
+        margin-bottom: 4px;
+        border-radius: 4px;
+    }
+
+    .page-item-header {
+        margin-bottom: 4px;
+    }
+
+    .page-number {
+        font-size: 12.8px;
+        font-weight: 700;
+    }
+
+    .char-count-small {
+        font-size: 10.2px;
+    }
+
+    .page-preview {
+        font-size: 11.2px;
+    }
+
+    /* 배경음 트랙 섹션 */
+    #backgroundTracksList {
+        max-height: 100px;
+        font-size: 11px;
+    }
+
+    /* 메인 에디터 헤더 */
+    .editor-header {
+        padding: 9px 14px;
+    }
+
+    .current-page-info h2 {
+        font-size: 17.5px;
+        margin-bottom: 2px;
+    }
+
+    .page-meta {
+        font-size: 11.8px;
+    }
+
+    .header-actions {
+        gap: 6px;
+    }
+
+    .header-actions .btn,
+    .voice-list-btn {
+        padding: 6px 11px;
+        font-size: 12.2px;
+        gap: 4px;
+    }
+
+    /* 에디터 컨테이너 패딩 최소화 */
+    .editor-container {
+        padding: 10px;
+    }
+
+    /* 2열 → 세로 스택 필수 */
     .editor-wrapper {
         flex-direction: column;
+        gap: 12px;
+    }
+
+    .panel-left {
+        min-width: 0;
     }
 
     .panel-right {
         width: 100%;
         max-width: none;
+        padding: 11px;
+        border-radius: 8px;
+    }
+
+    .write-panel-header {
+        font-size: 15px;
+        margin-bottom: 9px;
+        gap: 5px;
+    }
+
+    #novelDraft {
+        padding: 9px;
+        font-size: 12.8px;
+        line-height: 1.55;
+        min-height: 240px;
+        border-radius: 6px;
+    }
+
+    /* 툴바 */
+    .editor-toolbar {
+        padding: 7px 11px;
+        gap: 5px;
+        border-radius: 7px 7px 0 0;
+    }
+
+    .char-count-display {
+        font-size: 12px;
+    }
+
+    /* 페이지 에디터 */
+    .page-editor {
+        padding: 13px;
+        min-height: 190px;
+        border-radius: 0 0 7px 7px;
+    }
+
+    .page-editor textarea {
+        font-size: 14.2px;
+        line-height: 1.55;
+        min-height: 150px;
+    }
+
+    /* 포맷 버튼들 */
+    .page-editor > div[style*="flex-wrap"] button {
+        padding: 5px;
+    }
+
+    .page-editor > div[style*="flex-wrap"] svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* 오디오 섹션 컴팩트 */
+    .page-editor > div[style*="background: #16213e"] {
+        padding: 14px;
+        margin-top: 14px;
+    }
+
+    .page-editor audio#pageAudioPlayer {
+        margin-bottom: 10px;
+    }
+
+    /* 커스텀 오디오 플레이어 버튼들 */
+    #playPauseBtn {
+        width: 42px;
+        height: 42px;
+    }
+
+    #playPauseBtn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* 에디터 푸터 */
+    .editor-footer {
+        padding: 9px 11px;
+        margin-top: 9px;
+        border-radius: 7px;
+    }
+
+    .footer-info {
+        font-size: 11.2px;
+        gap: 4px;
+    }
+
+    /* 오른쪽 음성 사이드바 완전 숨김 */
+    .voice-sidebar {
+        display: none !important;
+    }
+
+    /* 모달 컴팩트 */
+    .modal-container,
+    #soundEffectModal > div,
+    #backgroundMusicModal > div {
+        width: 97%;
+        padding: 14px;
+        border-radius: 11px;
+        max-height: 91vh;
+    }
+
+    .modal-header h3,
+    #soundEffectModal h3,
+    #backgroundMusicModal h3 {
+        font-size: 16.5px;
+    }
+
+    .modal-close-btn,
+    #soundEffectModal button[onclick="closeSoundEffectModal()"],
+    #backgroundMusicModal button[onclick="closeBackgroundMusicModal()"] {
+        font-size: 19px;
+        width: 26px;
+        height: 26px;
+    }
+
+    .modal-tabs button,
+    #soundEffectModal [style*="border-bottom"] button,
+    #backgroundMusicModal [style*="border-bottom"] button {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .form-label {
+        font-size: 12.2px;
+        margin-bottom: 4px;
+    }
+
+    .form-input,
+    .form-textarea,
+    #effectName, #effectDescription, #effectDuration,
+    #musicName, #musicDescription, #musicDuration {
+        padding: 7px 9px;
+        font-size: 13.2px;
+        border-radius: 6px;
+    }
+
+    .btn-group button,
+    #soundEffectModal .btn,
+    #backgroundMusicModal .btn {
+        padding: 9px;
+        font-size: 13px;
     }
 }
 
-@media (max-width: 768px) {
+/* 태블릿 가로 모드 보완 (높이 제한 시 약간 더 컴팩트) */
+@media (max-height: 800px) and (orientation: landscape) {
     .writing-wrapper {
-        flex-direction: column;
+        padding-top: 80px;
     }
 
     .sidebar {
-        width: 100%;
-        max-height: 200px;
+        width: 185px;
     }
 
-    .modal-container {
-        width: 95%;
-        padding: 20px;
+    .editor-header {
+        padding: 7px 12px;
+    }
+
+    .current-page-info h2 {
+        font-size: 16.5px;
+    }
+
+    .editor-container {
+        padding: 8px;
+    }
+
+    .page-editor {
+        padding: 11px;
+    }
+
+    .page-editor textarea {
+        font-size: 13.8px;
+    }
+
+    .editor-toolbar {
+        padding: 6px 9px;
     }
 }

@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/book_serialization.css' %}">
+<link rel="stylesheet" href="{% static 'css/book/book_serilizaion.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -75,7 +76,7 @@
             <div class="header-actions">
 
                 <button type="button" class="btn btn-danger" onclick="destroyPage()" id="deletePageBtn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 6h18" />
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
@@ -87,7 +88,7 @@
                     전체 삭제
                 </button>
                 <button type="button" class="btn btn-danger" onclick="deletePage()" id="deletePageBtn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"/>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                     </svg>
@@ -96,19 +97,19 @@
 
 
                 <!-- 오디오북 가이드 -->
-                <button type="button" class="btn btn-primary" onclick="audioBookGuide()">오디오북 가이드</button>
+                <button type="button" class="btn btn-primary" onclick="audioBookGuide()" id="deletePageBtn">오디오북 가이드</button>
 
-                <button class="btn btn-primary" onclick="emotionFunc()" >감정 리스트</button>
-                <button type="button" class="btn btn-secondary" onclick="saveDraft()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button class="btn btn-primary" onclick="emotionFunc()" id="deletePageBtn">감정 리스트</button>
+                <button type="button" class="btn btn-secondary" onclick="saveDraft()" id="deletePageBtn">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                         <polyline points="17 21 17 13 7 13 7 21"/>
                         <polyline points="7 3 7 8 15 8"/>
                     </svg>
                     임시저장
                 </button>
-                <a href="{% url 'book:book_profile' %}?book_id={{ book.id }}" class="btn btn-secondary">뒤로가기</a>
-                <button type="button" class="btn btn-primary" onclick="goToPreview()">미리듣기</button>
+                <a href="{% url 'book:book_profile' %}?book_id={{ book.id }}" class="btn btn-secondary" id="deletePageBtn">뒤로가기</a>
+                <button type="button" class="btn btn-primary" onclick="goToPreview()" id="deletePageBtn">미리듣기</button>
             </div>
         </div>
 
@@ -1739,98 +1740,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </script>
 
-<style>
-.format-btn {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(138, 99, 210, 0.1);
-    border: 1px solid rgba(138, 99, 210, 0.3);
-    border-radius: 6px;
-    color: var(--text);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
 
-.format-btn:hover {
-    background: rgba(138, 99, 210, 0.25);
-    border-color: var(--primary);
-    transform: translateY(-1px);
-}
-
-.format-btn:active {
-    transform: translateY(0);
-}
-
-.format-btn svg {
-    opacity: 0.8;
-}
-
-.format-btn:hover svg {
-    opacity: 1;
-}
-
-/* 커스텀 오디오 플레이어 - 볼륨 슬라이더 스타일 */
-#volumeSlider {
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-#volumeSlider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #8a63d2 0%, #b794f6 100%);
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
-}
-
-#volumeSlider::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 3px 8px rgba(138, 99, 210, 0.5);
-}
-
-#volumeSlider::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #8a63d2 0%, #b794f6 100%);
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
-}
-
-#volumeSlider::-moz-range-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 3px 8px rgba(138, 99, 210, 0.5);
-}
-
-/* Play/Pause 버튼 hover 효과 */
-#playPauseBtn:hover {
-    box-shadow: 0 6px 20px rgba(138, 99, 210, 0.6);
-    transform: scale(1.05);
-}
-
-#playPauseBtn:active {
-    transform: scale(0.95);
-}
-
-/* 프로그레스 바 hover 효과 */
-#progressBarContainer:hover {
-    height: 8px;
-    transition: height 0.2s ease;
-}
-
-#progressBarContainer:hover #progressBar > div {
-    width: 14px;
-    height: 14px;
-}
-</style>
 
 {% endblock %}
