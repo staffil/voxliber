@@ -77,13 +77,13 @@ class VoiceListAdmin(admin.ModelAdmin):
 
 @admin.register(VoiceType)
 class VoiceTypeAdmin(admin.ModelAdmin):
-    list_display = ("id", "name")
+    list_display = ("voice_id", "name")
     search_fields = ("name",)
-    ordering = ("id",)
+    ordering = ("voice_id",)
 
     fieldsets=(
         ('기본 정보',{
-            'fileds': ('id', 'name')
+            'fileds': ('voice_id', 'name')
         })
     )
 
