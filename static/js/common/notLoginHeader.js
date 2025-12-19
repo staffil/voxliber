@@ -31,24 +31,8 @@
             });
         }
 
-        // Header scroll effect
-        window.addEventListener('scroll', () => {
-            const header = document.getElementById('header');
-            if (window.scrollY > 50) {
-                header.classList.add('scrolled');
-            } else {
-                header.classList.remove('scrolled');
-            }
-        });
 
-        // Search input focus effect
-        const searchInput = document.querySelector('.search-input');
-        searchInput.addEventListener('focus', () => {
-            searchInput.parentElement.style.transform = 'scale(1.02)';
-        });
-        searchInput.addEventListener('blur', () => {
-            searchInput.parentElement.style.transform = 'scale(1)';
-        });
+
 
         // Smooth scroll
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -90,11 +74,6 @@ function closeLogin() {
 }
 
 
-
-document.getElementById("searchBtn").addEventListener("click", () => {
-    const q = document.getElementById("searchInput").value.trim();
-    if (q) window.location.href = `/search/?q=${encodeURIComponent(q)}`;
-});
 
 document.getElementById("searchInput").addEventListener("keyup", (e) => {
     if (e.key === "Enter") {
