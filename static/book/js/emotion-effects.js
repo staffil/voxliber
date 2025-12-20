@@ -40,7 +40,7 @@ function emotionFunc() {
     {
       title: "Whisper / Secret",
       color: "#e879f9",
-      items: ["whisper","soft_whisper","murmur","hushed","secretive","quietly","under_breath","sneaky_voice"]
+      items: ["whispering","chuckles","soft_whisper", "exhales sharply" , "short pause","murmur","hushed","secretive","quietly","under_breath","sneaky_voice"]
     },
     {
       title: "Drunk / Drowsy",
@@ -50,7 +50,7 @@ function emotionFunc() {
     {
       title: "ETC",
       color: "#c084fc",
-      items: ["warried", "embarrassed", "confused",  "awkward", "ashamed", "discouraged", "puzzled", "shocked", "startled", "uneasy", "bothered",  ]
+      items: ["warried","clears throat", "embarrassed", "confused",  "awkward", "ashamed", "discouraged", "puzzled", "shocked", "startled", "uneasy", "bothered",  ]
     },
     {
       title: "Speech Style",
