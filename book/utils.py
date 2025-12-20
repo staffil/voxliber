@@ -103,9 +103,10 @@ def generate_tts(novel_text, voice_id,language_code,speed_value ):
         return None
 
 
-def merge_audio_files(audio_files, pages_text=None):
+def merge_audio_files(audio_paths, pages_text=None):
     """
     ffmpeg concat 기반 오디오 병합 + 타임스탬프 유지
+    audio_paths: List[str]
     """
     import os
     import subprocess
@@ -113,9 +114,9 @@ def merge_audio_files(audio_files, pages_text=None):
     from django.conf import settings
 
     print("🎵 오디오 합치기 시작...")
-    print(f"📊 총 {len(audio_files)}개의 오디오 파일")
+    print(f"📊 총 {len(audio_paths)}개의 오디오 파일")
 
-    if not audio_files:
+    if not audio_paths:
         return None, None
 
     temp_dir = os.path.join(settings.MEDIA_ROOT, "audio")
@@ -127,7 +128,7 @@ def merge_audio_files(audio_files, pages_text=None):
     timestamps_info = []
     cumulative_time = 3000  # intro silence 기준
 
-    # 침묵 파일 준비
+    # 침묵 파일
     intro_silence = os.path.join(temp_dir, "intro_3000ms.mp3")
     middle_silence = os.path.join(temp_dir, "middle_500ms.mp3")
     outro_silence = os.path.join(temp_dir, "outro_3000ms.mp3")
@@ -140,7 +141,6 @@ def merge_audio_files(audio_files, pages_text=None):
             "-f", "lavfi",
             "-i", "anullsrc=r=44100:cl=stereo",
             "-t", str(duration_ms / 1000),
-            "-q:a", "9",
             path
         ], check=True)
 
@@ -151,24 +151,16 @@ def merge_audio_files(audio_files, pages_text=None):
     with open(concat_list_path, "w", encoding="utf-8") as f:
         f.write(f"file '{intro_silence}'\n")
 
-        for idx, audio_file in enumerate(audio_files):
-            temp_audio_path = os.path.join(temp_dir, f"voice_{uuid4().hex}.mp3")
+        for idx, audio_path in enumerate(audio_paths):
+            if not os.path.exists(audio_path):
+                raise FileNotFoundError(audio_path)
 
-            audio_file.seek(0)
-            if hasattr(audio_file, "chunks"):
-                with open(temp_audio_path, "wb") as out:
-                    for chunk in audio_file.chunks():
-                        out.write(chunk)
-            else:
-                with open(temp_audio_path, "wb") as out:
-                    out.write(audio_file.read())
-
+            # 길이 계산
             duration_sec = float(subprocess.check_output([
-                "ffprobe",
-                "-v", "error",
+                "ffprobe", "-v", "error",
                 "-show_entries", "format=duration",
                 "-of", "default=noprint_wrappers=1:nokey=1",
-                temp_audio_path
+                audio_path
             ]).decode().strip())
 
             duration_ms = int(duration_sec * 1000)
@@ -187,7 +179,7 @@ def merge_audio_files(audio_files, pages_text=None):
                 "text": pages_text[idx] if pages_text and idx < len(pages_text) else None
             })
 
-            f.write(f"file '{temp_audio_path}'\n")
+            f.write(f"file '{audio_path}'\n")
 
         f.write(f"file '{outro_silence}'\n")
 
@@ -202,8 +194,6 @@ def merge_audio_files(audio_files, pages_text=None):
 
     print(f"🎉 최종 오디오 저장 완료: {output_path}")
     return output_path, timestamps_info
-
-
 
 # 사운드 효과
 def sound_effect(effect_name, effect_description, duration_seconds):
