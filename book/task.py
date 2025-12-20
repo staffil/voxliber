@@ -1,25 +1,30 @@
 from celery import shared_task
-from book.utils import merge_audio_files, mix_audio_with_background
+from book.utils import generate_tts
+import os
+from django.conf import settings
 
 @shared_task(bind=True)
-def generate_full_audio_task(
+def generate_tts_task(
     self,
-    audio_files_info,
-    pages_text,
-    background_tracks_info=None
+    text,
+    voice_id,
+    language_code,
+    speed
 ):
-    merged_path, timestamps = merge_audio_files(
-        audio_files_info,
-        pages_text
+    audio_path = generate_tts(
+        novel_text=text,
+        voice_id=voice_id,
+        language_code=language_code,
+        speed_value=speed
     )
 
-    if background_tracks_info:
-        merged_path = mix_audio_with_background(
-            merged_path,
-            background_tracks_info
-        )
+    if audio_path and os.path.exists(audio_path):
+        rel_path = os.path.relpath(audio_path, settings.MEDIA_ROOT)
+        audio_url = settings.MEDIA_URL + rel_path.replace("\\", "/")
+    else:
+        audio_url = None
 
     return {
-        "audio_path": merged_path,
-        "timestamps": timestamps
+        "audio_path": audio_path,
+        "audio_url": audio_url
     }
