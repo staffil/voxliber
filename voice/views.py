@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from book.models import VoiceList, MyVoiceList, VoiceType
 from django.db.models import Count
+from django.db.models import Count, Q
 
 # Create your views here.
 
