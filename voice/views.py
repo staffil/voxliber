@@ -18,10 +18,10 @@ def voice_list(request):
     
 
     # 타입 필터링
-    selected_type_id = request.GET.getlist('type_id')
+    selected_type_ids  = request.GET.getlist('type_id')
 
-    if selected_type_id:
-        voice_lists = VoiceList.objects.filter(types__id__in=selected_type_id).distinct()
+    if selected_type_ids :
+        voice_lists = VoiceList.objects.filter(types__id__in=selected_type_ids ).distinct()
     else:
         voice_lists = VoiceList.objects.all()
 
@@ -39,7 +39,7 @@ def voice_list(request):
     context = {
         'voice_lists': voice_lists,
         'voice_types': voice_types,
-        'selected_type_id': int(selected_type_id) if selected_type_id else None,
+        'selected_type_ids': list(map(int, selected_type_ids)),
         'my_voices': my_voices,
         'books': books,
     }
