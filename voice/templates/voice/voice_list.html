@@ -16,16 +16,18 @@
 </div>
 
 <!-- 타입 필터 섹션 -->
-<div class="filter-section">
-    <div class="filter-title">목소리 타입</div>
-    <div class="filter-buttons">
-        {% for voice_type in voice_types %}
-        <a href="?type_id={{ voice_type.id }}" class="filter-btn {% if selected_type_id == voice_type.id %}active{% endif %}">
-            {{ voice_type.name }}
-        </a>
-        {% endfor %}
-    </div>
+<div class="filter-buttons">
+    {% for voice_type in voice_types %}
+    <button
+        type="button"
+        class="filter-btn {% if voice_type.id in selected_type_ids %}active{% endif %}"
+        data-id="{{ voice_type.id }}"
+    >
+        {{ voice_type.name }}
+    </button>
+    {% endfor %}
 </div>
+
 
 <!-- 메인 레이아웃: 왼쪽(내 보이스) + 오른쪽(전체 목록) -->
 <div class="main-layout">
@@ -140,14 +142,14 @@
                 <div class="no-voices">
                     <div class="no-voices-icon">🎙️</div>
                     <h2 class="no-voices-title">
-                        {% if selected_type_id %}
+{% if selected_type_ids %}
                         해당 타입의 목소리가 없습니다
                         {% else %}
                         등록된 보이스가 없습니다
                         {% endif %}
                     </h2>
                     <p class="no-voices-text">
-                        {% if selected_type_id %}
+{% if selected_type_ids %}
                         다른 타입을 선택해보세요
                         {% else %}
                         새로운 보이스가 곧 추가될 예정입니다
@@ -191,6 +193,28 @@ function getCookie(name) {
 }
 
 const csrftoken = getCookie('csrftoken');
+// 목소리 타입 중복 선택
+const params = new URLSearchParams(window.location.search);
+const selected = new Set(params.getAll("type_id"));
+
+document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+
+        if (selected.has(id)) {
+            selected.delete(id);
+            btn.classList.remove("active");
+        } else {
+            selected.add(id);
+            btn.classList.add("active");
+        }
+        const newParams = new URLSearchParams();
+        selected.forEach(v => newParams.append("type_id",v ));
+
+        window.location.search = newParams.toString();
+
+    })
+})
 
 // 즐겨찾기 토글 (페이지 새로고침 없음)
 function toggleFavorite(voiceId, button) {
