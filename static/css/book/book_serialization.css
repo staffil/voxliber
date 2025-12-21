@@ -198,6 +198,8 @@
     transition: all 0.2s ease;
 }
 
+
+
 #volumeSlider::-webkit-slider-thumb:hover {
     transform: scale(1.2);
     box-shadow: 0 3px 8px rgba(138, 99, 210, 0.5);

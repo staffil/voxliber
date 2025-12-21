@@ -419,6 +419,7 @@ def api_my_listening_history(request):
                 'id': h.content.id,
                 'title': h.content.title,
                 'number': h.content.number,
+                'text':h.content.text,
                 'audio_file': h.content.audio_file.url if h.content.audio_file else None,
                 'episode_image': h.content.episode_image.url if h.content.episode_image else None,
             }
