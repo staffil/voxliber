@@ -529,6 +529,8 @@ class AudioBookGuide(models.Model):
             ('voiceChoice', '보이스 선택하기'),
             ('save', '임시저장'),
             ('emotionList', '감정리스트'),
+            ('pageAudio', '페이지 오디오'),
+            ('voiceSetting', '음성 설정'),
             ('etc', '기타'),
         ],
         default='etc'
