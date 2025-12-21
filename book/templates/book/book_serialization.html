@@ -84,44 +84,80 @@
 
             <div class="header-actions">
 
-                <button type="button" class="btn btn-danger" onclick="destroyPage()" id="deletePageBtn">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 6h18" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                    <path d="M10 11l4 4" />
-                    <path d="M14 11l-4 4" />
-                    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                <!-- 전체 삭제 - 강렬한 빨강 -->
+                <button type="button" class="btn btn-delete-all" onclick="destroyPage()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                        <path d="M10 11l4 4" />
+                        <path d="M14 11l-4 4" />
+                        <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
                     </svg>
-
                     전체 삭제
                 </button>
-                <button type="button" class="btn btn-danger" onclick="deletePage()" id="deletePageBtn">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+                <!-- 개별 삭제 - 기본 빨강 -->
+                <button type="button" class="btn btn-delete" onclick="deletePage()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"/>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                     </svg>
                     삭제
                 </button>
-            <button type="button" class="btn btn delete-btn" onclick="showNovel()" id="deletePageBtn">
-                <span>소설 작성</span>
-            </button>
 
+                <!-- 소설 작성 - 초록 (창작/긍정) -->
+                <button type="button" class="btn btn-create" onclick="showNovel()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 3v18M3 12h18"/>
+                    </svg>
+                    소설 작성
+                </button>
 
-                <!-- 오디오북 가이드 -->
-                <button type="button" class="btn btn-primary" onclick="audioBookGuide()" id="deletePageBtn">오디오북 가이드</button>
+                <!-- 오디오북 가이드 - 보라 (정보/가이드) -->
+                <button type="button" class="btn btn-guide" onclick="audioBookGuide()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4"/>
+                        <path d="M12 8h.01"/>
+                    </svg>
+                    오디오북 가이드
+                </button>
 
-                <button class="btn btn-primary" onclick="emotionFunc()" id="deletePageBtn">감정 리스트</button>
-                <button type="button" class="btn btn-secondary" onclick="saveDraft()" id="deletePageBtn">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <!-- 감정 리스트 - 보라 (창의적) -->
+                <button type="button" class="btn btn-emotion" onclick="emotionFunc()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                        <path d="M9 9h.01M15 9h.01"/>
+                    </svg>
+                    감정 리스트
+                </button>
+
+                <!-- 임시저장 - 파랑 (안전) -->
+                <button type="button" class="btn btn-save" onclick="saveDraft()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                         <polyline points="17 21 17 13 7 13 7 21"/>
                         <polyline points="7 3 7 8 15 8"/>
                     </svg>
                     임시저장
                 </button>
-                <a href="{% url 'book:book_profile' %}?book_id={{ book.id }}" class="btn btn-secondary" id="deletePageBtn">뒤로가기</a>
-                <button type="button" class="btn btn-primary" onclick="goToPreview()" id="deletePageBtn">미리듣기</button>
+
+                <!-- 뒤로가기 - 밝은 회색 (보조) -->
+                <a href="{% url 'book:book_profile' %}?book_id={{ book.id }}" class="btn btn-back">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 5l-7 7 7 7"/>
+                    </svg>
+                    뒤로가기
+                </a>
+
+                <!-- 미리듣기 - 보라 (재생/창의) -->
+                <button type="button" class="btn btn-preview" onclick="goToPreview()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    미리듣기
+                </button>
             </div>
         </div>
 

@@ -32,7 +32,79 @@
     height: 500px;
 }
 
+/* 공통 버튼 스타일 */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    font-size: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
 
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+}
+.btn svg {
+    width: 14px;                 /* 기존 16~20px → 14px */
+    height: 14px;
+}
+.btn:active {
+    transform: translateY(0);
+}
+
+/* 색상별 스타일 */
+.btn-delete-all {
+    background: #dc2626; /* 강렬한 빨강 */
+    color: white;
+}
+.btn-delete-all:hover { background: #b91c1c; }
+
+.btn-delete {
+    background: #ef4444; /* 밝은 빨강 */
+    color: white;
+}
+.btn-delete:hover { background: #dc2626; }
+
+.btn-create {
+    background: #10b981; /* 초록 */
+    color: white;
+}
+.btn-create:hover { background: #059669; }
+
+.btn-guide {
+    background: #8b5cf6; /* 보라 */
+    color: white;
+}
+.btn-guide:hover { background: #7c3aed; }
+
+.btn-emotion {
+    background: #a78bfa; /* 연보라 */
+    color: white;
+}
+.btn-emotion:hover { background: #8b5cf6; }
+
+.btn-save {
+    background: #3b82f6; /* 파랑 */
+    color: white;
+}
+.btn-save:hover { background: #2563eb; }
+
+.btn-back {
+    background: #6b7280; /* 회색 */
+    color: white;
+}
+.btn-back:hover { background: #4b5563; }
+
+.btn-preview {
+    background: #8b5cf6; /* 보라 */
+    color: white;
+}
+.btn-preview:hover { background: #7c3aed; }
 /* 드래그 핸들 */
 #pagesResizeHandle {
     height: 8px;
