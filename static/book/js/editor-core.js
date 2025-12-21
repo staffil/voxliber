@@ -503,7 +503,6 @@ function getFilter() {
                 <button class="btn btn-secondary voice-btn" data-voice="underwater">물속</button>
                 <button class="btn btn-secondary voice-btn" data-voice="robot">로봇</button>
                 <button class="btn btn-secondary voice-btn" data-voice="ghost">유령</button>
-                <button class="btn btn-secondary voice-btn" data-voice="child">어린이</button>
                 <button class="btn btn-secondary voice-btn" data-voice="old">노인</button>
                 <button class="btn btn-secondary voice-btn" data-voice="echo">메아리</button>
                 <button class="btn btn-secondary voice-btn" data-voice="whisper">속삭임</button>
@@ -1137,8 +1136,34 @@ async function saveFilteredAudio() {
     filter.gain.value = parseFloat(filterGain.value);
 
     // 4) 오디오 체인 구성 (조건 없음)
+    const delayNode = offlineCtx.createDelay();
+    delayNode.delayTime.value = 0.05;
+
+    const feedback = offlineCtx.createGain();
+    feedback.gain.value = 0.35;
+
+    delayNode.connect(feedback);
+    feedback.connect(delayNode);
+
+    const masterGain = offlineCtx.createGain();
+    masterGain.gain.value = 1;
+
+    // chain
     source.connect(filter);
-    filter.connect(offlineCtx.destination);
+    filter.connect(delayNode);
+    delayNode.connect(masterGain);
+    filter.connect(masterGain); // 원음 섞기
+    masterGain.connect(offlineCtx.destination);
+
+    applyOfflineRouting(
+        currentEffect,
+        source,
+        filter,
+        delayNode,
+        feedback,
+        tremoloGain,
+        masterGain
+    );
 
     // 5) 렌더링
     source.start();
@@ -1245,6 +1270,27 @@ function deletePage() {
 
     loadPage(currentPageIndex);
 }
+
+
+function applyOfflineRouting(effect, source, filter, delayNode, feedback, tremoloGain, masterGain) {
+    source.connect(filter);
+
+    if (effect === "megaphone") {
+        filter.connect(delayNode);
+        delayNode.connect(feedback);
+        feedback.connect(delayNode);
+        delayNode.connect(masterGain);
+        filter.connect(masterGain);
+    } 
+    else if (effect === "robot") {
+        filter.connect(tremoloGain);
+        tremoloGain.connect(masterGain);
+    }
+    else {
+        filter.connect(masterGain);
+    }
+}
+
 
 // 이전/다음 페이지
 function prevPage() {

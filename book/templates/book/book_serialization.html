@@ -142,6 +142,9 @@
         <div class="voice-sidebar-header">
             <h3>🎙️ 나레이션 선택</h3>
         </div>
+                <a href="/voice/voice_list/" class="voice-list-btn">
+    나레이션 리스트
+</a>
         <div class="voice-list">
  {% for voice in voice_list %}
     <div class="voice-item active" data-voice-id="{{ voice.voice.voice_id }}" onclick="selectVoice(this)">
@@ -178,9 +181,14 @@
 {% endfor %}
 
 
+
+
         </div>
+        
         <!-- 숨겨진 오디오 플레이어 -->
         <audio id="voiceSamplePlayer" style="display: none;" loading="lazy"></audio>
+
+
         <div class="voice-settings">
             <h4>🔊 음성 설정</h4>
 
@@ -219,6 +227,7 @@
             <button id="effectNewTab" onclick="showEffectTab('new')" style="padding: 10px 20px; background: none; border: none; color: var(--secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid var(--secondary);">새로 생성</button>
             <button id="effectLibraryTab" onclick="showEffectTab('library')" style="padding: 10px 20px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;">라이브러리</button>
             <button id="uploadLibraryTab" onclick="showEffectTab('upload')" style="padding: 10px 20px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;">오디오 올리기</button>
+            
         </div>
 
         <!-- 새로 생성 탭 -->
@@ -985,32 +994,22 @@ function getFilter() {
                 <button class="btn btn-secondary voice-btn" data-voice="underwater">물속</button>
                 <button class="btn btn-secondary voice-btn" data-voice="robot">로봇</button>
                 <button class="btn btn-secondary voice-btn" data-voice="ghost">유령</button>
-                <button class="btn btn-secondary voice-btn" data-voice="child">어린이</button>
                 <button class="btn btn-secondary voice-btn" data-voice="old">노인</button>
-                <button class="btn btn-secondary voice-btn" data-voice="echo">메아리</button>
                 <button class="btn btn-secondary voice-btn" data-voice="whisper">속삭임</button>
                 <button class="btn btn-secondary voice-btn" data-voice="radio">라디오</button>
                 <button class="btn btn-secondary voice-btn" data-voice="megaphone">확성기</button>
                 <button class="btn btn-secondary voice-btn" data-voice="protoss">신성한 목소리</button>
                 <button class="btn btn-secondary voice-btn" data-voice="demon">악마</button>
-                <button class="btn btn-secondary voice-btn" data-voice="angel">천사</button>
                 <button class="btn btn-secondary voice-btn" data-voice="vader">다스베이더</button>
-                <button class="btn btn-secondary voice-btn" data-voice="giant">거인</button>
-                <button class="btn btn-secondary voice-btn" data-voice="tiny">꼬마요정</button>
+                <button class="btn btn-secondary voice-btn" data-voice="giant">작은 메리아</button>
                 <button class="btn btn-secondary voice-btn" data-voice="possessed">빙의</button>
                 <button class="btn btn-secondary voice-btn" data-voice="horror">호러</button>
                 <button class="btn btn-secondary voice-btn" data-voice="helium">헬륨</button>
-                <button class="btn btn-secondary voice-btn" data-voice="timewarp">시간왜곡</button>
+                <button class="btn btn-secondary voice-btn" data-voice="timewarp">메아리</button>
                 <button class="btn  btn-secondary voice-btn" data-voice="glitch">글리치 AI</button>
-                <button class="btn  btn-secondary voice-btn" data-voice="choir">성가대</button>
                 <button class="btn  btn-secondary    voice-btn" data-voice="hyperpop">Hyperpop</button>
                 <button class="btn  btn-secondary voice-btn" data-voice="vaporwave">Vaporwave</button>
-                <button class="btn  btn-secondary    voice-btn" data-voice="darksynth">Dark Synth</button>
-                <button class="btn  btn-secondary  voice-btn" data-voice="lofi-girl">Lo-Fi Girl</button>
                 <button class="btn  btn-secondary   voice-btn" data-voice="bitcrush-voice">Bitcrush</button>
-                <button class="btn  btn-secondary  voice-btn" data-voice="portal">Portal</button>
-                <button class="btn  btn-secondary   voice-btn" data-voice="neoncity">Neon City</button>
-                <button class="btn  btn-secondary   voice-btn" data-voice="ghost-in-machine">Ghost AI</button>
             </div>
 
             <h5>필터 선택</h5>
@@ -1345,13 +1344,15 @@ const audioBookGuideData = {{ guide_list|safe }};
 
 // 카테고리 목록 (모델의 choices 기반)
 const guideCategories = [
+    {key: "voiceChoice", label: "보이스 선택하기"},
+    {key: "page", label: "대사"},
+    {key: "emotionList", label: "감정 리스트"},
     {key: "soundEffect", label: "사운드 이펙트"},
     {key: "musicSound", label: "배경음"},
-    {key: "page", label: "대사"},
-    {key: "voiceGenerate", label: "보이스 생성"},
-    {key: "voiceChoice", label: "보이스 선택하기"},
+    {key: "pageAudio", label: "페이지 오디오"},
+    {key: "voiceSetting", label: "음성 설정"},
     {key: "save", label: "임시저장"},
-    {key: "emotionList", label: "감정 리스트"},
+    {key: "preview", label: "미리듣기"},
     {key: "etc", label: "기타"},
 ];
 

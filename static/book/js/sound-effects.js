@@ -197,6 +197,7 @@ function loadUploadEffectList() {
                 style="width: 100%; padding: 10px 16px;"
             >
                 업로드
+                
             </button>
         </div>
     `;
