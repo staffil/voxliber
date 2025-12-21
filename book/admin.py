@@ -272,8 +272,15 @@ class AudioBookGuideAdmin(admin.ModelAdmin):
     class Media:
         js = ('admin/js/guide_category.js',)  # JS 주입
 
+    def preview_image(self, obj):
+        if obj.title:
+            return format_html(
+                '<img src="{}" style="width: 120px; height:auto; border-radius:8px;" />',
+                obj.title.url
+            )
+        return "이미지 없음"
 
-
+    preview_image.short_description = "이미지 미리보기"
 
 
 # 🔑 API Key Admin
