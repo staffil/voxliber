@@ -21,7 +21,7 @@ def voice_list(request):
     selected_type_id = request.GET.getlist('type_id')
 
     if selected_type_id:
-        voice_lists = VoiceList.objects.filter(types__id=selected_type_id).distinct()
+        voice_lists = VoiceList.objects.filter(types__id__in=selected_type_id).distinct()
     else:
         voice_lists = VoiceList.objects.all()
 
