@@ -1442,15 +1442,15 @@ function audioBookGuide(selectedCategory) {
                             ${g.title}
                         </div>
 
-<div style="
-    opacity:0.8;
-    font-size:14px;
-    line-height:1.6;
-    color:#ccc;
-+   max-height: 120px;
-+   overflow-y: auto;
-+   padding-right: 6px;
-">                            ${ g.description || ''}
+                <div style="
+                    opacity:0.8;
+                    font-size:14px;
+                    line-height:1.6;
+                    color:#ccc;
+                max-height: 120px;
+                overflow-y: auto;
+                +  padding-right: 6px;
+                ">                            ${ g.description || ''}
                         </div>
 
                         ${g.video_url ? `
