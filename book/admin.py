@@ -245,7 +245,6 @@ class AudioBookGuideAdmin(admin.ModelAdmin):
         ('컨텐츠 정보', {
             'fields': (
                 'description',
-                'video_url',
                 'attachment',
                 "guide_video",
             ),
