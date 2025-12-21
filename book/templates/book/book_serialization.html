@@ -92,7 +92,7 @@
                         <path d="M10 11l4 4" />
                         <path d="M14 11l-4 4" />
                         <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-                    </svg>
+                    </svg>-
                     전체 삭제
                 </button>
 
@@ -1808,6 +1808,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isResizing = false;
     let startY, startHeight;
 
+    // 마우스 이벤트 (데스크톱)
     handle.addEventListener('mousedown', (e) => {
         e.preventDefault();
         isResizing = true;
@@ -1817,25 +1818,54 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.userSelect = 'none';
     });
 
-    document.addEventListener('mousemove', (e) => {
+    // 터치 이벤트 (테블릿/모바일)
+    handle.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // 스크롤 방지
+        isResizing = true;
+        const touch = e.touches[0];
+        startY = touch.clientY;
+        startHeight = overlay.offsetHeight;
+        document.body.style.userSelect = 'none';
+    });
+
+    // 공통 mousemove / touchmove
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('touchmove', handleMove, { passive: false });
+
+    function handleMove(e) {
         if (!isResizing) return;
 
-        const delta = startY - e.clientY; // 위로 드래그 → 높이 증가
+        let clientY;
+        if (e.type === 'touchmove') {
+            e.preventDefault(); // 스크롤 방지
+            const touch = e.touches[0];
+            clientY = touch.clientY;
+        } else {
+            clientY = e.clientY;
+        }
+
+        const delta = startY - clientY; // 위로 드래그 → 높이 증가
         let newHeight = startHeight + delta;
 
+        // 제한
         if (newHeight < 150) newHeight = 150;
         if (newHeight > window.innerHeight - 200) newHeight = window.innerHeight - 200;
 
         overlay.style.height = `${newHeight}px`;
-    });
+    }
 
-    document.addEventListener('mouseup', () => {
+    // 공통 mouseup / touchend
+    const handleEnd = () => {
         if (isResizing) {
             isResizing = false;
             document.body.style.cursor = 'default';
             document.body.style.userSelect = 'auto';
         }
-    });
+    };
+
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchend', handleEnd);
+    document.addEventListener('touchcancel', handleEnd);
 });
 </script>
 
