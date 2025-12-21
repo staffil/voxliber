@@ -1428,10 +1428,10 @@ function audioBookGuide(selectedCategory) {
                         <div style="width:100%; background:#000;">
                             <video
                                 controls
-                                style="width:100%; height:300px; display:block;"
+                                style="width:100%; max-height:300px; display:block;"
                                 preload="metadata"
                             >
-                                <source src="${g.guide_video}" type="video/mp4" >
+                                <source src="${g.guide_video}" type="video/mp4">
                                 브라우저가 비디오를 지원하지 않습니다.
                             </video>
                         </div>
@@ -1442,14 +1442,8 @@ function audioBookGuide(selectedCategory) {
                             ${g.title}
                         </div>
 
-<div style="
-    opacity: 0.8;
-    overflow-y: auto;
-    max-height: 800px;
-    font-size: 14px;
-    line-height: 1.6;
-    color: #ccc;
-">                            ${ g.description || ''}
+                        <div style="opacity:0.8; font-size:14px; line-height:1.6; color:#ccc;">
+                            ${ g.description || ''}
                         </div>
 
                         ${g.video_url ? `
