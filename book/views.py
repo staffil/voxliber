@@ -1166,12 +1166,14 @@ def my_book_snap_list(request):
 
     return render(request, "book/snap/my_snap.html", context)
 
+import re  # 정규식으로 id 추출
+
 def create_book_snap(request):
     if not request.user.is_authenticated:
         return render(request, "book/snap/create_snap.html", {"error": "로그인이 필요합니다."})
 
     user = request.user
-    # (URL, 책 이름) 튜플 리스트
+    # (URL, 책 이름) 튜플 리스트 - 그대로 유지
     select_link = [
         (f"/book/detail/{book.id}/", book.name)
         for book in Books.objects.filter(user=user)
@@ -1182,12 +1184,25 @@ def create_book_snap(request):
         description = request.POST.get("description", "").strip()
         image = request.FILES.get("image")
         video = request.FILES.get("video")
-        # select에서 선택한 책 링크
+
+        # select에서 선택한 책 링크 (URL)
         selected_link = request.POST.get("book_link", "").strip()
         # 직접 입력한 URL
         custom_link = request.POST.get("link", "").strip()
 
-        final_link = selected_link or custom_link  # 선택된 링크가 있으면 우선 사용
+        final_link = selected_link or custom_link
+
+        # book 객체 찾기
+        book_obj = None
+        if final_link:
+            # URL에서 book.id 추출 (예: /book/detail/123/ → 123)
+            match = re.search(r'/book/detail/(\d+)/?', final_link)
+            if match:
+                book_id = match.group(1)
+                try:
+                    book_obj = Books.objects.get(id=book_id)
+                except Books.DoesNotExist:
+                    pass  # 없으면 None
 
         if not title or not description or not image:
             context = {
@@ -1196,21 +1211,24 @@ def create_book_snap(request):
             }
             return render(request, "book/snap/create_snap.html", context)
 
+        # 스냅 생성
         snap = BookSnap.objects.create(
             user=user,
             snap_title=title,
             book_comment=description,
             thumbnail=image,
             snap_video=video,
-            book_link=final_link
+            book=book_obj,          # ← 여기! book 객체 저장
+            book_link=final_link    # URL은 그대로 저장
         )
 
         return redirect("book:my_book_snap_list")
 
     return render(request, "book/snap/create_snap.html", {"select_link": select_link})
 
-
 # 북 스냅 수정
+import re  
+
 @login_required
 def edit_snap(request, snap_id):
     snap = get_object_or_404(BookSnap, id=snap_id)
@@ -1220,7 +1238,7 @@ def edit_snap(request, snap_id):
         return redirect("book:my_book_snap_list")
 
     user = request.user
-    # (URL, 책 이름) 튜플 리스트
+    # (URL, 책 이름) 튜플 리스트 - 그대로 유지
     select_link = [
         (f"/book/detail/{book.id}/", book.name)
         for book in Books.objects.filter(user=user)
@@ -1244,10 +1262,23 @@ def edit_snap(request, snap_id):
             }
             return render(request, "book/snap/edit_snap.html", context)
 
+        # book 객체 찾기
+        book_obj = None
+        if final_link:
+            # URL에서 book.id 추출 (예: /book/detail/123/ → 123)
+            match = re.search(r'/book/detail/(\d+)/?', final_link)
+            if match:
+                book_id = match.group(1)
+                try:
+                    book_obj = Books.objects.get(id=book_id)
+                except Books.DoesNotExist:
+                    pass  # 없으면 None
+
         # 업데이트
         snap.snap_title = title
         snap.book_comment = description
         snap.book_link = final_link
+        snap.book = book_obj  # ← 핵심! book 객체 저장
 
         if image:
             snap.thumbnail = image
