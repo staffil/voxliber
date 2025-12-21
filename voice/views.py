@@ -18,7 +18,7 @@ def voice_list(request):
     
 
     # 타입 필터링
-    selected_type_id = request.GET.get('type_id')
+    selected_type_id = request.GET.getlist('type_id')
 
     if selected_type_id:
         voice_lists = VoiceList.objects.filter(types__id=selected_type_id).distinct()
