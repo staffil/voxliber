@@ -22,7 +22,7 @@
 
 <div class="writing-wrapper">
     <!-- 왼쪽 사이드바 -->
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="book-title-small">{{ book.name }}</div>
             <div class="episode-info">
@@ -34,17 +34,17 @@
             </div>
         </div>
 
-        <div style="padding: 0 15px;">
+        <div style="padding: 0 15px; display: flex; flex-direction: column; gap: 10px; margin: 15px 0;">
             <button type="button" class="add-page-btn" onclick="addPage()">
                 + 새 대사 추가
             </button>
-            <button type="button" class="add-page-btn" onclick="openSoundEffectModal()" style="margin-top: 8px; background: #8b5cf6;">
+            <button type="button" class="add-page-btn" onclick="openSoundEffectModal()" style="background: #8b5cf6;">
                 🎵 사운드 이팩트 넣기
             </button>
-            <button type="button" class="add-page-btn" onclick="openBackgroundMusicModal()" style="margin-top: 8px; background: #ec4899;">
+            <button type="button" class="add-page-btn" onclick="openBackgroundMusicModal()" style="background: #ec4899;">
                 🎼 배경음 넣기
             </button>
-            <button type="button" class="add-page-btn" onclick="loadDraft()" id="loadDraftBtn" style="margin-top: 8px; background: #059669; display: none;">
+            <button type="button" class="add-page-btn" onclick="loadDraft()" id="loadDraftBtn" style="background: #059669; display: none;">
                 📂 임시저장 불러오기
             </button>
         </div>
@@ -58,10 +58,19 @@
             </div>
         </div>
 
-        <!-- 대사/이팩트 목록 -->
-        <div style="padding: 10px 15px 0; color: #888; font-size: 12px; font-weight: 600;">📝 대사 & 이팩트</div>
-        <div class="pages-list" id="pagesList" style="padding: 5px 10px;">
-            <!-- 대사 목록이 여기에 동적으로 추가됩니다 -->
+        <!-- ★★★ 대사 리스트를 독립 패널로 분리 (사이드바 위에 떠 있음) ★★★ -->
+        <div class="pages-overlay" id="pagesOverlay">
+            <!-- 제목 -->
+                         
+            <!-- ★★★ 위아래 드래그 핸들 (제목 아래에 위치) ★★★ -->
+            <div class="resize-handle-h" id="pagesResizeHandle" style="background-color: #8b5cf6; height: 10px;"></div>
+
+            <div style="padding: 10px 15px 0; color: #888; font-size: 12px; font-weight: 600;">📝 대사 & 이팩트</div>
+
+            <!-- 대사 목록 -->
+            <div class="pages-list" id="pagesList" style="padding: 5px 10px; overflow-y: auto;">
+                <!-- 대사 목록이 여기에 동적으로 추가됩니다 -->
+            </div>
         </div>
     </div>
 
@@ -169,7 +178,7 @@
         margin-bottom: 12px;
     ">
         <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">
-            만들기 전 Header 밑에 있는 '오디오북 가이드' 버튼을 꼭 누르세요. 
+            만들기 전 Header 밑에 있는 '오디오북 가이드' 버튼을 꼭 누르세요.
             <br>
             <br>
 <a href="/voice/voice_list/" class="voice-list-btn">
@@ -1727,7 +1736,46 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('pagesOverlay');
+    const handle = document.getElementById('pagesResizeHandle');
 
+    if (!overlay || !handle) return;
+
+    let isResizing = false;
+    let startY, startHeight;
+
+    handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isResizing = true;
+        startY = e.clientY;
+        startHeight = overlay.offsetHeight;
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+
+        const delta = startY - e.clientY; // 위로 드래그 → 높이 증가
+        let newHeight = startHeight + delta;
+
+        if (newHeight < 150) newHeight = 150;
+        if (newHeight > window.innerHeight - 200) newHeight = window.innerHeight - 200;
+
+        overlay.style.height = `${newHeight}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+            document.body.style.userSelect = 'auto';
+        }
+    });
+});
+</script>
 
 
 {% endblock %}
