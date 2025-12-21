@@ -112,3 +112,6 @@ function insertEmotionToPage(text) {
   textarea.selectionStart = textarea.selectionEnd = start + text.length + 1;
   textarea.focus();
 }
+
+
+

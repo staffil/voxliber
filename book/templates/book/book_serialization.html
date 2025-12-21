@@ -103,6 +103,9 @@
                     </svg>
                     삭제
                 </button>
+            <button type="button" class="btn btn delete-btn" onclick="showNovel()" id="deletePageBtn">
+                <span>소설 작성</span>
+            </button>
 
 
                 <!-- 오디오북 가이드 -->
@@ -141,19 +144,19 @@
 
             </div>
         </div>
+        
     </div>
-
 <!-- 감정 리스트 출력 -->
 <div id="emotionViewContainer"></div>
+
 
     <!-- 오른쪽 사이드바 - 나레이션 선택 -->
     <div class="voice-sidebar">
         <div class="voice-sidebar-header">
             <h3>🎙️ 나레이션 선택</h3>
+
         </div>
-                <a href="/voice/voice_list/" class="voice-list-btn">
-    나레이션 리스트
-</a>
+
         <div class="voice-list">
  {% for voice in voice_list %}
     <div class="voice-item active" data-voice-id="{{ voice.voice.voice_id }}" onclick="selectVoice(this)">
@@ -166,6 +169,7 @@
             ...
         </button>
         {% endif %}
+        
     </div>
 {% empty %}
     <div class="voice-item empty-voice-box" style="
@@ -220,7 +224,11 @@
                 <span id="speedValue" style="min-width: 40px; display: inline-block;">1.0x</span>
             </div>
         </div>
+<a href="/voice/voice_list/" class="voice-list-btn" style="padding-left: 90px;">
+    나레이션 리스트
+</a>
     </div>
+    
 </div>
 
 <!-- 사운드 이팩트 모달 -->
@@ -410,10 +418,28 @@ if (samplePlayer) {
 }
 
 
-// 맞춤법 검사
-const text = document.getElementById('writeArea').innerText;
 
+document.addEventListener('DOMContentLoaded', () => {
+    const panel = document.getElementById('writeArea');
+    if (panel) {
+        panel.style.display = 'none'; // 처음엔 숨김
+    }
+});
+// 소설 작성 패널 토글 함수
+function showNovel() {
+    const panel = document.getElementById('writeArea');
+    if (!panel) {
+        console.error('writeArea를 찾을 수 없습니다');
+        return;
+    }
 
+    // 현재 상태에 따라 토글
+    if (panel.style.display === 'none' || panel.style.display === '') {
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
 
 // 나레이션 선택
 function selectVoice(element) {
