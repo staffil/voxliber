@@ -160,18 +160,18 @@ document.addEventListener("DOMContentLoaded", function() {
                 return false;
             }
 
-            // 표지 이미지 검사
-            const coverInput = document.getElementById("book-cover-image");
-            const previewImg = document.getElementById("preview-cover");
-            const hasDefaultCover = previewImg.src.indexOf("default-novel-cover") !== -1;
-            const hasUploadedFile = coverInput.files && coverInput.files.length > 0;
+            // // 표지 이미지 검사
+            // const coverInput = document.getElementById("book-cover-image");
+            // const previewImg = document.getElementById("preview-cover");
+            // const hasDefaultCover = previewImg.src.indexOf("default-novel-cover") !== -1;
+            // const hasUploadedFile = coverInput.files && coverInput.files.length > 0;
 
-            // 기본 이미지이고 새로 업로드한 파일도 없으면 에러
-            if (hasDefaultCover && !hasUploadedFile) {
-                e.preventDefault();
-                showAlert("표지 이미지를 선택해주세요.");
-                return false;
-            }
+            // // 기본 이미지이고 새로 업로드한 파일도 없으면 에러
+            // if (hasDefaultCover && !hasUploadedFile) {
+            //     e.preventDefault();
+            //     showAlert("표지 이미지를 선택해주세요.");
+            //     return false;
+            // }
 
             // 장르 검사
             const genreCheckboxes = document.querySelectorAll('input[name="genres"]:checked');

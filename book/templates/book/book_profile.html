@@ -35,10 +35,64 @@
                             {% endif %}
                             <div class="cover-overlay">
                                 <span>표지 선택</span>
-                            </div>
+<p style="padding: 8px 12px;">
+  표지를 업로드하지 않으면 제목의 앞 두 글자를 사용한 기본 표지가 자동으로 적용됩니다.
+  더 좋은 작품 인상을 위해 표지 업로드를 권장드려요.
+</p>
+
+
+                      </div>
                         </div>
                         <input type="file" name="cover-image" id="book-cover-image" accept="image/*" style="display: none;">
                     </div>
+                    <div style="
+  display: flex;
+  gap: 16px;
+  margin: 12px 12px 0 12px;
+">
+  <div style="
+    width: 120px;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  ">
+    <span style="
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    ">기본 표지1</span>
+    <img src="/static/img/cover/example.jpg" alt=""
+         style="width: 100%; display: block;">
+  </div>
+
+  <div style="
+    width: 120px;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  ">
+    <span style="
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: #6366f1;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    ">기본 표지2</span>
+    <img src="/static/img/cover/example2.jpg" alt=""
+         style="width: 100%; display: block;">
+  </div>
+</div>
+
                 </div>
 
                 <!-- 오른쪽: 정보 -->
@@ -122,6 +176,7 @@
 
             <button type="submit">저장</button>
         </form>
+        
     </div>
 </div>
 {% endblock %}
