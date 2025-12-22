@@ -1,5 +1,5 @@
 # main/views.py
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import requests
@@ -538,6 +538,50 @@ def contact_list(request):
     }
     return render(request, "main/other/contact.html", context)
 
+# 문의하기 쓰기
+def contact_write(request):
+    if request.method == "POST":
+        subject = request.POST.get("subject", "").strip()
+        message = request.POST.get("message", "").strip()
+        email = request.POST.get("email", "").strip()
+        
+        if subject and message and email:
+            Contact.objects.create(
+                user=request.user,
+                subject=subject,
+                message=message,
+                email=email,
+                status="pending"
+            )
+            return redirect('contact/')  # 제출 후 감사 페이지
+        else:
+            error = "모든 필드를 채워주세요."
+    else:
+        error = None
+
+    context = {
+        "error": error
+    }
+    return render(request, "main/other/contact_write.html", context)
+
+
+from django.contrib.admin.views.decorators import staff_member_required
+
+from django.http import HttpResponseForbidden
+
+
+def contact_detail(request, contact_id):
+    contact = get_object_or_404(Contact, id=contact_id)
+
+    if not (
+        request.user.is_staff or
+        (contact.user and contact.user == request.user)
+    ):
+        return redirect("main:contact")  # 👈 문의 목록
+
+    return render(request, "main/other/contact_detail.html", {
+        "contact": contact
+    })
 
 # 4️⃣ 이용약관
 def terms_of_service(request):

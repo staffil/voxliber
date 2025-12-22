@@ -7,7 +7,7 @@
 <style>
 .contact-wrapper {
     max-width: 1000px;
-    margin: 100px auto;
+    margin: 150px auto;
     padding: 20px 40px;
     background: #ffffff;
     border-radius: 12px;
@@ -69,6 +69,7 @@
 
 {% block content %}
 <div class="contact-wrapper">
+    <a href="contact_write/">문의 하기</a>
     <h1>문의 목록</h1>
 
     {% if contacts %}
@@ -77,24 +78,31 @@
             <tr>
                 <th>번호</th>
                 <th>이름</th>
-                <th>이메일</th>
                 <th>제목</th>
-                <th>내용</th>
                 <th>작성일</th>
             </tr>
         </thead>
-        <tbody>
-            {% for contact in contacts %}
-            <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ contact.name }}</td>
-                <td>{{ contact.email }}</td>
-                <td>{{ contact.subject }}</td>
-                <td>{{ contact.message|linebreaksbr }}</td>
-                <td>{{ contact.created_at|date:"Y.m.d H:i" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+<tbody>
+{% for contact in contacts %}
+<tr>
+    <td style="color: #222;">{{ forloop.counter }}</td>
+    <td style="color: #222;">
+        {% if contact.user %}
+            {{ contact.user.nickname }}
+        {% else %}
+            비회원
+        {% endif %}
+    </td style="color: #222;">
+    <td style="color: #222;">
+        <a href="{% url 'main:contact_detail' contact.id %}">
+            {{ contact.subject }}
+        </a>
+    </td>
+    <td style="color: #222;">{{ contact.created_at|date:"Y.m.d H:i" }}</td>
+</tr>
+{% endfor %}
+</tbody>
+
     </table>
     {% else %}
     <div class="no-data">등록된 문의가 없습니다.</div>

@@ -27,6 +27,8 @@ urlpatterns = [
     path('privacy_policy/', views.privacy_policy, name='privacy_policy'),
     path('youth_protection/', views.youth_protection, name='youth_protection'),
     path('copyright_policy/', views.copyright_policy, name='copyright_policy'),
+    path('contact/contact_write/', views.contact_write, name='contact_write'),
+    path('contact/<int:contact_id>/', views.contact_detail, name='contact_detail'), 
     path('faq/', views.faq, name='faq'),
 
 

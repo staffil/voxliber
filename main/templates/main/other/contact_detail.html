@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}문의 상세 | VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<style>
+.detail-wrapper {
+    max-width: 800px;
+    margin: 100px auto;
+    padding: 40px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.detail-wrapper h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    text-align: center;
+    color: #222;
+}
+
+.detail-item {
+    margin-bottom: 20px;
+}
+
+.detail-item label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+    color: #333;
+}
+
+.detail-item div {
+    background: #f9f9f9;
+    padding: 12px 15px;
+    border-radius: 6px;
+    word-wrap: break-word;
+}
+
+.status {
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: inline-block;
+    color: #fff;
+}
+
+.status.pending {
+    background-color: #f0ad4e;
+}
+
+.status.answered {
+    background-color: #5cb85c;
+}
+
+@media screen and (max-width: 600px) {
+    .detail-wrapper {
+        padding: 20px;
+        margin: 40px 20px;
+    }
+    .detail-wrapper h1 {
+        font-size: 22px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrapper">
+    <h1>문의 상세</h1>
+
+    <div class="detail-item">
+        <label>이름 / 이메일</label>
+        <div style="color: #222;">{{ contact.user.nickname  }} / {{ contact.user.username}}</div>
+    </div>
+
+    <div class="detail-item">
+        <label>제목</label>
+        <div style="color: #222;">{{ contact.subject }}</div>
+    </div>
+
+    <div class="detail-item">
+        <label>내용</label>
+        <div style="color: #222;">{{ contact.message|linebreaksbr }}</div>
+    </div>
+
+    <div class="detail-item">
+        <label>상태</label>
+        <div class="status {{ contact.status }}" style="color: #222;">{{ contact.get_status_display }}</div>
+    </div>
+
+    {% if contact.answer %}
+    <div class="detail-item">
+        <label>답변</label>
+        <div style="color: #222;">{{ contact.answer|linebreaksbr }}</div>
+    </div>
+    {% endif %}
+
+    <div class="detail-item">
+        <label>작성일</label>
+        <div style="color: #222;">{{ contact.created_at|date:"Y.m.d H:i" }}</div>
+    </div>
+
+    <div class="detail-item">
+        <label>최종 수정일</label>
+        <div style="color: #222;">{{ contact.updated_at|date:"Y.m.d H:i" }}</div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}
