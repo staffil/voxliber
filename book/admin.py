@@ -50,7 +50,7 @@ class ReadingProgressAdmin(admin.ModelAdmin):
 # 목소리 리스트
 @admin.register(VoiceList)
 class VoiceListAdmin(admin.ModelAdmin):
-    list_display = ['voice_name', 'voice_id', 'language_code', 'created_at', 'get_types']
+    list_display = ['voice_name', 'voice_id', 'language_code', 'created_at', 'get_types', 'voice_image']
     list_filter = ['language_code', 'created_at', 'types']
     search_fields = ['voice_name', 'voice_id']
     readonly_fields = ['created_at']
