@@ -21,6 +21,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_superuser", True)
         return self.create_user(email, password, **extra_fields)
 
+from datetime import date
 
 
 # 유저 테이블
@@ -101,6 +102,16 @@ class Users(AbstractBaseUser, PermissionsMixin):
             return f"{minutes}분"
         else:
             return f"{total_seconds}초"
+        
+    def is_adult(self):
+        if not self.birthdate:
+            return False
+
+        today = date.today()
+        age = today.year - self.birthdate.year - (
+            (today.month, today.day) < (self.birthdate.month, self.birthdate.day)
+        )
+        return age >= 19
     
     
 

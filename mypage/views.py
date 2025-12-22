@@ -78,6 +78,9 @@ def my_profile(request):
     return render(request, "mypage/my_profile.html", context)
 
 
+
+
+
 @login_required
 def my_profile_update(request):
     user = request.user

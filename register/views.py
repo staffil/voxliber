@@ -425,3 +425,7 @@ def mobile_login_success(request, api_key):
     </body>
     </html>
     ''')
+
+
+
+# 회원 탈퇴
