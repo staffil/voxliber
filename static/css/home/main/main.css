@@ -172,7 +172,12 @@ body.light-mode .hero-overlay {
   text-align: center;
   max-width: 800px;
   padding: var(--spacing-xl);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
+
 .hero-title {
   font-size: clamp(40px, 6vw, 68px);
   font-weight: 900;
@@ -201,6 +206,8 @@ body.light-mode .hero-subtitle {
   border-radius: var(--radius-full);
   box-shadow: 0 8px 30px rgba(99,102,241,0.5);
   transition: all var(--transition-base);
+  position: relative;
+    margin-top: 32px;
 }
 .hero-cta:hover {
   transform: translateY(-4px) scale(1.05);

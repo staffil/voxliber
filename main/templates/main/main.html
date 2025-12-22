@@ -142,15 +142,15 @@
     {% if user.is_authenticated %}
       <!-- 로그인 했으면 작품 만들기 버튼 -->
       <a href="{% url 'book:book_tos' %}" class="hero-cta">
-        <span style="margin-top: 30px;">작품 만들기</span>
+        <span>작품 만들기</span>
         <span>→</span>
       </a>
     {% else %}
       <!-- 로그인 안 했으면 로그인 카드 -->
       <div class="login-card">
 
-            <a href="book/book_tos/" class="hero-cta" onclick="openLogin(); return false;">
-          <span style="margin-top: 30px;">작품 만들기</span>
+            <a href="book/book_tos/" class="hero-cta" onclick="openLogin(); return false;" >
+          <span>작품 만들기</span>
           <span>→</span>
         </a>
       </div>
