@@ -1,17 +1,106 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}VOXLIBER - 목소리로 듣는 이야기{% endblock %}
+{% block title %}문의 목록 | VOXLIBER{% endblock %}
 
 {% block extra_css %}
+<style>
+.contact-wrapper {
+    max-width: 1000px;
+    margin: 100px auto;
+    padding: 20px 40px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
 
+.contact-wrapper h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #222;
+    text-align: center;
+}
+
+.contact-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.contact-table th,
+.contact-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+.contact-table th {
+    background: #f9f9f9;
+    font-weight: 600;
+    color: #333;
+}
+
+.contact-table tr:hover {
+    background: #f1f1f1;
+}
+
+.no-data {
+    text-align: center;
+    padding: 20px;
+    color: #888;
+}
+
+@media screen and (max-width: 600px) {
+    .contact-wrapper {
+        padding: 20px;
+        margin: 40px 20px;
+    }
+    .contact-wrapper h1 {
+        font-size: 22px;
+    }
+    .contact-table th,
+    .contact-table td {
+        font-size: 14px;
+        padding: 8px 10px;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
+<div class="contact-wrapper">
+    <h1>문의 목록</h1>
 
-
+    {% if contacts %}
+    <table class="contact-table">
+        <thead>
+            <tr>
+                <th>번호</th>
+                <th>이름</th>
+                <th>이메일</th>
+                <th>제목</th>
+                <th>내용</th>
+                <th>작성일</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contact in contacts %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ contact.name }}</td>
+                <td>{{ contact.email }}</td>
+                <td>{{ contact.subject }}</td>
+                <td>{{ contact.message|linebreaksbr }}</td>
+                <td>{{ contact.created_at|date:"Y.m.d H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-data">등록된 문의가 없습니다.</div>
+    {% endif %}
+</div>
 {% endblock %}
 
 {% block extra_js %}
-
 {% endblock %}

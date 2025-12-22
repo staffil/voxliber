@@ -1,17 +1,95 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}VOXLIBER - 목소리로 듣는 이야기{% endblock %}
+{% block title %}공지사항 | VOXLIBER{% endblock %}
 
 {% block extra_css %}
+<style>
+.notice-wrapper {
+    max-width: 900px;
+    margin: 100px auto;
+    padding: 20px 40px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
 
+.notice-wrapper h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #222;
+    text-align: center;
+}
+
+.notice-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.notice-item {
+    border-bottom: 1px solid #eee;
+    padding: 15px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.notice-item:hover {
+    background: #f9f9f9;
+}
+
+.notice-item a {
+    font-weight: 500;
+    color: #222;
+    text-decoration: none;
+}
+
+.notice-item a:hover {
+    color: #007BFF;
+}
+
+.notice-date {
+    font-size: 14px;
+    color: #888;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+
+@media screen and (max-width: 600px) {
+    .notice-wrapper {
+        padding: 20px;
+        margin: 40px 20px;
+    }
+    .notice-wrapper h1 {
+        font-size: 22px;
+    }
+    .notice-date {
+        font-size: 12px;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-
-
+<div class="notice-wrapper">
+    <h1>공지사항</h1>
+    {% if notices %}
+    <ul class="notice-list">
+        {% for notice in notices %}
+        <li class="notice-item">
+            <a href="{% url 'notice_detail' notice.id %}">{{ notice.title }}</a>
+            <span class="notice-date">{{ notice.created_at|date:"Y.m.d" }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>등록된 공지사항이 없습니다.</p>
+    {% endif %}
+</div>
 {% endblock %}
 
 {% block extra_js %}
-
 {% endblock %}

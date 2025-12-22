@@ -1,17 +1,123 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}VOXLIBER - 목소리로 듣는 이야기{% endblock %}
+{% block title %}FAQ | VOXLIBER{% endblock %}
 
 {% block extra_css %}
+<style>
+.faq-wrapper {
+    max-width: 900px;
+    margin: 100px auto;
+    padding: 40px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
 
+.faq-wrapper h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #222;
+    text-align: center;
+}
+
+.faq-category {
+    margin-bottom: 30px;
+}
+
+.faq-category h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 8px;
+}
+
+.faq-item {
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.faq-question {
+    cursor: pointer;
+    font-weight: 500;
+    padding: 12px 15px;
+    background: #f9f9f9;
+    color: #222;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.faq-question:hover {
+    background: #f1f1f1;
+}
+
+.faq-answer {
+    display: none;
+    padding: 12px 15px;
+    color: #555;
+    line-height: 1.6;
+}
+
+@media screen and (max-width: 600px) {
+    .faq-wrapper {
+        padding: 20px;
+        margin: 40px 20px;
+    }
+    .faq-wrapper h1 {
+        font-size: 22px;
+    }
+    .faq-category h2 {
+        font-size: 18px;
+    }
+    .faq-question {
+        font-size: 14px;
+    }
+    .faq-answer {
+        font-size: 14px;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
+<div class="faq-wrapper">
+    <h1>자주 묻는 질문 (FAQ)</h1>
 
+    {% regroup faqs by category as faq_list_by_category %}
 
+    {% for category in faq_list_by_category %}
+    <div class="faq-category">
+        <h2>{{ category.grouper }}</h2>
+
+        {% for faq in category.list %}
+        <div class="faq-item">
+            <div class="faq-question">{{ faq.question }}</div>
+            <div class="faq-answer">{{ faq.answer|linebreaksbr }}</div>
+        </div>
+        {% endfor %}
+
+    </div>
+    {% endfor %}
+</div>
 {% endblock %}
 
 {% block extra_js %}
-
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const questions = document.querySelectorAll(".faq-question");
+    questions.forEach(q => {
+        q.addEventListener("click", () => {
+            const answer = q.nextElementSibling;
+            if (answer.style.display === "block") {
+                answer.style.display = "none";
+            } else {
+                answer.style.display = "block";
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -1,17 +1,99 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}VOXLIBER - 목소리로 듣는 이야기{% endblock %}
+{% block title %}저작권 정책 | VOXLIBER{% endblock %}
 
 {% block extra_css %}
+<style>
+.policy-wrapper {
+    max-width: 900px;
+    margin: 100px auto;
+    padding: 40px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
 
+.policy-header {
+    border-bottom: 2px solid #f0f0f0;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+}
+
+.policy-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #222;
+}
+
+.policy-header .date {
+    font-size: 14px;
+    color: #888;
+    margin-top: 8px;
+}
+
+.policy-content {
+    font-size: 16px;
+    line-height: 1.8;
+    color: #333;
+    white-space: pre-line;
+}
+
+.policy-content h2 {
+    font-size: 22px;
+    margin-top: 40px;
+    margin-bottom: 15px;
+    color: #444;
+}
+
+.policy-content ul {
+    padding-left: 20px;
+}
+
+.policy-content li {
+    margin-bottom: 8px;
+}
+
+.policy-content a {
+    color: #007BFF;
+    text-decoration: underline;
+}
+
+@media screen and (max-width: 600px) {
+    .policy-wrapper {
+        padding: 20px;
+        margin: 40px 20px;
+    }
+    .policy-header h1 {
+        font-size: 22px;
+    }
+    .policy-content {
+        font-size: 14px;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
+<div class="policy-wrapper">
 
+    {% if policy %}
+    <div class="policy-header">
+        <h1>{{ policy.title }}</h1>
+        <div class="date">
+            시행일 : {{ policy.created_at|date:"Y.m.d" }}
+        </div>
+    </div>
 
+    <div class="policy-content">
+        {{ policy.content }}
+    </div>
+    {% else %}
+    <p>등록된 저작권 정책이 없습니다.</p>
+    {% endif %}
+
+</div>
 {% endblock %}
 
 {% block extra_js %}
-
 {% endblock %}
