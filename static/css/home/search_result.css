@@ -151,25 +151,106 @@
 /* ===============================
    작가 그리드
 =============================== */
+
 .authors-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
 }
 
 .author-item {
-    background: var(--bg-secondary);
-    border-radius: 16px;
-    padding: 20px;
-    text-decoration: none;
-    border: 1px solid var(--border-color);
-    transition: all 0.25s ease;
+    background: #0f172a;
+        border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .author-item:hover {
     transform: translateY(-4px);
-    border-color: var(--primary);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.12);
 }
+
+.author-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.author-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #1e293b;
+    color: #e5e7eb;
+        display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    overflow: hidden;
+}
+
+.author-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.author-info h3 {
+    font-size: 16px;
+    font-weight: 600;
+        color: #f8fafc;
+
+}
+
+.author-stats {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.author-bio {
+    font-size: 13px;
+    color: #cbd5e1;
+    margin: 10px 0;
+    line-height: 1.5;
+}
+
+/* 대표 작품 미니 카드 */
+.author-books-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+}
+
+.author-book-mini {
+    flex: 0 0 auto;
+    width: 60px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.author-book-mini-cover {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #1e293b;
+}
+
+.author-book-mini-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.author-book-mini-title {
+    font-size: 11px;
+    margin-top: 4px;
+    text-align: center;
+        color: #e5e7eb;
+
+}
+
 
 /* ===============================
    반응형 (여기 중요)
@@ -223,4 +304,48 @@
 html, body {
     max-width: 100%;
     overflow-x: hidden;
+}
+/* ===============================
+   AUTHORS – Light Mode
+   (body.light-mode 기준)
+=============================== */
+
+body.light-mode .author-item {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .author-item:hover {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* 아바타 */
+body.light-mode .author-avatar {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* 이름 */
+body.light-mode .author-info h3 {
+    color: #111827;
+}
+
+/* 통계 */
+body.light-mode .author-stats {
+    color: #6b7280;
+}
+
+/* 소개 */
+body.light-mode .author-bio {
+    color: #4b5563;
+}
+
+/* 대표 작품 */
+body.light-mode .author-book-mini-cover {
+    background: #e5e7eb;
+}
+
+body.light-mode .author-book-mini-title {
+    color: #374151;
 }
