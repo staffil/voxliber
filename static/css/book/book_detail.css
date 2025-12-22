@@ -45,7 +45,7 @@ body {
 
 .book-cover-wrapper {
     width: 300px;
-    height: 400px;
+    height: 435px;
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.5s ease, box-shadow 0.5s ease;
