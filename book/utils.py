@@ -26,7 +26,7 @@ grok_client = OpenAI(
 
 
 
-def generate_tts(novel_text, voice_id,language_code,speed_value ):
+def generate_tts(novel_text, voice_id,language_code,speed_value, style_value, similarity_value ):
     try:
         # 1️⃣ 입력 확인
         if not novel_text or not isinstance(novel_text, str):
@@ -52,7 +52,8 @@ def generate_tts(novel_text, voice_id,language_code,speed_value ):
             language_code=language_code,
             voice_settings={
                 "stability": 0.5,
-                "similarity": 0.5,
+                "similarity": similarity_value,
+                "style": style_value,
                 "use_speaker_boost": False
             }
         )

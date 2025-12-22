@@ -177,6 +177,8 @@ def book_serialization(request):
         voice_id = request.POST.get("voice_id", "").strip()
         language_code = request.POST.get("language_code", "ko").strip()
         speed_value = request.POST.get("speed_value")
+        style_value = request.POST.get("style_value")
+        similarity_value = request.POST.get("similarity_value")
 
         # 각 페이지의 텍스트 정보 수집
         pages_text = []
@@ -398,7 +400,7 @@ def book_serialization(request):
                         print("🗑️ 임시 파일 삭제 완료")
                     else:
                         print("⚠️ 오디오 합치기 실패 - 대체로 TTS 생성")
-                        audio_path = generate_tts(content_text, voice_id, language_code, speed_value)
+                        audio_path = generate_tts(content_text, voice_id, language_code, speed_value,similarity_value,style_value)
                         if audio_path and os.path.exists(audio_path):
                             with open(audio_path, 'rb') as audio_file:
                                 content.audio_file.save(
@@ -410,7 +412,7 @@ def book_serialization(request):
                 else:
                     # 오디오 파일이 없으면 전체 텍스트로 TTS 생성
                     print("🎵 TTS 생성 시작...")
-                    audio_path = generate_tts(content_text, voice_id, language_code, speed_value)
+                    audio_path = generate_tts(content_text, voice_id, language_code, speed_value,similarity_value,style_value)
                     if audio_path and os.path.exists(audio_path):
                         print(f"✅ TTS 생성 완료: {audio_path}")
                         with open(audio_path, 'rb') as audio_file:
@@ -478,12 +480,18 @@ def generate_tts_api(request):
         voice_id = data.get("voice_id", "2EiwWnXFnvU5JabPnv8n")
         language_code = data.get("language_code", "ko")
         speed_value = data.get("speed_value", 1)
-
+        style_value = float(data.get("style_value", 0.5))
+        similarity_value = float(data.get("similarity_value", 1.0))
         # speed_value는 숫자로 변환
         try:
             speed_value = float(speed_value)
         except:
             speed_value = 1
+
+        try:
+            speed_value = float(speed_value)
+        except ValueError:
+            speed_value = 1.0
 
         if isinstance(text, dict):
             text = text.get("content", "")
@@ -495,7 +503,7 @@ def generate_tts_api(request):
             return JsonResponse({"success": False, "error": "텍스트가 없습니다."}, status=400)
 
         # 🔥 여기 speed_value 추가
-        audio_path = generate_tts(text, voice_id, language_code, speed_value)
+        audio_path = generate_tts(text, voice_id, language_code, speed_value, style_value, similarity_value)
         if not audio_path:
             return JsonResponse({"success": False, "error": "TTS 생성 실패"}, status=500)
 

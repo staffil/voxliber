@@ -227,6 +227,7 @@
         </div>
 
     </div>
+    
 {% endfor %}
 
 
@@ -239,6 +240,8 @@
 
 
         <div class="voice-settings">
+                <div id="voiceSettingsResizeHandle"></div> <!-- 드래그 핸들 -->
+
             <h4>🔊 음성 설정</h4>
 
             <div class="setting-item">
@@ -259,6 +262,19 @@
                 <input type="range" id="speedSlider" min="0" max="100" value="33" oninput="updateSpeed(this.value)">
                 <span id="speedValue" style="min-width: 40px; display: inline-block;">1.0x</span>
             </div>
+
+            <div class="setting-item">
+                <label>유사성 <small style="color: #888;">(0.5 ~ 2.0)</small></label>
+                <input type="range" id="similaritySlider" min="0" max="100" value="33" oninput="updateSimilarity(this.value)">
+                <span id="similarityValue" style="min-width: 40px; display: inline-block;">1.0</span>
+            </div>
+
+            <div class="setting-item">
+                <label>스타일 <small style="color: #888;">(0.0 ~ 1.0)</small></label>
+                <input type="range" id="styleSlider" min="0" max="100" value="50" oninput="updateStyle(this.value)">
+                <span id="styleValue" style="min-width: 40px; display: inline-block;">0.5</span>
+            </div>
+
         </div>
 <a href="/voice/voice_list/" class="voice-list-btn" style="padding-left: 90px;">
     나레이션 리스트
@@ -266,6 +282,7 @@
     </div>
     
 </div>
+
 
 <!-- 사운드 이팩트 모달 -->
 <div id="soundEffectModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay-bg); z-index: 9999; align-items: center; justify-content: center; overflow-y: auto;">
@@ -399,8 +416,9 @@ let globalNovelDraft = ''; // 전체 에피소드에 대한 소설 미리쓰기 
 let selectedVoiceId = '2EiwWnXFnvU5JabPnv8n'; // 기본값: 클로이
 let selectedLanguage = 'ko'; // 기본값: 한국어
 let voiceStability = 0.5;
-let voiceSimilarity = 0.5;
 let voiceSpeed = 0.5;
+let similarity = 1.0;
+let styleValue = 0.5;
 
 // 음성 샘플 재생
 let currentPlayingBtn = null;
@@ -509,6 +527,27 @@ function updateLanguage(value) {
 
     // 초기 표시값 설정 (value=33이면 speed=1.0)
     updateSpeed(33);
+
+// 유사성 업데이트 (0.5 ~ 2.0)
+function updateSimilarity(value) {
+    const sim = (0.5 + (2.0 - 0.5) * (value / 100)).toFixed(2);
+    similarity = parseFloat(sim);
+    document.getElementById("similarityValue").innerText = sim;
+    console.log('🎚️ 유사성 설정:', sim);
+}
+updateSimilarity(33);
+
+
+// 스타일 업데이트 (0.0 ~ 1.0)
+function updateStyle(value) {
+    const style = (value / 100).toFixed(2);
+    styleValue = parseFloat(style);
+    document.getElementById("styleValue").innerText = style;
+    console.log('🎚️ 스타일 설정:', style);
+}
+updateStyle(50);
+
+
 
 // 대사 데이터 구조
 function createPage(content = '', audioFile = null, isSoundEffect = false) {
@@ -1871,4 +1910,39 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 
+<script>
+    const voiceSettings = document.querySelector('.voice-settings');
+const resizeHandle = document.getElementById('voiceSettingsResizeHandle');
+
+let isResizing = false;
+let startY = 0;
+let startHeight = 0;
+
+resizeHandle.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    startY = e.clientY;
+    startHeight = voiceSettings.offsetHeight;
+    document.body.style.userSelect = 'none';
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+
+    // dy를 반대로 계산
+    let dy = startY - e.clientY; // 위로 올리면 dy > 0
+    let newHeight = startHeight + dy;
+
+    // 최소, 최대 높이 제한
+    if (newHeight < 50) newHeight = 50;
+    if (newHeight > 450) newHeight = 450;
+
+    voiceSettings.style.height = newHeight + 'px';
+});
+
+document.addEventListener('mouseup', () => {
+    isResizing = false;
+    document.body.style.userSelect = 'auto';
+});
+
+</script>
 {% endblock %}

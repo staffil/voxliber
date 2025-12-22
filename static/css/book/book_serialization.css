@@ -119,12 +119,11 @@
 }
 /* 드래그 핸들 */
 #pagesResizeHandle {
-    height: 8px;
-    width: 100%;
-    background: transparent;
+    height: 5px;
+    background-color: #8b5cf6;
     cursor: row-resize;
-    transition: background 0.2s;
-    flex-shrink: 0;
+    border-radius: 4px;
+    margin: 10px 8px;
 }
 
 #pagesResizeHandle:hover {
@@ -957,11 +956,18 @@ body.light-mode .voice-desc {
 .voice-settings {
     padding: 15px;
     border-top: 1px solid #333;
-    margin-top: auto;
-    flex-shrink: 0;
-    transition: border-color 0.3s;
+    position: relative;
+    overflow: hidden;
+    height: 200px; /* 초기 높이 */
+    transition: height 0.1s;
 }
-
+#voiceSettingsResizeHandle {
+    height: 8px;
+    background-color: #8b5cf6;
+    cursor: row-resize;
+    border-radius: 4px;
+    margin: 4px 0;
+}
 body.light-mode .voice-settings {
     border-top: 1px solid #ddd;
 }
