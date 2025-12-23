@@ -135,22 +135,30 @@ def merge_audio_files(audio_files, pages_text=None):
         for idx, audio_file in enumerate(audio_files):
             print(f"🔄 {idx + 1}/{len(audio_files)} 오디오 처리 중...")
 
-            temp_path = os.path.join(temp_dir, f'temp_{uuid4().hex}.mp3')
+            # audio_file이 문자열(파일 경로)인지 파일 객체인지 확인
+            if isinstance(audio_file, str):
+                # 파일 경로인 경우 직접 사용
+                temp_path = audio_file
+                should_delete = False  # Celery에서 전달된 경로는 나중에 삭제
+            else:
+                # 파일 객체인 경우 임시 파일로 저장
+                temp_path = os.path.join(temp_dir, f'temp_{uuid4().hex}.mp3')
+                should_delete = True
 
-            # 파일 저장
-            try:
-                audio_file.seek(0)  # 파일 포인터 리셋
-                if hasattr(audio_file, 'chunks'):
-                    with open(temp_path, 'wb') as f:
-                        for chunk in audio_file.chunks():
-                            f.write(chunk)
-                else:
-                    with open(temp_path, 'wb') as f:
-                        f.write(audio_file.read())
-            except Exception as e:
-                print(f"❌ 파일 저장 실패: {e}")
-                traceback.print_exc()
-                return None, None
+                # 파일 저장
+                try:
+                    audio_file.seek(0)  # 파일 포인터 리셋
+                    if hasattr(audio_file, 'chunks'):
+                        with open(temp_path, 'wb') as f:
+                            for chunk in audio_file.chunks():
+                                f.write(chunk)
+                    else:
+                        with open(temp_path, 'wb') as f:
+                            f.write(audio_file.read())
+                except Exception as e:
+                    print(f"❌ 파일 저장 실패: {e}")
+                    traceback.print_exc()
+                    return None, None
 
             # AudioSegment 로드
             try:
@@ -187,11 +195,13 @@ def merge_audio_files(audio_files, pages_text=None):
             except Exception as e:
                 print(f"❌ AudioSegment 로드 실패: {e}")
                 traceback.print_exc()
-                os.remove(temp_path)
+                if should_delete and os.path.exists(temp_path):
+                    os.remove(temp_path)
                 return None, None
 
-            # 임시 파일 삭제
-            os.remove(temp_path)
+            # 임시 파일 삭제 (파일 객체로 만든 경우만)
+            if should_delete and os.path.exists(temp_path):
+                os.remove(temp_path)
 
         # 최종 오디오 export
 

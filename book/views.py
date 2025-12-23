@@ -1142,6 +1142,136 @@ def generate_preview_audio(request):
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
+# 비동기 오디오 병합 시작
+def generate_preview_audio_async(request):
+    """
+    오디오 병합을 Celery 태스크로 시작하고 task_id 반환
+    """
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST 요청만 가능합니다."}, status=405)
+
+    try:
+        import tempfile
+        from book.task import merge_audio_task
+
+        # 오디오 파일 저장 (임시 파일로)
+        audio_file_paths = []
+        for key in sorted(request.FILES.keys()):
+            if key.startswith('audio_'):
+                audio_file = request.FILES[key]
+                # 임시 파일로 저장
+                temp_file = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
+                for chunk in audio_file.chunks():
+                    temp_file.write(chunk)
+                temp_file.close()
+                audio_file_paths.append(temp_file.name)
+
+        if not audio_file_paths:
+            return JsonResponse({"success": False, "error": "오디오 파일이 없습니다."}, status=400)
+
+        # 배경음 정보 수집
+        background_tracks_count = int(request.POST.get('background_tracks_count', 0))
+        background_tracks = []
+
+        for i in range(background_tracks_count):
+            bg_audio_key = f'background_audio_{i}'
+            if bg_audio_key in request.FILES:
+                bg_file = request.FILES[bg_audio_key]
+                start_page = int(request.POST.get(f'background_start_{i}', 0))
+                end_page = int(request.POST.get(f'background_end_{i}', 0))
+                music_name = request.POST.get(f'background_name_{i}', '')
+                volume_ratio = float(request.POST.get(f'background_volume_{i}', 1))
+
+                import math
+                volume_db = 20 * math.log10(volume_ratio) if volume_ratio > 0 else -60
+
+                # 임시 파일 저장
+                temp_bg = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
+                for chunk in bg_file.chunks():
+                    temp_bg.write(chunk)
+                temp_bg.close()
+
+                background_tracks.append({
+                    'audioPath': temp_bg.name,
+                    'startPage': start_page,
+                    'endPage': end_page,
+                    'volume': volume_db,
+                    'name': music_name
+                })
+
+        # Celery 태스크 시작
+        task = merge_audio_task.delay(
+            audio_files_data=audio_file_paths,
+            background_tracks_data=background_tracks if background_tracks else None
+        )
+
+        return JsonResponse({
+            "success": True,
+            "task_id": task.id,
+            "message": "오디오 병합 작업이 시작되었습니다."
+        })
+
+    except Exception as e:
+        print("❌ 비동기 오디오 병합 시작 오류:", e)
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+# 오디오 병합 태스크 상태 확인
+def check_merge_status(request, task_id):
+    """
+    Celery 태스크의 진행 상태 확인
+    """
+    from celery.result import AsyncResult
+
+    task_result = AsyncResult(task_id)
+
+    if task_result.state == 'PENDING':
+        response = {
+            'state': task_result.state,
+            'status': '대기 중...',
+            'progress': 0
+        }
+    elif task_result.state == 'PROGRESS':
+        response = {
+            'state': task_result.state,
+            'status': task_result.info.get('status', ''),
+            'progress': task_result.info.get('progress', 0)
+        }
+    elif task_result.state == 'SUCCESS':
+        result = task_result.result
+        if result.get('success'):
+            # 파일 읽어서 반환 URL 생성
+            response = {
+                'state': task_result.state,
+                'status': '완료',
+                'progress': 100,
+                'audio_url': result.get('merged_audio_url'),
+                'timestamps': result.get('timestamps')
+            }
+        else:
+            response = {
+                'state': 'FAILURE',
+                'status': '실패',
+                'error': result.get('error', '알 수 없는 오류')
+            }
+    elif task_result.state == 'FAILURE':
+        response = {
+            'state': task_result.state,
+            'status': '실패',
+            'error': str(task_result.info)
+        }
+    else:
+        response = {
+            'state': task_result.state,
+            'status': '처리 중...',
+            'progress': 50
+        }
+
+    return JsonResponse(response)
+
+
 # book/views.py
 
 from django.shortcuts import render, get_object_or_404
