@@ -546,7 +546,8 @@ async function publishEpisode() {
                 // 임시저장 삭제
                 const deleteTransaction = db.transaction(['drafts'], 'readwrite');
                 const deleteStore = deleteTransaction.objectStore('drafts');
-                await deleteStore.delete(`draft_${bookId}`);
+                const normalizedBookId = Number(bookId);
+                await deleteStore.delete(normalizedBookId);
 
                 alert('에피소드가 성공적으로 발행되었습니다!');
                 window.location.href = data.redirect_url || `/book/detail/${bookId}/`;
