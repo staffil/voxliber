@@ -1,391 +1,273 @@
 /* ========================================
-   오늘의 추천 섹션 (Spotlight)
+   오늘의 추천 섹션 (Spotlight) - Modern 2025 Style
    ======================================== */
+
+/* 섹션 전체 */
 .spotlight-section {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.06) 0%, rgba(168, 85, 247, 0.06) 100%);
   border-radius: var(--radius-2xl);
-  padding: var(--spacing-2xl);
-  margin: var(--spacing-2xl) 0;
+  padding: var(--spacing-3xl) var(--spacing-2xl);
+  margin: var(--spacing-3xl) 0;
+  position: relative;
+  overflow: hidden;
 }
+
 body.light-mode .spotlight-section {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
 }
+
+/* 캐러셀 */
 .spotlight-carousel {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 250px;
+  grid-auto-columns: minmax(260px, 280px); /* 살짝 더 넓고 안정감 있게 */
   gap: var(--spacing-xl);
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 0 var(--spacing-md) var(--spacing-md);
+  padding: var(--spacing-xl) var(--spacing-md) var(--spacing-2xl);
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
 }
+
+.spotlight-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* 개별 카드 */
 .spotlight-item {
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
+  box-shadow: var(--shadow-xl);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  scroll-snap-align: center;
 }
+
 .spotlight-item:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 25px 50px rgba(99, 102, 241, 0.25);
+  transform: translateY(-12px) scale(1.03);
+  box-shadow: 0 30px 60px -15px rgba(79, 70, 229, 0.35);
 }
+
+/* 표지 */
 .spotlight-cover {
   position: relative;
-  height: 280px;
+  height: 320px; /* 살짝 더 높여서 고급스러움 강조 */
   overflow: hidden;
 }
+
 .spotlight-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.6s ease;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .spotlight-item:hover .spotlight-cover img {
-  transform: scale(1.1);
-  border-radius: 15px;
+  transform: scale(1.12);
 }
-.spotlight-cover .spotlight-preview {
+
+/* 플레이 버튼 */
+.spotlight-preview {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  padding: 10px;
-  border-radius: 50%;
-  background: rgba(99, 102, 241, 0.95);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-  z-index: 5;
-  transition: all 0.3s ease;
+  width: 64px;
+  height: 64px;
+  background: rgba(79, 70, 229, 0.95);
   border: none;
+  border-radius: 50%;
   color: white;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   visibility: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+  z-index: 10;
 }
+
 .spotlight-cover:hover .spotlight-preview {
   opacity: 1;
   visibility: visible;
+  transform: translate(-50%, -50%) scale(1.1);
 }
-.spotlight-cover .spotlight-preview:hover {
-  background: rgba(79, 70, 229, 1);
-  transform: translate(-50%, -50%) scale(1.15);
+
+.spotlight-preview:hover {
+  background: rgba(59, 50, 209, 1);
 }
+
+/* 플레이스홀더 */
 .book-placeholder-large {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 80px;
+  font-size: 100px;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  opacity: 0.85;
 }
+
+/* 오버레이 + 배지 */
 .spotlight-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%);
+  background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%);
   display: flex;
   align-items: flex-end;
   padding: var(--spacing-lg);
+  pointer-events: none;
 }
+
 .spotlight-badge {
   background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
   color: white;
   padding: 8px 20px;
-  border-radius: 30px;
+  border-radius: 999px;
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
-  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
 }
+
+/* 내용 영역 */
 .spotlight-content {
   padding: var(--spacing-xl);
   flex: 1;
   display: flex;
   flex-direction: column;
+  background: var(--bg-secondary);
 }
+
 .spotlight-title {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--text-primary);
   margin-bottom: var(--spacing-sm);
   line-height: 1.3;
 }
+
 .spotlight-author {
-  font-size: 14px;
+  font-size: 0.95rem;
   color: var(--primary);
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: var(--spacing-md);
 }
+
 .spotlight-desc {
-  font-size: 14px;
+  font-size: 0.95rem;
   color: var(--text-secondary);
   line-height: 1.6;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: auto;
   flex: 1;
 }
+
 .spotlight-stats {
   display: flex;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-lg);
-  font-size: 13px;
+  font-size: 0.875rem;
   color: var(--text-tertiary);
-  font-weight: 500;
+  font-weight: 600;
 }
+
 .spotlight-stats span {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
+
+/* 버튼 */
 .spotlight-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 28px;
+  padding: 14px 32px;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   color: white;
   border-radius: var(--radius-lg);
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+  margin-top: auto;
 }
+
 .spotlight-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.5);
 }
+
 body.light-mode .spotlight-btn {
-  color: rgb(82, 82, 82)
+  color: #ffffff;
 }
 
-/* Spotlight Section - Responsive (절반 크기 기준 재작업) */
-
-/* 데스크탑 기본 (1201px 이상) - 기존 크기 유지 */
-@media (min-width: 1201px) {
+/* 반응형 - 점진적 축소 */
+@media (max-width: 1200px) {
   .spotlight-carousel {
-    grid-auto-columns: 250px;
-    gap: var(--spacing-xl);
+    grid-auto-columns: minmax(240px, 260px);
+  }
+  .spotlight-cover {
+    height: 300px;
+  }
+}
+
+@media (max-width: 992px) {
+  .spotlight-carousel {
+    grid-auto-columns: minmax(220px, 240px);
   }
   .spotlight-cover {
     height: 280px;
   }
-  .spotlight-preview {
-    padding: 10px;
-  }
-  .spotlight-badge {
-    padding: 8px 20px;
-    font-size: 13px;
-  }
   .spotlight-title {
-    font-size: 24px;
-  }
-  .spotlight-author {
-    font-size: 14px;
-  }
-  .spotlight-desc {
-    font-size: 14px;
-
-  }
-  .spotlight-stats {
-    font-size: 13px;
-    gap: var(--spacing-md);
-  }
-  .spotlight-btn {
-    padding: 14px 28px;
-    font-size: 16px;
+    font-size: 1.4rem;
   }
 }
 
-/* 태블릿 ~ 큰 모바일 (1200px 이하) - 약 80% 크기 */
-@media (max-width: 1200px) {
-  .spotlight-carousel {
-    grid-auto-columns: 200px;
-    gap: calc(var(--spacing-xl) * 0.9);
-    padding: 0 var(--spacing-md) var(--spacing-md);
-  }
+@media (max-width: 768px) {
   .spotlight-section {
-    padding: calc(var(--spacing-2xl) * 0.9);
-    margin: calc(var(--spacing-2xl) * 0.9) 0;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+  }
+  .spotlight-carousel {
+    grid-auto-columns: minmax(200px, 220px);
+    padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl);
   }
   .spotlight-cover {
-    height: 230px;
-  }
-  .spotlight-preview {
-    padding: 9px;
-  }
-  .spotlight-badge {
-    padding: 7px 18px;
-    font-size: 12.5px;
-  }
-  .spotlight-content {
-    padding: calc(var(--spacing-xl) * 0.9);
+    height: 260px;
   }
   .spotlight-title {
-    font-size: 21px;
-  }
-  .spotlight-author {
-    font-size: 13.5px;
+    font-size: 1.3rem;
   }
   .spotlight-desc {
-    font-size: 13.5px;
+    font-size: 0.9rem;
   }
-  .spotlight-stats {
-    font-size: 12.5px;
-    gap: calc(var(--spacing-md) * 0.9);
+}
+
+@media (max-width: 480px) {
+  .spotlight-carousel {
+    grid-auto-columns: minmax(160px, 180px);
+  }
+  .spotlight-cover {
+    height: 220px;
+  }
+  .spotlight-title {
+    font-size: 1.15rem;
+  }
+  .spotlight-author {
+    font-size: 0.85rem;
+  }
+  .spotlight-desc {
+    font-size: 0.85rem;
+    -webkit-line-clamp: 2;
   }
   .spotlight-btn {
     padding: 12px 24px;
-    font-size: 15px;
-  }
-}
-
-/* 중간 태블릿 (992px 이하) - 약 70% 크기 */
-@media (max-width: 992px) {
-  .spotlight-carousel {
-    grid-auto-columns: 180px;
-    gap: var(--spacing-lg);
-  }
-  .spotlight-cover {
-    height: 200px;
-  }
-  .spotlight-preview {
-    padding: 8px;
-  }
-  .spotlight-badge {
-    padding: 6px 16px;
-    font-size: 12px;
-  }
-  .spotlight-content {
-    padding: var(--spacing-lg);
-  }
-  .spotlight-title {
-    font-size: 19px;
-  }
-  .spotlight-author {
-    font-size: 13px;
-  }
-  .spotlight-desc {
-    font-size: 13px;
-  }
-  .spotlight-stats {
-    font-size: 12px;
-  }
-  .spotlight-btn {
-    padding: 11px 22px;
-    font-size: 14.5px;
-  }
-}
-
-/* 작은 태블릿 / 큰 모바일 (768px 이하) - 약 60% 크기 */
-@media (max-width: 768px) {
-  .spotlight-section {
-    padding: var(--spacing-lg);
-    margin: var(--spacing-xl) 0;
-    border-radius: var(--radius-xl);
-  }
-  .spotlight-carousel {
-    grid-auto-columns: 160px;
-    gap: var(--spacing-md);
-    padding: 0 var(--spacing-md) var(--spacing-md);
-  }
-  .spotlight-cover {
-    height: 180px;
-  }
-  .spotlight-preview {
-    padding: 7px;
-  }
-  .spotlight-badge {
-    padding: 6px 14px;
-    font-size: 11.5px;
-  }
-  .spotlight-content {
-    padding: var(--spacing-md);
-  }
-  .spotlight-title {
-    font-size: 18px;
-  }
-  .spotlight-author {
-    font-size: 12.5px;
-  }
-  .spotlight-desc {
-    font-size: 12.5px;
-    margin-bottom: var(--spacing-md);
-  }
-  .spotlight-stats {
-    font-size: 11.5px;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-  }
-  .spotlight-btn {
-    padding: 10px 20px;
-    font-size: 14px;
-  }
-}
-
-/* 모바일 (480px 이하) - 정확히 절반 크기 */
-@media (max-width: 480px) {
-  .spotlight-section {
-    padding: calc(var(--spacing-lg) * 0.8);
-    margin: var(--spacing-lg) 0;
-  }
-  .spotlight-carousel {
-    grid-auto-columns: 125px;   /* 기존 250px → 정확히 절반 */
-    gap: var(--spacing-sm);
-    padding: 0 var(--spacing-sm) var(--spacing-sm);
-  }
-  .spotlight-item:hover {
-    transform: translateY(-4px); /* hover 효과도 작게 */
-  }
-  .spotlight-cover {
-    height: 140px;              /* 기존 280px → 절반 */
-  }
-  .spotlight-cover img:hover {
-    transform: scale(1.05);
-  }
-  .spotlight-preview {
-    padding: 5px;               /* 기존 10px → 절반 */
-  }
-  .spotlight-preview:hover {
-    transform: translate(-50%, -50%) scale(1.1);
-  }
-  .spotlight-badge {
-    padding: 4px 10px;          /* 기존 8px 20px → 절반 */
-    font-size: 4px;
-  }
-  .spotlight-content {
-    padding: calc(var(--spacing-md) * 0.7);
-  }
-  .spotlight-title {
-    font-size: 15px;            /* 기존 24px → 약 62% */
-    margin-bottom: calc(var(--spacing-sm) * 0.8);
-    line-height: 1.2;
-  }
-  .spotlight-author {
-    font-size: 11px;
-    margin-bottom: calc(var(--spacing-md) * 0.7);
-  }
-  .spotlight-desc {
-    font-size: 11px;
-    line-height: 1.4;
-    margin-bottom: var(--spacing-sm);
-    display: -webkit-box;
-    -webkit-line-clamp: 3;      /* 너무 길면 3줄 제한 */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .spotlight-stats {
-    font-size: 10px;
-    gap: 6px;
-    margin-bottom: var(--spacing-sm);
-    flex-wrap: wrap;
-  }
-  .spotlight-btn {
-    padding: 8px 16px;          /* 기존 14px 28px → 절반 수준 */
-    font-size: 12px;
+    font-size: 0.95rem;
   }
 }
