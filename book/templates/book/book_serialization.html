@@ -1155,6 +1155,12 @@ function getFilter() {
 
 // 페이지 추가
 function addPage() {
+    // 페이지 개수 제한 체크 (최대 100개)
+    if (pages.length >= 100) {
+        alert('페이지는 최대 100개까지만 추가할 수 있습니다.\n현재: ' + pages.length + '개');
+        return;
+    }
+
     saveCurrentPage();
     const newPage = createPage();
 
