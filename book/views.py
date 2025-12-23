@@ -1152,7 +1152,7 @@ def generate_preview_audio_async(request):
 
     try:
         import tempfile
-        from book.task import merge_audio_task
+        from book.tasks import merge_audio_task
 
         # 오디오 파일 저장 (임시 파일로)
         audio_file_paths = []
