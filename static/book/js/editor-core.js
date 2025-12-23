@@ -1238,14 +1238,21 @@ function writeString(view, offset, string) {
 
 // 페이지 추가
 function addPage() {
+    if (pages.length >= 100) {
+        alert("대사는 100개까지만 가능합니다.");
+        return;
+    }
+
     saveCurrentPage();
     const newPage = createPage();
 
     // 현재 페이지 바로 뒤에 추가
     pages.splice(currentPageIndex + 1, 0, newPage);
+    
 
     // 현재 페이지 인덱스를 새로 추가한 페이지로 이동
     currentPageIndex = currentPageIndex + 1;
+    
 
     renderPagesList();
     loadPage(currentPageIndex);
