@@ -120,7 +120,7 @@
 
 {% block extra_js %}
 <script>
-const bookId = {{ book.id }};
+const bookId = Number({{ book.id }});
 let previewAudioUrl = null;
 
 // IndexedDB 초기화
@@ -183,18 +183,7 @@ async function generatePreviewAudio() {
             request.onsuccess = () => {
                 console.log('📦 IndexedDB에서 로드한 데이터:', request.result);
 
-                // undefined면 다른 타입으로 재시도
-                if (!request.result && typeof bookId === 'number') {
-                    console.log('🔄 문자열로 재시도:', String(bookId));
-                    const retryRequest = store.get(String(bookId));
-                    retryRequest.onsuccess = () => {
-                        console.log('📦 재시도 결과:', retryRequest.result);
-                        resolve(retryRequest.result);
-                    };
-                    retryRequest.onerror = () => reject(retryRequest.error);
-                } else {
-                    resolve(request.result);
-                }
+            
             };
 
             request.onerror = () => {
