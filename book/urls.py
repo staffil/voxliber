@@ -37,8 +37,6 @@ urlpatterns=[
     # 미리듣기
     path("preview/", views.preview_page, name="preview_page"),
     path("preview/generate/", views.generate_preview_audio, name="generate_preview_audio"),
-    path("preview/generate-async/", views.generate_preview_audio_async, name="generate_preview_audio_async"),
-    path("preview/status/<str:task_id>/", views.check_merge_status, name="check_merge_status"),
 
     # 북 스냅 페이지
     path("book-snap/", views.book_snap_list, name="book_snap_list"),
