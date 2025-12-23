@@ -145,7 +145,6 @@ function initIndexedDB() {
 // 페이지 로드 시 임시 오디오 생성
 document.addEventListener('DOMContentLoaded', async function() {
     await generatePreviewAudio();
-    initAudioPlayer();
 });
 
 // 미리듣기용 임시 오디오 생성
@@ -209,6 +208,10 @@ async function generatePreviewAudio() {
         document.getElementById('episodeTitle').textContent = draftData.episodeTitle || '제목 없음';
 
         // 정보 표시
+        if (!Array.isArray(draftData.pages)) {
+                throw new Error('draftData.pages가 배열이 아닙니다');
+            }
+
         const dialogueCount = draftData.pages.filter(p => !p.isSoundEffect).length;
         const bgMusicCount = draftData.backgroundTracks ? draftData.backgroundTracks.length : 0;
 
@@ -307,6 +310,7 @@ async function pollTaskStatus(taskId, db, bookId) {
                     previewAudioUrl = URL.createObjectURL(blob);
                     const audio = document.getElementById('previewAudio');
                     audio.src = previewAudioUrl;
+                    initAudioPlayer();
 
                     // IndexedDB에 저장
                     try {
