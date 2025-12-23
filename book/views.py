@@ -1147,6 +1147,11 @@ def generate_preview_audio_async(request):
     """
     오디오 병합을 Celery 태스크로 시작하고 task_id 반환
     """
+    print("=" * 50)
+    print("🎯 generate_preview_audio_async 함수 시작")
+    print(f"Request method: {request.method}")
+    print("=" * 50)
+
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "POST 요청만 가능합니다."}, status=405)
 
@@ -1154,11 +1159,15 @@ def generate_preview_audio_async(request):
         import tempfile
         from book.tasks import merge_audio_task
 
+        print(f"📦 request.FILES 크기: {len(request.FILES)}")
+        print(f"📦 request.FILES keys: {list(request.FILES.keys())[:5]}...")  # 처음 5개만
+
         # 오디오 파일 저장 (임시 파일로)
         audio_file_paths = []
         for key in sorted(request.FILES.keys()):
             if key.startswith('audio_'):
                 audio_file = request.FILES[key]
+                print(f"💾 파일 저장 중: {key}, 크기: {audio_file.size} bytes")
                 # 임시 파일로 저장
                 temp_file = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
                 for chunk in audio_file.chunks():
@@ -1166,7 +1175,10 @@ def generate_preview_audio_async(request):
                 temp_file.close()
                 audio_file_paths.append(temp_file.name)
 
+        print(f"✅ 총 {len(audio_file_paths)}개 파일 저장 완료")
+
         if not audio_file_paths:
+            print("❌ 오디오 파일이 없습니다!")
             return JsonResponse({"success": False, "error": "오디오 파일이 없습니다."}, status=400)
 
         # 배경음 정보 수집
