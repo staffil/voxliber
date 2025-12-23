@@ -120,7 +120,7 @@
 
 {% block extra_js %}
 <script>
-const bookId = Number({{ book.id }});
+const bookId = {{ book.id }};
 let previewAudioUrl = null;
 
 // IndexedDB 초기화
@@ -145,6 +145,7 @@ function initIndexedDB() {
 // 페이지 로드 시 임시 오디오 생성
 document.addEventListener('DOMContentLoaded', async function() {
     await generatePreviewAudio();
+    initAudioPlayer();
 });
 
 // 미리듣기용 임시 오디오 생성
@@ -182,7 +183,18 @@ async function generatePreviewAudio() {
             request.onsuccess = () => {
                 console.log('📦 IndexedDB에서 로드한 데이터:', request.result);
 
-            
+                // undefined면 다른 타입으로 재시도
+                if (!request.result && typeof bookId === 'number') {
+                    console.log('🔄 문자열로 재시도:', String(bookId));
+                    const retryRequest = store.get(String(bookId));
+                    retryRequest.onsuccess = () => {
+                        console.log('📦 재시도 결과:', retryRequest.result);
+                        resolve(retryRequest.result);
+                    };
+                    retryRequest.onerror = () => reject(retryRequest.error);
+                } else {
+                    resolve(request.result);
+                }
             };
 
             request.onerror = () => {
@@ -208,10 +220,6 @@ async function generatePreviewAudio() {
         document.getElementById('episodeTitle').textContent = draftData.episodeTitle || '제목 없음';
 
         // 정보 표시
-        if (!Array.isArray(draftData.pages)) {
-                throw new Error('draftData.pages가 배열이 아닙니다');
-            }
-
         const dialogueCount = draftData.pages.filter(p => !p.isSoundEffect).length;
         const bgMusicCount = draftData.backgroundTracks ? draftData.backgroundTracks.length : 0;
 
@@ -310,7 +318,6 @@ async function pollTaskStatus(taskId, db, bookId) {
                     previewAudioUrl = URL.createObjectURL(blob);
                     const audio = document.getElementById('previewAudio');
                     audio.src = previewAudioUrl;
-                    initAudioPlayer();
 
                     // IndexedDB에 저장
                     try {
@@ -539,8 +546,7 @@ async function publishEpisode() {
                 // 임시저장 삭제
                 const deleteTransaction = db.transaction(['drafts'], 'readwrite');
                 const deleteStore = deleteTransaction.objectStore('drafts');
-                const normalizedBookId = Number(bookId);
-                await deleteStore.delete(normalizedBookId);
+                await deleteStore.delete(`draft_${bookId}`);
 
                 alert('에피소드가 성공적으로 발행되었습니다!');
                 window.location.href = data.redirect_url || `/book/detail/${bookId}/`;
