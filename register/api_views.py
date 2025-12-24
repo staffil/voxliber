@@ -17,8 +17,10 @@ def calc_age(birthdate_str):
     return today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
 
 def convert_gender(g):
-    if g.lower() == "male": return "M"
-    if g.lower() == "female": return "F"
+    g_lower = g.lower()
+    # 앱에서 보내는 단일 문자 형식 (M, F, O) 처리
+    if g_lower == "m" or g_lower == "male": return "M"
+    if g_lower == "f" or g_lower == "female": return "F"
     return "O"
 
 @csrf_exempt
