@@ -41,6 +41,8 @@ urlpatterns = [
         content_type="text/plain"
     )),
     path("sitemap.xml", sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
+    path('naver68afd1621fdbfa5d1c2dc3728aa152e8.html', TemplateView.as_view(template_name='naver68afd1621fdbfa5d1c2dc3728aa152e8.html')),
+
 ]
 
 # 개발 환경에서 미디어 파일 서빙
