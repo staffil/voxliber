@@ -43,6 +43,8 @@ urlpatterns = [
     path("book/", include(("book.urls", "book"), namespace="book")),
     path("mypage/", include(("mypage.urls", "mypage"), namespace="mypage")),
     path("voice/", include(("voice.urls", "voice"), namespace="voice")),
+    # 딥링크용 snap URL
+    path("snap/detail/<int:snap_id>/", lambda request, snap_id: __import__('django.shortcuts', fromlist=['redirect']).redirect('book:book_snap_detail', snap_id=snap_id)),
     path("robots.txt", TemplateView.as_view(
         template_name="robots.txt",
         content_type="text/plain"
