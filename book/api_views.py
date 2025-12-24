@@ -464,54 +464,59 @@ def api_login(request):
 
     POST Body (JSON):
         {
-            "email": "user@example.com",
+            "username": "user@example.com",  // email 또는 username
             "password": "mypassword"
         }
 
     Response:
         {
-            "success": true,
-            "data": {
-                "api_key": "PMU6Lvokw_jce...",
-                "user": {
-                    "id": 1,
-                    "nickname": "사용자",
-                    "email": "user@example.com"
-                }
-            }
+            "token": "PMU6Lvokw_jce...",
+            "user": {
+                "id": 1,
+                "username": "user123",
+                "email": "user@example.com",
+                "nickname": "사용자"
+            },
+            "api_key": "PMU6Lvokw_jce..."
         }
 
     Example:
         POST /api/auth/login/
         Content-Type: application/json
 
-        {"email": "test@example.com", "password": "password123"}
+        {"username": "test@example.com", "password": "password123"}
     """
     if request.method != 'POST':
-        return api_response(error='POST 요청만 허용됩니다.', status=405)
+        return JsonResponse({'message': 'POST 요청만 허용됩니다.'}, status=405)
 
     try:
         import json
         data = json.loads(request.body)
-        email = data.get('email')
+        username = data.get('username') or data.get('email')
         password = data.get('password')
 
-        if not email or not password:
-            return api_response(error='이메일과 비밀번호가 필요합니다.', status=400)
+        if not username or not password:
+            return JsonResponse({'message': '아이디와 비밀번호가 필요합니다.'}, status=400)
 
         # Django 인증
         from django.contrib.auth import get_user_model
         User = get_user_model()
 
-        # 이메일로 사용자 찾기
+        # 이메일 또는 username으로 사용자 찾기
+        user = None
         try:
-            user = User.objects.get(email=email)
+            # 먼저 이메일로 시도
+            user = User.objects.get(email=username)
         except User.DoesNotExist:
-            return api_response(error='존재하지 않는 사용자입니다.', status=401)
+            try:
+                # 이메일로 찾지 못하면 username으로 시도
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return JsonResponse({'message': '존재하지 않는 사용자입니다.'}, status=401)
 
         # 비밀번호 확인
         if not user.check_password(password):
-            return api_response(error='비밀번호가 일치하지 않습니다.', status=401)
+            return JsonResponse({'message': '비밀번호가 일치하지 않습니다.'}, status=401)
 
         # API Key 생성 또는 기존 키 반환
         from book.models import APIKey
@@ -539,26 +544,135 @@ def api_login(request):
 
         # 프로필 이미지 안전하게 가져오기
         profile_image_url = None
-        if hasattr(user, 'profile_image') and user.profile_image:
+        if hasattr(user, 'user_img') and user.user_img:
             try:
-                profile_image_url = request.build_absolute_uri(user.profile_image.url)
+                profile_image_url = request.build_absolute_uri(user.user_img.url)
             except:
                 profile_image_url = None
 
-        return api_response({
-            'api_key': api_key_obj.key,
+        # 앱이 기대하는 형식으로 반환 (api_response 래퍼 사용 안 함)
+        return JsonResponse({
+            'token': api_key_obj.key,  # token 필드 (필수)
             'user': {
                 'id': user.user_id,
-                'nickname': user.nickname,
+                'username': user.username,
                 'email': user.email,
-                'profile_image': profile_image_url
-            }
+                'nickname': user.nickname,
+                'first_name': user.first_name if hasattr(user, 'first_name') else None,
+                'last_name': user.last_name if hasattr(user, 'last_name') else None,
+                'profile_img': profile_image_url
+            },
+            'api_key': api_key_obj.key  # api_key 필드 (선택)
         })
 
     except json.JSONDecodeError:
-        return api_response(error='잘못된 JSON 형식입니다.', status=400)
+        return JsonResponse({'message': '잘못된 JSON 형식입니다.'}, status=400)
     except Exception as e:
-        return api_response(error=f'로그인 중 오류가 발생했습니다: {str(e)}', status=500)
+        return JsonResponse({'message': f'로그인 중 오류가 발생했습니다: {str(e)}'}, status=500)
+
+
+@csrf_exempt
+def api_register(request):
+    """
+    사용자 회원가입 API
+    새로운 사용자를 생성하고 API Key를 발급합니다.
+
+    POST Body (JSON):
+        {
+            "username": "user123",
+            "email": "user@example.com",
+            "password": "mypassword",
+            "first_name": "홍",  // 선택
+            "last_name": "길동"   // 선택
+        }
+
+    Response:
+        {
+            "token": "PMU6Lvokw_jce...",
+            "user": {
+                "id": 1,
+                "username": "user123",
+                "email": "user@example.com",
+                "nickname": "user123"
+            },
+            "api_key": "PMU6Lvokw_jce..."
+        }
+    """
+    if request.method != 'POST':
+        return JsonResponse({'message': 'POST 요청만 허용됩니다.'}, status=405)
+
+    try:
+        import json
+        data = json.loads(request.body)
+        username = data.get('username')
+        email = data.get('email')
+        password = data.get('password')
+        first_name = data.get('first_name', '')
+        last_name = data.get('last_name', '')
+
+        # 필수 필드 검증
+        if not username or not email or not password:
+            return JsonResponse({'message': '아이디, 이메일, 비밀번호는 필수입니다.'}, status=400)
+
+        # Django User 모델
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        # 중복 체크
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({'message': '이미 존재하는 아이디입니다.'}, status=400)
+
+        if User.objects.filter(email=email).exists():
+            return JsonResponse({'message': '이미 존재하는 이메일입니다.'}, status=400)
+
+        # 사용자 생성
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name
+        )
+
+        # nickname 기본값 설정 (username 사용)
+        if hasattr(user, 'nickname') and not user.nickname:
+            user.nickname = username
+            user.save(update_fields=['nickname'])
+
+        # API Key 생성
+        from book.models import APIKey
+        import secrets
+
+        api_key_obj = APIKey.objects.create(
+            user=user,
+            name='모바일 앱',
+            key=secrets.token_urlsafe(48)
+        )
+
+        # 마지막 사용 시간 업데이트
+        from django.utils import timezone
+        api_key_obj.last_used_at = timezone.now()
+        api_key_obj.save(update_fields=['last_used_at'])
+
+        # 앱이 기대하는 형식으로 반환
+        return JsonResponse({
+            'token': api_key_obj.key,
+            'user': {
+                'id': user.user_id if hasattr(user, 'user_id') else user.id,
+                'username': user.username,
+                'email': user.email,
+                'nickname': user.nickname if hasattr(user, 'nickname') else username,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'profile_img': None
+            },
+            'api_key': api_key_obj.key
+        }, status=201)
+
+    except json.JSONDecodeError:
+        return JsonResponse({'message': '잘못된 JSON 형식입니다.'}, status=400)
+    except Exception as e:
+        return JsonResponse({'message': f'회원가입 중 오류가 발생했습니다: {str(e)}'}, status=500)
 
 
 @csrf_exempt

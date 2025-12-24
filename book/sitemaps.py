@@ -1,6 +1,6 @@
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
-from .models import Book
+from .models import Books
 
 
 class BookSitemap(Sitemap):
@@ -10,16 +10,16 @@ class BookSitemap(Sitemap):
     protocol = 'https'
 
     def items(self):
-        """공개된 모든 책 반환"""
-        return Book.objects.filter(is_public=True).order_by('-created_at')
+        """모든 책 반환"""
+        return Books.objects.all().order_by('-created_at')
 
     def lastmod(self, obj):
         """마지막 수정일"""
-        return obj.updated_at if hasattr(obj, 'updated_at') else obj.created_at
+        return obj.created_at
 
     def location(self, obj):
         """책 상세 페이지 URL"""
-        return f'/book/{obj.book_id}/'
+        return f'/book/detail/{obj.id}/'
 
 
 class StaticViewSitemap(Sitemap):

@@ -109,6 +109,7 @@ urlpatterns=[
 
     # 🔐 Authentication
     path("api/auth/login/", api_views.api_login, name="api_login"),
+    path("api/auth/register/", api_views.api_register, name="api_register"),
     path("api/auth/logout/", api_views.api_logout, name="api_logout"),
     path("api/auth/refresh-key/", api_views.api_refresh_key, name="api_refresh_key"),
 
