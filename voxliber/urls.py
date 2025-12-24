@@ -22,6 +22,8 @@ from django.conf.urls.static import static
 from django.views.generic import TemplateView
 from django.contrib.sitemaps.views import sitemap
 from book.sitemaps import BookSitemap, StaticViewSitemap
+from django.views.static import serve
+import os
 
 # Sitemap 설정
 sitemaps = {
@@ -42,6 +44,16 @@ urlpatterns = [
     )),
     path("sitemap.xml", sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
     path('naver68afd1621fdbfa5d1c2dc3728aa152e8.html', TemplateView.as_view(template_name='naver68afd1621fdbfa5d1c2dc3728aa152e8.html')),
+
+    # Deep Link Verification Files
+    path('.well-known/apple-app-site-association',
+         lambda request: serve(request, 'apple-app-site-association',
+                             document_root=os.path.join(settings.STATIC_ROOT or settings.BASE_DIR / 'static', '.well-known'),
+                             content_type='application/json')),
+    path('.well-known/assetlinks.json',
+         lambda request: serve(request, 'assetlinks.json',
+                             document_root=os.path.join(settings.STATIC_ROOT or settings.BASE_DIR / 'static', '.well-known'),
+                             content_type='application/json')),
 
 ]
 
