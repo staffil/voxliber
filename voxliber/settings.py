@@ -69,6 +69,8 @@ ec2_ip = os.getenv('AWS_EC2_IP')
 if ec2_ip:
     ALLOWED_HOSTS.append(ec2_ip)
 
+# Sites framework
+SITE_ID = 1
 
 # Application definition
 
@@ -79,6 +81,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",  # Sitemap 필요
+    "django.contrib.sitemaps",  # Sitemap 지원
     "corsheaders",  # CORS 지원
     "testpj",
     "main",
