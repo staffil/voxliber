@@ -22,7 +22,7 @@ from django.conf.urls.static import static
 from django.views.generic import TemplateView
 from django.contrib.sitemaps.views import sitemap
 from book.sitemaps import BookSitemap, StaticViewSitemap
-from django.views.static import serve
+from django.http import FileResponse
 import os
 
 # Sitemap 설정
@@ -30,6 +30,11 @@ sitemaps = {
     'books': BookSitemap,
     'static': StaticViewSitemap,
 }
+
+# Deep Link 검증 파일 제공 뷰
+def serve_well_known(request, filename):
+    file_path = os.path.join(settings.STATICFILES_DIRS[0] if settings.STATICFILES_DIRS else settings.BASE_DIR / 'static', '.well-known', filename)
+    return FileResponse(open(file_path, 'rb'), content_type='application/json')
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -47,13 +52,9 @@ urlpatterns = [
 
     # Deep Link Verification Files
     path('.well-known/apple-app-site-association',
-         lambda request: serve(request, 'apple-app-site-association',
-                             document_root=os.path.join(settings.STATIC_ROOT or settings.BASE_DIR / 'static', '.well-known'),
-                             content_type='application/json')),
+         lambda request: serve_well_known(request, 'apple-app-site-association')),
     path('.well-known/assetlinks.json',
-         lambda request: serve(request, 'assetlinks.json',
-                             document_root=os.path.join(settings.STATIC_ROOT or settings.BASE_DIR / 'static', '.well-known'),
-                             content_type='application/json')),
+         lambda request: serve_well_known(request, 'assetlinks.json')),
 
 ]
 
