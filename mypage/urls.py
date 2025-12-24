@@ -19,6 +19,7 @@ urlpatterns = [
     path("delete/<int:pk>/", views.delete_my_voice, name="delete_my_voice"),
     path("toggle_myvoice_favorite/<int:pk>/", views.toggle_favorite, name="toggle_myvoice_favorite"),
     path("select_book/<int:pk>/", views.select_book, name="select_book"),
+    path("account/delete/", views.delete_account, name="delete_account"),
 
     # api 구간
     path("api/user_info/", api_views.api_user_info, name="api_user_info"),

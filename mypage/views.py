@@ -531,3 +531,28 @@ def book_snippet_form(request, book_id):
         'my_voice_list': my_voice_list
     }
     return render(request, 'mypage/snippet/snippet_detail.html', context)
+
+@login_required
+def delete_account(request):
+    """
+    회원 탈퇴 (Soft Delete)
+    계정을 비활성화하고 로그아웃합니다. 데이터는 보관됩니다.
+    """
+    if request.method == 'POST':
+        user = request.user
+        
+        # 계정 비활성화 (Soft Delete)
+        user.is_active = False
+        user.save()
+        
+        # 로그아웃
+        from django.contrib.auth import logout
+        logout(request)
+        
+        # 메시지와 함께 홈으로 리다이렉트
+        from django.contrib import messages
+        messages.success(request, '회원 탈퇴가 완료되었습니다. 계정 복구를 원하시면 고객센터로 문의해주세요.')
+        return redirect('main:main')
+    
+    # GET 요청은 확인 페이지로
+    return render(request, 'mypage/delete_account_confirm.html')

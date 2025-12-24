@@ -385,10 +385,10 @@
     <div class="form-section danger-zone" style="margin-top: 90px;">
         <h2 class="danger-title">⚠️ 계정 삭제</h2>
         <p class="danger-text">
-            계정을 삭제하면 작성한 작품, 팔로워, 프로필 정보가<br>
-            <strong>모두 영구적으로 삭제</strong>되며 복구할 수 없습니다.
+            계정을 탈퇴하면 로그인할 수 없게 되며,<br>
+            계정 복구를 원하시면 <strong>고객센터로 문의</strong>해주세요.
         </p>
-        <a href="/" class="btn btn-danger-outline">
+        <a href="{% url 'mypage:delete_account' %}" class="btn btn-danger-outline">
             회원 탈퇴
         </a>
     </div>
