@@ -20,6 +20,14 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
+from django.contrib.sitemaps.views import sitemap
+from book.sitemaps import BookSitemap, StaticViewSitemap
+
+# Sitemap 설정
+sitemaps = {
+    'books': BookSitemap,
+    'static': StaticViewSitemap,
+}
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -32,6 +40,7 @@ urlpatterns = [
         template_name="robots.txt",
         content_type="text/plain"
     )),
+    path("sitemap.xml", sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
 ]
 
 # 개발 환경에서 미디어 파일 서빙
