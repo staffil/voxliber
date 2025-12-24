@@ -7,7 +7,7 @@
 <!-- Open Graph 메타 태그 (소셜 미디어 공유용) -->
 <meta property="og:title" content="{{ book.name }}">
 <meta property="og:description" content="{{ book.description|default:'VoxLiber에서 오디오북을 즐겨보세요'|truncatewords:30 }}">
-<meta property="og:image" content="{% if book.cover_img %}{{ request.scheme }}://{{ request.get_host }}{{ book.cover_img.url }}{% else %}{{ request.scheme }}:{% endif %}">
+<meta property="og:image" content="{% if book.cover_img %}{{ request.scheme }}://{{ request.get_host }}{{ book.cover_img.url }}{% endif %}">
 <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{% url 'book:book_detail' book.id %}">
 <meta property="og:type" content="book">
 <meta property="og:site_name" content="VoxLiber">
