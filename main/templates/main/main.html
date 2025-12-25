@@ -565,55 +565,68 @@ document.addEventListener("DOMContentLoaded", () => {
 -->
 
     <!-- 오늘의 추천 작품 -->
-    <section class="content-section spotlight-section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <span class="title-icon">✨</span>
-          오늘의 추천
-        </h2>
-      </div>
+<!-- 오늘의 추천 작품 -->
+<section class="content-section spotlight-section">
+  <div class="section-header">
+    <h2 class="section-title">✨ 오늘의 추천</h2>
+  </div>
 
-      <div class="spotlight-carousel">
-        {% for book in new_books|slice:":4" %}
-        <div class="spotlight-item">
-          <div class="spotlight-cover">
+  <div class="scroll-container">
+    <div class="spotlight-grid">
+      {% for book in new_books|slice:":8" %}
+      <div class="spotlight-card">
+        <a href="{% url 'book:book_detail' book.id %}" class="spotlight-link">
+          <div class="spotlight-thumb">
             {% if book.cover_img %}
               <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
             {% else %}
-              <div class="book-placeholder-large">📚</div>
+              <div class="spotlight-placeholder">📚</div>
             {% endif %}
-            {% with first_episode=book.contents.first %}
-              {% if first_episode and first_episode.audio_file %}
-              <button class="preview-audio-btn spotlight-preview"
-                      data-audio="{{ first_episode.audio_file.url }}"
-                      data-title="{{ book.name }} - 1화"
-                      data-cover="{% if book.cover_img %}{{ book.cover_img.url }}{% endif %}">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </button>
-              {% endif %}
-            {% endwith %}
-            <div class="spotlight-overlay">
-              <div class="spotlight-badge">Editor's Pick</div>
-            </div>
           </div>
-          <div class="spotlight-content">
-            <h3 class="spotlight-title">{{ book.name }}</h3>
-            <p class="spotlight-author">{{ book.user.nickname }}</p>
-            <p class="spotlight-desc">{{ book.description|truncatewords:15 }}</p>
-            <div class="spotlight-stats">
-              <span>⭐ {{ book.book_score|default:"0.0" }}</span>
-              <span>📖 {{ book.contents.count }}화</span>
-            </div>
-            <div class="spotlight-actions">
-              <a href="{% url 'book:book_detail' book.id %}" class="spotlight-btn">자세히 보기</a>
-            </div>
+          <div class="spotlight-info">
+            <h3 class="spotlight-name">{{ book.name }}</h3>
+            <p class="spotlight-writer">{{ book.user.nickname }}</p>
           </div>
-        </div>
-        {% endfor %}
+        </a>
       </div>
-    </section>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 인기 순위 -->
+  <div class="section-header" style="margin-top: 5rem;">
+    <h2 class="section-title">🔥 오늘의 인기 오디오북</h2>
+  </div>
+
+  <div class="ranking-container">
+    {% for book in popular_books|slice:":50" %}
+    <a href="{% url 'book:book_detail' book.id %}" class="rank-card">
+      <div class="rank-badge">{{ forloop.counter }}</div>
+      <div class="rank-thumb">
+        {% if book.cover_img %}
+          <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+        {% else %}
+          <div class="rank-placeholder">📖</div>
+        {% endif %}
+      </div>
+      <div class="rank-details">
+        <h4 class="rank-title">{{ book.name }}</h4>
+        <p class="rank-author">{{ book.user.nickname }}</p>
+      </div>
+      <div class="rank-meta">
+        <span class="play-count">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
+            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+          </svg>
+          {{ book.view_count|default:"0" }}
+        </span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+
 
     <!-- 실시간 인기 차트 -->
     <section class="content-section" data-section="2">
