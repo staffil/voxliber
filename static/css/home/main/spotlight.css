@@ -38,7 +38,7 @@
 .spotlight-link {
   display: block;
   text-decoration: none;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .spotlight-thumb {
@@ -84,12 +84,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .spotlight-writer {
   font-size: 0.85rem;
-  color: rgba(255,255,255,0.5);
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -111,7 +111,7 @@
   background: rgba(255,255,255,0.03);
   border-radius: 8px;
   text-decoration: none;
-  color: #fff;
+  color: var(--text-primary);
   transition: 0.2s;
   border: 1px solid transparent;
 }
@@ -182,12 +182,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .rank-author {
   font-size: 0.85rem;
-  color: rgba(255,255,255,0.5);
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

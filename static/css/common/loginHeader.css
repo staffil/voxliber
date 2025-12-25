@@ -553,8 +553,14 @@ body.light-mode .mobile-menu-overlay {
 /* Responsive */
 @media (max-width: 1024px) {
     .nav-menu.desktop-only {
-        display: none;
+        display: none !important;
     }
+
+    /* 작가 센터 링크 완전 숨김 */
+    .nav-item[href="/book/author-dashboard/"] {
+        display: none !important;
+    }
+
     .user-profile {
         display: none; /* 모바일에서 프로필 전체 숨김 */
     }
