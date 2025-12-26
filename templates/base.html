@@ -12,11 +12,14 @@
   <meta name="robots" content="index, follow">
   <meta name="naver-site-verification" content="00bb847bef4f7c4d0c88efac7cf1c123d9a55514" />
 
+  <!-- Canonical URL (중복 콘텐츠 방지) -->
+  <link rel="canonical" href="https://voxliber.ink{{ request.path }}">
+
   <!-- Open Graph (소셜 미디어 공유) -->
   <meta property="og:title" content="{% block og_title %}{% block title %}VOXLIBER{% endblock %}{% endblock %}">
   <meta property="og:description" content="{% block og_description %}VoxLiber - 오디오북과 오디오 드라마를 만들고 공유하는 플랫폼{% endblock %}">
   <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'img/logo3.png' %}?v=2{% endblock %}">
-  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  <meta property="og:url" content="https://voxliber.ink{{ request.path }}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="VoxLiber">
 

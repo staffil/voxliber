@@ -120,6 +120,9 @@ MIDDLEWARE = [
 
 ]
 
+# SEO: www 리다이렉트는 웹 서버(nginx)에서 처리 권장
+# www.voxliber.ink -> voxliber.ink로 301 리다이렉트
+
 ROOT_URLCONF = "voxliber.urls"
 
 TEMPLATES = [
