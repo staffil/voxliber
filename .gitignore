@@ -23,7 +23,6 @@ db.sqlite3
 
 # Media/Static
 media/
-static/
 staticfiles/
 
 # 로그

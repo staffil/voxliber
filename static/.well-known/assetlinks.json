@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.example.voxliber_app",
+      "sha256_cert_fingerprints": [
+        "33:F4:61:4A:33:BB:2D:7D:3C:52:50:3E:2E:B3:22:EC:61:BC:D3:AF:73:4C:7E:01:F2:FC:C2:F5:16:67:88:EC"
+      ]
+    }
+  }
+]

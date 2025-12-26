@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.com.example.voxliber-app",
+        "paths": [
+          "/book/detail/*"
+        ]
+      }
+    ]
+  }
+}
