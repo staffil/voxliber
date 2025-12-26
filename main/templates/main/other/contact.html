@@ -4,73 +4,15 @@
 {% block title %}문의 목록 | VOXLIBER{% endblock %}
 
 {% block extra_css %}
-<style>
-.contact-wrapper {
-    max-width: 1000px;
-    margin: 150px auto;
-    padding: 20px 40px;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-}
-
-.contact-wrapper h1 {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 30px;
-    color: #222;
-    text-align: center;
-}
-
-.contact-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.contact-table th,
-.contact-table td {
-    padding: 12px 15px;
-    border-bottom: 1px solid #eee;
-    text-align: left;
-}
-
-.contact-table th {
-    background: #f9f9f9;
-    font-weight: 600;
-    color: #333;
-}
-
-.contact-table tr:hover {
-    background: #f1f1f1;
-}
-
-.no-data {
-    text-align: center;
-    padding: 20px;
-    color: #888;
-}
-
-@media screen and (max-width: 600px) {
-    .contact-wrapper {
-        padding: 20px;
-        margin: 40px 20px;
-    }
-    .contact-wrapper h1 {
-        font-size: 22px;
-    }
-    .contact-table th,
-    .contact-table td {
-        font-size: 14px;
-        padding: 8px 10px;
-    }
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/main/legal_pages.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="contact-wrapper">
-    <a href="contact_write/">문의 하기</a>
-    <h1>문의 목록</h1>
+    <div class="contact-header">
+        <h1>문의 목록</h1>
+        <a href="contact_write/" class="contact-write-btn">문의하기</a>
+    </div>
 
     {% if contacts %}
     <table class="contact-table">
@@ -85,20 +27,20 @@
 <tbody>
 {% for contact in contacts %}
 <tr>
-    <td style="color: #222;">{{ forloop.counter }}</td>
-    <td style="color: #222;">
+    <td>{{ forloop.counter }}</td>
+    <td>
         {% if contact.user %}
             {{ contact.user.nickname }}
         {% else %}
             비회원
         {% endif %}
-    </td style="color: #222;">
-    <td style="color: #222;">
+    </td>
+    <td>
         <a href="{% url 'main:contact_detail' contact.id %}">
             {{ contact.subject }}
         </a>
     </td>
-    <td style="color: #222;">{{ contact.created_at|date:"Y.m.d H:i" }}</td>
+    <td>{{ contact.created_at|date:"Y.m.d H:i" }}</td>
 </tr>
 {% endfor %}
 </tbody>

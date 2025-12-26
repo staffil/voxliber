@@ -4,73 +4,7 @@
 {% block title %}공지사항 | VOXLIBER{% endblock %}
 
 {% block extra_css %}
-<style>
-.notice-wrapper {
-    max-width: 900px;
-    margin: 150px auto;
-    padding: 20px 40px;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-}
-
-.notice-wrapper h1 {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 30px;
-    color: #222;
-    text-align: center;
-}
-
-.notice-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.notice-item {
-    border-bottom: 1px solid #eee;
-    padding: 15px 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: background 0.2s;
-}
-
-.notice-item:hover {
-    background: #f9f9f9;
-}
-
-.notice-item a {
-    font-weight: 500;
-    color: #222;
-    text-decoration: none;
-}
-
-.notice-item a:hover {
-    color: #007BFF;
-}
-
-.notice-date {
-    font-size: 14px;
-    color: #888;
-    flex-shrink: 0;
-    margin-left: 10px;
-}
-
-@media screen and (max-width: 600px) {
-    .notice-wrapper {
-        padding: 20px;
-        margin: 40px 20px;
-    }
-    .notice-wrapper h1 {
-        font-size: 22px;
-    }
-    .notice-date {
-        font-size: 12px;
-    }
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/main/legal_pages.css' %}">
 {% endblock %}
 
 {% block content %}

@@ -4,82 +4,11 @@
 {% block title %}문의하기 | VOXLIBER{% endblock %}
 
 {% block extra_css %}
-<style>
-.contact-wrapper {
-    max-width: 700px;
-    margin: 100px auto;
-    padding: 40px;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-}
-
-.contact-wrapper h1 {
-    text-align: center;
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 30px;
-    color: #222;
-}
-
-.contact-form label {
-    display: block;
-    font-weight: 500;
-    margin-bottom: 6px;
-    color: #333;
-}
-
-.contact-form input,
-.contact-form textarea {
-    width: 100%;
-    padding: 12px 15px;
-    margin-bottom: 20px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 16px;
-    box-sizing: border-box;
-}
-
-.contact-form textarea {
-    min-height: 150px;
-    resize: vertical;
-}
-
-.contact-form button {
-    background: #007BFF;
-    color: #fff;
-    font-weight: 600;
-    padding: 12px 25px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.contact-form button:hover {
-    background: #0056b3;
-}
-
-.form-error {
-    color: red;
-    font-size: 14px;
-    margin-bottom: 15px;
-}
-
-@media screen and (max-width: 600px) {
-    .contact-wrapper {
-        padding: 20px;
-        margin: 40px 20px;
-    }
-    .contact-wrapper h1 {
-        font-size: 22px;
-    }
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/main/legal_pages.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="contact-wrapper">
+<div class="contact-form-wrapper">
     <h1>문의하기</h1>
 
     {% if error %}
