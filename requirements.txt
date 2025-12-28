@@ -97,8 +97,7 @@ sqlparse==0.5.3
 stack-data==0.6.3
 sympy==1.14.0
 tokenizers==0.22.1
-# torchaudio==2.7.1+cu118 - Install separately with: pip install torchaudio --index-url https://download.pytorch.org/whl/cu118
-torchaudio==2.7.1
+
 tornado==6.5.2
 tqdm==4.67.1
 traitlets==5.14.3
