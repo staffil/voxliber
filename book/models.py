@@ -621,3 +621,70 @@ class Merchandise(models.Model):
 
     def __str__(self):
         return self.name
+
+
+# 팔로우 테이블
+class Follow(models.Model):
+    """
+    사용자가 작가를 팔로우하는 관계
+    """
+    follower = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='following',
+        verbose_name="팔로워"
+    )
+    following = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='followers',
+        verbose_name="팔로잉"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="팔로우 시작일")
+
+    class Meta:
+        db_table = "follow"
+        verbose_name = "팔로우"
+        verbose_name_plural = "팔로우 목록"
+        unique_together = ('follower', 'following')  # 중복 팔로우 방지
+        indexes = [
+            models.Index(fields=['follower']),
+            models.Index(fields=['following']),
+        ]
+
+    def __str__(self):
+        return f"{self.follower.nickname} → {self.following.nickname}"
+
+
+# 북마크/나중에 보기 테이블
+class BookmarkBook(models.Model):
+    """
+    사용자가 나중에 보기 위해 저장한 책
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='bookmarked_books',
+        verbose_name="사용자"
+    )
+    book = models.ForeignKey(
+        'Books',
+        on_delete=models.CASCADE,
+        related_name='bookmarked_by',
+        verbose_name="책"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="저장일")
+    note = models.TextField(blank=True, null=True, verbose_name="메모")  # 선택: 왜 저장했는지 메모
+
+    class Meta:
+        db_table = "bookmark_book"
+        verbose_name = "북마크한 책"
+        verbose_name_plural = "북마크 목록"
+        unique_together = ('user', 'book')  # 중복 북마크 방지
+        ordering = ['-created_at']  # 최근 저장한 순서
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.nickname} → {self.book.name}"

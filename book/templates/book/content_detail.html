@@ -81,6 +81,14 @@
                 <!-- 재생속도 버튼 -->
                 <button id="playbackSpeedBtn" class="playback-speed-btn">1.0x</button>
 
+                <!-- 슬립 타이머 버튼 -->
+                <button id="sleepTimerBtn" class="sleep-timer-btn" title="슬립 타이머">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                </button>
+
                 <!-- 볼륨 컨트롤 -->
                 <div class="volume-control">
                     <button id="volumeBtn" class="volume-btn">
@@ -542,6 +550,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // 대사 목록 렌더링 및 클릭 이벤트 추가
             function renderDialogues() {
+                if (!dialogueList) return;
+
                 dialogueList.innerHTML = '';
                 dialogues.forEach((dialogue, index) => {
                     const dialogueItem = document.createElement('div');

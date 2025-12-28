@@ -4,9 +4,10 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from book.models import APIKey
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.core.exceptions import ValidationError
 from datetime import datetime, date
-from book.api_utils import require_api_key, paginate, api_response
+from book.api_utils import require_api_key, require_api_key_secure, paginate, api_response
+from voxliber.security import validate_image_file
 
 
 
@@ -23,8 +24,7 @@ def convert_gender(g):
     if g_lower == "f" or g_lower == "female": return "F"
     return "O"
 
-@csrf_exempt
-@require_api_key
+@require_api_key_secure
 def api_signup(request):
     """
     OAuth 로그인 후 신규 유저 프로필 완료 API
@@ -49,7 +49,11 @@ def api_signup(request):
     user.is_profile_completed = True
 
     if user_img:
-        user.user_img = user_img
+        try:
+            validate_image_file(user_img)
+            user.user_img = user_img
+        except ValidationError as e:
+            return JsonResponse({"error": str(e)}, status=400)
 
     user.save()
 

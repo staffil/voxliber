@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Genres, Tags, Books, BookTag, Content, BookReview, BookComment, ContentComment, ReadingProgress, VoiceList, SoundEffectLibrary, BackgroundMusicLibrary, BookSnap, AuthorAnnouncement, AudioBookGuide, APIKey, VoiceType
+from .models import Genres, Tags, Books, BookTag, Content, BookReview, BookComment, ContentComment, ReadingProgress, VoiceList, SoundEffectLibrary, BackgroundMusicLibrary, BookSnap, AuthorAnnouncement, AudioBookGuide, APIKey, VoiceType, Follow, BookmarkBook
 
 
 @admin.register(Genres)
@@ -310,3 +310,44 @@ class APIKeyAdmin(admin.ModelAdmin):
             import secrets
             obj.key = secrets.token_urlsafe(48)
         super().save_model(request, obj, form, change)
+
+
+# 팔로우 Admin
+@admin.register(Follow)
+class FollowAdmin(admin.ModelAdmin):
+    list_display = ['follower', 'following', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['follower__nickname', 'following__nickname']
+    readonly_fields = ['created_at']
+
+    fieldsets = (
+        ('팔로우 관계', {
+            'fields': ('follower', 'following')
+        }),
+        ('생성일', {
+            'fields': ('created_at',)
+        }),
+    )
+
+
+# 북마크 Admin
+@admin.register(BookmarkBook)
+class BookmarkBookAdmin(admin.ModelAdmin):
+    list_display = ['user', 'book', 'created_at', 'has_note']
+    list_filter = ['created_at']
+    search_fields = ['user__nickname', 'book__name']
+    readonly_fields = ['created_at']
+
+    fieldsets = (
+        ('북마크 정보', {
+            'fields': ('user', 'book', 'note')
+        }),
+        ('생성일', {
+            'fields': ('created_at',)
+        }),
+    )
+
+    def has_note(self, obj):
+        return bool(obj.note)
+    has_note.boolean = True
+    has_note.short_description = "메모 있음"

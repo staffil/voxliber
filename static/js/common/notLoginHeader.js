@@ -75,11 +75,14 @@ function closeLogin() {
 
 
 
-document.getElementById("searchInput").addEventListener("keyup", (e) => {
-    if (e.key === "Enter") {
-        const q = e.target.value.trim();
-        if (q) window.location.href = `/search/?q=${encodeURIComponent(q)}`;
-    }
-});
+const searchInput = document.getElementById("searchInput");
+if (searchInput) {
+    searchInput.addEventListener("keyup", (e) => {
+        if (e.key === "Enter") {
+            const q = e.target.value.trim();
+            if (q) window.location.href = `/search/?q=${encodeURIComponent(q)}`;
+        }
+    });
+}
 
 

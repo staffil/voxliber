@@ -2,8 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse,HttpResponseForbidden
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
+from django.core.exceptions import ValidationError
 from book.models import Genres, Books, Tags, VoiceList, BookSnap, MyVoiceList, Content, APIKey
+from book.api_utils import require_api_key_secure
+from voxliber.security import validate_image_file, validate_video_file, validate_audio_file
 import os
 from django.conf import settings
 
@@ -208,7 +210,11 @@ def book_serialization(request):
             # 🔥 에피소드 이미지 저장
             episode_image = request.FILES.get('episode_image')
             if episode_image:
-                content.episode_image = episode_image
+                try:
+                    validate_image_file(episode_image)
+                    content.episode_image = episode_image
+                except ValidationError as e:
+                    return JsonResponse({'success': False, 'error': f'이미지 검증 실패: {str(e)}'}, status=400)
                 content.save()
                 print(f"📷 에피소드 이미지 저장 완료: {content.episode_image.url}")
 
@@ -220,6 +226,10 @@ def book_serialization(request):
             merged_audio_file = request.FILES.get('merged_audio')
 
             if merged_audio_file:
+                try:
+                    validate_audio_file(merged_audio_file)
+                except ValidationError as e:
+                    return JsonResponse({'success': False, 'error': f'오디오 검증 실패: {str(e)}'}, status=400)
                 # ✅ 미리듣기에서 이미 merge된 오디오 사용 (배경음 포함)
                 print('🎵 미리듣기에서 생성된 최종 merge 오디오 사용 (배경음 포함)')
                 print(f'📎 파일 크기: {merged_audio_file.size / 1024 / 1024:.2f} MB')
@@ -883,7 +893,7 @@ def save_listening_history(request, content_id):
 
 
 # 앱용 청취 위치 업데이트 API (api_key 인증)
-@csrf_exempt
+@require_api_key_secure
 @require_POST
 def update_listening_position_api(request):
     from book.models import Content, ListeningHistory
@@ -1146,7 +1156,6 @@ def generate_preview_audio(request):
 
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from .models import BookSnap, BookSnapComment
 from django.core.paginator import Paginator
 import random
@@ -1192,6 +1201,15 @@ def create_book_snap(request):
         description = request.POST.get("description", "").strip()
         image = request.FILES.get("image")
         video = request.FILES.get("video")
+
+        # 파일 검증
+        try:
+            if image:
+                validate_image_file(image)
+            if video:
+                validate_video_file(video)
+        except ValidationError as e:
+            return JsonResponse({"error": str(e)}, status=400)
 
         # select에서 선택한 책 링크 (URL)
         selected_link = request.POST.get("book_link", "").strip()
@@ -1349,7 +1367,8 @@ def book_snap_detail(request, snap_id):
 
 
 # 좋아요 API
-@csrf_exempt
+@require_POST
+@login_required
 def book_snap_like(request, snap_id):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=400)
@@ -1368,7 +1387,8 @@ def book_snap_like(request, snap_id):
 
 
 # 조회수 증가 API
-@csrf_exempt
+@require_POST
+@login_required
 def book_snap_view_count(request, snap_id):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=400)
@@ -1386,7 +1406,8 @@ def book_snap_view_count(request, snap_id):
 
 
 # 댓글 작성 API
-@csrf_exempt
+@require_POST
+@login_required
 def book_snap_comment(request, snap_id):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=400)
@@ -1490,7 +1511,7 @@ def author_dashboard(request):
     import json
     from django.db.models import Count, Sum, Avg
     from datetime import datetime, timedelta
-    from book.models import ReadingProgress, ListeningHistory, Books
+    from book.models import ReadingProgress, ListeningHistory, Books, Follow
 
     # 로그인한 작가의 책들
     user_books = Books.objects.filter(user=request.user).prefetch_related('contents').order_by("-created_at")
@@ -1499,6 +1520,9 @@ def author_dashboard(request):
     total_books = user_books.count()
     total_contents = sum(book.contents.count() for book in user_books)
     total_audio_duration = request.user.get_total_audiobook_duration_formatted()
+
+    # 팔로워 수
+    total_followers = Follow.objects.filter(following=request.user).count()
 
     # 전체 독자 수
     total_readers = (
@@ -1637,6 +1661,7 @@ def author_dashboard(request):
         "total_books": total_books,
         "total_contents": total_contents,
         "total_audio_duration": total_audio_duration,
+        "total_followers": total_followers,
         "total_readers": total_readers,
         "recent_readers": recent_readers,
         "book_stats": book_stats,
@@ -1647,7 +1672,8 @@ def author_dashboard(request):
 
 
 
-@csrf_exempt
+@require_POST
+@login_required
 def toggle_status(request, book_id):
     if request.method == "POST":
         book = get_object_or_404(Books, id=book_id)
@@ -1891,3 +1917,83 @@ def search_page(request):
     query = request.GET.get('q', '')
     return render(request, 'book/search.html', {'query': query})
 
+
+
+# ==================== 북마크 기능 ====================
+
+@login_required
+def toggle_bookmark(request, book_id):
+    """
+    북마크 토글 (추가/제거)
+    """
+    print(f"🔖 북마크 토글 요청 - 사용자: {request.user}, 책 ID: {book_id}")
+
+    if request.method != 'POST':
+        print(f"❌ 잘못된 메서드: {request.method}")
+        return JsonResponse({'error': '잘못된 요청입니다'}, status=400)
+
+    from book.models import BookmarkBook
+
+    try:
+        book = Books.objects.get(id=book_id)
+        print(f"📖 책 찾음: {book.name}")
+    except Books.DoesNotExist:
+        print(f"❌ 책을 찾을 수 없음: {book_id}")
+        return JsonResponse({'error': '책을 찾을 수 없습니다'}, status=404)
+
+    # 북마크 토글
+    try:
+        bookmark, created = BookmarkBook.objects.get_or_create(
+            user=request.user,
+            book=book
+        )
+        print(f"✅ 북마크 객체: created={created}, bookmark_id={bookmark.id if bookmark else None}")
+    except Exception as e:
+        print(f"❌ 북마크 생성/조회 오류: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': f'데이터베이스 오류: {str(e)}'}, status=500)
+
+    if not created:
+        # 이미 북마크되어 있으면 제거
+        bookmark.delete()
+        is_bookmarked = False
+        message = '북마크에서 제거되었습니다'
+        print(f"🗑️ 북마크 제거됨")
+    else:
+        is_bookmarked = True
+        message = '북마크에 추가되었습니다'
+        print(f"➕ 북마크 추가됨")
+
+    response_data = {
+        'success': True,
+        'is_bookmarked': is_bookmarked,
+        'message': message
+    }
+    print(f"📤 응답: {response_data}")
+    return JsonResponse(response_data)
+
+
+@login_required
+def my_bookmarks(request):
+    """
+    내 북마크 목록 페이지
+    """
+    from book.models import BookmarkBook
+    from django.core.paginator import Paginator
+    
+    bookmarks = BookmarkBook.objects.filter(
+        user=request.user
+    ).select_related('book', 'book__user').prefetch_related(
+        'book__genres', 'book__tags'
+    ).order_by('-created_at')
+    
+    paginator = Paginator(bookmarks, 20)
+    page = request.GET.get('page')
+    bookmarks_page = paginator.get_page(page)
+    
+    context = {
+        'bookmarks': bookmarks_page
+    }
+    
+    return render(request, 'book/my_bookmarks.html', context)

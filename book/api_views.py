@@ -4,11 +4,11 @@
 """
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from django.db.models import Avg, Count, Max
-from django.views.decorators.csrf import csrf_exempt
-from book.models import Books, Content, BookReview, ReadingProgress, ListeningHistory, Poem_list, BookSnippet, Tags
-from book.api_utils import require_api_key, paginate, api_response
+from django.db.models import Avg, Count, Max, Q
+from book.models import Books, Content, BookReview, ReadingProgress, ListeningHistory, Poem_list, BookSnippet, Tags, Follow, BookmarkBook
+from book.api_utils import require_api_key, require_api_key_secure, paginate, api_response
 from rest_framework.decorators import api_view
+import json
 
 
 # ==================== 📚 Books API ====================
@@ -456,7 +456,6 @@ def api_key_info(request):
 
 # ==================== 🔐 인증 API (로그인/로그아웃) ====================
 
-@csrf_exempt
 def api_login(request):
     """
     사용자 로그인 API
@@ -571,7 +570,6 @@ def api_login(request):
         return JsonResponse({'message': f'로그인 중 오류가 발생했습니다: {str(e)}'}, status=500)
 
 
-@csrf_exempt
 def api_register(request):
     """
     사용자 회원가입 API
@@ -675,8 +673,7 @@ def api_register(request):
         return JsonResponse({'message': f'회원가입 중 오류가 발생했습니다: {str(e)}'}, status=500)
 
 
-@csrf_exempt
-@require_api_key
+@require_api_key_secure
 def api_logout(request):
     """
     사용자 로그아웃 API
@@ -706,8 +703,7 @@ def api_logout(request):
         return api_response(error=f'로그아웃 중 오류가 발생했습니다: {str(e)}', status=500)
 
 
-@csrf_exempt
-@require_api_key
+@require_api_key_secure
 def api_refresh_key(request):
     """
     API Key 재발급 API
@@ -1176,8 +1172,7 @@ def api_snap_detail(request, snap_id):
 
 
 @api_view(['POST'])
-@csrf_exempt
-@require_api_key
+@require_api_key_secure
 def api_snap_like(request, snap_id):
     """
     스냅 좋아요 토글 API
@@ -1216,8 +1211,7 @@ def api_snap_like(request, snap_id):
     })
 
 @api_view(['POST'])
-@csrf_exempt
-@require_api_key
+@require_api_key_secure
 def api_snap_comment(request, snap_id):
     from book.models import BookSnap, BookSnapComment, APIKey
     import json
@@ -1272,8 +1266,7 @@ def api_snap_comment(request, snap_id):
 
 
 from book.models import BookSnap
-@require_api_key
-@csrf_exempt
+@require_api_key_secure
 def snap_main_view(request):
     snap_qs = BookSnap.objects.all().order_by("?")
     snap_list = []
@@ -1290,8 +1283,7 @@ def snap_main_view(request):
 
 from main.models import SnapBtn, Advertisment
 
-@require_api_key
-@csrf_exempt
+@require_api_key_secure
 def api_main_new(reqeust):
     news_qs = SnapBtn.objects.all().order_by("-id")
     news_list= []
@@ -1311,8 +1303,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 from book.service.recommendation import recommend_books
 # AI 추천 책들
-@require_api_key
-@csrf_exempt
+@require_api_key_secure
 def api_ai_recommned(request, user_id):
     try:
         user = User.objects.get(user_id=user_id)
@@ -1340,8 +1331,7 @@ def api_ai_recommned(request, user_id):
 
 
 # 시 공모전 작품
-@require_api_key
-@csrf_exempt
+@require_api_key_secure
 def api_poem_main(request):
     poem_qs = Poem_list.objects.filter(status = 'winner').all().order_by("?")[:10]
 
@@ -1359,8 +1349,7 @@ def api_poem_main(request):
 
     return JsonResponse({"poems": poem_list})
 
-@require_api_key
-@csrf_exempt
+@require_api_key_secure
 def api_book_snippet_main(request):
     snippet_qs = BookSnippet.objects.all().order_by("?")[:10]
 
@@ -1496,8 +1485,7 @@ def api_search(request):
 # ==================== 💬 Book Comments API ====================
 
 @api_view(['GET', 'POST'])
-@csrf_exempt
-@require_api_key
+@require_api_key_secure
 def api_book_comments(request, book_id):
     """
     책 댓글 API
@@ -1632,8 +1620,7 @@ def api_book_comments(request, book_id):
 # ==================== ⭐ Book Reviews Create/Update API ====================
 
 @api_view(['POST', 'PATCH', 'DELETE'])
-@csrf_exempt
-@require_api_key
+@require_api_key_secure
 def api_book_review_create(request, book_id):
     """
     책 리뷰/평가 작성/수정/삭제 API
@@ -1796,3 +1783,380 @@ def _update_book_score(book):
     else:
         book.book_score = 0.0
     book.save()
+
+
+# ==================== 👥 Follow API ====================
+
+@require_api_key_secure
+def api_follow_toggle(request, author_id):
+    """
+    작가 팔로우/언팔로우 토글 API
+
+    POST /api/authors/<author_id>/follow/
+
+    Returns:
+        {
+            "success": true,
+            "is_following": true,
+            "follower_count": 150
+        }
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST 요청만 허용됩니다'}, status=405)
+
+    user = request.api_user
+
+    # 작가 확인
+    from register.models import CustomUser
+    try:
+        author = CustomUser.objects.get(user_id=author_id)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '작가를 찾을 수 없습니다'}, status=404)
+
+    # 자기 자신을 팔로우할 수 없음
+    if user.user_id == author.user_id:
+        return JsonResponse({'success': False, 'error': '자기 자신을 팔로우할 수 없습니다'}, status=400)
+
+    # 팔로우 토글
+    follow, created = Follow.objects.get_or_create(
+        follower=user,
+        following=author
+    )
+
+    if not created:
+        # 이미 팔로우 중이면 언팔로우
+        follow.delete()
+        is_following = False
+    else:
+        is_following = True
+
+    # 팔로워 수 계산
+    follower_count = Follow.objects.filter(following=author).count()
+
+    return JsonResponse({
+        'success': True,
+        'is_following': is_following,
+        'follower_count': follower_count
+    })
+
+
+@require_api_key
+def api_user_followers(request, user_id):
+    """
+    특정 사용자의 팔로워 목록 API
+
+    GET /api/users/<user_id>/followers/?page=1&per_page=20
+    """
+    from register.models import CustomUser
+
+    try:
+        target_user = CustomUser.objects.get(user_id=user_id)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '사용자를 찾을 수 없습니다'}, status=404)
+
+    page = request.GET.get('page', 1)
+    per_page = request.GET.get('per_page', 20)
+
+    # 팔로워 목록
+    followers = Follow.objects.filter(following=target_user).select_related('follower')
+    result = paginate(followers, page, per_page)
+
+    followers_data = []
+    for follow in result['items']:
+        follower = follow.follower
+        followers_data.append({
+            'user_id': follower.user_id,
+            'nickname': follower.nickname,
+            'profile_img': request.build_absolute_uri(follower.user_img.url) if follower.user_img else None,
+            'followed_at': follow.created_at.isoformat()
+        })
+
+    return api_response({
+        'followers': followers_data,
+        'pagination': result['pagination']
+    })
+
+
+@require_api_key
+def api_user_following(request, user_id):
+    """
+    특정 사용자가 팔로우하는 작가 목록 API
+
+    GET /api/users/<user_id>/following/?page=1&per_page=20
+    """
+    from register.models import CustomUser
+
+    try:
+        target_user = CustomUser.objects.get(user_id=user_id)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '사용자를 찾을 수 없습니다'}, status=404)
+
+    page = request.GET.get('page', 1)
+    per_page = request.GET.get('per_page', 20)
+
+    # 팔로잉 목록
+    following = Follow.objects.filter(follower=target_user).select_related('following')
+    result = paginate(following, page, per_page)
+
+    following_data = []
+    for follow in result['items']:
+        author = follow.following
+        # 작가의 책 수와 총 팔로워 수
+        books_count = Books.objects.filter(user=author).count()
+        followers_count = Follow.objects.filter(following=author).count()
+
+        following_data.append({
+            'user_id': author.user_id,
+            'nickname': author.nickname,
+            'profile_img': request.build_absolute_uri(author.user_img.url) if author.user_img else None,
+            'books_count': books_count,
+            'followers_count': followers_count,
+            'followed_at': follow.created_at.isoformat()
+        })
+
+    return api_response({
+        'following': following_data,
+        'pagination': result['pagination']
+    })
+
+
+@require_api_key
+def api_following_feed(request):
+    """
+    팔로우한 작가들의 최신 책 피드 API
+
+    GET /api/following/feed/?page=1&per_page=20
+
+    팔로우한 작가들이 작성한 책을 최신순으로 반환
+    """
+    user = request.api_user
+    page = request.GET.get('page', 1)
+    per_page = request.GET.get('per_page', 20)
+
+    # 팔로우한 작가들의 ID 목록
+    following_ids = Follow.objects.filter(follower=user).values_list('following_id', flat=True)
+
+    if not following_ids:
+        return api_response({
+            'books': [],
+            'pagination': {
+                'page': 1,
+                'per_page': 20,
+                'total': 0,
+                'total_pages': 0,
+                'has_next': False,
+                'has_prev': False
+            }
+        })
+
+    # 팔로우한 작가들의 책 목록
+    books = Books.objects.filter(
+        user_id__in=following_ids
+    ).select_related('user').prefetch_related('genres', 'tags').annotate(
+        episodes_count=Count('contents'),
+        avg_rating=Avg('reviews__rating')
+    ).order_by('-created_at')
+
+    result = paginate(books, page, per_page)
+
+    books_data = []
+    for book in result['items']:
+        books_data.append({
+            'id': book.id,
+            'name': book.name,
+            'description': book.description,
+            'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
+            'status': book.status,
+            'status_display': book.get_status_display(),
+            'book_score': float(book.book_score),
+            'avg_rating': float(book.avg_rating) if book.avg_rating else 0,
+            'episodes_count': book.episodes_count,
+            'total_duration': book.get_total_duration_formatted(),
+            'created_at': book.created_at.isoformat(),
+            'author': {
+                'id': book.user.user_id,
+                'nickname': book.user.nickname,
+                'profile_img': request.build_absolute_uri(book.user.user_img.url) if book.user.user_img else None,
+            },
+            'genres': [
+                {'id': g.id, 'name': g.name, 'color': g.genres_color}
+                for g in book.genres.all()
+            ],
+            'tags': [
+                {'id': t.id, 'name': t.name}
+                for t in book.tags.all()
+            ]
+        })
+
+    return api_response({
+        'books': books_data,
+        'pagination': result['pagination']
+    })
+
+
+# ==================== 🔖 Bookmark API ====================
+
+@require_api_key_secure
+def api_bookmark_toggle(request, book_id):
+    """
+    책 북마크(나중에 보기) 토글 API
+
+    POST /api/books/<book_id>/bookmark/
+
+    Body (optional):
+        {
+            "note": "나중에 읽고 싶은 책"
+        }
+
+    Returns:
+        {
+            "success": true,
+            "is_bookmarked": true
+        }
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST 요청만 허용됩니다'}, status=405)
+
+    user = request.api_user
+
+    # 책 확인
+    try:
+        book = Books.objects.get(id=book_id)
+    except Books.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '책을 찾을 수 없습니다'}, status=404)
+
+    # 요청 바디에서 메모 추출 (선택사항)
+    note = None
+    if request.body:
+        try:
+            data = json.loads(request.body)
+            note = data.get('note', '')
+        except json.JSONDecodeError:
+            pass
+
+    # 북마크 토글
+    bookmark, created = BookmarkBook.objects.get_or_create(
+        user=user,
+        book=book,
+        defaults={'note': note or ''}
+    )
+
+    if not created:
+        # 이미 북마크되어 있으면 제거
+        bookmark.delete()
+        is_bookmarked = False
+    else:
+        is_bookmarked = True
+
+    return JsonResponse({
+        'success': True,
+        'is_bookmarked': is_bookmarked
+    })
+
+
+@require_api_key_secure
+def api_bookmark_update_note(request, book_id):
+    """
+    북마크 메모 업데이트 API
+
+    PATCH /api/books/<book_id>/bookmark/note/
+
+    Body:
+        {
+            "note": "새로운 메모 내용"
+        }
+    """
+    if request.method != 'PATCH':
+        return JsonResponse({'error': 'PATCH 요청만 허용됩니다'}, status=405)
+
+    user = request.api_user
+
+    try:
+        bookmark = BookmarkBook.objects.get(user=user, book_id=book_id)
+    except BookmarkBook.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '북마크를 찾을 수 없습니다'}, status=404)
+
+    try:
+        data = json.loads(request.body)
+        note = data.get('note', '')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    bookmark.note = note
+    bookmark.save()
+
+    return JsonResponse({
+        'success': True,
+        'data': {
+            'book_id': book_id,
+            'note': bookmark.note,
+            'updated_at': bookmark.created_at.isoformat()
+        }
+    })
+
+
+@require_api_key
+def api_user_bookmarks(request):
+    """
+    사용자의 북마크 목록 API
+
+    GET /api/bookmarks/?page=1&per_page=20
+
+    Returns bookmarked books with notes
+    """
+    user = request.api_user
+    page = request.GET.get('page', 1)
+    per_page = request.GET.get('per_page', 20)
+
+    # 북마크 목록
+    bookmarks = BookmarkBook.objects.filter(
+        user=user
+    ).select_related('book', 'book__user').prefetch_related(
+        'book__genres', 'book__tags'
+    )
+
+    result = paginate(bookmarks, page, per_page)
+
+    bookmarks_data = []
+    for bookmark in result['items']:
+        book = bookmark.book
+        # 책 정보
+        episodes_count = Content.objects.filter(book=book).count()
+        avg_rating = BookReview.objects.filter(book=book).aggregate(Avg('rating'))['rating__avg']
+
+        bookmarks_data.append({
+            'bookmark_id': bookmark.id,
+            'bookmarked_at': bookmark.created_at.isoformat(),
+            'note': bookmark.note,
+            'book': {
+                'id': book.id,
+                'name': book.name,
+                'description': book.description,
+                'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
+                'status': book.status,
+                'status_display': book.get_status_display(),
+                'book_score': float(book.book_score),
+                'avg_rating': float(avg_rating) if avg_rating else 0,
+                'episodes_count': episodes_count,
+                'total_duration': book.get_total_duration_formatted(),
+                'created_at': book.created_at.isoformat(),
+                'author': {
+                    'id': book.user.user_id,
+                    'nickname': book.user.nickname,
+                    'profile_img': request.build_absolute_uri(book.user.user_img.url) if book.user.user_img else None,
+                },
+                'genres': [
+                    {'id': g.id, 'name': g.name, 'color': g.genres_color}
+                    for g in book.genres.all()
+                ],
+                'tags': [
+                    {'id': t.id, 'name': t.name}
+                    for t in book.tags.all()
+                ]
+            }
+        })
+
+    return api_response({
+        'bookmarks': bookmarks_data,
+        'pagination': result['pagination']
+    })

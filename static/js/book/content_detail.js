@@ -237,6 +237,172 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     /* -----------------------------
+       슬립 타이머
+    ----------------------------- */
+    const sleepTimerBtn = document.getElementById("sleepTimerBtn");
+    let sleepTimerTimeout = null;
+    let sleepTimerEndTime = null;
+    let sleepTimerCountdownInterval = null;
+    const timerOptions = [5, 10, 15, 30, 45, 60]; // 분 단위
+    let currentTimerIndex = -1; // -1 = 타이머 없음
+
+    function showSleepTimerNotification(minutes) {
+        const notification = document.createElement("div");
+        notification.style.cssText = `
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 16px 28px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(245, 87, 108, 0.5);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideDown 0.3s ease;
+        `;
+        notification.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>슬립 타이머 ${minutes}분 설정됨</span>
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = "slideUp 0.3s ease";
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    function cancelSleepTimer() {
+        if (sleepTimerTimeout) {
+            clearTimeout(sleepTimerTimeout);
+            sleepTimerTimeout = null;
+        }
+        if (sleepTimerCountdownInterval) {
+            clearInterval(sleepTimerCountdownInterval);
+            sleepTimerCountdownInterval = null;
+        }
+        sleepTimerEndTime = null;
+        sleepTimerBtn.classList.remove("active");
+        sleepTimerBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+        `;
+        console.log("⏰ 슬립 타이머 취소됨");
+    }
+
+    function updateSleepTimerDisplay() {
+        if (!sleepTimerEndTime) return;
+
+        const now = Date.now();
+        const remaining = Math.max(0, sleepTimerEndTime - now);
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+
+        sleepTimerBtn.innerHTML = `${minutes}:${String(seconds).padStart(2, '0')}`;
+
+        if (remaining <= 0) {
+            clearInterval(sleepTimerCountdownInterval);
+        }
+    }
+
+    sleepTimerBtn.addEventListener("click", function () {
+        // 타이머가 이미 활성화되어 있으면 취소
+        if (sleepTimerTimeout) {
+            cancelSleepTimer();
+            currentTimerIndex = -1;
+            return;
+        }
+
+        // 다음 타이머 옵션 선택
+        currentTimerIndex = (currentTimerIndex + 1) % timerOptions.length;
+        const minutes = timerOptions[currentTimerIndex];
+        const milliseconds = minutes * 60 * 1000;
+
+        // 타이머 설정
+        sleepTimerEndTime = Date.now() + milliseconds;
+        sleepTimerBtn.classList.add("active");
+
+        // 버튼에 초기 시간 표시 (카운트다운 전)
+        sleepTimerBtn.innerHTML = `${minutes}:00`;
+        sleepTimerBtn.title = `슬립 타이머 ${minutes}분 설정됨 (클릭하여 취소)`;
+
+        // 타이머 시작
+        sleepTimerTimeout = setTimeout(() => {
+            // 오디오 일시정지
+            audioPlayer.pause();
+            playIcon.style.display = "block";
+            pauseIcon.style.display = "none";
+
+            // 알림 표시
+            const notification = document.createElement("div");
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 16px 28px;
+                border-radius: 50px;
+                font-size: 15px;
+                font-weight: 600;
+                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.5);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                animation: slideDown 0.3s ease;
+            `;
+            notification.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                </svg>
+                <span>슬립 타이머가 종료되어 재생이 중지되었습니다</span>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = "slideUp 0.3s ease";
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+
+            // 타이머 리셋
+            cancelSleepTimer();
+            currentTimerIndex = -1;
+
+            console.log("💤 슬립 타이머 종료 - 재생 중지");
+        }, milliseconds);
+
+        // 카운트다운 업데이트 (1초마다)
+        sleepTimerCountdownInterval = setInterval(updateSleepTimerDisplay, 1000);
+        updateSleepTimerDisplay();
+
+        showSleepTimerNotification(minutes);
+        console.log(`⏰ 슬립 타이머 설정: ${minutes}분`);
+    });
+
+    // 오디오가 종료되면 타이머도 취소
+    audioPlayer.addEventListener("ended", function () {
+        if (sleepTimerTimeout) {
+            cancelSleepTimer();
+            currentTimerIndex = -1;
+        }
+    });
+
+    /* -----------------------------
        청취시간 기록
     ----------------------------- */
     let listeningStartTime = null;

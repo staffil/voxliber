@@ -74,10 +74,14 @@ urlpatterns=[
     # 에피소드 순서 변경
     path("detail/<int:book_id>/reorder/", views.reorder_content, name="reorder_content"),
 
-    # 북마크/메모
+    # 북마크/메모 (콘텐츠 북마크)
     path("content/<int:content_id>/bookmark/save/", views.save_bookmark, name="save_bookmark"),
     path("content/<int:content_id>/bookmark/list/", views.get_bookmarks, name="get_bookmarks"),
     path("bookmark/delete/<int:bookmark_id>/", views.delete_bookmark, name="delete_bookmark"),
+
+    # 북마크 (책 북마크 - 나중에 보기)
+    path("bookmark/<int:book_id>/toggle/", views.toggle_bookmark, name="toggle_bookmark"),
+    path("my-bookmarks/", views.my_bookmarks, name="my_bookmarks"),
 
     # ==================== 📱 API 엔드포인트 (안드로이드 앱용) ====================
     # 🔍 통합 검색 (웹용)
@@ -137,6 +141,15 @@ urlpatterns=[
     path("api/poem_list/", api_views.api_poem_main, name="api_poem_main"),
     path("api/snippet/", api_views.api_book_snippet_main, name="api_book_snippet_main"),
 
+    # 👥 Follow System
+    path("api/authors/<int:author_id>/follow/", api_views.api_follow_toggle, name="api_follow_toggle"),
+    path("api/users/<int:user_id>/followers/", api_views.api_user_followers, name="api_user_followers"),
+    path("api/users/<int:user_id>/following/", api_views.api_user_following, name="api_user_following"),
+    path("api/following/feed/", api_views.api_following_feed, name="api_following_feed"),
 
+    # 🔖 Bookmark System
+    path("api/books/<int:book_id>/bookmark/", api_views.api_bookmark_toggle, name="api_bookmark_toggle"),
+    path("api/books/<int:book_id>/bookmark/note/", api_views.api_bookmark_update_note, name="api_bookmark_update_note"),
+    path("api/bookmarks/", api_views.api_user_bookmarks, name="api_user_bookmarks"),
 
 ]

@@ -76,18 +76,28 @@
         </div>
 
         <div class="book-info-section">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                <h1 class="book-title" style="margin: 0;">{{ book.name }}</h1>
-                <button onclick="shareBook()" class="share-btn" title="공유하기">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="18" cy="5" r="3"/>
-                        <circle cx="6" cy="12" r="3"/>
-                        <circle cx="18" cy="19" r="3"/>
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                    </svg>
-                    <span>공유</span>
-                </button>
+            <div class="book-header-wrapper">
+                <h1 class="book-title">{{ book.name }}</h1>
+                <div class="book-action-buttons">
+                    {% if user.is_authenticated %}
+                    <button id="bookmarkBtn" class="bookmark-btn" title="나중에 보기" data-book-id="{{ book.id }}" data-bookmarked="false">
+                        <svg id="bookmarkIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <span id="bookmarkText">북마크</span>
+                    </button>
+                    {% endif %}
+                    <button onclick="shareBook()" class="share-btn" title="공유하기">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="18" cy="5" r="3"/>
+                            <circle cx="6" cy="12" r="3"/>
+                            <circle cx="18" cy="19" r="3"/>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                        </svg>
+                        <span>공유</span>
+                    </button>
+                </div>
             </div>
 
             <div class="book-author">
@@ -539,6 +549,155 @@ async function shareBook() {
             alert('공유에 실패했습니다. 다시 시도해주세요.');
         }
     }
+}
+</script>
+
+{# 북마크 기능 스크립트 #}
+<script>
+// 페이지 로드 시 북마크 상태 확인 및 이벤트 리스너 등록
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('📄 DOMContentLoaded 이벤트 발생');
+    const bookmarkBtn = document.getElementById('bookmarkBtn');
+    console.log('🔍 북마크 버튼 찾기:', bookmarkBtn);
+
+    if (!bookmarkBtn) {
+        console.warn('⚠️ 북마크 버튼을 찾을 수 없습니다');
+        return;
+    }
+
+    const bookId = bookmarkBtn.dataset.bookId;
+    console.log('📚 책 ID:', bookId);
+
+    // 북마크 버튼 클릭 이벤트 리스너 등록
+    bookmarkBtn.addEventListener('click', toggleBookmark);
+    console.log('✅ 북마크 버튼 클릭 이벤트 리스너 등록 완료');
+
+    // 현재 북마크 상태 확인
+    try {
+        const response = await fetch(`/api/books/?search={{ book.name }}`, {
+            headers: {
+                'X-API-Key': localStorage.getItem('api_key') || ''
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            // 북마크 여부는 별도 API로 확인해야 함
+            // 여기서는 localStorage를 사용하여 간단히 구현
+            const bookmarked = localStorage.getItem(`bookmark_${bookId}`) === 'true';
+            updateBookmarkButton(bookmarked);
+        }
+    } catch (error) {
+        console.error('북마크 상태 확인 실패:', error);
+    }
+});
+
+async function toggleBookmark() {
+    const bookmarkBtn = document.getElementById('bookmarkBtn');
+    const bookId = bookmarkBtn.dataset.bookId;
+    const isBookmarked = bookmarkBtn.dataset.bookmarked === 'true';
+
+    console.log('🔖 북마크 토글 시작:', { bookId, isBookmarked });
+
+    try {
+        const csrfToken = getCookie('csrftoken');
+        console.log('🔑 CSRF Token:', csrfToken);
+
+        const response = await fetch(`/book/bookmark/${bookId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin'
+        });
+
+        console.log('📡 응답 상태:', response.status, response.statusText);
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('✅ 응답 데이터:', data);
+
+            // 상태 업데이트
+            const newState = data.is_bookmarked;
+            updateBookmarkButton(newState);
+            localStorage.setItem(`bookmark_${bookId}`, newState);
+
+            // 알림 표시
+            showNotification(data.message, newState ? 'success' : 'info');
+        } else {
+            const errorText = await response.text();
+            console.error('❌ 오류 응답:', errorText);
+            throw new Error(`북마크 요청 실패: ${response.status}`);
+        }
+    } catch (error) {
+        console.error('❌ 북마크 토글 실패:', error);
+        showNotification('북마크 처리에 실패했습니다', 'error');
+    }
+}
+
+function updateBookmarkButton(isBookmarked) {
+    const bookmarkBtn = document.getElementById('bookmarkBtn');
+    const bookmarkIcon = document.getElementById('bookmarkIcon');
+    const bookmarkText = document.getElementById('bookmarkText');
+
+    bookmarkBtn.dataset.bookmarked = isBookmarked;
+
+    if (isBookmarked) {
+        bookmarkBtn.classList.add('bookmarked');
+        bookmarkIcon.style.fill = '#fbbf24';
+        bookmarkText.textContent = '북마크됨';
+        bookmarkBtn.title = '북마크 제거';
+    } else {
+        bookmarkBtn.classList.remove('bookmarked');
+        bookmarkIcon.style.fill = 'none';
+        bookmarkText.textContent = '북마크';
+        bookmarkBtn.title = '나중에 보기';
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${type === 'success' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 
+                      type === 'error' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' :
+                      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};
+        color: white;
+        padding: 16px 28px;
+        border-radius: 50px;
+        font-size: 15px;
+        font-weight: 600;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        z-index: 10000;
+        animation: slideDown 0.3s ease;
+    `;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.animation = 'slideUp 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 </script>
 {% endblock %}

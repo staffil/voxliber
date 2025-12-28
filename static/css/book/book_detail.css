@@ -1097,3 +1097,83 @@
     font-size: 0.9rem;
   }
 }
+/* ===========================================
+   북마크 버튼
+   =========================================== */
+.bookmark-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 12px;
+  color: #fbbf24;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.bookmark-btn:hover {
+  background: rgba(251, 191, 36, 0.2);
+  transform: translateY(-2px);
+}
+
+.bookmark-btn svg {
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+
+.bookmark-btn.bookmarked {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.5);
+}
+
+.bookmark-btn.bookmarked svg {
+  fill: #fbbf24;
+}
+/* ===========================================
+   책 헤더 래퍼 (제목 + 버튼)
+   =========================================== */
+.book-header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 16px;
+}
+
+.book-title {
+  margin: 0;
+  flex: 1;
+}
+
+.book-action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .book-header-wrapper {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .book-title {
+    text-align: center;
+    width: 100%;
+  }
+
+  .book-action-buttons {
+    justify-content: center;
+  }
+
+  .bookmark-btn,
+  .share-btn {
+    flex: 0 1 auto;
+  }
+}

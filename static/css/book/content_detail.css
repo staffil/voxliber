@@ -242,6 +242,37 @@
     background: rgba(255, 255, 255, 0.3);
 }
 
+.sleep-timer-btn {
+    width: 40px;
+    height: 36px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.sleep-timer-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.sleep-timer-btn.active {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+}
+
+.sleep-timer-btn.active:hover {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    box-shadow: 0 6px 16px rgba(245, 87, 108, 0.6);
+}
+
 .download-btn {
     width: 36px;
     height: 36px;

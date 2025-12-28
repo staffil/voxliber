@@ -1,7 +1,8 @@
 # main/views.py
 from django.shortcuts import render,redirect
 from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 import requests
 import json
 import os
@@ -226,7 +227,8 @@ def test_colab(request):
         }, status=500)
 
 
-@csrf_exempt
+@require_POST
+@login_required
 def calculate(request):
     """Colab API로 계산 요청"""
     if request.method != 'POST':
@@ -374,11 +376,12 @@ def search_books(request):
     })
 
 
-@csrf_exempt
+@require_POST
+@login_required
 def generate_simple_tts(request):
     """
     간단한 TTS 생성 (별도 엔드포인트)
-    
+
     POST /simple-tts/
     Body: {"text": "안녕하세요"}
     """

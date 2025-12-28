@@ -293,10 +293,10 @@ def google_callback(request):
 # -------------------------
 # 네이티브 앱 OAuth (Google, Kakao, Naver)
 # -------------------------
-from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
+from book.api_utils import oauth_callback_secure
 
-@csrf_exempt
+@oauth_callback_secure
 def native_oauth_callback(request, provider):
     """
     Flutter 네이티브 OAuth 콜백
