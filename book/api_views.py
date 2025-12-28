@@ -673,7 +673,6 @@ def api_register(request):
         return JsonResponse({'message': f'회원가입 중 오류가 발생했습니다: {str(e)}'}, status=500)
 
 
-@require_api_key_secure
 def api_logout(request):
     """
     사용자 로그아웃 API
@@ -703,7 +702,6 @@ def api_logout(request):
         return api_response(error=f'로그아웃 중 오류가 발생했습니다: {str(e)}', status=500)
 
 
-@require_api_key_secure
 def api_refresh_key(request):
     """
     API Key 재발급 API
@@ -1172,7 +1170,6 @@ def api_snap_detail(request, snap_id):
 
 
 @api_view(['POST'])
-@require_api_key_secure
 def api_snap_like(request, snap_id):
     """
     스냅 좋아요 토글 API
@@ -1211,7 +1208,6 @@ def api_snap_like(request, snap_id):
     })
 
 @api_view(['POST'])
-@require_api_key_secure
 def api_snap_comment(request, snap_id):
     from book.models import BookSnap, BookSnapComment, APIKey
     import json
@@ -1266,7 +1262,6 @@ def api_snap_comment(request, snap_id):
 
 
 from book.models import BookSnap
-@require_api_key_secure
 def snap_main_view(request):
     snap_qs = BookSnap.objects.all().order_by("?")
     snap_list = []
@@ -1283,7 +1278,6 @@ def snap_main_view(request):
 
 from main.models import SnapBtn, Advertisment
 
-@require_api_key_secure
 def api_main_new(reqeust):
     news_qs = SnapBtn.objects.all().order_by("-id")
     news_list= []
@@ -1303,7 +1297,6 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 from book.service.recommendation import recommend_books
 # AI 추천 책들
-@require_api_key_secure
 def api_ai_recommned(request, user_id):
     try:
         user = User.objects.get(user_id=user_id)
@@ -1331,7 +1324,6 @@ def api_ai_recommned(request, user_id):
 
 
 # 시 공모전 작품
-@require_api_key_secure
 def api_poem_main(request):
     poem_qs = Poem_list.objects.filter(status = 'winner').all().order_by("?")[:10]
 
@@ -1349,7 +1341,6 @@ def api_poem_main(request):
 
     return JsonResponse({"poems": poem_list})
 
-@require_api_key_secure
 def api_book_snippet_main(request):
     snippet_qs = BookSnippet.objects.all().order_by("?")[:10]
 
@@ -1485,7 +1476,6 @@ def api_search(request):
 # ==================== 💬 Book Comments API ====================
 
 @api_view(['GET', 'POST'])
-@require_api_key_secure
 def api_book_comments(request, book_id):
     """
     책 댓글 API
@@ -1620,7 +1610,6 @@ def api_book_comments(request, book_id):
 # ==================== ⭐ Book Reviews Create/Update API ====================
 
 @api_view(['POST', 'PATCH', 'DELETE'])
-@require_api_key_secure
 def api_book_review_create(request, book_id):
     """
     책 리뷰/평가 작성/수정/삭제 API
@@ -1787,7 +1776,6 @@ def _update_book_score(book):
 
 # ==================== 👥 Follow API ====================
 
-@require_api_key_secure
 def api_follow_toggle(request, author_id):
     """
     작가 팔로우/언팔로우 토글 API
@@ -1996,7 +1984,6 @@ def api_following_feed(request):
 
 # ==================== 🔖 Bookmark API ====================
 
-@require_api_key_secure
 def api_bookmark_toggle(request, book_id):
     """
     책 북마크(나중에 보기) 토글 API
@@ -2068,7 +2055,6 @@ def api_bookmark_toggle(request, book_id):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@require_api_key_secure
 def api_bookmark_update_note(request, book_id):
     """
     북마크 메모 업데이트 API
