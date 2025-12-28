@@ -163,10 +163,14 @@ def require_api_key_secure(view_func):
     """
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
+        print(f"🔐 [require_api_key_secure] 데코레이터 시작 - {view_func.__name__}")
+
         # 1. API Key 검증
         api_key = request.headers.get('X-API-Key') or request.GET.get('api_key')
+        print(f"🔑 [require_api_key_secure] API Key: {api_key[:10] if api_key else 'None'}...")
 
         if not api_key:
+            print("❌ [require_api_key_secure] API Key 없음")
             return JsonResponse({
                 'error': 'API Key가 필요합니다.',
                 'message': 'HTTP 헤더에 X-API-Key를 포함하거나 URL 파라미터로 api_key를 전달하세요.'
@@ -177,10 +181,17 @@ def require_api_key_secure(view_func):
                 key=api_key,
                 is_active=True
             )
+            print(f"✅ [require_api_key_secure] API Key 검증 성공 - user: {api_key_obj.user.email}")
         except APIKey.DoesNotExist:
+            print("❌ [require_api_key_secure] 유효하지 않은 API Key")
             return JsonResponse({
                 'error': '유효하지 않은 API Key입니다.'
             }, status=401)
+        except Exception as e:
+            print(f"❌ [require_api_key_secure] API Key 검증 중 예외: {e}")
+            return JsonResponse({
+                'error': f'API Key 검증 중 오류: {str(e)}'
+            }, status=500)
 
         # 2. Origin 검증 (프로덕션에서만)
         if not settings.DEBUG:
@@ -230,6 +241,7 @@ def require_api_key_secure(view_func):
         request.api_user = api_key_obj.user
         request.api_key_obj = api_key_obj
 
+        print(f"✅ [require_api_key_secure] 모든 검증 통과, view 함수 호출: {view_func.__name__}")
         return view_func(request, *args, **kwargs)
 
     # CSRF exempt 적용 - Django의 csrf_exempt 데코레이터로 감싸기
