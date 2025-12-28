@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse,HttpResponseForbidden
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from book.models import Genres, Books, Tags, VoiceList, BookSnap, MyVoiceList, Content, APIKey
@@ -893,8 +894,9 @@ def save_listening_history(request, content_id):
 
 
 # 앱용 청취 위치 업데이트 API (api_key 인증)
-@require_api_key_secure
+# POST body에서 API key를 받으므로 @require_api_key_secure 사용 안 함
 @require_POST
+@csrf_exempt
 def update_listening_position_api(request):
     from book.models import Content, ListeningHistory
     from register.models import Users

@@ -166,7 +166,12 @@ def require_api_key_secure(view_func):
         print(f"🔐 [require_api_key_secure] 데코레이터 시작 - {view_func.__name__}")
 
         # 1. API Key 검증
-        api_key = request.headers.get('X-API-Key') or request.GET.get('api_key')
+        # DRF Request와 Django HttpRequest 모두 지원
+        if hasattr(request, 'query_params'):  # DRF Request
+            api_key = request.headers.get('X-API-Key') or request.query_params.get('api_key')
+        else:  # Django HttpRequest
+            api_key = request.headers.get('X-API-Key') or request.GET.get('api_key')
+
         print(f"🔑 [require_api_key_secure] API Key: {api_key[:10] if api_key else 'None'}...")
 
         if not api_key:
@@ -197,6 +202,7 @@ def require_api_key_secure(view_func):
         if not settings.DEBUG:
             origin = request.META.get('HTTP_ORIGIN', '')
             referer = request.META.get('HTTP_REFERER', '')
+            print(f"🌐 [require_api_key_secure] Origin: '{origin}', Referer: '{referer}'")
 
             allowed_origins = [
                 'https://voxliber.ink',
@@ -211,10 +217,16 @@ def require_api_key_secure(view_func):
                 )
 
                 if not is_valid_origin:
+                    print(f"❌ [require_api_key_secure] Invalid origin blocked")
                     return JsonResponse({
                         'error': 'Invalid origin',
                         'message': '허용되지 않는 출처에서의 요청입니다.'
                     }, status=403)
+                print(f"✅ [require_api_key_secure] Origin 검증 통과")
+            else:
+                print(f"✅ [require_api_key_secure] Origin/Referer 없음 (모바일 앱), 검증 스킵")
+        else:
+            print(f"✅ [require_api_key_secure] DEBUG 모드, Origin 검증 스킵")
 
         # 3. Rate Limiting (100 requests per minute)
         ip = get_client_ip(request)
