@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.core.cache import cache
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
 from book.models import APIKey
 import time
 
@@ -231,6 +232,8 @@ def require_api_key_secure(view_func):
 
         return view_func(request, *args, **kwargs)
 
+    # CSRF exempt 적용 - Django middleware가 인식할 수 있도록 설정
+    wrapper.csrf_exempt = True
     return wrapper
 
 
