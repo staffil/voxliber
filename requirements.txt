@@ -76,6 +76,7 @@ pydantic_core==2.41.5
 pydub==0.25.1
 Pygments==2.19.2
 PyJWT==2.10.1
+python-magic==0.4.27
 pyngrok==7.5.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
@@ -96,7 +97,8 @@ sqlparse==0.5.3
 stack-data==0.6.3
 sympy==1.14.0
 tokenizers==0.22.1
-torchaudio==2.7.1+cu118
+# torchaudio==2.7.1+cu118 - Install separately with: pip install torchaudio --index-url https://download.pytorch.org/whl/cu118
+torchaudio==2.7.1
 tornado==6.5.2
 tqdm==4.67.1
 traitlets==5.14.3
