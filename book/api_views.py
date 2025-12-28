@@ -2014,44 +2014,58 @@ def api_bookmark_toggle(request, book_id):
             "is_bookmarked": true
         }
     """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST 요청만 허용됩니다'}, status=405)
-
-    user = request.api_user
-
-    # 책 확인
     try:
-        book = Books.objects.get(id=book_id)
-    except Books.DoesNotExist:
-        return JsonResponse({'success': False, 'error': '책을 찾을 수 없습니다'}, status=404)
+        print(f"📍 [DEBUG] api_bookmark_toggle 시작 - book_id: {book_id}")
+        print(f"📍 [DEBUG] request.api_user: {request.api_user}")
 
-    # 요청 바디에서 메모 추출 (선택사항)
-    note = None
-    if request.body:
+        if request.method != 'POST':
+            return JsonResponse({'error': 'POST 요청만 허용됩니다'}, status=405)
+
+        user = request.api_user
+        print(f"📍 [DEBUG] user: {user}")
+
+        # 책 확인
         try:
-            data = json.loads(request.body)
-            note = data.get('note', '')
-        except json.JSONDecodeError:
-            pass
+            book = Books.objects.get(id=book_id)
+            print(f"📍 [DEBUG] book found: {book.title}")
+        except Books.DoesNotExist:
+            return JsonResponse({'success': False, 'error': '책을 찾을 수 없습니다'}, status=404)
 
-    # 북마크 토글
-    bookmark, created = BookmarkBook.objects.get_or_create(
-        user=user,
-        book=book,
-        defaults={'note': note or ''}
-    )
+        # 요청 바디에서 메모 추출 (선택사항)
+        note = None
+        if request.body:
+            try:
+                data = json.loads(request.body)
+                note = data.get('note', '')
+            except json.JSONDecodeError:
+                pass
 
-    if not created:
-        # 이미 북마크되어 있으면 제거
-        bookmark.delete()
-        is_bookmarked = False
-    else:
-        is_bookmarked = True
+        print(f"📍 [DEBUG] About to toggle bookmark for user={user.id}, book={book.id}")
+        # 북마크 토글
+        bookmark, created = BookmarkBook.objects.get_or_create(
+            user=user,
+            book=book,
+            defaults={'note': note or ''}
+        )
+        print(f"📍 [DEBUG] Bookmark toggled: created={created}")
 
-    return JsonResponse({
-        'success': True,
-        'is_bookmarked': is_bookmarked
-    })
+        if not created:
+            # 이미 북마크되어 있으면 제거
+            bookmark.delete()
+            is_bookmarked = False
+        else:
+            is_bookmarked = True
+
+        print(f"📍 [DEBUG] Returning success: is_bookmarked={is_bookmarked}")
+        return JsonResponse({
+            'success': True,
+            'is_bookmarked': is_bookmarked
+        })
+    except Exception as e:
+        print(f"❌ [ERROR] Exception in api_bookmark_toggle: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @require_api_key_secure

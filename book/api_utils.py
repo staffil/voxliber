@@ -232,9 +232,8 @@ def require_api_key_secure(view_func):
 
         return view_func(request, *args, **kwargs)
 
-    # CSRF exempt 적용 - Django middleware가 인식할 수 있도록 설정
-    wrapper.csrf_exempt = True
-    return wrapper
+    # CSRF exempt 적용 - Django의 csrf_exempt 데코레이터로 감싸기
+    return csrf_exempt(wrapper)
 
 
 def oauth_callback_secure(view_func):
@@ -290,7 +289,8 @@ def oauth_callback_secure(view_func):
 
         return view_func(request, *args, **kwargs)
 
-    return wrapper
+    # OAuth 콜백은 CSRF 토큰을 보낼 수 없으므로 exempt 적용
+    return csrf_exempt(wrapper)
 
 
 def paginate(items, page=1, per_page=20):
