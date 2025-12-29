@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg, Count, Max, Q
 from book.models import Books, Content, BookReview, ReadingProgress, ListeningHistory, Poem_list, BookSnippet, Tags, Follow, BookmarkBook
-from book.api_utils import require_api_key, require_api_key_secure, paginate, api_response
+from book.api_utils import require_api_key, paginate, api_response
 from rest_framework.decorators import api_view
 import json
 
@@ -673,6 +673,7 @@ def api_register(request):
         return JsonResponse({'message': f'회원가입 중 오류가 발생했습니다: {str(e)}'}, status=500)
 
 
+@require_api_key
 def api_logout(request):
     """
     사용자 로그아웃 API
@@ -702,6 +703,7 @@ def api_logout(request):
         return api_response(error=f'로그아웃 중 오류가 발생했습니다: {str(e)}', status=500)
 
 
+@require_api_key
 def api_refresh_key(request):
     """
     API Key 재발급 API
@@ -1776,6 +1778,7 @@ def _update_book_score(book):
 
 # ==================== 👥 Follow API ====================
 
+@require_api_key
 def api_follow_toggle(request, author_id):
     """
     작가 팔로우/언팔로우 토글 API
@@ -1984,6 +1987,7 @@ def api_following_feed(request):
 
 # ==================== 🔖 Bookmark API ====================
 
+@require_api_key
 def api_bookmark_toggle(request, book_id):
     """
     책 북마크(나중에 보기) 토글 API
@@ -2001,60 +2005,47 @@ def api_bookmark_toggle(request, book_id):
             "is_bookmarked": true
         }
     """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST 요청만 허용됩니다'}, status=405)
+
+    user = request.api_user
+
+    # 책 확인
     try:
-        print(f"📍 [DEBUG] api_bookmark_toggle 시작 - book_id: {book_id}")
-        print(f"📍 [DEBUG] request.api_user: {request.api_user}")
+        book = Books.objects.get(id=book_id)
+    except Books.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '책을 찾을 수 없습니다'}, status=404)
 
-        if request.method != 'POST':
-            return JsonResponse({'error': 'POST 요청만 허용됩니다'}, status=405)
-
-        user = request.api_user
-        print(f"📍 [DEBUG] user: {user}")
-
-        # 책 확인
+    # 요청 바디에서 메모 추출 (선택사항)
+    note = None
+    if request.body:
         try:
-            book = Books.objects.get(id=book_id)
-            print(f"📍 [DEBUG] book found: {book.title}")
-        except Books.DoesNotExist:
-            return JsonResponse({'success': False, 'error': '책을 찾을 수 없습니다'}, status=404)
+            data = json.loads(request.body)
+            note = data.get('note', '')
+        except json.JSONDecodeError:
+            pass
 
-        # 요청 바디에서 메모 추출 (선택사항)
-        note = None
-        if request.body:
-            try:
-                data = json.loads(request.body)
-                note = data.get('note', '')
-            except json.JSONDecodeError:
-                pass
+    # 북마크 토글
+    bookmark, created = BookmarkBook.objects.get_or_create(
+        user=user,
+        book=book,
+        defaults={'note': note or ''}
+    )
 
-        print(f"📍 [DEBUG] About to toggle bookmark for user={user.id}, book={book.id}")
-        # 북마크 토글
-        bookmark, created = BookmarkBook.objects.get_or_create(
-            user=user,
-            book=book,
-            defaults={'note': note or ''}
-        )
-        print(f"📍 [DEBUG] Bookmark toggled: created={created}")
+    if not created:
+        # 이미 북마크되어 있으면 제거
+        bookmark.delete()
+        is_bookmarked = False
+    else:
+        is_bookmarked = True
 
-        if not created:
-            # 이미 북마크되어 있으면 제거
-            bookmark.delete()
-            is_bookmarked = False
-        else:
-            is_bookmarked = True
-
-        print(f"📍 [DEBUG] Returning success: is_bookmarked={is_bookmarked}")
-        return JsonResponse({
-            'success': True,
-            'is_bookmarked': is_bookmarked
-        })
-    except Exception as e:
-        print(f"❌ [ERROR] Exception in api_bookmark_toggle: {e}")
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({
+        'success': True,
+        'is_bookmarked': is_bookmarked
+    })
 
 
+@require_api_key
 def api_bookmark_update_note(request, book_id):
     """
     북마크 메모 업데이트 API
