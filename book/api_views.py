@@ -5,6 +5,7 @@
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg, Count, Max, Q
+from django.views.decorators.csrf import csrf_exempt
 from book.models import Books, Content, BookReview, ReadingProgress, ListeningHistory, Poem_list, BookSnippet, Tags, Follow, BookmarkBook
 from book.api_utils import require_api_key, paginate, api_response
 from rest_framework.decorators import api_view
@@ -673,6 +674,7 @@ def api_register(request):
         return JsonResponse({'message': f'회원가입 중 오류가 발생했습니다: {str(e)}'}, status=500)
 
 
+@csrf_exempt
 def api_logout(request):
     """
     사용자 로그아웃 API
@@ -713,6 +715,7 @@ def api_logout(request):
         return api_response(error=f'로그아웃 중 오류가 발생했습니다: {str(e)}', status=500)
 
 
+@csrf_exempt
 def api_refresh_key(request):
     """
     API Key 재발급 API
@@ -1796,6 +1799,7 @@ def _update_book_score(book):
 
 # ==================== 👥 Follow API ====================
 
+@csrf_exempt
 def api_follow_toggle(request, author_id):
     """
     작가 팔로우/언팔로우 토글 API
@@ -2015,6 +2019,7 @@ def api_following_feed(request):
 
 # ==================== 🔖 Bookmark API ====================
 
+@csrf_exempt
 def api_bookmark_toggle(request, book_id):
     """
     책 북마크(나중에 보기) 토글 API
@@ -2105,6 +2110,7 @@ def api_bookmark_toggle(request, book_id):
         }, status=500)
 
 
+@csrf_exempt
 def api_bookmark_update_note(request, book_id):
     """
     북마크 메모 업데이트 API
