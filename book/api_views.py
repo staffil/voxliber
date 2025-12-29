@@ -2032,55 +2032,77 @@ def api_bookmark_toggle(request, book_id):
             "is_bookmarked": true
         }
     """
-    from book.models import APIKey
-
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST 요청만 허용됩니다'}, status=405)
-
-    # API 키로 사용자 확인
-    api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
-    if not api_key:
-        return JsonResponse({'success': False, 'error': 'API key required'}, status=401)
-
     try:
-        api_key_obj = APIKey.objects.get(key=api_key, is_active=True)
-        user = api_key_obj.user
-    except APIKey.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Invalid API Key'}, status=401)
+        from book.models import APIKey
+        import traceback
 
-    # 책 확인
-    try:
-        book = Books.objects.get(id=book_id)
-    except Books.DoesNotExist:
-        return JsonResponse({'success': False, 'error': '책을 찾을 수 없습니다'}, status=404)
+        print(f"📍 [BOOKMARK] book_id={book_id}, method={request.method}")
 
-    # 요청 바디에서 메모 추출 (선택사항)
-    note = None
-    if request.body:
+        if request.method != 'POST':
+            return JsonResponse({'error': 'POST 요청만 허용됩니다'}, status=405)
+
+        # API 키로 사용자 확인
+        api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
+        print(f"📍 [BOOKMARK] API Key: {api_key[:20] if api_key else 'None'}...")
+
+        if not api_key:
+            print(f"❌ [BOOKMARK] No API key")
+            return JsonResponse({'success': False, 'error': 'API key required'}, status=401)
+
         try:
-            data = json.loads(request.body)
-            note = data.get('note', '')
-        except json.JSONDecodeError:
-            pass
+            api_key_obj = APIKey.objects.get(key=api_key, is_active=True)
+            user = api_key_obj.user
+            print(f"✅ [BOOKMARK] User: {user.email}")
+        except APIKey.DoesNotExist:
+            print(f"❌ [BOOKMARK] Invalid API key")
+            return JsonResponse({'success': False, 'error': 'Invalid API Key'}, status=401)
 
-    # 북마크 토글
-    bookmark, created = BookmarkBook.objects.get_or_create(
-        user=user,
-        book=book,
-        defaults={'note': note or ''}
-    )
+        # 책 확인
+        try:
+            book = Books.objects.get(id=book_id)
+            print(f"✅ [BOOKMARK] Book: {book.title}")
+        except Books.DoesNotExist:
+            print(f"❌ [BOOKMARK] Book not found")
+            return JsonResponse({'success': False, 'error': '책을 찾을 수 없습니다'}, status=404)
 
-    if not created:
-        # 이미 북마크되어 있으면 제거
-        bookmark.delete()
-        is_bookmarked = False
-    else:
-        is_bookmarked = True
+        # 요청 바디에서 메모 추출 (선택사항)
+        note = None
+        if request.body:
+            try:
+                data = json.loads(request.body)
+                note = data.get('note', '')
+            except json.JSONDecodeError:
+                pass
 
-    return JsonResponse({
-        'success': True,
-        'is_bookmarked': is_bookmarked
-    })
+        # 북마크 토글
+        print(f"📍 [BOOKMARK] Toggling bookmark...")
+        bookmark, created = BookmarkBook.objects.get_or_create(
+            user=user,
+            book=book,
+            defaults={'note': note or ''}
+        )
+        print(f"✅ [BOOKMARK] created={created}")
+
+        if not created:
+            # 이미 북마크되어 있으면 제거
+            bookmark.delete()
+            is_bookmarked = False
+        else:
+            is_bookmarked = True
+
+        print(f"✅ [BOOKMARK] Success: is_bookmarked={is_bookmarked}")
+        return JsonResponse({
+            'success': True,
+            'is_bookmarked': is_bookmarked
+        })
+    except Exception as e:
+        print(f"❌❌❌ [BOOKMARK ERROR] {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'error': f'서버 오류: {str(e)}'
+        }, status=500)
 
 
 def api_bookmark_update_note(request, book_id):
