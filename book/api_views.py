@@ -673,7 +673,6 @@ def api_register(request):
         return JsonResponse({'message': f'회원가입 중 오류가 발생했습니다: {str(e)}'}, status=500)
 
 
-@require_api_key
 def api_logout(request):
     """
     사용자 로그아웃 API
@@ -683,12 +682,23 @@ def api_logout(request):
         POST /api/auth/logout/
         X-API-Key: your-api-key
     """
+    from book.models import APIKey
+
     if request.method != 'POST':
         return api_response(error='POST 요청만 허용됩니다.', status=405)
 
     try:
+        # API 키로 사용자 확인
+        api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
+        if not api_key:
+            return api_response(error='API key required', status=401)
+
+        try:
+            api_key_obj = APIKey.objects.get(key=api_key, is_active=True)
+        except APIKey.DoesNotExist:
+            return api_response(error='Invalid API Key', status=401)
+
         # 현재 API Key 비활성화
-        api_key_obj = request.api_key_obj
         api_key_obj.is_active = False
         api_key_obj.save(update_fields=['is_active'])
 
@@ -703,7 +713,6 @@ def api_logout(request):
         return api_response(error=f'로그아웃 중 오류가 발생했습니다: {str(e)}', status=500)
 
 
-@require_api_key
 def api_refresh_key(request):
     """
     API Key 재발급 API
@@ -721,8 +730,17 @@ def api_refresh_key(request):
         from django.utils import timezone
         from book.models import APIKey
 
+        # API 키로 사용자 확인
+        api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
+        if not api_key:
+            return api_response(error='API key required', status=401)
+
+        try:
+            old_key = APIKey.objects.get(key=api_key, is_active=True)
+        except APIKey.DoesNotExist:
+            return api_response(error='Invalid API Key', status=401)
+
         # 기존 키 비활성화
-        old_key = request.api_key_obj
         old_key.is_active = False
         old_key.save(update_fields=['is_active'])
 
@@ -1778,7 +1796,6 @@ def _update_book_score(book):
 
 # ==================== 👥 Follow API ====================
 
-@require_api_key
 def api_follow_toggle(request, author_id):
     """
     작가 팔로우/언팔로우 토글 API
@@ -1792,10 +1809,21 @@ def api_follow_toggle(request, author_id):
             "follower_count": 150
         }
     """
+    from book.models import APIKey
+
     if request.method != 'POST':
         return JsonResponse({'error': 'POST 요청만 허용됩니다'}, status=405)
 
-    user = request.api_user
+    # API 키로 사용자 확인
+    api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
+    if not api_key:
+        return JsonResponse({'success': False, 'error': 'API key required'}, status=401)
+
+    try:
+        api_key_obj = APIKey.objects.get(key=api_key, is_active=True)
+        user = api_key_obj.user
+    except APIKey.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Invalid API Key'}, status=401)
 
     # 작가 확인
     from register.models import CustomUser
@@ -1987,7 +2015,6 @@ def api_following_feed(request):
 
 # ==================== 🔖 Bookmark API ====================
 
-@require_api_key
 def api_bookmark_toggle(request, book_id):
     """
     책 북마크(나중에 보기) 토글 API
@@ -2005,10 +2032,21 @@ def api_bookmark_toggle(request, book_id):
             "is_bookmarked": true
         }
     """
+    from book.models import APIKey
+
     if request.method != 'POST':
         return JsonResponse({'error': 'POST 요청만 허용됩니다'}, status=405)
 
-    user = request.api_user
+    # API 키로 사용자 확인
+    api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
+    if not api_key:
+        return JsonResponse({'success': False, 'error': 'API key required'}, status=401)
+
+    try:
+        api_key_obj = APIKey.objects.get(key=api_key, is_active=True)
+        user = api_key_obj.user
+    except APIKey.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Invalid API Key'}, status=401)
 
     # 책 확인
     try:
@@ -2045,7 +2083,6 @@ def api_bookmark_toggle(request, book_id):
     })
 
 
-@require_api_key
 def api_bookmark_update_note(request, book_id):
     """
     북마크 메모 업데이트 API
@@ -2057,10 +2094,21 @@ def api_bookmark_update_note(request, book_id):
             "note": "새로운 메모 내용"
         }
     """
+    from book.models import APIKey
+
     if request.method != 'PATCH':
         return JsonResponse({'error': 'PATCH 요청만 허용됩니다'}, status=405)
 
-    user = request.api_user
+    # API 키로 사용자 확인
+    api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
+    if not api_key:
+        return JsonResponse({'success': False, 'error': 'API key required'}, status=401)
+
+    try:
+        api_key_obj = APIKey.objects.get(key=api_key, is_active=True)
+        user = api_key_obj.user
+    except APIKey.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Invalid API Key'}, status=401)
 
     try:
         bookmark = BookmarkBook.objects.get(user=user, book_id=book_id)
