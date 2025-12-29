@@ -1192,6 +1192,7 @@ def api_snap_detail(request, snap_id):
     return api_response(data)
 
 
+@csrf_exempt
 @api_view(['POST'])
 def api_snap_like(request, snap_id):
     """
@@ -1230,6 +1231,7 @@ def api_snap_like(request, snap_id):
         }
     })
 
+@csrf_exempt
 @api_view(['POST'])
 def api_snap_comment(request, snap_id):
     from book.models import BookSnap, BookSnapComment, APIKey
@@ -1498,6 +1500,7 @@ def api_search(request):
 
 # ==================== 💬 Book Comments API ====================
 
+@csrf_exempt
 @api_view(['GET', 'POST'])
 def api_book_comments(request, book_id):
     """
@@ -1632,6 +1635,7 @@ def api_book_comments(request, book_id):
 
 # ==================== ⭐ Book Reviews Create/Update API ====================
 
+@csrf_exempt
 @api_view(['POST', 'PATCH', 'DELETE'])
 def api_book_review_create(request, book_id):
     """
