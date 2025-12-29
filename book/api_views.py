@@ -2069,7 +2069,7 @@ def api_bookmark_toggle(request, book_id):
         # 책 확인
         try:
             book = Books.objects.get(id=book_id)
-            print(f"✅ [BOOKMARK] Book: {book.title}")
+            print(f"✅ [BOOKMARK] Book: {book.name}")
         except Books.DoesNotExist:
             print(f"❌ [BOOKMARK] Book not found")
             return JsonResponse({'success': False, 'error': '책을 찾을 수 없습니다'}, status=404)
