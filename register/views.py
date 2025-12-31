@@ -141,7 +141,7 @@ def _oauth_callback(request, provider, profile_json, uid_key, email_key):
             "username": user.username,
             "nickname": getattr(user, "nickname", ""),
             "email": user.email,
-            "profile_img": user.user_img.url if getattr(user, "user_img", None) else None,
+            "profile_img": user.user_img.url if user.user_img else None,
             "is_profile_completed": user.is_profile_completed,
         }
         user_json = quote(json.dumps(user_data))
@@ -347,7 +347,7 @@ def native_oauth_callback(request, provider):
             "username": user.username,
             "nickname": getattr(user, "nickname", ""),
             "email": user.email,
-            "profile_img": user.user_img.url if getattr(user, "user_img", None) else None,
+            "profile_img": user.user_img.url if user.user_img else None,
             "is_profile_completed": user.is_profile_completed,
         }
 
