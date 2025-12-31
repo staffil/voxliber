@@ -145,6 +145,17 @@ def rate_limited(limit=100, period=60):
     return decorator
 
 
+def log_decorator(msg):
+    """데코레이터 로그를 파일에 작성"""
+    import datetime
+    try:
+        with open('/home/ubuntu/voxliber/decorator_debug.log', 'a') as f:
+            timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            f.write(f"[{timestamp}] {msg}\n")
+            f.flush()
+    except Exception as e:
+        pass  # 로그 실패해도 계속 진행
+
 def require_api_key_secure(view_func):
     """
     보안이 강화된 API Key 인증 데코레이터
@@ -163,37 +174,47 @@ def require_api_key_secure(view_func):
     """
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
+        log_decorator(f"🔐 [require_api_key_secure] 데코레이터 시작 - {view_func.__name__}")
         print(f"🔐 [require_api_key_secure] 데코레이터 시작 - {view_func.__name__}")
 
         # 1. API Key 검증
         # DRF Request와 Django HttpRequest 모두 지원
-        if hasattr(request, 'query_params'):  # DRF Request
-            api_key = request.headers.get('X-API-Key') or request.query_params.get('api_key')
-        else:  # Django HttpRequest
-            api_key = request.headers.get('X-API-Key') or request.GET.get('api_key')
-
-        print(f"🔑 [require_api_key_secure] API Key: {api_key[:10] if api_key else 'None'}...")
-
-        if not api_key:
-            print("❌ [require_api_key_secure] API Key 없음")
-            return JsonResponse({
-                'error': 'API Key가 필요합니다.',
-                'message': 'HTTP 헤더에 X-API-Key를 포함하거나 URL 파라미터로 api_key를 전달하세요.'
-            }, status=401)
-
         try:
+            log_decorator("  Step 1: API Key 추출 시작")
+            if hasattr(request, 'query_params'):  # DRF Request
+                api_key = request.headers.get('X-API-Key') or request.query_params.get('api_key')
+            else:  # Django HttpRequest
+                api_key = request.headers.get('X-API-Key') or request.GET.get('api_key')
+
+            log_decorator(f"🔑 [require_api_key_secure] API Key: {api_key[:10] if api_key else 'None'}...")
+            print(f"🔑 [require_api_key_secure] API Key: {api_key[:10] if api_key else 'None'}...")
+
+            if not api_key:
+                log_decorator("❌ [require_api_key_secure] API Key 없음")
+                print("❌ [require_api_key_secure] API Key 없음")
+                return JsonResponse({
+                    'error': 'API Key가 필요합니다.',
+                    'message': 'HTTP 헤더에 X-API-Key를 포함하거나 URL 파라미터로 api_key를 전달하세요.'
+                }, status=401)
+
+            log_decorator("  Step 2: DB에서 API Key 조회 시작")
             api_key_obj = APIKey.objects.select_related('user').get(
                 key=api_key,
                 is_active=True
             )
+            log_decorator(f"✅ [require_api_key_secure] API Key 검증 성공 - user: {api_key_obj.user.email}")
             print(f"✅ [require_api_key_secure] API Key 검증 성공 - user: {api_key_obj.user.email}")
         except APIKey.DoesNotExist:
+            log_decorator("❌ [require_api_key_secure] 유효하지 않은 API Key")
             print("❌ [require_api_key_secure] 유효하지 않은 API Key")
             return JsonResponse({
                 'error': '유효하지 않은 API Key입니다.'
             }, status=401)
         except Exception as e:
+            log_decorator(f"❌ [require_api_key_secure] API Key 검증 중 예외: {e}")
             print(f"❌ [require_api_key_secure] API Key 검증 중 예외: {e}")
+            import traceback
+            log_decorator(traceback.format_exc())
             return JsonResponse({
                 'error': f'API Key 검증 중 오류: {str(e)}'
             }, status=500)
@@ -250,11 +271,22 @@ def require_api_key_secure(view_func):
         api_key_obj.save(update_fields=['last_used_at'])
 
         # 5. request에 사용자 정보 추가
+        log_decorator("  Step 3: request 객체에 사용자 정보 추가")
         request.api_user = api_key_obj.user
         request.api_key_obj = api_key_obj
 
+        log_decorator(f"✅ [require_api_key_secure] 모든 검증 통과, view 함수 호출: {view_func.__name__}")
         print(f"✅ [require_api_key_secure] 모든 검증 통과, view 함수 호출: {view_func.__name__}")
-        return view_func(request, *args, **kwargs)
+
+        try:
+            result = view_func(request, *args, **kwargs)
+            log_decorator(f"✅ [require_api_key_secure] View 함수 실행 완료: {view_func.__name__}")
+            return result
+        except Exception as e:
+            log_decorator(f"❌ [require_api_key_secure] View 함수 실행 중 예외: {e}")
+            import traceback
+            log_decorator(traceback.format_exc())
+            raise
 
     # CSRF exempt 적용 - Django의 csrf_exempt 데코레이터로 감싸기
     return csrf_exempt(wrapper)
