@@ -220,7 +220,9 @@ def require_api_key_secure(view_func):
             }, status=500)
 
         # 2. Origin 검증 (프로덕션에서만)
+        log_decorator("  Step 2.1: Origin 검증 시작")
         if not settings.DEBUG:
+            log_decorator("  Step 2.2: Production 모드, Origin 확인")
             origin = request.META.get('HTTP_ORIGIN', '')
             referer = request.META.get('HTTP_REFERER', '')
             print(f"🌐 [require_api_key_secure] Origin: '{origin}', Referer: '{referer}'")
@@ -250,25 +252,41 @@ def require_api_key_secure(view_func):
             print(f"✅ [require_api_key_secure] DEBUG 모드, Origin 검증 스킵")
 
         # 3. Rate Limiting (100 requests per minute)
-        ip = get_client_ip(request)
-        cache_key = f'rate_limit:{ip}:{api_key_obj.user.id}:{view_func.__name__}'
-        current_count = cache.get(cache_key, 0)
+        log_decorator("  Step 2.3: Rate limiting 시작")
+        try:
+            ip = get_client_ip(request)
+            cache_key = f'rate_limit:{ip}:{api_key_obj.user.id}:{view_func.__name__}'
+            current_count = cache.get(cache_key, 0)
+            log_decorator(f"  Rate limit - IP: {ip}, Count: {current_count}/100")
 
-        if current_count >= 100:
-            return JsonResponse({
-                'error': 'Rate limit exceeded',
-                'message': '요청 제한을 초과했습니다. 1분당 최대 100회 요청 가능합니다.'
-            }, status=429)
+            if current_count >= 100:
+                log_decorator("  Rate limit 초과")
+                return JsonResponse({
+                    'error': 'Rate limit exceeded',
+                    'message': '요청 제한을 초과했습니다. 1분당 최대 100회 요청 가능합니다.'
+                }, status=429)
 
-        # 카운터 증가
-        if current_count == 0:
-            cache.set(cache_key, 1, 60)
-        else:
-            cache.incr(cache_key)
+            # 카운터 증가
+            if current_count == 0:
+                cache.set(cache_key, 1, 60)
+            else:
+                cache.incr(cache_key)
+            log_decorator("  Step 2.4: Rate limiting 통과")
+        except Exception as e:
+            log_decorator(f"❌ Rate limiting 오류: {e}")
+            import traceback
+            log_decorator(traceback.format_exc())
 
         # 4. API Key 마지막 사용 시간 업데이트
-        api_key_obj.last_used_at = timezone.now()
-        api_key_obj.save(update_fields=['last_used_at'])
+        log_decorator("  Step 2.5: API Key last_used_at 업데이트 시작")
+        try:
+            api_key_obj.last_used_at = timezone.now()
+            api_key_obj.save(update_fields=['last_used_at'])
+            log_decorator("  Step 2.6: API Key 업데이트 완료")
+        except Exception as e:
+            log_decorator(f"❌ API Key 업데이트 오류: {e}")
+            import traceback
+            log_decorator(traceback.format_exc())
 
         # 5. request에 사용자 정보 추가
         log_decorator("  Step 3: request 객체에 사용자 정보 추가")
