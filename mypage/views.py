@@ -239,8 +239,11 @@ def api_my_library(request):
             'name': book.name,
             'description': book.description,
             'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
-            'author': book.user.nickname if book.user else '',
-            'author_id': book.user.user_id if book.user else None,
+            'author': {
+                'id': book.user.user_id,
+                'nickname': book.user.nickname,
+                'email': book.user.email,
+            } if book.user else None,
             'genres': [{'id': g.id, 'name': g.name} for g in book.genres.all()],
             'created_at': book.created_at.isoformat() if book.created_at else None,
             'reading_progress': {
