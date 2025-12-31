@@ -255,7 +255,7 @@ def require_api_key_secure(view_func):
         log_decorator("  Step 2.3: Rate limiting 시작")
         try:
             ip = get_client_ip(request)
-            cache_key = f'rate_limit:{ip}:{api_key_obj.user.id}:{view_func.__name__}'
+            cache_key = f'rate_limit:{ip}:{api_key_obj.user.user_id}:{view_func.__name__}'
             current_count = cache.get(cache_key, 0)
             log_decorator(f"  Rate limit - IP: {ip}, Count: {current_count}/100")
 
