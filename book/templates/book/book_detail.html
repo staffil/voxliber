@@ -114,15 +114,15 @@
                     {{ genre.name }}
                 </span>
                 {% endfor %}
-
-
             </div>
 
-            <div>
-                {% for tag in book.tags.all %}
-                <span class="book-tag">{{ tag.name }}</span>
+            {% if book.tags.exists %}
+            <div class="book-tags" style="margin-top: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {% for tag in book.tags.all|slice:":5" %}
+                <span style="display: inline-block; margin-right: 10px; font-size: 0.8em; color: #6366f1; font-weight: 500;">#{{ tag.name }}</span>
                 {% endfor %}
             </div>
+            {% endif %}
 
             <div class="book-stats-row">
                 <div class="rating-display">

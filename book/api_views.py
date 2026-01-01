@@ -797,6 +797,10 @@ def _serialize_book(book, request):
             {'id': g.id, 'name': g.name, 'description': ''}
             for g in book.genres.all()
         ],
+        'tags': [
+            {'id': t.id, 'name': t.name}
+            for t in book.tags.all()
+        ],
         'episode_count': book.contents.count()
     }
 

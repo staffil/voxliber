@@ -535,13 +535,20 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="book-badge">⭐ {{ book.book_score }}</div>
             </div>
             <div class="book-details">
-              <h3>{{ book.name }}</h3>
+              <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h3>
               <p class="book-meta">
                 {% for genre in book.genres.all|slice:":2" %}
                   {{ genre.name }}{% if not forloop.last %}, {% endif %}
                 {% endfor %}
                 • {{ book.contents.count }}화
               </p>
+              {% if book.tags.exists %}
+              <p class="book-tags" style="margin-top: 4px; font-size: 0.7em; color: #6366f1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {% for tag in book.tags.all|slice:":5" %}
+                  #{{ tag.name }}{% if not forloop.last %} {% endif %}
+                {% endfor %}
+              </p>
+              {% endif %}
             </div>
           </a>
           {% with first_episode=book.contents.first %}
@@ -663,8 +670,15 @@ document.addEventListener("DOMContentLoaded", () => {
               {% endwith %}
             </div>
             <div class="rank-info">
-              <h4>{{ book.name }}</h4>
+              <h4 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h4>
               <p class="rank-meta">{{ book.user.nickname }} • {{ book.genres.all.0.name }}</p>
+              {% if book.tags.exists %}
+              <p class="book-tags" style="margin-top: 2px; font-size: 0.3em; color: #6366f1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {% for tag in book.tags.all|slice:":5" %}
+                  #{{ tag.name }}{% if not forloop.last %} {% endif %}
+                {% endfor %}
+              </p>
+              {% endif %}
             </div>
             <div class="rank-stats">
               <span class="rank-score">⭐ {{ book.book_score|default:"0.0" }}</span>
@@ -705,7 +719,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="book-badge trending">베스트셀러</div>
             </div>
             <div class="book-details">
-              <h3>{{ book.name }}</h3>
+              <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h3>
               <p class="book-meta">
                 {{ book.user.nickname }} •<br>
                 {% for genre in book.genres.all|slice:":2" %}
@@ -798,13 +812,20 @@ document.addEventListener("DOMContentLoaded", () => {
               {% endif %}
             </div>
             <div class="book-details">
-              <h3>{{ book.name }}</h3>
+              <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h3>
               <p class="book-meta">
                 {% for genre in book.genres.all|slice:":2" %}
                   {{ genre.name }}{% if not forloop.last %}, {% endif %}
                 {% endfor %}
                 • {{ book.contents.count }}화
               </p>
+              {% if book.tags.exists %}
+              <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {% for tag in book.tags.all|slice:":5" %}
+                  #{{ tag.name }}{% if not forloop.last %} {% endif %}
+                {% endfor %}
+              </p>
+              {% endif %}
             </div>
           </a>
           {% with first_episode=book.contents.first %}
@@ -855,13 +876,20 @@ document.addEventListener("DOMContentLoaded", () => {
       {% endif %}
     </div>
     <div class="book-details">
-      <h3>{{ item.book.name }}</h3>
+      <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ item.book.name }}</h3>
       <p class="book-meta">
         {% for genre in item.book.genres.all|slice:":2" %}
           {{ genre.name }}{% if not forloop.last %}, {% endif %}
         {% endfor %}
         • {{ item.book.contents.count }}화
       </p>
+      {% if item.book.tags.exists %}
+      <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1;">
+        {% for tag in item.book.tags.all|slice:":3" %}
+          #{{ tag.name }}{% if not forloop.last %} {% endif %}
+        {% endfor %}
+      </p>
+      {% endif %}
     </div>
   </a>
 
@@ -915,7 +943,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="book-badge recommended">✨ 추천</div>
             </div>
             <div class="book-details">
-              <h3>{{ book.name }}</h3>
+              <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h3>
               <p class="book-meta">
                 {{ book.user.nickname }} • <br>
                 {% for genre in book.genres.all|slice:":2" %}
@@ -972,7 +1000,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="book-badge recommended">✨ 추천</div>
             </div>
             <div class="book-details">
-              <h3>{{ book.name }}</h3>
+              <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h3>
               <p class="book-meta">
                 {{ book.user.nickname }} •<br>
                 {% for genre in book.genres.all|slice:":2" %}
@@ -1047,12 +1075,19 @@ document.addEventListener("DOMContentLoaded", () => {
               {% endwith %}
             </div>
             <div class="genre-book-info">
-              <h4>{{ book.name }}</h4>
+              <h4 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h4>
               <p class="genre-book-author">{{ book.user.nickname }}</p>
               <div class="genre-book-stats">
                 <span>⭐ {{ book.book_score|default:"0.0" }}</span>
                 <span>📖 {{ book.contents.count }}화</span>
               </div>
+              {% if book.tags.exists %}
+              <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {% for tag in book.tags.all|slice:":5" %}
+                  #{{ tag.name }}{% if not forloop.last %} {% endif %}
+                {% endfor %}
+              </p>
+              {% endif %}
             </div>
           </a>
         </div>
@@ -1089,13 +1124,20 @@ document.addEventListener("DOMContentLoaded", () => {
               {% endif %}
             </div>
             <div class="book-details">
-              <h3>{{ book.name }}</h3>
+              <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h3>
               <p class="book-meta">
                 {% for genre in book.genres.all|slice:":2" %}
                   {{ genre.name }}{% if not forloop.last %}, {% endif %}
                 {% endfor %}
                 • {{ book.contents.count }}화
               </p>
+              {% if book.tags.exists %}
+              <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {% for tag in book.tags.all|slice:":5" %}
+                  #{{ tag.name }}{% if not forloop.last %} {% endif %}
+                {% endfor %}
+              </p>
+              {% endif %}
             </div>
           </a>
           {% with first_episode=book.contents.first %}

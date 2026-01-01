@@ -301,11 +301,12 @@ def search_books(request):
             
         })
 
-    # 📚 책 검색 (제목, 설명으로 검색)
+    # 📚 책 검색 (제목, 설명, 태그로 검색)
     books = Books.objects.filter(
         Q(name__icontains=query) |
-        Q(description__icontains=query)
-    ).select_related('user').prefetch_related('genres').distinct()[:20]
+        Q(description__icontains=query) |
+        Q(tags__name__icontains=query)
+    ).select_related('user').prefetch_related('genres', 'tags').distinct()[:20]
 
     books_data = []
     for book in books:
@@ -317,6 +318,7 @@ def search_books(request):
             'author_id': book.user.user_id,
             'description': book.description[:100] if book.description else '',
             'genres': [{'name': g.name, 'color': g.genres_color} for g in book.genres.all()],
+            'tags': [{'name': t.name} for t in book.tags.all()],
             'contents_count': book.contents.count(),
             'score': float(book.book_score),
         })
@@ -347,25 +349,6 @@ def search_books(request):
                 } for book in representative_books
             ]
         })
-
-
-    # 태그 검색
-    books_by_tag = Books.objects.filter(tags__name__icontains=query).distinct()[:20]
-    books_by_tag_data = []
-    for book in books_by_tag:
-        books_data.append({
-            'id': book.id,
-            'name': book.name,
-            'cover_img': book.cover_img.url if book.cover_img else None,
-            'author': book.user.nickname,
-            'author_id': book.user.user_id,
-            'description': book.description[:100] if book.description else '',
-            'genres': [{'name': g.name, 'color': g.genres_color} for g in book.genres.all()],
-            'contents_count': book.contents.count(),
-            'score': float(book.book_score),
-        })
-
-
 
     return render(request, "main/search_result.html", {
         'books': books_data,

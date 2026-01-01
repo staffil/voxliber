@@ -82,6 +82,16 @@
                         </span>
                         {% endfor %}
                     </div>
+
+                    {% if book.tags %}
+                    <div class="book-tags" style="margin-top: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {% for t in book.tags|slice:":5" %}
+                        <span style="font-size: 0.7em; color: #6366f1; margin-right: 6px;">
+                            #{{ t.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
             </a>
             {% endfor %}

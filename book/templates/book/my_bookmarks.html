@@ -6,6 +6,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/my_books.css' %}">
 <style>
+/* Dark mode (default) */
 .bookmark-item {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 16px;
@@ -109,14 +110,60 @@
     margin-bottom: 24px;
     opacity: 0.3;
 }
+
+/* Light mode overrides */
+body.light-mode .bookmark-item {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .bookmark-item:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+body.light-mode .bookmark-title {
+    color: #1a1a1a;
+}
+
+body.light-mode .bookmark-author {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+body.light-mode .bookmark-note {
+    background: rgba(0, 0, 0, 0.03);
+    color: rgba(0, 0, 0, 0.7);
+}
+
+body.light-mode .btn-secondary {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: rgba(0, 0, 0, 0.7);
+}
+
+body.light-mode .btn-secondary:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .empty-state {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+body.light-mode .page-title {
+    color: #1a1a1a !important;
+}
+
+body.light-mode .page-subtitle {
+    color: rgba(0, 0, 0, 0.5) !important;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div style="max-width: 1200px; margin: 120px auto 40px; padding: 0 20px;">
     <div style="margin-bottom: 32px;">
-        <h1 style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">📚 내 북마크</h1>
-        <p style="color: rgba(255, 255, 255, 0.6);">나중에 읽고 싶은 책을 모아보세요</p>
+        <h1 class="page-title" style="font-size: 32px; font-weight: 700; margin-bottom: 8px; color: #fff;">📚 내 북마크</h1>
+        <p class="page-subtitle" style="color: rgba(255, 255, 255, 0.6);">나중에 읽고 싶은 책을 모아보세요</p>
     </div>
 
     {% if bookmarks %}
