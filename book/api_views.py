@@ -1051,6 +1051,8 @@ def api_search_books(request):
     Example:
         GET /book/api/books/search/?q=판타지
         GET /book/api/books/search/?q=작가이름&type=author
+
+    검색 범위: 작품명, 작가명, 태그명, 장르명
     """
     from django.db.models import Q
 
@@ -1059,12 +1061,14 @@ def api_search_books(request):
     if not query:
         return api_response([])
 
-    # 책 검색 (제목, 설명으로 검색)
+    # 책 검색 (제목, 설명, 작가명, 태그명, 장르명으로 검색)
     books = Books.objects.filter(
         Q(name__icontains=query) |
         Q(description__icontains=query) |
-        Q(user__nickname__icontains=query)
-    ).select_related('user').prefetch_related('genres').distinct()[:50]
+        Q(user__nickname__icontains=query) |
+        Q(tags__name__icontains=query) |
+        Q(genres__name__icontains=query)
+    ).select_related('user').prefetch_related('genres', 'tags').distinct()[:50]
 
     return api_response([_serialize_book(book, request) for book in books])
 
