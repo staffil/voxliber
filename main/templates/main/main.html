@@ -201,7 +201,6 @@
     </div>
     <div class="recent-info">
       <h4>{{ progress.book.name }}</h4>
-      <p>{{ progress.last_read_content_number }}화 / {{ progress.book.contents.count }}화</p>
     </div>
   </a>
 </div>
@@ -817,7 +816,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 {% for genre in book.genres.all|slice:":2" %}
                   {{ genre.name }}{% if not forloop.last %}, {% endif %}
                 {% endfor %}
-                • {{ book.contents.count }}화
               </p>
               {% if book.tags.exists %}
               <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
@@ -881,7 +879,6 @@ document.addEventListener("DOMContentLoaded", () => {
         {% for genre in item.book.genres.all|slice:":2" %}
           {{ genre.name }}{% if not forloop.last %}, {% endif %}
         {% endfor %}
-        • {{ item.book.contents.count }}화
       </p>
       {% if item.book.tags.exists %}
       <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1;">
@@ -951,7 +948,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 {% endfor %}
               </p>
               <p class="book-stats">
-                ⭐ {{ book.book_score|default:"0.0" }} • 📖 {{ book.contents.count }}화
+                ⭐ {{ book.book_score|default:"0.0" }} 
               </p>
             </div>
           </a>
@@ -1008,7 +1005,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 {% endfor %}
               </p>
               <p class="book-stats">
-                ⭐ {{ book.book_score|default:"0.0" }} • 📖 {{ book.contents.count }}화
+                ⭐ {{ book.book_score|default:"0.0" }} 
               </p>
             </div>
           </a>
@@ -1129,7 +1126,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 {% for genre in book.genres.all|slice:":2" %}
                   {{ genre.name }}{% if not forloop.last %}, {% endif %}
                 {% endfor %}
-                • {{ book.contents.count }}화
               </p>
               {% if book.tags.exists %}
               <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
