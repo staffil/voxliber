@@ -31,8 +31,12 @@
 
   <title>{% block head_title %}VOXLIBER{% endblock %}</title>
 
-  <link rel="icon" type="image/png" href="{% static 'img/logo3.png' %}">
-  <link rel="apple-touch-icon" href="{% static 'img/logo3.png' %}">
+  <!-- Favicon (여러 크기 지원) -->
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/logo3.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/logo3.png' %}">
+  <link rel="icon" type="image/x-icon" href="{% static 'img/logo3.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/logo3.png' %}">
+  <link rel="shortcut icon" href="{% static 'img/logo3.png' %}">
   <link rel="stylesheet" href="{% static 'css/common/variables.css' %}">
   {% block extra_css %}{% endblock %}
 </head>

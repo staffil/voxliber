@@ -106,7 +106,7 @@
 /* 커버 */
 .book-cover-wrapper {
     width: 100%;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 9 / 16;
     background: var(--bg-tertiary);
     overflow: hidden;
 }
@@ -231,7 +231,7 @@
 
 .author-book-mini-cover {
     width: 100%;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 9 / 16;
     border-radius: 6px;
     overflow: hidden;
     background: #1e293b;
