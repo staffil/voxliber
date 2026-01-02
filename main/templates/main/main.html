@@ -201,6 +201,7 @@
     </div>
     <div class="recent-info">
       <h4>{{ progress.book.name }}</h4>
+      <p>{{ progress.last_read_content_number }}화 / {{ progress.book.contents.count }}화</p>
     </div>
   </a>
 </div>
@@ -726,7 +727,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 {% endfor %}
               </p>
               <p class="book-stats">
-                ⭐ {{ book.book_score|default:"0.0" }} • 📖 {{ book.contents.count }}화
+                ⭐ {{ book.book_score|default:"0.0" }} 
               </p>
             </div>
           </a>
@@ -948,7 +949,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 {% endfor %}
               </p>
               <p class="book-stats">
-                ⭐ {{ book.book_score|default:"0.0" }} 
+                ⭐ {{ book.book_score|default:"0.0" }}
               </p>
             </div>
           </a>
@@ -1005,7 +1006,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 {% endfor %}
               </p>
               <p class="book-stats">
-                ⭐ {{ book.book_score|default:"0.0" }} 
+                ⭐ {{ book.book_score|default:"0.0" }}
               </p>
             </div>
           </a>
@@ -1076,7 +1077,6 @@ document.addEventListener("DOMContentLoaded", () => {
               <p class="genre-book-author">{{ book.user.nickname }}</p>
               <div class="genre-book-stats">
                 <span>⭐ {{ book.book_score|default:"0.0" }}</span>
-                <span>📖 {{ book.contents.count }}화</span>
               </div>
               {% if book.tags.exists %}
               <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
