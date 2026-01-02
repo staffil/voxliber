@@ -454,8 +454,8 @@ def book_serialization(request):
                 "error": f"에피소드 저장 중 오류가 발생했습니다: {str(e)}"
             }, status=500)
 
-    # 최신 에피소드 번호 가져오기
-    latest_episode = Content.objects.filter(book=book).order_by('-number').first()
+    # 최신 에피소드 번호 가져오기 (삭제되지 않은 것만)
+    latest_episode = Content.objects.filter(book=book, is_deleted=False).order_by('-number').first()
     latest_episode_number = latest_episode.number if latest_episode else 0
 
     # 음성 목록 가져오기
@@ -708,18 +708,18 @@ def book_detail(request, book_id):
     from django.db.models import Avg, Prefetch
     from django.core.paginator import Paginator
 
-    # ✅ 쿼리 최적화: select_related, prefetch_related 적용
+    # ✅ 쿼리 최적화: select_related, prefetch_related 적용 (삭제된 에피소드 제외)
     book = get_object_or_404(
         Books.objects.select_related('user').prefetch_related(
             'genres',
             'tags',
-            Prefetch('contents', queryset=Content.objects.all().order_by('-number'))
+            Prefetch('contents', queryset=Content.objects.filter(is_deleted=False).order_by('-number'))
         ),
         id=book_id
     )
 
-    # 컨텐츠 가져오기
-    contents = book.contents.all().order_by('-number')
+    # 컨텐츠 가져오기 (삭제되지 않은 것만)
+    contents = book.contents.filter(is_deleted=False).order_by('-number')
 
     paginator = Paginator(contents, 10)
     page = request.GET.get('page')
@@ -782,12 +782,13 @@ def content_detail(request, content_id):
     from book.models import Content, ReadingProgress, ListeningHistory, AuthorAnnouncement
     from django.utils import timezone
 
-    content = get_object_or_404(Content, id=content_id)
+    # 삭제되지 않은 에피소드만 조회 가능
+    content = get_object_or_404(Content, id=content_id, is_deleted=False)
     book = content.book
 
-    # 이전/다음 에피소드
-    prev_content = Content.objects.filter(book=book, number__lt=content.number).order_by('-number').first()
-    next_content = Content.objects.filter(book=book, number__gt=content.number).order_by('number').first()
+    # 이전/다음 에피소드 (삭제되지 않은 것만)
+    prev_content = Content.objects.filter(book=book, number__lt=content.number, is_deleted=False).order_by('-number').first()
+    next_content = Content.objects.filter(book=book, number__gt=content.number, is_deleted=False).order_by('number').first()
 
     # 마지막 재생 위치 가져오기
     last_position = 0
@@ -821,8 +822,8 @@ def content_detail(request, content_id):
             progress.current_content = content
             progress.last_read_at = timezone.now()  # 마지막 읽은 시간 업데이트
 
-            # 마지막 에피소드를 읽으면 완독 처리
-            total_contents = book.contents.count()
+            # 마지막 에피소드를 읽으면 완독 처리 (삭제되지 않은 것만 카운트)
+            total_contents = book.contents.filter(is_deleted=False).count()
             if content.number >= total_contents:
                 progress.status = 'completed'
                 progress.completed_at = timezone.now()
@@ -1043,7 +1044,7 @@ def preview_page(request):
         return redirect("book:book_profile")
 
     from book.models import Content
-    latest_episode = Content.objects.filter(book=book).order_by('-number').first()
+    latest_episode = Content.objects.filter(book=book, is_deleted=False).order_by('-number').first()
     latest_episode_number = latest_episode.number if latest_episode else 0
 
     # 🔥 이미지 업로드는 AJAX로 처리하므로 POST 처리 제거
@@ -1511,16 +1512,18 @@ def normalize_age(age):
 @login_required
 def author_dashboard(request):
     import json
-    from django.db.models import Count, Sum, Avg
+    from django.db.models import Count, Sum, Avg, Prefetch
     from datetime import datetime, timedelta
-    from book.models import ReadingProgress, ListeningHistory, Books, Follow
+    from book.models import ReadingProgress, ListeningHistory, Books, Follow, Content
 
-    # 로그인한 작가의 책들
-    user_books = Books.objects.filter(user=request.user).prefetch_related('contents').order_by("-created_at")
+    # 로그인한 작가의 책들 (삭제되지 않은 에피소드만 포함)
+    user_books = Books.objects.filter(user=request.user).prefetch_related(
+        Prefetch('contents', queryset=Content.objects.filter(is_deleted=False))
+    ).order_by("-created_at")
 
-    # 기본 통계
+    # 기본 통계 (삭제되지 않은 에피소드만 카운트)
     total_books = user_books.count()
-    total_contents = sum(book.contents.count() for book in user_books)
+    total_contents = sum(book.contents.filter(is_deleted=False).count() for book in user_books)
     total_audio_duration = request.user.get_total_audiobook_duration_formatted()
 
     # 팔로워 수
@@ -1623,7 +1626,7 @@ def author_dashboard(request):
         # 📌 평균 진행률
         # ------------------------------
         avg_progress = readers.aggregate(avg=Avg('last_read_content_number'))['avg'] or 0
-        total_ep = book.contents.count()
+        total_ep = book.contents.filter(is_deleted=False).count()  # 삭제되지 않은 에피소드만 카운트
         avg_progress_percent = round((avg_progress / total_ep * 100) if total_ep else 0, 1)
 
         # ------------------------------
@@ -1762,11 +1765,13 @@ def delete_announcement(request, announcement_id):
     return redirect("book:book_detail", book_id=book_id)
 
 
-# 에피소드 삭제 (작가만)
+# 에피소드 삭제 (작가만) - Soft Delete
 @login_required
 def delete_content(request, content_id):
     from book.models import Content
-    content = get_object_or_404(Content, id=content_id)
+    from django.utils import timezone
+
+    content = get_object_or_404(Content, id=content_id, is_deleted=False)
     book = content.book
 
     # 작가만 삭제 가능
@@ -1774,10 +1779,13 @@ def delete_content(request, content_id):
         return JsonResponse({"success": False, "error": "권한이 없습니다."}, status=403)
 
     if request.method == "POST":
-        content.delete()
+        # Soft Delete: 실제로 삭제하지 않고 플래그만 설정
+        content.is_deleted = True
+        content.deleted_at = timezone.now()
+        content.save()
 
-        # 회차 번호 재정렬
-        remaining_contents = book.contents.all().order_by('number')
+        # 회차 번호 재정렬 (삭제되지 않은 에피소드만)
+        remaining_contents = book.contents.filter(is_deleted=False).order_by('number')
         for idx, c in enumerate(remaining_contents, start=1):
             c.number = idx
             c.save()
@@ -1807,9 +1815,9 @@ def reorder_content(request, book_id):
         if not content_ids:
             return JsonResponse({"success": False, "error": "에피소드 ID가 없습니다."}, status=400)
 
-        # 새로운 순서대로 회차 번호 업데이트
+        # 새로운 순서대로 회차 번호 업데이트 (삭제되지 않은 것만)
         for new_number, content_id in enumerate(content_ids, start=1):
-            content = Content.objects.filter(id=content_id, book=book).first()
+            content = Content.objects.filter(id=content_id, book=book, is_deleted=False).first()
             if content:
                 content.number = new_number
                 content.save()

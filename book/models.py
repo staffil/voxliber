@@ -117,6 +117,8 @@ class Content(models.Model):
     audio_timestamps = models.JSONField(null=True, blank=True)  # 각 대사의 시작/종료 시간 저장
     duration_seconds = models.IntegerField(default=0, help_text="오디오 길이(초)")  # 오디오 길이 (초 단위)
     created_at  = models.DateTimeField(default=timezone.now)
+    is_deleted = models.BooleanField(default=False, help_text="소프트 삭제 여부")  # Soft delete
+    deleted_at = models.DateTimeField(null=True, blank=True, help_text="삭제 시간")
 
     class Meta:
         db_table = 'content'

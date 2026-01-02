@@ -24,9 +24,16 @@ class BooksAdmin(admin.ModelAdmin):
 
 @admin.register(Content)
 class ContentAdmin(admin.ModelAdmin):
-    list_display = ['title', 'book', 'number', 'created_at']
-    list_filter = ['book', 'created_at']
+    list_display = ['title', 'book', 'number', 'is_deleted', 'created_at', 'deleted_at']
+    list_filter = ['book', 'is_deleted', 'created_at']
     search_fields = ['title', 'book__name']
+    readonly_fields = ['created_at', 'deleted_at']
+
+    # 삭제 여부를 아이콘으로 표시
+    def is_deleted(self, obj):
+        return obj.is_deleted
+    is_deleted.boolean = True  # ✓/× 아이콘으로 표시
+    is_deleted.short_description = '삭제됨'
 
 
 @admin.register(BookReview)
