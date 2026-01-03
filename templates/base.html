@@ -32,11 +32,14 @@
   <title>{% block head_title %}VOXLIBER{% endblock %}</title>
 
   <!-- Favicon (여러 크기 지원) -->
-  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/logo3.png' %}">
-  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/logo3.png' %}">
-  <link rel="icon" type="image/x-icon" href="{% static 'img/logo3.png' %}">
+  <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+  <link rel="icon" type="image/png" sizes="96x96" href="{% static 'img/favicon-96x96.png' %}">
+  <link rel="icon" type="image/png" sizes="48x48" href="{% static 'img/logo4.png' %}">
+  <link rel="icon" type="image/png" sizes="48x48" href="{% static 'img/favicon-48x48.png' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/favicon-16x16.png' %}">
   <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/logo3.png' %}">
-  <link rel="shortcut icon" href="{% static 'img/logo3.png' %}">
+  <link rel="shortcut icon" href="{% static 'favicon.ico' %}">
   <link rel="stylesheet" href="{% static 'css/common/variables.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
