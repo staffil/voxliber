@@ -65,33 +65,15 @@
                     <h3>{{ book.name }}</h3>
                     <p class="book-meta">
                         {{ book.author }} • {{ book.contents_count }}화
-                        {% if book.score > 0 %}
-                        • ⭐ {{ book.score }}
-                        {% endif %}
                     </p>
 
-                    {% if book.description %}
-                    <p class="book-desc">{{ book.description }}</p>
-                    {% endif %}
-
                     <div class="book-genres">
-                        {% for g in book.genres %}
-                        <span class="genre-tag"
-                              style="background: {{ g.color }}22; color: {{ g.color }}">
+                        {% for g in book.genres|slice:":2" %}
+                        <span class="genre-tag" style="background: {{ g.color }}22; color: {{ g.color }}">
                             {{ g.name }}
                         </span>
                         {% endfor %}
                     </div>
-
-                    {% if book.tags %}
-                    <div class="book-tags" style="margin-top: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        {% for t in book.tags|slice:":5" %}
-                        <span style="font-size: 0.7em; color: #6366f1; margin-right: 6px;">
-                            #{{ t.name }}
-                        </span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
                 </div>
             </a>
             {% endfor %}

@@ -78,37 +78,39 @@
 }
 
 /* ===============================
-   📚 책 그리드 (문제 해결 핵심)
+   📚 책 그리드 (8열 레이아웃)
 =============================== */
 .books-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr); /* 데스크탑 기본 */
-    gap: 24px;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 24px 16px;
 }
 
 /* 책 카드 */
 .book-item {
-    display: block;
-    background: var(--bg-secondary);
-    border-radius: 16px;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     text-decoration: none;
-    border: 1px solid var(--border-color);
     transition: all 0.25s ease;
 }
 
 .book-item:hover {
     transform: translateY(-4px);
-    border-color: var(--primary);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.book-item:hover .book-cover-wrapper {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 /* 커버 */
 .book-cover-wrapper {
     width: 100%;
     aspect-ratio: 9 / 16;
-    background: var(--bg-tertiary);
     overflow: hidden;
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .book-cover-wrapper img {
@@ -117,35 +119,60 @@
     object-fit: cover;
 }
 
+.book-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: white;
+    font-size: 20px;
+    font-weight: 700;
+}
+
 /* 정보 */
 .book-details {
-    padding: 14px;
+    padding: 10px 0 0 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .book-details h3 {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 6px;
-    white-space: nowrap;
+    margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    width: 100%;
 }
 
 .book-meta {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-secondary);
-    margin-bottom: 8px;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.book-desc {
-    font-size: 13px;
-    color: var(--text-primary);
-    line-height: 1.4;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+.book-genres {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.genre-tag {
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 /* ===============================
@@ -154,21 +181,22 @@
 
 .authors-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
 }
 
 .author-item {
-    background: #0f172a;
-        border-radius: 14px;
-    padding: 16px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    transition: all 0.25s ease;
 }
 
 .author-item:hover {
     transform: translateY(-4px);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    border-color: var(--primary);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .author-header {
@@ -215,16 +243,46 @@
     line-height: 1.5;
 }
 
+/* 대표 작품 컨테이너 */
+.author-books {
+    width: 100%;
+}
+
 /* 대표 작품 미니 카드 */
 .author-books-list {
     display: flex;
+    flex-wrap: nowrap;
     gap: 8px;
     overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 8px;
+    width: 100%;
+}
+
+.author-books-list::-webkit-scrollbar {
+    height: 4px;
+}
+
+.author-books-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+}
+
+.author-books-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+.author-books-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .author-book-mini {
     flex: 0 0 auto;
     width: 60px;
+    min-width: 60px;
     text-decoration: none;
     color: inherit;
 }
@@ -247,8 +305,11 @@
     font-size: 11px;
     margin-top: 4px;
     text-align: center;
-        color: #e5e7eb;
-
+    color: #e5e7eb;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
 }
 
 
@@ -259,42 +320,80 @@
 /* 태블릿 */
 @media (max-width: 1024px) {
     .books-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(5, 1fr);
+        gap: 20px 16px;
     }
 
     .authors-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
     }
 }
 
 /* 모바일 */
 @media (max-width: 767px) {
     .books-grid {
-        grid-template-columns: repeat(2, 1fr); /* ✅ 무조건 2열 */
-        gap: 16px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px 16px;
     }
 
     .authors-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .author-item {
+        padding: 16px;
+    }
+
+    .author-avatar {
+        width: 40px;
+        height: 40px;
+    }
+
+    .author-info h3 {
+        font-size: 15px;
+    }
+
+    .author-stats {
+        font-size: 12px;
+    }
+
+    .author-bio {
+        font-size: 12px;
     }
 
     .search-header h2 {
         font-size: 24px;
+    }
+
+    .book-details h3 {
+        font-size: 13px;
+    }
+
+    .book-meta {
+        font-size: 11px;
+    }
+
+    .genre-tag {
+        font-size: 9px;
+        padding: 2px 5px;
     }
 }
 
 /* 초소형 */
 @media (max-width: 480px) {
     .books-grid {
-        gap: 12px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px 12px;
     }
 
     .book-details {
-        padding: 12px;
+        padding: 8px 0 0 0;
     }
 
     .book-details h3 {
-        font-size: 14px;
+        font-size: 12px;
     }
 }
 
