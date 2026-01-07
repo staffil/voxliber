@@ -79,7 +79,7 @@
         <div class="editor-header">
             <div class="current-page-info">
                 <h2 id="currentPageTitle">대사 1 / 10</h2>
-                <div class="page-meta">최대 200자 권장</div>
+                <div class="page-meta">최대 300자 권장</div>
             </div>
 
             <div class="header-actions">
@@ -959,7 +959,7 @@ function loadPage(index, skipSave = false) {
             '<div class="editor-toolbar">' +
                 '<span style="color: #888; font-size: 14px;">🎶 대사 ' + (index + 1) + '</span>' +
                 '<span class="char-count-display">' +
-                    '<span id="currentCharCount">' + page.charCount + '</span> / 200자' +
+                    '<span id="currentCharCount">' + page.charCount + '</span> / 300자' +
                     '<span id="charWarning" style="display: none;" class="char-limit-warning">(권장 글자 수 초과)</span>' +
                 '</span>' +
             '</div>' +
@@ -1010,7 +1010,7 @@ function loadPage(index, skipSave = false) {
                     '</button>' +
                     '<span style="color: #666; font-size: 11px; margin-left: auto; align-self: center;">텍스트 선택 후 버튼 클릭 또는 단축키 사용</span>' +
                 '</div>' +
-                '<textarea id="pageContent" placeholder="이 페이지의 내용을 작성하세요...&#10;&#10;팁:&#10;- 한 페이지에 한 장면이나 한 단락을 작성하세요&#10;- 200자 이내로 작성하면 읽기 편합니다&#10;- **굵게**, *기울임*, __밑줄__, ++크게++, --작게--, ~~취소선~~, ==하이라이트== 사용 가능" oninput="updateCharCount()"></textarea>' +
+                '<textarea id="pageContent" placeholder="이 페이지의 내용을 작성하세요...&#10;&#10;팁:&#10;- 한 페이지에 한 장면이나 한 단락을 작성하세요&#10;- 300자 이내로 작성하면 읽기 편합니다&#10;- **굵게**, *기울임*, __밑줄__, ++크게++, --작게--, ~~취소선~~, ==하이라이트== 사용 가능" oninput="updateCharCount()"></textarea>' +
             '</div>' +
             '<div style="background: #16213e; padding: 20px; border-radius: 12px; margin-top: 20px;">' +
                 '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">' +
@@ -1066,16 +1066,16 @@ function updateCharCount() {
     const textarea = document.getElementById('pageContent');
     let charCount = textarea.value.length;
 
-    // 200자 이상이면 자르기
-    if (charCount > 200) {
-        textarea.value = textarea.value.substring(0, 200);
-        charCount = 200; // 잘라낸 후 글자 수 재설정
+    // 300자 이상이면 자르기
+    if (charCount > 300) {
+        textarea.value = textarea.value.substring(0, 300);
+        charCount = 300; // 잘라낸 후 글자 수 재설정
     }
 
     document.getElementById('currentCharCount').textContent = charCount;
 
     const warning = document.getElementById('charWarning');
-    if (charCount >= 200) {
+    if (charCount >= 300) {
         warning.style.display = 'inline';
     } else {
         warning.style.display = 'none';
@@ -1155,9 +1155,9 @@ function getFilter() {
 
 // 페이지 추가
 function addPage() {
-    // 페이지 개수 제한 체크 (최대 100개)
-    if (pages.length >= 100) {
-        alert('페이지는 최대 100개까지만 추가할 수 있습니다.\n현재: ' + pages.length + '개');
+    // 페이지 개수 제한 체크 (최대 150개)
+    if (pages.length >= 150) {
+        alert('페이지는 최대 150개까지만 추가할 수 있습니다.\n현재: ' + pages.length + '개');
         return;
     }
 
