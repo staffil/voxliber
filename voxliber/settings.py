@@ -73,7 +73,8 @@ if ec2_ip:
 SITE_ID = 1
 
 # Application definition
-
+DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
