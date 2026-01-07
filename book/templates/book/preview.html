@@ -122,6 +122,7 @@
 <script>
 const bookId = {{ book.id }};
 let previewAudioUrl = null;
+let db = null; // IndexedDB 전역 변수
 
 // IndexedDB 초기화
 function initIndexedDB() {
@@ -154,7 +155,7 @@ async function generatePreviewAudio() {
         console.log('🔍 미리듣기 오디오 생성 시작, bookId:', bookId, 'type:', typeof bookId);
 
         // IndexedDB에서 임시저장 데이터 로드
-        const db = await initIndexedDB();
+        db = await initIndexedDB();
         console.log('✅ IndexedDB 초기화 완료');
 
         // 🔍 디버깅: IndexedDB에 저장된 모든 키 확인
@@ -265,8 +266,13 @@ async function generatePreviewAudio() {
             formData.append('background_tracks_count', 0);
         }
 
-        // 서버에 요청
-        const response = await fetch('/book/preview/generate/', {
+        // 페이지 텍스트도 추가 (타임스탬프용)
+        draftData.pages.forEach((page, index) => {
+            formData.append(`page_text_${index}`, page.isSoundEffect ? '' : (page.content || ''));
+        });
+
+        // 서버에 비동기 요청 (Celery task 시작)
+        const response = await fetch('/book/preview/generate-async/', {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
@@ -275,42 +281,17 @@ async function generatePreviewAudio() {
         });
 
         if (response.ok) {
-            const blob = await response.blob();
-            previewAudioUrl = URL.createObjectURL(blob);
+            const data = await response.json();
 
-            const audio = document.getElementById('previewAudio');
-            audio.src = previewAudioUrl;
+            if (data.success && data.task_id) {
+                console.log('✅ 오디오 병합 작업 시작:', data.task_id);
 
-            // 🔥 최종 merge된 오디오를 IndexedDB에 저장
-            console.log('💾 최종 merge된 오디오를 IndexedDB에 저장 중...');
-            try {
-                // 기존 draftData 업데이트
-                const updateTransaction = db.transaction(['drafts'], 'readwrite');
-                const updateStore = updateTransaction.objectStore('drafts');
-
-                // 기존 데이터 가져오기
-                const getRequest = updateStore.get(bookId);
-                getRequest.onsuccess = () => {
-                    const existingData = getRequest.result;
-                    if (existingData) {
-                        // 최종 merge된 오디오 blob 추가
-                        existingData.mergedAudioBlob = blob;
-                        existingData.mergedAudioTimestamp = new Date().toISOString();
-
-                        // 업데이트
-                        updateStore.put(existingData);
-                        console.log('✅ 최종 merge된 오디오 IndexedDB 저장 완료');
-                    }
-                };
-            } catch (error) {
-                console.error('❌ merge된 오디오 저장 실패:', error);
-                // 실패해도 미리듣기는 계속 진행
+                // Task 상태를 폴링으로 확인
+                await pollTaskStatus(data.task_id);
+            } else {
+                alert('작업 시작 실패: ' + (data.error || '알 수 없는 오류'));
+                window.location.href = `/book/book_serialization/?book_id=${bookId}`;
             }
-
-            // 로딩 오버레이 숨김
-            document.getElementById('loadingOverlay').style.display = 'none';
-
-            console.log('✅ 미리듣기 오디오 생성 완료');
         } else {
             const data = await response.json();
             alert('오디오 생성 실패: ' + (data.error || '알 수 없는 오류'));
@@ -320,6 +301,89 @@ async function generatePreviewAudio() {
         console.error('미리듣기 오디오 생성 오류:', error);
         alert('오디오 생성 중 오류가 발생했습니다.');
         window.location.href = `/book/book_serialization/?book_id=${bookId}`;
+    }
+}
+
+// Task 상태를 폴링으로 확인하는 함수
+async function pollTaskStatus(taskId) {
+    const maxPollingTime = 20 * 60 * 1000; // 20분 타임아웃
+    const pollInterval = 5000; // 5초마다 확인
+    const startTime = Date.now();
+
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loadingText = loadingOverlay.querySelector('p');
+
+    while (true) {
+        // 타임아웃 체크
+        if (Date.now() - startTime > maxPollingTime) {
+            alert('오디오 생성 시간이 초과되었습니다. (20분)');
+            window.location.href = `/book/book_serialization/?book_id=${bookId}`;
+            return;
+        }
+
+        try {
+            const response = await fetch(`/book/preview/task-status/${taskId}/`);
+            const data = await response.json();
+
+            console.log('📊 Task 상태:', data);
+
+            // 로딩 메시지 업데이트
+            if (loadingText) {
+                if (data.progress !== undefined) {
+                    loadingText.innerHTML = `${data.status}<br><span style="font-size: 14px; color: #4CAF50;">${data.progress}%</span>`;
+                } else {
+                    loadingText.textContent = data.status || '오디오 생성 중...';
+                }
+            }
+
+            if (data.state === 'SUCCESS' && data.audio_data) {
+                // Base64 오디오 데이터를 Blob으로 변환
+                const audioBytes = Uint8Array.from(atob(data.audio_data), c => c.charCodeAt(0));
+                const blob = new Blob([audioBytes], { type: 'audio/mpeg' });
+                previewAudioUrl = URL.createObjectURL(blob);
+
+                const audio = document.getElementById('previewAudio');
+                audio.src = previewAudioUrl;
+
+                // 🔥 최종 merge된 오디오를 IndexedDB에 저장
+                console.log('💾 최종 merge된 오디오를 IndexedDB에 저장 중...');
+                try {
+                    const updateTransaction = db.transaction(['drafts'], 'readwrite');
+                    const updateStore = updateTransaction.objectStore('drafts');
+
+                    const getRequest = updateStore.get(bookId);
+                    getRequest.onsuccess = () => {
+                        const existingData = getRequest.result;
+                        if (existingData) {
+                            existingData.mergedAudioBlob = blob;
+                            existingData.mergedAudioTimestamp = new Date().toISOString();
+                            updateStore.put(existingData);
+                            console.log('✅ 최종 merge된 오디오 IndexedDB 저장 완료');
+                        }
+                    };
+                } catch (error) {
+                    console.error('❌ merge된 오디오 저장 실패:', error);
+                }
+
+                // 로딩 오버레이 숨김
+                loadingOverlay.style.display = 'none';
+
+                console.log('✅ 미리듣기 오디오 생성 완료');
+                return;
+
+            } else if (data.state === 'FAILURE') {
+                alert('오디오 생성 실패: ' + (data.error || '알 수 없는 오류'));
+                window.location.href = `/book/book_serialization/?book_id=${bookId}`;
+                return;
+            }
+
+            // 5초 대기 후 다시 확인
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+        } catch (error) {
+            console.error('Task 상태 확인 오류:', error);
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+        }
     }
 }
 

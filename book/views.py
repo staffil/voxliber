@@ -1155,6 +1155,172 @@ def generate_preview_audio(request):
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
+# 비동기 미리듣기 오디오 생성 (Celery 사용)
+def generate_preview_audio_async(request):
+    """
+    미리듣기 오디오를 비동기로 생성 (Celery task 사용)
+    - 100개 이상의 대사도 타임아웃 없이 처리 가능
+    """
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST 요청만 가능합니다."}, status=405)
+
+    try:
+        import tempfile
+        from book.task import merge_audio_task
+
+        # 오디오 파일 수집 및 임시 파일로 저장
+        audio_file_paths = []
+        temp_files = []
+
+        for key in sorted(request.FILES.keys()):
+            if key.startswith('audio_'):
+                audio_file = request.FILES[key]
+
+                # 임시 파일로 저장
+                with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
+                    for chunk in audio_file.chunks():
+                        temp_file.write(chunk)
+                    temp_file_path = temp_file.name
+                    audio_file_paths.append(temp_file_path)
+                    temp_files.append(temp_file_path)
+
+        if not audio_file_paths:
+            return JsonResponse({"success": False, "error": "오디오 파일이 없습니다."}, status=400)
+
+        # 페이지 텍스트 수집
+        pages_text = []
+        page_index = 0
+        while f'page_text_{page_index}' in request.POST:
+            pages_text.append(request.POST.get(f'page_text_{page_index}', ''))
+            page_index += 1
+
+        # 배경음 정보 수집
+        background_tracks_count = int(request.POST.get('background_tracks_count', 0))
+        background_tracks_data = []
+
+        if background_tracks_count > 0:
+            for i in range(background_tracks_count):
+                bg_audio_key = f'background_audio_{i}'
+                if bg_audio_key in request.FILES:
+                    bg_file = request.FILES[bg_audio_key]
+
+                    # 임시 파일로 저장
+                    with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_bg:
+                        for chunk in bg_file.chunks():
+                            temp_bg.write(chunk)
+                        temp_bg_path = temp_bg.name
+
+                    start_page = int(request.POST.get(f'background_start_{i}', 0))
+                    end_page = int(request.POST.get(f'background_end_{i}', 0))
+                    music_name = request.POST.get(f'background_name_{i}', '')
+                    volume_ratio = float(request.POST.get(f'background_volume_{i}', 1))
+
+                    # dB 변환
+                    import math
+                    volume_db = 20 * math.log10(volume_ratio) if volume_ratio > 0 else -60
+
+                    background_tracks_data.append({
+                        'audioPath': temp_bg_path,
+                        'startPage': start_page,
+                        'endPage': end_page,
+                        'volume': volume_db,
+                        'name': music_name
+                    })
+
+        # Celery task 실행
+        task = merge_audio_task.apply_async(
+            args=[audio_file_paths, background_tracks_data, pages_text]
+        )
+
+        return JsonResponse({
+            "success": True,
+            "task_id": task.id,
+            "message": "오디오 병합 작업이 시작되었습니다."
+        })
+
+    except Exception as e:
+        print("❌ 비동기 미리듣기 오디오 생성 오류:", e)
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+# Task 상태 확인 엔드포인트
+def preview_task_status(request, task_id):
+    """
+    Celery task의 진행 상황을 확인
+    """
+    from celery.result import AsyncResult
+
+    task = AsyncResult(task_id)
+
+    if task.state == 'PENDING':
+        response = {
+            'state': task.state,
+            'status': '작업 대기 중...',
+            'progress': 0
+        }
+    elif task.state == 'PROGRESS':
+        response = {
+            'state': task.state,
+            'status': task.info.get('status', ''),
+            'progress': task.info.get('progress', 0)
+        }
+    elif task.state == 'SUCCESS':
+        result = task.result
+        print(f"✅ Task 결과: {result}")
+
+        if result and result.get('success'):
+            # 파일 읽어서 반환
+            merged_audio_path = result.get('merged_audio_path')
+            print(f"📂 파일 경로: {merged_audio_path}")
+            print(f"📂 파일 존재: {os.path.exists(merged_audio_path) if merged_audio_path else False}")
+
+            if merged_audio_path and os.path.exists(merged_audio_path):
+                with open(merged_audio_path, 'rb') as f:
+                    audio_data = f.read()
+                print(f"✅ 파일 크기: {len(audio_data)} bytes")
+
+                # 임시 파일 삭제
+                try:
+                    os.remove(merged_audio_path)
+                except Exception as e:
+                    print(f"⚠️ 파일 삭제 실패: {e}")
+
+                # 오디오 파일을 base64로 인코딩하여 전송
+                import base64
+                audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+
+                response = {
+                    'state': task.state,
+                    'status': '완료!',
+                    'progress': 100,
+                    'audio_data': audio_base64
+                }
+            else:
+                print(f"❌ 파일 없음: {merged_audio_path}")
+                response = {
+                    'state': 'FAILURE',
+                    'status': '오디오 파일을 찾을 수 없습니다.',
+                    'error': f'파일 없음: {merged_audio_path}'
+                }
+        else:
+            response = {
+                'state': 'FAILURE',
+                'status': result.get('error', '알 수 없는 오류'),
+                'error': result.get('error')
+            }
+    else:
+        # FAILURE 등 기타 상태
+        response = {
+            'state': task.state,
+            'status': str(task.info),
+            'error': str(task.info)
+        }
+
+    return JsonResponse(response)
+
+
 # book/views.py
 
 from django.shortcuts import render, get_object_or_404
