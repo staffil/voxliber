@@ -226,9 +226,9 @@ async function generatePreviewAudio() {
         document.getElementById('dialogueCount').textContent = `${dialogueCount}개`;
         document.getElementById('bgMusicCount').textContent = bgMusicCount > 0 ? `${bgMusicCount}개` : '없음';
 
-        // 대사 개수 제한 체크 (최대 100개)
-        if (dialogueCount > 100) {
-            alert('미리듣기는 최대 100개 대사까지만 가능합니다.\n현재: ' + dialogueCount + '개');
+        // 대사 개수 제한 체크 (최대 150개)
+        if (dialogueCount > 150) {
+            alert('미리듣기는 최대 150개 대사까지만 가능합니다.\n현재: ' + dialogueCount + '개');
             document.getElementById('generateBtn').disabled = false;
             document.getElementById('generateBtn').textContent = '미리듣기 생성';
             return;
