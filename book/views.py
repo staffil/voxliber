@@ -1161,6 +1161,23 @@ def generate_preview_audio_async(request):
     미리듣기 오디오를 비동기로 생성 (Celery task 사용)
     - 100개 이상의 대사도 타임아웃 없이 처리 가능
     """
+    # 디버깅용 로그 파일
+    import datetime
+    import os
+    debug_log_path = os.path.join(settings.BASE_DIR, "debug_async.log")
+
+    try:
+        with open(debug_log_path, "a", encoding="utf-8") as f:
+            f.write(f"\n\n{'='*50}\n")
+            f.write(f"[{datetime.datetime.now()}] 요청 시작\n")
+            f.write(f"Method: {request.method}\n")
+            f.write(f"Content-Length: {request.META.get('CONTENT_LENGTH', 'N/A')}\n")
+            f.write(f"Content-Type: {request.META.get('CONTENT_TYPE', 'N/A')}\n")
+            f.write(f"FILES keys: {list(request.FILES.keys())[:5]}...\n")  # 처음 5개만
+            f.write(f"POST keys: {list(request.POST.keys())[:10]}...\n")  # 처음 10개만
+    except Exception as log_error:
+        print(f"로그 작성 실패: {log_error}")
+
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "POST 요청만 가능합니다."}, status=405)
 
@@ -1242,6 +1259,15 @@ def generate_preview_audio_async(request):
         print("❌ 비동기 미리듣기 오디오 생성 오류:", e)
         import traceback
         traceback.print_exc()
+
+        # 에러 로그 파일에도 기록
+        try:
+            with open(debug_log_path, "a", encoding="utf-8") as f:
+                f.write(f"❌ 에러 발생: {str(e)}\n")
+                f.write(traceback.format_exc())
+        except:
+            pass
+
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
