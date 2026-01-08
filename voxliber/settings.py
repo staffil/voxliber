@@ -72,9 +72,12 @@ if ec2_ip:
 # Sites framework
 SITE_ID = 1
 
-# Application definition
+# File Upload Settings
 DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
+DATA_UPLOAD_MAX_NUMBER_FILES = 500  # 파일 개수 제한 증가 (150 대사 + 배경음)
+
+# Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
