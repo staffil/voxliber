@@ -1189,17 +1189,20 @@ def generate_preview_audio_async(request):
         audio_file_paths = []
         temp_files = []
 
-        for key in sorted(request.FILES.keys()):
-            if key.startswith('audio_'):
-                audio_file = request.FILES[key]
+        # 오디오 파일을 숫자 순서대로 정렬 (audio_0, audio_1, audio_2, ...)
+        audio_keys = [key for key in request.FILES.keys() if key.startswith('audio_')]
+        audio_keys.sort(key=lambda x: int(x.split('_')[1]))
 
-                # 임시 파일로 저장
-                with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
-                    for chunk in audio_file.chunks():
-                        temp_file.write(chunk)
-                    temp_file_path = temp_file.name
-                    audio_file_paths.append(temp_file_path)
-                    temp_files.append(temp_file_path)
+        for key in audio_keys:
+            audio_file = request.FILES[key]
+
+            # 임시 파일로 저장
+            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
+                for chunk in audio_file.chunks():
+                    temp_file.write(chunk)
+                temp_file_path = temp_file.name
+                audio_file_paths.append(temp_file_path)
+                temp_files.append(temp_file_path)
 
         if not audio_file_paths:
             return JsonResponse({"success": False, "error": "오디오 파일이 없습니다."}, status=400)
