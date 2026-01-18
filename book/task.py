@@ -107,8 +107,7 @@ def merge_audio_task(self, audio_files_data, background_tracks_data=None, pages_
 
             final_audio_path = mix_audio_with_background(
                 merged_audio_path,
-                background_tracks_data,
-                dialogue_durations
+                background_tracks_data
             )
 
             if not final_audio_path:
