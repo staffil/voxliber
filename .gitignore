@@ -43,5 +43,10 @@ Desktop.ini
 # Mac
 .DS_Store
 
+# 내부 문서 (배포 불필요)
+DEPLOYMENT_CHECKLIST.md
+PERFORMANCE_OPTIMIZATION.md
+SECURITY_IMPROVEMENTS.md
+
 
 

@@ -135,35 +135,26 @@ def merge_audio_files(audio_files, pages_text=None):
         for idx, audio_file in enumerate(audio_files):
             print(f"🔄 {idx + 1}/{len(audio_files)} 오디오 처리 중...")
 
-            # 파일 경로인지 파일 객체인지 확인
-            if isinstance(audio_file, str):
-                # 이미 파일 경로인 경우 (Celery task에서 사용)
-                file_path = audio_file
-                temp_path = None
-            else:
-                # Django UploadedFile 객체인 경우
-                temp_path = os.path.join(temp_dir, f'temp_{uuid4().hex}.mp3')
+            temp_path = os.path.join(temp_dir, f'temp_{uuid4().hex}.mp3')
 
-                # 파일 저장
-                try:
-                    audio_file.seek(0)  # 파일 포인터 리셋
-                    if hasattr(audio_file, 'chunks'):
-                        with open(temp_path, 'wb') as f:
-                            for chunk in audio_file.chunks():
-                                f.write(chunk)
-                    else:
-                        with open(temp_path, 'wb') as f:
-                            f.write(audio_file.read())
-                except Exception as e:
-                    print(f"❌ 파일 저장 실패: {e}")
-                    traceback.print_exc()
-                    return None, None
-
-                file_path = temp_path
+            # 파일 저장
+            try:
+                audio_file.seek(0)  # 파일 포인터 리셋
+                if hasattr(audio_file, 'chunks'):
+                    with open(temp_path, 'wb') as f:
+                        for chunk in audio_file.chunks():
+                            f.write(chunk)
+                else:
+                    with open(temp_path, 'wb') as f:
+                        f.write(audio_file.read())
+            except Exception as e:
+                print(f"❌ 파일 저장 실패: {e}")
+                traceback.print_exc()
+                return None, None
 
             # AudioSegment 로드
             try:
-                audio_segment = AudioSegment.from_file(file_path)
+                audio_segment = AudioSegment.from_file(temp_path)
                 duration = len(audio_segment)  # ms 단위
                 print(f"✅ 로드 완료: {duration}ms")
 
@@ -196,13 +187,11 @@ def merge_audio_files(audio_files, pages_text=None):
             except Exception as e:
                 print(f"❌ AudioSegment 로드 실패: {e}")
                 traceback.print_exc()
-                if temp_path and os.path.exists(temp_path):
-                    os.remove(temp_path)
+                os.remove(temp_path)
                 return None, None
 
-            # 임시 파일 삭제 (Django UploadedFile로 생성한 경우만)
-            if temp_path and os.path.exists(temp_path):
-                os.remove(temp_path)
+            # 임시 파일 삭제
+            os.remove(temp_path)
 
         # 최종 오디오 export
 
