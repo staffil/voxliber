@@ -10,7 +10,7 @@ voxliber는 라틴어에서 유래했습니다. liber는 라틴어로 책, 자�
 - 2025.11.19 ~ 2026.01.02
 
 ## 오디오북 일부
-[첫 만남, 조용한 페이지 사이에서](audioSample.mp4)
+[첫 만남, 조용한 페이지 사이에서](https://voxliber.ink/book/content/21/)
 
 
 ## 사이트 링크
