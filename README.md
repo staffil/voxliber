@@ -70,3 +70,5 @@ voxliber는 라틴어에서 유래했습니다. liber는 라틴어로 책, 자�
 
 ## 초기 DB 설계도
 ![스크린샷](voxliberDB.png) 
+
+- 초기 ERD 컨셉과 현재 DB 와는 차이가 있을 수 있습니다.
