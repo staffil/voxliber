@@ -24,7 +24,7 @@
   <div class="main-content-wrapper">
 <div class="promo-container-wrapper">
   <!-- 슬라이더 -->
-  <!-- <div class="promo-container">
+  <div class="promo-container">
       {% for advertisment in advertisment_list %}
       <div class="promo-banner">
           <a href="{{ advertisment.link }}">
@@ -67,7 +67,7 @@
     </div>
   </div>
 </div>
- -->
+
 
   <!-- 
 <br>
@@ -120,44 +120,6 @@
 </div>
 -->
 
-<section class="hero-section">
-  <div class="hero-background">
-    {% for news in news_list %}
-      {% if news.news_img %}
-        <img src="{{ news.news_img.url }}" alt="VOXLIBER" loading="lazy">
-      {% else %}
-        <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
-      {% endif %}
-    {% empty %}
-      <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
-    {% endfor %}
-  </div>
-
-  <div class="hero-overlay" style="border-radius: 15px;"></div>
-
-  <div class="hero-content">
-    <h1 class="hero-title">목소리로 듣는 이야기</h1>
-    <p class="hero-subtitle">AI가 만드는 오디오북으로 새로운 독서 경험을 시작하세요</p>
-
-    {% if user.is_authenticated %}
-      <!-- 로그인 했으면 작품 만들기 버튼 -->
-      <a href="{% url 'book:book_tos' %}" class="hero-cta">
-        <span>작품 만들기</span>
-        <span>→</span>
-      </a>
-    {% else %}
-      <!-- 로그인 안 했으면 로그인 카드 -->
-      <div class="login-card">
-
-            <a href="book/book_tos/" class="hero-cta" onclick="openLogin(); return false;" >
-          <span>작품 만들기</span>
-          <span>→</span>
-        </a>
-      </div>
-    {% endif %}
-
-  </div>
-</section>
 
 
 
@@ -633,6 +595,44 @@ document.addEventListener("DOMContentLoaded", () => {
   </div>
 </section>
 
+<section class="hero-section">
+  <div class="hero-background">
+    {% for news in news_list %}
+      {% if news.news_img %}
+        <img src="{{ news.news_img.url }}" alt="VOXLIBER" loading="lazy">
+      {% else %}
+        <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
+      {% endif %}
+    {% empty %}
+      <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
+    {% endfor %}
+  </div>
+
+  <div class="hero-overlay" style="border-radius: 15px;"></div>
+
+  <div class="hero-content">
+    <h1 class="hero-title">목소리로 듣는 이야기</h1>
+    <p class="hero-subtitle">AI가 만드는 오디오북으로 새로운 독서 경험을 시작하세요</p>
+
+    {% if user.is_authenticated %}
+      <!-- 로그인 했으면 작품 만들기 버튼 -->
+      <a href="{% url 'book:book_tos' %}" class="hero-cta">
+        <span>작품 만들기</span>
+        <span>→</span>
+      </a>
+    {% else %}
+      <!-- 로그인 안 했으면 로그인 카드 -->
+      <div class="login-card">
+
+            <a href="book/book_tos/" class="hero-cta" onclick="openLogin(); return false;" >
+          <span>작품 만들기</span>
+          <span>→</span>
+        </a>
+      </div>
+    {% endif %}
+
+  </div>
+</section>
 
 
     <!-- 실시간 인기 차트 -->
