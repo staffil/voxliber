@@ -35,6 +35,33 @@
   transform: scale(1.08);
 }
 
+/* 광고 타이틀 - 왼쪽 하단 */
+.promo-title {
+  position: absolute;
+  bottom: 70px;
+  left: 20px;
+  color: #000;
+  font-size: 9px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 5px 10px;
+  border-radius: 4px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  z-index: 5;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.promo-banner:hover .promo-title {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 /* Prev/Next 버튼 */
 .promo-nav {
   position: absolute;
@@ -153,6 +180,12 @@
   }
   .promo-nav-prev { left: 18px; }
   .promo-nav-next { right: 18px; }
+  .promo-title {
+    font-size: 8.5px;
+    bottom: 65px;
+    left: 18px;
+    padding: 4px 9px;
+  }
 }
 
 @media (max-width: 992px) {
@@ -173,6 +206,12 @@
   .promo-counter {
     padding: 7px 14px;
     font-size: 13px;
+  }
+  .promo-title {
+    font-size: 8px;
+    bottom: 60px;
+    left: 16px;
+    padding: 4px 8px;
   }
 }
 
@@ -223,6 +262,14 @@
   .promo-indicators .indicator.active {
     width: 20px;
   }
+  .promo-title {
+    font-size: 7px;
+    bottom: 55px;
+    left: 12px;
+    padding: 3px 7px;
+    border-radius: 3px;
+    max-width: 55%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -261,6 +308,14 @@
   }
   .promo-indicators .indicator.active {
     width: 18px;
+  }
+  .promo-title {
+    font-size: 6px;
+    bottom: 45px;
+    left: 8px;
+    padding: 3px 6px;
+    border-radius: 3px;
+    max-width: 50%;
   }
 }
 
@@ -326,5 +381,12 @@
   }
   .promo-indicators .indicator.active {
     width: 14px;
+  }
+  .promo-title {
+    font-size: 5px;
+    bottom: 40px;
+    left: 6px;
+    padding: 2px 5px;
+    max-width: 45%;
   }
 }

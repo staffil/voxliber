@@ -29,11 +29,11 @@
       <div class="promo-banner">
           <a href="{{ advertisment.link }}">
               <img src="{{ advertisment.advertisment_img.url }}" alt="이벤트" loading="lazy">
-
+              {% if advertisment.title %}
+              <span class="promo-title">{{ advertisment.title }}</span>
+              {% endif %}
           </a>
-
       </div>
-
       {% endfor %}
   </div>
 
