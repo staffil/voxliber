@@ -182,7 +182,7 @@
   .promo-nav-next { right: 18px; }
   .promo-title {
     font-size: 8.5px;
-    bottom: 65px;
+    bottom: 35px;
     left: 18px;
     padding: 4px 9px;
   }
@@ -209,7 +209,7 @@
   }
   .promo-title {
     font-size: 8px;
-    bottom: 60px;
+    bottom: 35px;
     left: 16px;
     padding: 4px 8px;
   }
@@ -264,7 +264,7 @@
   }
   .promo-title {
     font-size: 7px;
-    bottom: 55px;
+    bottom: 25px;
     left: 12px;
     padding: 3px 7px;
     border-radius: 3px;
@@ -311,7 +311,7 @@
   }
   .promo-title {
     font-size: 6px;
-    bottom: 45px;
+    bottom: 25px;
     left: 8px;
     padding: 3px 6px;
     border-radius: 3px;
@@ -384,7 +384,7 @@
   }
   .promo-title {
     font-size: 5px;
-    bottom: 40px;
+    bottom: 25px;
     left: 6px;
     padding: 2px 5px;
     max-width: 45%;
