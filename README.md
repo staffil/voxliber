@@ -1,6 +1,5 @@
 # VOXLIBER : 웹 오디오북 사이트
 
-## 초기 DB 설계도
 ![voxlibe LOGO](logo3.png) 
 
 ## 프로젝트 소개
