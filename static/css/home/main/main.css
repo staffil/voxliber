@@ -536,4 +536,97 @@ body.light-mode .hero-subtitle {
    Promo Banner, Poem Slider 등 다른 섹션도 필요시 추가 가능
    ======================================== */
 
-/* 이제 이 CSS를 그대로 사용하시면 모든 문제가 해결된 상태로 동작합니다! */
+/* ========================================
+   Footer Info Line (사업자 정보)
+   ======================================== */
+.info-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.3s ease;
+}
+
+.info-line:last-of-type {
+  border-bottom: none;
+  margin-bottom: 16px;
+}
+
+.info-line:hover {
+  color: var(--text-primary);
+  padding-left: 8px;
+}
+
+/* 아이콘 스타일링 (선택적) */
+.info-line::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  background: var(--primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* 라이트 모드 */
+body.light-mode .info-line {
+  color: #64748b;
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+body.light-mode .info-line:hover {
+  color: #1e293b;
+}
+
+/* Footer Brand 내 info-line 컨테이너 */
+.footer-brand .info-line {
+  font-weight: 400;
+  letter-spacing: -0.2px;
+}
+
+/* 반응형 - 태블릿 */
+@media (max-width: 1024px) {
+  .info-line {
+    font-size: 12.5px;
+    padding: 7px 0;
+  }
+}
+
+/* 반응형 - 모바일 */
+@media (max-width: 768px) {
+  .info-line {
+    font-size: 12px;
+    padding: 6px 0;
+    gap: 6px;
+  }
+
+  .info-line:hover {
+    padding-left: 4px;
+  }
+}
+
+/* 반응형 - 소형 모바일 */
+@media (max-width: 480px) {
+  .info-line {
+    font-size: 11px;
+    padding: 5px 0;
+    flex-wrap: wrap;
+  }
+
+  .info-line::before {
+    width: 3px;
+    height: 3px;
+  }
+}
+
+/* 반응형 - 초소형 */
+@media (max-width: 360px) {
+  .info-line {
+    font-size: 10px;
+    padding: 4px 0;
+  }
+}
