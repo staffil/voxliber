@@ -1366,7 +1366,7 @@ def book_snap_list(request):
         return redirect('book:book_snap_detail', snap_id=first_snap.id)
 
     # 스냅이 없으면 빈 페이지
-    return render(request, "book/snap/snap.html", {"no_snaps": True})
+    return render(request, "book/snap/snap_detail.html", {"no_snaps": True})
 
 # 개인 북 스냅 리스트 페이지
 def my_book_snap_list(request):
