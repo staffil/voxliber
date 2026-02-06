@@ -654,7 +654,7 @@ def api_chat_view(request, llm_uuid):
             )
     elif request.user.is_authenticated:
         # 로그인 사용자는 기존 대화 가져오기
-        conversation, _ = ConversationMessage.objects.get_or_create(
+        conversation, _ = Conversation.objects.get_or_create(
             user=request.user,
             llm=llm,
         )
@@ -672,7 +672,7 @@ def api_chat_view(request, llm_uuid):
         defaults={'character_stats': {'hp': 100, 'max_hp': 100}}
     )
     
-    current_hp = conv_state.character_stats.get('hp', 0)
+    current_hp = conv_state.character_stats.get('hp', 100)
     max_hp = conv_state.character_stats.get('max_hp', 100)
 
     messages = conversation.messages.order_by('created_at')[:50]
@@ -726,6 +726,7 @@ def api_chat_send(request, llm_uuid):
     - conversation_id가 있으면 기존 대화에 메시지 추가
     """
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
+    print("🔥 api_chat_send HIT")
 
     try:
         data = json.loads(request.body)
