@@ -563,7 +563,7 @@ def api_login(request):
         return JsonResponse({
             'token': api_key_obj.key,  # token 필드 (필수)
             'user': {
-                'id': user.public_uuid,
+                'id': str(user.public_uuid),
                 'username': user.username,
                 'email': user.email,
                 'nickname': user.nickname,
