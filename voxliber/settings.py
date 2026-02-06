@@ -52,11 +52,11 @@ API_KEY = os.getenv("API_KEY")
 
 # 프로덕션 호스트
 ALLOWED_HOSTS = [
-    # 'voxliber.ink',
-    # 'www.voxliber.ink',
+    'voxliber.ink',
+    'www.voxliber.ink',
     #  "192.168.35.8",
     #  "127.0.0.1",
-    "*"
+
 ]
 
 # 개발 환경
