@@ -1,14 +1,12 @@
 
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ snap.snap_title }} - VOXLIBER 쇼츠</title>
-    <link rel="stylesheet" href="{% static 'css/book/snap/snap_detail.css' %}">
-
+<link rel="stylesheet" href="{% static 'css/book/snap/snap_detail.css' %}">
 </head>
 <body>
     <!-- 메인 쇼츠 컨테이너 -->
@@ -32,7 +30,7 @@
         <!-- 비디오 영역 -->
         <div class="video-wrapper" id="videoWrapper">
             {% if snap.snap_video %}
-                <video id="mainVideo" playsinline loop autoplay>
+                <video id="mainVideo" playsinline loop>
                     <source src="{{ snap.snap_video.url }}" type="video/mp4">
                 </video>
                 <div class="play-overlay visible" id="playOverlay">
@@ -41,8 +39,8 @@
                 <div class="video-controls">
     <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
 
-    <div class="seekbar-container" id="seekBarContainer">
-        <div class="seekbar-progress" id="seekBarProgress"></div>
+    <div class="seekbar-container">
+        <input type="range" id="seekBar" min="0" max="100" value="0" data-login-required>
     </div>
 </div>
             {% elif snap.snap_image %}
@@ -60,7 +58,7 @@
 <!-- 오른쪽 액션 버튼들 -->
 <div class="actions-panel">
     <!-- 좋아요 -->
-    <div class="action-btn" id="likeBtn" data-snap-id="{{ snap.id }}">
+    <div class="action-btn" id="likeBtn" data-snap-id="{{ snap.id }}" data-login-required>
         <div class="action-icon" id="likeIcon">
             {% if user in snap.booksnap_like.all %}
                 ❤️
@@ -72,19 +70,19 @@
     </div>
 
     <!-- 댓글 -->
-    <div class="action-btn" id="commentBtn" data-snap-id="{{ snap.id }}">
+    <div class="action-btn" id="commentBtn" data-snap-id="{{ snap.id }}" data-login-required>
         <div class="action-icon">💬</div>
         <div class="action-count">{{ comments.count }}</div>
     </div>
 
     <!-- 공유 -->
-    <div class="action-btn" id="shareBtn">
+    <div class="action-btn" id="shareBtn" data-login-required>
         <div class="action-icon">🔗</div>
         <div class="action-count">공유</div>
     </div>
 
     <!-- 조회수 -->
-    <div class="action-btn" id="viewBtn" data-snap-id="{{ snap.id }}">
+    <div class="action-btn" id="viewBtn" data-snap-id="{{ snap.id }}" data-login-required>
         <div class="action-icon">👁️</div>
         <div class="action-count" id="viewCount">{{ snap.views|default:0 }}</div>
     </div>
@@ -106,7 +104,7 @@
             </div>
             <div class="snap-title">{{ snap.snap_title }}</div>
             <div class="snap-description">{{ snap.book_comment }}</div>
-<a href="{{ snap.book_link }}" class="arrow-link">책 보러 가기</a>
+<a href="{{ snap.book_link }}" class="arrow-link" data-login-required>책 보러 가기</a>
         </div>
 
 
@@ -138,26 +136,25 @@
         </div>
         {% if user.is_authenticated %}
             <div class="comment-input-wrapper">
-                <input type="text" class="comment-input" id="commentInput" placeholder="댓글을 입력하세요..." onkeypress="handleCommentKeyPress(event)">
+                <input type="text" class="comment-input" id="commentInput" placeholder="댓글을 입력하세요..." onkeypress="handleCommentKeyPress(event)" data-login-required>
             </div>
         {% endif %}
     </div>
 <script>
-const snapId = {{ snap.id }};
-const prevSnapId = {{ prev_snap_id|default:"null" }};
-const nextSnapId = {{ next_snap_id|default:"null" }};
+const snapId = '{{ snap.public_uuid }}';
+const prevSnapId = '{{ prev_snap_uuid|default:"null" }}';
+const nextSnapId = '{{ next_snap_uuid|default:"null" }}';
 const video = document.getElementById('mainVideo');
 const playOverlay = document.getElementById('playOverlay');
 const videoWrapper = document.getElementById('videoWrapper');
 const closeCommentsBtn = document.querySelector('#commentsPanel .close-btn');
 const likeBtn = document.getElementById('likeBtn');
 const viewBtn = document.getElementById('viewBtn');
-const seekBarContainer = document.getElementById("seekBarContainer");
-const seekBarProgress = document.getElementById("seekBarProgress");
+const seekBar = document.getElementById("seekBar");
 const timeDisplay = document.getElementById("timeDisplay");
 
 // ===================== 조회수 증가 (중복 방지) =====================
-fetch(`/book/book-snap/${snapId}/view/`, {
+fetch(`/book/book/snap/${snapId}/view/`, {
     method: 'POST',
     headers: { 'X-CSRFToken': getCookie('csrftoken') }
 })
@@ -170,11 +167,6 @@ fetch(`/book/book-snap/${snapId}/view/`, {
 // ===================== 비디오 컨트롤 =====================
 if (video) {
     videoWrapper.addEventListener('click', function(e) {
-        // seekbar 클릭이면 재생/일시정지 토글 금지
-        if (e.target.closest('.seekbar-container') || e.target.closest('.seekbar-progress')) {
-            return;
-        }
-
         if (e.target === video || e.target === playOverlay || e.target.closest('.play-overlay')) {
             if (video.paused) {
                 video.play();
@@ -189,22 +181,12 @@ if (video) {
     video.addEventListener('play', () => playOverlay.classList.remove('visible'));
     video.addEventListener('pause', () => playOverlay.classList.add('visible'));
 
-    // 비디오 로드 완료 시 자동 재생
-    video.addEventListener('loadeddata', () => {
-        video.play().then(() => {
-            playOverlay.classList.remove('visible');
-        }).catch(() => {
-            playOverlay.classList.add('visible');
-        });
-    });
-
-    // 즉시 재생 시도
     video.play().catch(() => playOverlay.classList.add('visible'));
 }
 
 // ===================== 좋아요 토글 =====================
 likeBtn.addEventListener('click', function() {
-    fetch(`/book/book-snap/${snapId}/like/`, {
+    fetch(`/book/book/snap/${snapId}/like/`, {
         method: 'POST',
         headers: { 'X-CSRFToken': getCookie('csrftoken') }
     })
@@ -231,7 +213,7 @@ function toggleComments(event) {
     const content = event.target.value.trim();
     if (!content) return;
 
-    fetch(`/book/book-snap/${snapId}/comment/`, {
+    fetch(`/book/book/snap/${snapId}/comment/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -268,15 +250,14 @@ document.getElementById('shareBtn').addEventListener('click', function() {
 
 // ===================== 스냅 네비게이션 =====================
 function navigateSnap(snapId) {
-    window.location.href = `/book/book-snap/${snapId}/`;
+    window.location.href = `/book/book/snap/${snapId}/`;
 }
 
 // ===================== 드래그/스와이프/휠/키보드 =====================
 let startY = 0, startX = 0, isDragging = false, startTime = 0;
 
 function startDrag(e) {
-    // seekbar, 버튼, 링크, 입력 필드 등은 드래그에서 제외
-    if (e.target.closest('button, a, input, .action-btn, .video-controls, .seekbar-container')) return;
+    if (e.target.closest('button, a, input, .action-btn')) return;
     startY = e.touches ? e.touches[0].clientY : e.clientY;
     startX = e.touches ? e.touches[0].clientX : e.clientX;
     startTime = Date.now();
@@ -333,7 +314,7 @@ function handleCommentKeyPress(event) {
     const content = event.target.value.trim();
     if (!content) return;
 
-    fetch(`/book/book-snap/${snapId}/comment/`, {
+    fetch(`/book/book/snap/${snapId}/comment/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -378,27 +359,23 @@ function formatTime(t) {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-// 메타데이터 로드 시 총 길이 표시
 video.addEventListener("loadedmetadata", () => {
     timeDisplay.textContent = `00:00 / ${formatTime(video.duration)}`;
 });
 
-// 재생 중 진행 상황 업데이트 (book_detail 방식)
 video.addEventListener("timeupdate", () => {
     const progress = (video.currentTime / video.duration) * 100;
-    seekBarProgress.style.width = progress + '%';
+    seekBar.value = progress;
     timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
 });
 
-// 진행 바 클릭으로 탐색 (book_detail 방식 - 간단하고 확실함)
-seekBarContainer.addEventListener("click", (e) => {
+seekBar.addEventListener("input", (e) => {
     e.stopPropagation();
-    const rect = seekBarContainer.getBoundingClientRect();
-    const percent = (e.clientX - rect.left) / rect.width;
-    video.currentTime = percent * video.duration;
 });
-
-seekBarProgress.addEventListener("click", (e) => {
+seekBar.addEventListener("mousedown", (e) => {
+    e.stopPropagation();
+});
+seekBar.addEventListener("touchstart", (e) => {
     e.stopPropagation();
 });
 </script>

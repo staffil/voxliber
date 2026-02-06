@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ novel.title }} - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage/novel_result.css' %}?v=2">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="novel-container">
+
+    <!-- 제목 -->
+    <h1 class="novel-title">{{ novel.title }}</h1>
+
+    <!-- 프롤로그 -->
+    {% if novel.prologue %}
+    <p class="novel-prologue">{{ novel.prologue|safe }}</p>
+    {% endif %}
+
+    <!-- 챕터 목록 -->
+    {% for chapter in novel.chapters %}
+    <section class="chapter">
+
+        <!-- 챕터별 이미지 -->
+        {% if chapter.image and chapter.image.image %}
+        <div class="chapter-image">
+            <img
+                src="{{ chapter.image.image.url }}"
+                alt="{{ chapter.image.title|default:'챕터 이미지' }}"
+                loading="lazy"
+                onerror="this.parentElement.style.display='none';">
+            {% if chapter.image.title %}
+            <div class="chapter-image-title">{{ chapter.image.title }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- 챕터 제목 -->
+        <h2 class="chapter-title">
+            {{ chapter.title }}
+            {% if chapter.hp_range %}
+            <span class="hp-range">
+                HP {{ chapter.hp_range.0 }}{% if chapter.hp_range.1 %} ~ {{ chapter.hp_range.1 }}{% endif %}
+            </span>
+            {% endif %}
+        </h2>
+
+        <!-- 대화 내용 -->
+        <div class="chapter-content">
+            {% for msg in chapter.messages %}
+            <div class="dialogue-block {% if msg.role == 'assistant' %}assistant{% else %}user{% endif %}">
+                <p class="dialogue-text" data-role="{{ msg.role }}" data-speaker="{{ msg.speaker }}">
+                    {% if msg.role == 'user' %}
+                    <strong>{{ msg.speaker }}:</strong>
+                    {% endif %}
+                    <span class="content-text">{{ msg.content|safe }}</span>
+                </p>
+
+                {% if msg.audio %}
+                <div class="audio-controls">
+                    <button class="tts-btn" data-audio-id="audio-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+                        <span class="btn-icon">&#9654;</span>
+                        <span class="btn-text">음성 듣기</span>
+                    </button>
+                    <audio id="audio-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" src="{{ msg.audio }}" preload="none"></audio>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+    </section>
+    {% empty %}
+    <div class="no-chapters">
+        <p>아직 이야기가 없습니다.<br>캐릭터와 대화를 시작해보세요.</p>
+    </div>
+    {% endfor %}
+
+    <!-- 에필로그 -->
+    {% if novel.epilogue %}
+    <footer class="novel-epilogue">
+        {{ novel.epilogue|safe }}
+    </footer>
+    {% endif %}
+
+    <!-- 공유 설정 (본인만) -->
+    {% if conversation.user == request.user %}
+    <form method="POST" action="">
+        {% csrf_token %}
+        <div class="share-consent-box">
+            <button type="submit"
+                    name="share_choice"
+                    value="{% if conversation.is_public %}off{% else %}on{% endif %}"
+                    class="share-btn">
+                <span class="share-text {% if conversation.is_public %}share-off{% else %}share-on{% endif %}">
+                    {% if conversation.is_public %}공개 취소{% else %}이야기 공유하기{% endif %}
+                </span>
+            </button>
+            <p class="share-note">
+                {% if conversation.is_public %}
+                현재 이 이야기는 공개되어 있습니다.
+                {% else %}
+                이 이야기를 공유하면 다른 사람들도 읽을 수 있습니다.
+                {% endif %}
+            </p>
+        </div>
+    </form>
+    {% endif %}
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 나레이션/대사 포맷팅
+    document.querySelectorAll('.dialogue-block.assistant .content-text').forEach(el => {
+        let html = el.innerHTML;
+
+        // "대사" 를 강조
+        html = html.replace(/"([^"]+)"/g, '<q>$1</q>');
+
+        // *나레이션* 을 이탤릭
+        html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+        // [감정] 태그
+        html = html.replace(/\[([^\]]+)\]/g, '<span style="color:#a78bfa;font-size:0.85em;">[$1]</span>');
+
+        el.innerHTML = html;
+    });
+
+    // 오디오 재생
+    let currentAudio = null;
+    let currentBtn = null;
+
+    document.querySelectorAll('.tts-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const audioId = this.getAttribute('data-audio-id');
+            const audio = document.getElementById(audioId);
+            const btnText = this.querySelector('.btn-text');
+            const btnIcon = this.querySelector('.btn-icon');
+
+            if (!audio) return;
+
+            // 다른 오디오 중지
+            if (currentAudio && currentAudio !== audio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                if (currentBtn) {
+                    currentBtn.classList.remove('playing');
+                    currentBtn.querySelector('.btn-text').textContent = '음성 듣기';
+                    currentBtn.querySelector('.btn-icon').innerHTML = '&#9654;';
+                }
+            }
+
+            if (audio.paused) {
+                audio.play();
+                this.classList.add('playing');
+                btnText.textContent = '일시정지';
+                btnIcon.innerHTML = '&#10074;&#10074;';
+                currentAudio = audio;
+                currentBtn = this;
+            } else {
+                audio.pause();
+                this.classList.remove('playing');
+                btnText.textContent = '음성 듣기';
+                btnIcon.innerHTML = '&#9654;';
+                currentAudio = null;
+                currentBtn = null;
+            }
+        });
+    });
+
+    // 오디오 종료 시
+    document.querySelectorAll('audio').forEach(audio => {
+        audio.addEventListener('ended', function() {
+            const btn = document.querySelector(`[data-audio-id="${audio.id}"]`);
+            if (btn) {
+                btn.classList.remove('playing');
+                btn.querySelector('.btn-text').textContent = '음성 듣기';
+                btn.querySelector('.btn-icon').innerHTML = '&#9654;';
+            }
+            currentAudio = null;
+            currentBtn = null;
+        });
+    });
+});
+</script>
+{% endblock %}

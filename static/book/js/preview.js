@@ -24,7 +24,7 @@ async function goToPreview() {
     await saveDraft();
 
     // 미리듣기 페이지로 이동 (쿼리 파라미터로 bookId 전달)
-    window.location.href = `/book/preview/?book_id=${bookId}`;
+  window.location.href = `/book/preview/?public_uuid=${bookId}`;
 }
 
 // CSRF 토큰 가져오기

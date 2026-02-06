@@ -26,6 +26,47 @@
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.4);
 }
+    /* 탭 버튼 */
+.dashboard-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.tab-btn {
+    padding: 10px 18px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+/* 탭 콘텐츠 */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* light mode */
+body.light-mode .tab-btn {
+    background: #f1f3f5;
+    color: #222;
+}
+
+body.light-mode .tab-btn.active {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+}
 
 /* 컨테이너 */
 .dashboard-container {

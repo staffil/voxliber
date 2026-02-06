@@ -41,6 +41,8 @@
   <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/logo3.png' %}">
   <link rel="shortcut icon" href="{% static 'favicon.ico' %}">
   <link rel="stylesheet" href="{% static 'css/common/variables.css' %}">
+      <link rel="stylesheet" href="{% static 'css/common/appWarning.css' %}">
+
   {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -88,8 +90,14 @@
                 </a>
                 <a href="{% url 'book:my_bookmarks' %}" class="mobile-nav-item">
                     <span class="nav-icon">🔖</span>
-                    <span>내 북마크</span>
+                    <span>북마크</span>
                 </a>
+                <a href="my/book/list/" class="mobile-nav-item">
+                    <span class="nav-icon">📕</span>
+                    <span>북 리스트</span>
+                </a>
+
+
                 <div class="mobile-menu-divider"></div>
                 <a href="{% url 'register:logout' %}" class="mobile-nav-item mobile-logout-btn">
                     <span class="nav-icon">🚪</span>
@@ -124,11 +132,63 @@
   </div>
 {% endif %}
 
+{% if show_login_card %}
+    <div class="login-overlay">
+        <div class="login-card">
+            <h2>로그인이 필요합니다</h2>
+            <p>콘텐츠를 보려면 로그인해주세요.</p>
+            <a href="{% url 'login' %}?next={{ request.path }}" class="login-btn">로그인</a>
+            <button onclick="closeLoginCard()">나중에</button>  <!-- 카드 닫기 -->
+        </div>
+    </div>
+    <div id="global-blur-overlay">
+  <div class="blur-blocker"></div>
+</div>
+    {% endif %}
+
+
 <!-- 페이지 컨텐츠 -->
 {% block content %}{% endblock %}
+<script src="{% static 'js/common/login_btn.js' %}"></script>
+<!-- <script src="{% static 'js/common/appWarning.js' %}"></script> -->
+<script>
+  window.IS_AUTHENTICATED = {{ request.user.is_authenticated|yesno:"true,false" }};
+</script>
+
 
 <!-- 공통 JS -->
 <script>
+console.log(`
+     @@@@@    #####                            @@@@@@    
+    @@@@@@@  #######                          @@@@@@@@      
+   @@@@@@@@@##########                       @@@@@@@@@       
+   @@@@@@@@@@##########                     @@@@@@@@@@     
+    @@@@@@@@@@##########                   @@@@@@@@@@      
+     @@@@@@@@@@##########                 @@@@@@@@@@       
+      @@@@@@@@@@##########               @@@@@@@@@@        
+       @@@@@@@@@@##########             @@@@@@@@@@         
+        @@@@@@@@@@##########           @@@@@@@@@@          
+         @@@@@@@@@@##########         @@@@@@@@@@           
+          @@@@@@@@@@##########       @@@@@@@@@@            
+           @@@@@@@@@@##########     @@@@@@@@@@             
+            @@@@@@@@@@##########   @@@@@@@@@@              
+             @@@@@@@@@@########## @@@@@@@@@@               
+              @@@@@@@@@@#########@@@@@@@@@@                
+               @@@@@@@@@@#######@@@@@@@@@@                 
+                @@@@@@@@@@#####@@@@@@@@@@                  
+                 @@@@@@@@@@###@@@@@@@@@@                   
+                  @@@@@@@@@@#@@@@@@@@@@                    
+                   @@@@@@@@@@@@@@@@@@@#                    
+                    @@@@@@@@@@@@@@@@@###
+                     @@@@@@@@@@@@@@@#####                    
+                      @@@@@@@@@@@@@#######    ######################                             
+                       @@@@@@@@@@@#######    ########################
+                        @@@@@@@@@ ######    ##########################
+                         @@@@@@@   ####      ########################
+                          @@@@@     ##        ######################
+  `, 
+);
+
   function notLogin() {
     alert("로그인을 먼저 해주세요.");
     openLogin();
@@ -185,6 +245,41 @@
       lazyImages.forEach(img => imageObserver.observe(img));
     }
   });
+
+
+  document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll('[data-login-required]').forEach(btn => {
+    btn.addEventListener("click", e => {
+      if (!window.IS_AUTHENTICATED) {
+        e.preventDefault();
+        openLogin(); // 네가 이미 만든 로그인 카드 / 모달
+      }
+    });
+  });
+  
+});
+
+if (!window.IS_AUTHENTICATED) {
+  document.addEventListener("DOMContentLoaded", () => {
+    // 모든 입력 요소 선택
+    const inputs = document.querySelectorAll(
+      "input, textarea, select, [contenteditable]"
+    );
+
+    inputs.forEach(el => {
+      // 포커스 자체 제거
+      el.blur();
+
+      // 입력 차단
+      el.setAttribute("disabled", "disabled");
+
+      // contenteditable 대응
+      if (el.hasAttribute("contenteditable")) {
+        el.setAttribute("contenteditable", "false");
+      }
+    });
+  });
+}
 </script>
 
 {% block extra_js %}{% endblock %}

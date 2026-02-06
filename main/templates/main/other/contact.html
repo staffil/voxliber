@@ -11,7 +11,7 @@
 <div class="contact-wrapper">
     <div class="contact-header">
         <h1>문의 목록</h1>
-        <a href="contact_write/" class="contact-write-btn">문의하기</a>
+        <a href="contact/write/" class="contact-write-btn" data-login-required>문의하기</a>
     </div>
 
     {% if contacts %}
@@ -36,7 +36,7 @@
         {% endif %}
     </td>
     <td>
-        <a href="{% url 'main:contact_detail' contact.id %}">
+        <a href="{% url 'main:contact_detail' contact.id %}" data-login-required>
             {{ contact.subject }}
         </a>
     </td>

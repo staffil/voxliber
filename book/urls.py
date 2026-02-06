@@ -9,17 +9,17 @@ urlpatterns=[
     # 검색 페이지
     path("search/", views.search_page, name="search_page"),
 
-    path("book_tos/", views.book_tos, name="book_tos"),
-    path("book_profile/", views.book_profile, name="book_profile"),
-    path("book_serialization/", views.book_serialization, name="book_serialization"),
-    path("detail/<int:book_id>/", views.book_detail, name="book_detail"),
-    path("content/<int:content_id>/", views.content_detail, name="content_detail"),
-    path("content/<int:content_id>/save-listening/", views.save_listening_history, name="save_listening_history"),
+    path("book/tos/", views.book_tos, name="book_tos"),
+    path("book/profile/", views.book_profile, name="book_profile"),
+    path("book/serialization/", views.book_serialization, name="book_serialization"),
+    path("detail/<uuid:book_uuid>/", views.book_detail, name="book_detail"),
+    path("content/<uuid:content_uuid>/", views.content_detail, name="content_detail"),
+    path("content/<uuid:content_uuid>/save-listening/", views.save_listening_history, name="save_listening_history"),
 
-    path("review/<int:book_id>/", views.submit_review, name="submit_review"),
-    path("comment/<int:book_id>/", views.submit_book_comment, name="submit_book_comment"),
-    path("my_books/", views.my_books, name="my_books"),
-    path("delete/<int:book_id>/", views.delete_book, name="delete_book"),
+    path("review/<uuid:book_uuid>/", views.submit_review, name="submit_review"),
+    path("comment/<uuid:book_uuid>/", views.submit_book_comment, name="submit_book_comment"),
+    path("my/books/", views.my_books, name="my_books"),
+    path("delete/<uuid:book_uuid>/", views.delete_book, name="delete_book"),
     path("tags/search/", views.search_tags, name="search_tags"),
     path("tags/add/", views.add_tags, name="add_tags"),
 
@@ -41,19 +41,19 @@ urlpatterns=[
     path("preview/task-status/<str:task_id>/", views.preview_task_status, name="preview_task_status"),
 
     # 북 스냅 페이지
-    path("book-snap/", views.book_snap_list, name="book_snap_list"),
-    path("book-snap/<int:snap_id>/", views.book_snap_detail, name="book_snap_detail"),
+    path("book/snap/", views.book_snap_list, name="book_snap_list"),
+    path("book/snap/<uuid:snap_uuid>/", views.book_snap_detail, name="book_snap_detail"),
 
     # API (AJAX)
-    path("book-snap/<int:snap_id>/like/", views.book_snap_like, name="book_snap_like"),
-    path("book-snap/<int:snap_id>/view/", views.book_snap_view_count, name="book_snap_view_count"),
-    path("book-snap/<int:snap_id>/comment/", views.book_snap_comment, name="book_snap_comment"),
+    path("book/snap/<uuid:snap_uuid>/like/", views.book_snap_like, name="book_snap_like"),
+    path("book/snap/<uuid:snap_uuid>/view/", views.book_snap_view_count, name="book_snap_view_count"),
+    path("book/snap/<uuid:snap_uuid>/comment/", views.book_snap_comment, name="book_snap_comment"),
 
     # 스냅 리스트
-    path("my-snap-list/", views.my_book_snap_list, name="my_book_snap_list"),
-    path("create_snap/", views.create_book_snap, name="create_book_snap"),
-    path("snap/<int:snap_id>/edit/", views.edit_snap, name="edit_snap"),
-    path("snap/<int:snap_id>/delete/", views.delete_snap, name="delete_snap"),
+    path("my/snap/list/", views.my_book_snap_list, name="my_book_snap_list"),
+    path("create/snap/", views.create_book_snap, name="create_book_snap"),
+    path("snap/<uuid:snap_uuid>/edit/", views.edit_snap, name="edit_snap"),
+    path("snap/<uuid:snap_uuid>/delete/", views.delete_snap, name="delete_snap"),
 
     # test
     path("test/", views.test, name="test"),
@@ -61,28 +61,28 @@ urlpatterns=[
 
 
     # 작가 센터
-    path("author-dashboard/", views.author_dashboard, name="author_dashboard"),
-    path('<int:book_id>/toggle_status/', views.toggle_status, name='toggle_status'),
+    path("author/dashboard/", views.author_dashboard, name="author_dashboard"),
+    path('<uuid:book_uuid>/toggle_status/', views.toggle_status, name='toggle_status'),
 
 
     # 공지사항
-    path("announcement/create/<int:book_id>/", views.create_announcement, name="create_announcement"),
+    path("announcement/create/<uuid:book_uuid>/", views.create_announcement, name="create_announcement"),
     path("announcement/update/<int:announcement_id>/", views.update_announcement, name="update_announcement"),
     path("announcement/delete/<int:announcement_id>/", views.delete_announcement, name="delete_announcement"),
 
     # 에피소드 삭제
-    path("content/delete/<int:content_id>/", views.delete_content, name="delete_content"),
+    path("content/delete/<uuid:content_uuid>/", views.delete_content, name="delete_content"),
 
     # 에피소드 순서 변경
-    path("detail/<int:book_id>/reorder/", views.reorder_content, name="reorder_content"),
+    path("detail/<uuid:book_uuid>/reorder/", views.reorder_content, name="reorder_content"),
 
     # 북마크/메모 (콘텐츠 북마크)
-    path("content/<int:content_id>/bookmark/save/", views.save_bookmark, name="save_bookmark"),
-    path("content/<int:content_id>/bookmark/list/", views.get_bookmarks, name="get_bookmarks"),
+    path("content/<uuid:content_uuid>/bookmark/save/", views.save_bookmark, name="save_bookmark"),
+    path("content/<uuid:content_uuid>/bookmark/list/", views.get_bookmarks, name="get_bookmarks"),
     path("bookmark/delete/<int:bookmark_id>/", views.delete_bookmark, name="delete_bookmark"),
 
     # 북마크 (책 북마크 - 나중에 보기)
-    path("bookmark/<int:book_id>/toggle/", views.toggle_bookmark, name="toggle_bookmark"),
+    path("bookmark/<uuid:book_uuid>/toggle/", views.toggle_bookmark, name="toggle_bookmark"),
     path("my-bookmarks/", views.my_bookmarks, name="my_bookmarks"),
 
     # ==================== 📱 API 엔드포인트 (안드로이드 앱용) ====================
@@ -92,18 +92,18 @@ urlpatterns=[
     # 📚 Books
     path("api/books/", api_views.api_books_list, name="api_books_list"),
     path("api/books/search/", api_views.api_search_books, name="api_search_books"),
-    path("api/books/<int:book_id>/", api_views.api_book_detail, name="api_book_detail"),
+    path("api/books/<uuid:book_uuid>/", api_views.api_book_detail, name="api_book_detail"),
 
     # 📖 Contents (Episodes)
-    path("api/books/<int:book_id>/contents/", api_views.api_contents_list, name="api_contents_list"),
-    path("api/contents/<int:content_id>/", api_views.api_content_detail, name="api_content_detail"),
+    path("api/books/<uuid:book_uuid>/contents/", api_views.api_contents_list, name="api_contents_list"),
+    path("api/contents/<uuid:content_uuid>/", api_views.api_content_detail, name="api_content_detail"),
 
     # ⭐ Reviews
-    path("api/books/<int:book_id>/reviews/", api_views.api_reviews_list, name="api_reviews_list"),
-    path("api/books/<int:book_id>/review/", api_views.api_book_review_create, name="api_book_review_create"),
+    path("api/books/<uuid:book_uuid>/reviews/", api_views.api_reviews_list, name="api_reviews_list"),
+    path("api/books/<uuid:book_uuid>/review/", api_views.api_book_review_create, name="api_book_review_create"),
 
     # 💬 Comments
-    path("api/books/<int:book_id>/comments/", api_views.api_book_comments, name="api_book_comments"),
+    path("api/books/<uuid:book_uuid>/comments/", api_views.api_book_comments, name="api_book_comments"),
 
     # 📊 User Progress
     path("api/my/progress/", api_views.api_my_progress, name="api_my_progress"),
@@ -127,17 +127,17 @@ urlpatterns=[
     path("api/books/top-rated/", api_views.api_top_rated_books, name="api_top_rated_books"),
     path("api/banners/", api_views.api_banners, name="api_banners"),
     path("api/genres/", api_views.api_genres_list, name="api_genres_list"),
-    path("api/book_detail/<int:book_id>/", api_views.api_book_detail, name="api_book_detail"),
+    path("api/book_detail/<uuid:book_uuid>/", api_views.api_book_detail, name="api_book_detail"),
     path("api/genres/<int:genre_id>/books/", api_views.api_genre_books, name="api_genre_books"),
     path("api/news/", api_views.api_main_new, name="api_main_new"),
     path("api/main_view/", api_views.snap_main_view, name="snap_main_view"),
-    path("api/ai_recommned/<int:user_id>/", api_views.api_ai_recommned, name="api_ai_recommned"),
+    path("api/ai_recommned/<int:user_id>/", api_views.api_ai_recommend, name="api_ai_recommend"),
 
     # 📸 Snaps
     path("api/snaps/", api_views.api_snaps_list, name="api_snaps_list"),
-    path("api/snaps/<int:snap_id>/", api_views.api_snap_detail, name="api_snap_detail"),
-    path("api/snaps/<int:snap_id>/like/", api_views.api_snap_like, name="api_snap_like"),
-    path("api/snaps/<int:snap_id>/comment/", api_views.api_snap_comment, name="api_snap_comment"),
+    path("api/snaps/<uuid:snap_uuid>/", api_views.api_snap_detail, name="api_snap_detail"),
+    path("api/snaps/<uuid:snap_uuid>/like/", api_views.api_snap_like, name="api_snap_like"),
+    path("api/snaps/<uuid:snap_uuid>/comment/", api_views.api_snap_comment, name="api_snap_comment"),
 
     # 시 공모전(main)
     path("api/poem_list/", api_views.api_poem_main, name="api_poem_main"),
@@ -148,10 +148,11 @@ urlpatterns=[
     path("api/users/<int:user_id>/followers/", api_views.api_user_followers, name="api_user_followers"),
     path("api/users/<int:user_id>/following/", api_views.api_user_following, name="api_user_following"),
     path("api/following/feed/", api_views.api_following_feed, name="api_following_feed"),
+    path("follow/<int:user_id>/toggle/", views.toggle_follow, name="toggle_follow"),  # 웹용 팔로우
 
     # 🔖 Bookmark System
-    path("api/books/<int:book_id>/bookmark/", api_views.api_bookmark_toggle, name="api_bookmark_toggle"),
-    path("api/books/<int:book_id>/bookmark/note/", api_views.api_bookmark_update_note, name="api_bookmark_update_note"),
+    path("api/books/<uuid:book_uuid>/bookmark/", api_views.api_bookmark_toggle, name="api_bookmark_toggle"),
+    path("api/books/<uuid:book_uuid>/bookmark/note/", api_views.api_bookmark_update_note, name="api_bookmark_update_note"),
     path("api/bookmarks/", api_views.api_user_bookmarks, name="api_user_bookmarks"),
 
 ]

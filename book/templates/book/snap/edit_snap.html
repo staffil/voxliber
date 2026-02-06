@@ -47,7 +47,7 @@
 
         <div class="input-group">
             <label class="input-label">이미지 업로드</label>
-            <input type="file" name="image" accept="image/*" id="image-input" class="input-field">
+            <input type="file" name="image" accept="image/*" id="image-input" class="input-field" data-login-required>
             {% if snap.thumbnail %}
                 <div style="font-size: 12px; color: #888; margin-top: 5px;">
                     현재 이미지: {{ snap.thumbnail.name|slice:":30" }}...
@@ -57,7 +57,7 @@
 
         <div class="input-group">
             <label class="input-label">비디오 업로드 (선택)</label>
-            <input type="file" name="video" accept="video/*" id="video-input" class="input-field">
+            <input type="file" name="video" accept="video/*" id="video-input" class="input-field" data-login-required>
             {% if snap.snap_video %}
                 <div style="font-size: 12px; color: #888; margin-top: 5px;">
                     현재 비디오: {{ snap.snap_video.name|slice:":30" }}...
@@ -66,37 +66,52 @@
         </div>
 
         <!-- 링크 입력 -->
+ 
         <div class="input-group">
-            <label class="input-label">연결할 책 링크</label>
-            <select name="book_link" id="book_link" class="input-field">
+
+            <label class="input-label">연결할 오디오북 링크</label>
+            <select name="selected_book_url" id="selected_book_url" class="input-field"  data-login-required>
                 <option value="">선택 안 함</option>
-                {% for url, name in select_link %}
-                    <option value="{{ url }}" {% if snap.book_link == url %}selected{% endif %}>{{ name }}</option>
-                {% endfor %}
-            </select>
+                    {% for url, name in my_book_options %}
+                            <option value="{{ url }}">{{ name }}</option>
+                        {% endfor %}
+                                </select>
         </div>
+
+                <div class="input-group">
+
+            <label class="input-label">연결할 AI 소설 링크</label>
+            <select name="selected_story_url" id="selected_story_url" class="input-field"  data-login-required>
+                <option value="">선택 안 함</option>
+                {% for url, name in my_story_options %}
+                        <option value="{{ url }}">{{ name }}</option>
+                    {% endfor %}
+                            </select>
+        </div>
+        
+
 
         <div class="input-group">
             <label class="input-label">타 링크 선택 (연결할 책을 우선 링크로 합니다)</label>
-            <input type="url" name="link" placeholder="https://example.com" class="input-field" value="{{ snap.book_link }}">
+            <input type="url" name="link" placeholder="https://example.com" class="input-field" value="{{ snap.book_link }}" data-login-required>
         </div>
 
         <div class="input-group">
             <label class="input-label">제목</label>
-            <input type="text" name="title" class="input-field" placeholder="스냅 제목 입력" value="{{ snap.snap_title }}">
+            <input type="text" name="title" class="input-field" placeholder="스냅 제목 입력" value="{{ snap.snap_title }}" data-login-required>
         </div>
 
         <div class="input-group">
             <label class="input-label">설명</label>
-            <textarea name="description" class="input-field" placeholder="설명 입력">{{ snap.book_comment }}</textarea>
+            <textarea name="description" class="input-field" placeholder="설명 입력" data-login-required>{{ snap.book_comment }}</textarea>
         </div>
 
         <div style="display: flex; gap: 10px;">
-            <button class="submit-btn" type="submit" style="flex: 1;">수정 완료</button>
-            <a href="/snap/{{ snap.id }}/delete/"
+            <button class="submit-btn" type="submit" style="flex: 1;" data-login-required>수정 완료</button>
+            <a href="/snap/{{ snap.public_uuid }}/delete/"
                onclick="return confirm('정말 삭제하시겠습니까?')"
                class="submit-btn"
-               style="flex: 1; background: #dc2626; text-align: center; display: inline-block; line-height: 50px; text-decoration: none;">
+               style="flex: 1; background: #dc2626; text-align: center; display: inline-block; line-height: 50px; text-decoration: none;" data-login-required>
                 삭제하기
             </a>
         </div>

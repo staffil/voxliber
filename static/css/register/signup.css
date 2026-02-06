@@ -15,7 +15,11 @@
     --input-bg: rgba(255, 255, 255, 0.05);
     --hover-bg: rgba(255, 255, 255, 0.08);
 }
-
+.form-error {
+    color: #ef4444; /* 빨간색 */
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
 /* 전역 스타일 - 회원가입 페이지용 */
 .signup-wrapper * {
     box-sizing: border-box;

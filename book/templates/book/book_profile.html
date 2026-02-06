@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/book_profile.css' %}">
+
 {% endblock %}
 
 {% block content %}
@@ -14,13 +15,13 @@
         <div class="error-msg">{{ error }}</div>
         {% endif %}
 
-        <form action="" method="post" enctype="multipart/form-data" id="book_profile_form">
+        <form action="" method="post" enctype="multipart/form-data" id="book_profile_form" >
             {% csrf_token %}
 
             <!-- 소설 제목 -->
             <div class="title-header">
                 <input type="text" name="novel_title" class="section-title" placeholder="📚 소설 제목을 입력하세요"
-                    value="{{ book.name|default:'' }}" required>
+                    value="{{ book.name|default:'' }}" required  data-login-required>
             </div>
 
             <div class="title-content">
@@ -43,7 +44,7 @@
 
                       </div>
                         </div>
-                        <input type="file" name="cover-image" id="book-cover-image" accept="image/*" style="display: none;">
+                        <input type="file" name="cover-image" id="book-cover-image" accept="image/*" style="display: none;" data-login-required>
                     </div>
                     <div style="
   display: flex;
@@ -100,16 +101,16 @@
                     <div class="info-card">
                         <label class="info-label">📖 소설 줄거리</label>
                         <textarea name="novel_description" placeholder="소설 줄거리를 입력하세요..."
-                            rows="5">{{ book.description }}</textarea>
+                            rows="5"  data-login-required>{{ book.description }}</textarea>
                     </div>
 
                     <div class="info-card">
                         <label class="info-label">🎭 장르 선택 (여러 개 선택 가능)</label>
                         <div class="genre-grid">
                             {% for genre in genres_list %}
-                            <label class="genre-option">
+                            <label class="genre-option" >
                                 <input type="checkbox" name="genres" value="{{ genre.id }}"
-                                    {% if book and genre in book.genres.all %}checked{% endif %}>
+                                    {% if book and genre in book.genres.all %}checked{% endif %}  data-login-required>
                                 <span class="genre-box" style="background-color: {{ genre.genres_color|default:'#FFF' }}">
                                     {{ genre.name }}
                                 </span>
@@ -122,14 +123,14 @@
                     <div class="info-card">
                         <label class="info-label">🏷️ 태그 선택</label>
                         <div class="tag-input-wrapper">
-                            <input type="text" id="tag-search" placeholder="태그 검색 또는 추가...">
+                            <input type="text" id="tag-search" placeholder="태그 검색 또는 추가..."  data-login-required>
                             <button type="button" id="add-tag-btn">추가</button>
                         </div>
 
                         <div class="selected-tags" id="selected-tags">
                             {% for tag in book.tags.all %}
-                            <input type="hidden" name="tags" value="{{ tag.id }}">
-                            <span class="selected-tag">{{ tag.name }}</span>
+                            <input type="hidden" name="tags" value="{{ tag.id }}"  data-login-required>
+                            <span class="selected-tag"  data-login-required>{{ tag.name }}</span>
                             {% endfor %}
                         </div>
 
@@ -138,7 +139,7 @@
                                 {% for tag in tag_list %}
                                 <label class="tag-option">
                                     <input type="checkbox" class="tag-checkbox" value="{{ tag.id }}"
-                                        {% if book and tag in book.tags.all %}checked{% endif %}>
+                                        {% if book and tag in book.tags.all %}checked{% endif %}  data-login-required>
                                     <span>{{ tag.name }}</span>
                                 </label>
                                 {% endfor %}
@@ -159,7 +160,7 @@
                                 font-size: 14px;
                                 cursor: pointer;
                                 transition: all var(--transition-base);
-                            " onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                            " onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border-color)'"  data-login-required>
                                 <option value="1" {% if book.episode_interval_weeks == 1 %}selected{% endif %}>매주 (1주마다)</option>
                                 <option value="2" {% if book.episode_interval_weeks == 2 %}selected{% endif %}>격주 (2주마다)</option>
                                 <option value="3" {% if book.episode_interval_weeks == 3 %}selected{% endif %}>3주마다</option>
@@ -168,6 +169,19 @@
                             <div style="font-size: 12px; color: var(--text-tertiary); padding: 0 4px;">
                                 💡 에피소드를 얼마나 자주 등록할 계획인지 선택하세요
                             </div>
+                                <div class="terms-checkbox-wrapper">
+                                <label class="custom-checkbox">
+<input type="checkbox"
+       id="adult_choice"
+       name="adult_choice"
+       value="on"
+       {% if book and book.adult_choice %}checked{% endif %} data-login-required>
+                                           <span class="checkbox-icon"></span>
+                                    <span class="checkbox-text">
+                                    <a href="/terms/of/service/" class="terms-link" target="_blank">잔인성, 선정성이 있는 작품</a>이면 동의를 눌러주세요
+                                    </span>
+                                </label>
+                                </div>
                         </div>
                     </div>
 

@@ -19,7 +19,7 @@
         <div class="bread-crumb">
             <a href="{% url 'main:main' %}">홈</a>
             <span>›</span>
-            <a href="{% url 'book:book_detail' book.id %}">{{ book.name }}</a>
+            <a href="{% url 'book:book_detail' book.public_uuid %}">{{ book.name }}</a>
             <span>›</span>
             <span>{{ content.number }}화</span>
         </div>
@@ -39,7 +39,7 @@
 
         <!-- 커스텀 오디오 플레이어 -->
         <div class="custom-audio-player">
-            <audio id="audioPlayer" data-content-id="{{ content.id }}" style="display: none;">
+            <audio id="audioPlayer" data-content-id="{{ content.public_uuid }}" style="display: none;">
                 <source src="{{ content.audio_file.url }}" type="audio/mp3">
             </audio>
 
@@ -55,7 +55,7 @@
 
             <div class="audio-player-controls">
                 <!-- 재생/일시정지 버튼 -->
-                <button id="playPauseBtn" class="play-btn">
+                <button id="playPauseBtn" class="play-btn" data-login-required>
                     <svg id="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M8 5v14l11-7z"/>
                     </svg>
@@ -71,7 +71,7 @@
                     </div>
                     <div class="progress-bar">
                         <div id="progressFill" class="progress-fill"></div>
-                        <input type="range" id="progressSlider" class="progress-slider" min="0" max="100" value="0">
+                        <input type="range" id="progressSlider" class="progress-slider" min="0" max="100" value="0" data-login-required>
                     </div>
                     <div class="time-display">
                         <span id="totalTime">0:00</span>
@@ -79,11 +79,11 @@
                 </div>
 
                 <!-- 재생속도 버튼 -->
-                <button id="playbackSpeedBtn" class="playback-speed-btn">1.0x</button>
+                <button id="playbackSpeedBtn" class="playback-speed-btn" data-login-required>1.0x</button>
 
                 <!-- 볼륨 컨트롤 -->
                 <div class="volume-control">
-                    <button id="volumeBtn" class="volume-btn">
+                    <button id="volumeBtn" class="volume-btn" data-login-required>
                         <svg id="volumeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
                             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
@@ -94,7 +94,7 @@
                 <!-- 오디오 다운로드 -->
                 {% if user.is_authenticated and user == book.user %}
                 <a href="{{ content.audio_file.url }}" download="{{ content.title }}.mp3"
-                   class="download-btn" title="오디오 다운로드">
+                   class="download-btn" title="오디오 다운로드" data-login-required>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="7 10 12 15 17 10"/>
@@ -144,14 +144,18 @@
     {% endif %} -->
 
     <!-- 본문 -->
-    <div class="content-text-section" id="contentText">
-        {{ content.text|remove_brackets|linebreaks }}
+<div class="content-text-section" id="contentText">
+{% if content.episode_image %}
+    <div class="message-avatar">
+        <img class="content-avatar-img" src="{{ content.episode_image.url }}" alt="{{ content.name }}">
     </div>
-
+{% endif %}
+    {{ content.text|remove_brackets|linebreaks }}
+</div>
     <!-- 이전/다음 -->
     <div class="content-navigation">
         {% if prev_content %}
-        <a href="{% url 'book:content_detail' prev_content.id %}" class="nav-button prev">
+        <a href="{% url 'book:content_detail' prev_content.public_uuid %}" class="nav-button prev" data-login-required>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15 18 9 12 15 6"/>
             </svg>
@@ -173,7 +177,7 @@
         {% endif %}
 
         {% if next_content %}
-        <a href="{% url 'book:content_detail' next_content.id %}" class="nav-button next">
+        <a href="{% url 'book:content_detail' next_content.public_uuid %}" class="nav-button next" data-login-required>
             <div style="text-align: right;">
                 <div style="font-size: 12px; color: #888;">다음 에피소드</div>
                 <div style="font-weight: 600;">{{ next_content.number }}화. {{ next_content.title }}</div>
@@ -356,7 +360,7 @@ document.addEventListener("DOMContentLoaded", function () {
             {% if next_content %}
             // 다음 화 이동 시 자동 재생 플래그 설정
             sessionStorage.setItem("autoplayNext", "true");
-            window.location.href = "{% url 'book:content_detail' next_content.id %}";
+            window.location.href = "{% url 'book:content_detail' next_content.public_uuid %}";
             {% endif %}
     });
 
@@ -440,7 +444,7 @@ document.addEventListener("DOMContentLoaded", function () {
         isSending = true;
 
         try {
-            const res = await fetch("{% url 'book:save_listening_history' content.id %}", {
+            const res = await fetch("{% url 'book:save_listening_history' content.public_uuid %}", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -504,7 +508,7 @@ document.addEventListener("DOMContentLoaded", function () {
             console.log(`💾 페이지 종료 - 위치 저장: ${currentPos.toFixed(1)}초, 청취 시간: ${totalListenedSeconds.toFixed(1)}초`);
 
             const xhr = new XMLHttpRequest();
-            xhr.open("POST", "{% url 'book:save_listening_history' content.id %}", false);
+            xhr.open("POST", "{% url 'book:save_listening_history' content.public_uuid %}", false);
             xhr.setRequestHeader("Content-Type", "application/json");
             xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
             xhr.send(

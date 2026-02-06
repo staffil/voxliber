@@ -5,227 +5,74 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/my_books.css' %}">
-<style>
-/* Dark mode (default) */
-.bookmark-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 16px;
-    display: flex;
-    gap: 20px;
-    transition: all 0.3s;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
 
-.bookmark-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-    border-color: rgba(99, 102, 241, 0.3);
-}
-
-.bookmark-cover {
-    width: 150px;
-    height: 267px; /* 9:16 비율 유지 (150 * 16/9 = 266.67) */
-    border-radius: 12px;
-    overflow: hidden;
-    flex-shrink: 0;
-}
-
-.bookmark-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.bookmark-info {
-    flex: 1;
-    max-width: 600px; /* 고정 너비로 오른쪽 여백 확보 */
-    min-width: 0; /* flex 아이템의 overflow를 위해 필요 */
-}
-
-.bookmark-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #fff;
-    margin-bottom: 8px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.bookmark-author {
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.bookmark-note {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 12px;
-    margin-top: 12px;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 14px;
-}
-
-.bookmark-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.btn-primary {
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.empty-state {
-    text-align: center;
-    padding: 80px 20px;
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.empty-state svg {
-    margin-bottom: 24px;
-    opacity: 0.3;
-}
-
-/* Light mode overrides */
-body.light-mode .bookmark-item {
-    background: rgba(0, 0, 0, 0.02);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-body.light-mode .bookmark-item:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    border-color: rgba(99, 102, 241, 0.3);
-}
-
-body.light-mode .bookmark-title {
-    color: #1a1a1a;
-}
-
-body.light-mode .bookmark-author {
-    color: rgba(0, 0, 0, 0.6);
-}
-
-body.light-mode .bookmark-note {
-    background: rgba(0, 0, 0, 0.03);
-    color: rgba(0, 0, 0, 0.7);
-}
-
-body.light-mode .btn-secondary {
-    background: rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    color: rgba(0, 0, 0, 0.7);
-}
-
-body.light-mode .btn-secondary:hover {
-    background: rgba(0, 0, 0, 0.08);
-}
-
-body.light-mode .empty-state {
-    color: rgba(0, 0, 0, 0.4);
-}
-
-body.light-mode .page-title {
-    color: #1a1a1a !important;
-}
-
-body.light-mode .page-subtitle {
-    color: rgba(0, 0, 0, 0.5) !important;
-}
-
-/* ===============================
-   반응형 (Responsive)
-=============================== */
-
-/* 태블릿 (768px 이하) */
-@media (max-width: 768px) {
-    .bookmark-item {
-        gap: 16px;
-    }
-
-    .bookmark-cover {
-        width: 100px;
-        height: 178px; /* 9:16 비율 유지 */
-    }
-
-    .bookmark-title {
-        font-size: 18px;
-    }
-}
-
-/* 모바일 (480px 이하) */
-@media (max-width: 480px) {
-    .bookmark-item {
-        padding: 16px;
-        gap: 12px;
-    }
-
-    .bookmark-cover {
-        width: 130px;
-        height: 220px; /* 9:16 비율 유지 */
-    }
-
-    .bookmark-title {
-        font-size: 16px;
-    }
-
-    .bookmark-author {
-        font-size: 14px;
-    }
-
-    .bookmark-actions {
-        flex-direction: column;
-    }
-
-    .btn-primary,
-    .btn-secondary {
-        width: 100%;
-        text-align: center;
-    }
-}
-</style>
 {% endblock %}
 
 {% block content %}
 <div style="max-width: 1200px; margin: 120px auto 40px; padding: 0 20px;">
     <div style="margin-bottom: 32px;">
         <h1 class="page-title" style="font-size: 32px; font-weight: 700; margin-bottom: 8px; color: #fff;">📚 내 북마크</h1>
-        <p class="page-subtitle" style="color: rgba(255, 255, 255, 0.6);">나중에 읽고 싶은 책을 모아보세요</p>
+        <p class="page-subtitle" style="color: rgba(255, 255, 255, 0.6);">나중에 읽고 싶은 책과 AI 스토리를 모아보세요</p>
     </div>
 
+    <!-- AI 스토리 북마크 섹션 -->
+    {% if story_bookmarks %}
+    <div style="margin-bottom: 48px;">
+        <h2 style="font-size: 20px; font-weight: 700; color: #434343; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+            AI 스토리 북마크
+            <span style="padding: 4px 12px; background: rgba(99, 102, 241, 0.15); border-radius: 20px; font-size: 14px; color: #a78bfa;">{{ story_bookmarks|length }}</span>
+        </h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+            {% for sb in story_bookmarks %}
+            <a href="{% url 'character:story_intro' sb.story.public_uuid %}" class="bookmark-item" style="flex-direction: column; padding: 0; overflow: hidden; text-decoration: none; display: block;" data-login-required>
+                <div style="position: relative; width: 100%; height: 280px; overflow: hidden;">
+                    <!-- 커버 이미지 -->
+                    {% if sb.story.cover_image %}
+                        <img src="{{ sb.story.cover_image.url }}" alt="{{ sb.story.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 64px;">
+                            
+                        </div>
+                    {% endif %}
+
+                    <!-- 그라데이션 오버레이 -->
+                    <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, transparent 70%);"></div>
+
+                    <!-- 북마크 버튼 -->
+                    <button onclick="event.preventDefault(); event.stopPropagation(); removeStoryBookmark('{{ sb.story.public_uuid }}')"
+                            style="position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: #fbbf24; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2;" data-login-required>
+                        <i class="fas fa-bookmark"></i>
+                    </button>
+
+                    <!-- 콘텐츠 오버레이 -->
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 16px; z-index: 1;">
+                        <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 6px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ sb.story.title }}</h3>
+                        <p style="font-size: 12px; color: rgba(255,255,255,0.7); margin: 0 0 10px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
+                            {{ sb.story.description|truncatewords:12|default:"" }}
+                        </p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+                            <span style="font-size: 11px; color: #a78bfa; font-weight: 600;">👥 {{ sb.story.characters.count }}명</span>
+                            {% for genre in sb.story.genres.all|slice:":2" %}
+                            <span style="padding: 2px 8px; background: rgba(99, 102, 241, 0.3); border-radius: 10px; font-size: 10px; color: #c4b5fd;">{{ genre.name }}</span>
+                            {% endfor %}
+                        </div>
+                        <div style="font-size: 10px; color: rgba(255, 255, 255, 0.5);">
+                            저장일: {{ sb.created_at|date:"Y.m.d" }}
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 책 북마크 섹션 -->
     {% if bookmarks %}
+    <h2 style="font-size: 20px; font-weight: 700; color: #575757; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+        책 북마크
+        <span style="padding: 4px 12px; background: rgba(99, 102, 241, 0.15); border-radius: 20px; font-size: 14px; color: #a78bfa;">{{ bookmarks.paginator.count }}</span>
+    </h2>
         <div>
             {% for bookmark in bookmarks %}
             <div class="bookmark-item">
@@ -262,12 +109,12 @@ body.light-mode .page-subtitle {
                         <strong>메모:</strong> {{ bookmark.note }}
                     </div>
                     {% endif %}
-
+<!-- {% url 'book:book_detail' bookmark.book.public_uuid %} -->
                     <div class="bookmark-actions">
-                        <a href="{% url 'book:book_detail' bookmark.book.id %}" class="btn-primary">
+                        <a href="#" class="btn-primary" data-login-required   onclick="showAppInstallModal()">
                             책 보기
                         </a>
-                        <button onclick="removeBookmark({{ bookmark.book.id }})" class="btn-secondary">
+                        <button onclick="removeBookmark({{ bookmark.book.public_uuid }})" class="btn-secondary" data-login-required>
                             북마크 제거
                         </button>
                     </div>
@@ -284,7 +131,7 @@ body.light-mode .page-subtitle {
         {% if bookmarks.has_other_pages %}
         <div style="display: flex; justify-content: center; gap: 8px; margin-top: 32px;">
             {% if bookmarks.has_previous %}
-                <a href="?page={{ bookmarks.previous_page_number }}" style="padding: 8px 16px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; color: white; text-decoration: none;">이전</a>
+                <a href="?page={{ bookmarks.previous_page_number }}" style="padding: 8px 16px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; color: white; text-decoration: none;" data-login-required>이전</a>
             {% endif %}
 
             <span style="padding: 8px 16px; color: rgba(255, 255, 255, 0.6);">
@@ -292,21 +139,23 @@ body.light-mode .page-subtitle {
             </span>
 
             {% if bookmarks.has_next %}
-                <a href="?page={{ bookmarks.next_page_number }}" style="padding: 8px 16px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; color: white; text-decoration: none;">다음</a>
+                <a href="?page={{ bookmarks.next_page_number }}" style="padding: 8px 16px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; color: white; text-decoration: none;" data-login-required>다음</a>
             {% endif %}
         </div>
         {% endif %}
     {% else %}
+        {% if not story_bookmarks %}
         <div class="empty-state">
             <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
             </svg>
-            <h2 style="font-size: 24px; margin-bottom: 12px;">북마크한 책이 없습니다</h2>
-            <p style="margin-bottom: 24px;">나중에 읽고 싶은 책을 북마크해보세요!</p>
-            <a href="{% url 'main:main' %}" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; text-decoration: none; font-weight: 600;">
-                책 둘러보기
+            <h2 style="font-size: 24px; margin-bottom: 12px;">북마크가 없습니다</h2>
+            <p style="margin-bottom: 24px;">나중에 읽고 싶은 책이나 AI 스토리를 북마크해보세요!</p>
+            <a href="{% url 'main:main' %}" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; text-decoration: none; font-weight: 600;" data-login-required>
+                둘러보기
             </a>
         </div>
+        {% endif %}
     {% endif %}
 </div>
 
@@ -318,6 +167,32 @@ async function removeBookmark(bookId) {
 
     try {
         const response = await fetch(`/book/bookmark/${bookId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            alert('북마크가 제거되었습니다');
+            location.reload();
+        } else {
+            throw new Error('북마크 제거 실패');
+        }
+    } catch (error) {
+        console.error('북마크 제거 실패:', error);
+        alert('북마크 제거에 실패했습니다');
+    }
+}
+
+async function removeStoryBookmark(storyUuid) {
+    if (!confirm('AI 스토리 북마크를 제거하시겠습니까?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/character/story/${storyUuid}/bookmark/toggle/`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken')
@@ -351,5 +226,7 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+
 </script>
 {% endblock %}

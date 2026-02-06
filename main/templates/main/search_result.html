@@ -4,8 +4,8 @@
 {% block title %}{{ query }} 검색 결과 - VOXLIBER{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/home/main.css' %}">
-<link rel="stylesheet" href="{% static 'css/home/search_result.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/main.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/search_result.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -20,16 +20,16 @@
     </div>
 
     <!-- 🔍 Search (항상 빈칸) -->
-    <div class="search-container">
-        <div class="search-box">
+    <div class="search-page-container">
+        <div class="search-page-box">
             <input
                 type="text"
                 id="searchInput"
-                class="search-input"
+                class="search-page-input"
                 placeholder="작가, 태그, 작품을 검색하세요"
-                autocomplete="off"
+                autocomplete="off" data-login-required
             >
-            <button class="search-btn" id="searchBtn">🔍</button>
+            <button class="search-page-btn" id="searchBtn">🔍</button>
         </div>
     </div>
 
@@ -39,9 +39,18 @@
             책
             <span class="search-tab-count">{{ books_count }}</span>
         </button>
+
         <button class="search-tab" data-tab="authors">
             작가
             <span class="search-tab-count">{{ authors_count }}</span>
+        </button>
+        <button class="search-tab" data-tab="ai-stories">
+            AI 스토리
+            <span class="search-tab-count">{{ ai_stories_count }}</span>
+        </button>
+        <button class="search-tab" data-tab="snap_result">
+            SNAP
+            <span class="search-tab-count">{{ snap_result_count }}</span>
         </button>
     </div>
 
@@ -50,7 +59,7 @@
         {% if books %}
         <div class="books-grid">
             {% for book in books %}
-            <a href="/book/detail/{{ book.id }}/" class="book-item">
+            <a href="/book/detail/{{ book.public_uuid }}/" class="book-item">
                 <div class="book-cover-wrapper">
                     {% if book.cover_img %}
                     <img src="{{ book.cover_img }}" alt="{{ book.name }}" loading="lazy">
@@ -89,11 +98,103 @@
         {% endif %}
     </div>
 
+    <!-- ================= AI 스토리 탭 ================= -->
+    <div id="ai-stories-tab" class="tab-content">
+        {% if ai_stories %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px;">
+            {% for story in ai_stories %}
+            <a href="/character/story/intro/{{ story.public_uuid }}/" style="text-decoration: none; display: block; border-radius: 16px; overflow: hidden; border: 1px solid rgba(99, 102, 241, 0.3); transition: all 0.3s;">
+                <div style="position: relative; width: 100%; height: 280px; overflow: hidden;">
+                    <!-- 커버 이미지 -->
+                    {% if story.cover_image %}
+                    <img src="{{ story.cover_image }}" alt="{{ story.title }}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 4rem; opacity: 0.6;"></span>
+                    </div>
+                    {% endif %}
+
+                    <!-- 그라데이션 오버레이 -->
+                    <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, transparent 70%);"></div>
+
+                    <!-- 콘텐츠 오버레이 -->
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 16px; z-index: 1;">
+                        <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 6px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ story.title }}</h3>
+                        <p style="font-size: 12px; color: rgba(255,255,255,0.7); margin: 0 0 10px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
+                            {{ story.description|truncatewords:15|default:"" }}
+                        </p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                            {% for g in story.genres|slice:":2" %}
+                            <span style="padding: 2px 8px; background: rgba(99, 102, 241, 0.3); border-radius: 10px; font-size: 10px; color: #c4b5fd;">{{ g.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-results">
+            <p class="no-results-text">
+                "{{ query }}"와 일치하는 AI 스토리를 찾을 수 없습니다.
+            </p>
+            <p class="no-results-hint">다른 검색어를 시도해보세요.</p>
+        </div>
+        {% endif %}
+    </div>
+
+
+<!-- ================= SNAP 탭 ================= -->
+<div id="snap_result-tab" class="tab-content">
+    {% if snap_result %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px;">
+        {% for snap in snap_result %}
+        <a href="{% url 'book:book_snap_detail' snap.public_uuid %}" style="text-decoration: none; display: block; border-radius: 16px; overflow: hidden; border: 1px solid rgba(99, 102, 241, 0.3); transition: all 0.3s;" data-login-required>
+            <div style="position: relative; width: 100%; height: 280px; overflow: hidden;">
+                <!-- 썸네일 이미지 -->
+                {% if snap.thumbnail %}
+                <img src="{{ snap.thumbnail }}" alt="{{ snap.snap_title }}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 4rem; opacity: 0.6;">📸</span>
+                </div>
+                {% endif %}
+
+                <!-- 그라데이션 오버레이 -->
+                <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, transparent 70%);"></div>
+
+                <!-- 콘텐츠 오버레이 -->
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 16px; z-index: 1;">
+                    <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 6px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ snap.snap_title }}
+                    </h3>
+                    <!-- snap에 description이 없으면 생략하거나 기본값 -->
+                    <p style="font-size: 12px; color: rgba(255,255,255,0.7); margin: 0 0 10px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
+                        SNAP 스냅샷
+                    </p>
+                    <!-- 장르/태그 없으면 생략 -->
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-results">
+        <p class="no-results-text">
+            "{{ query }}"와 일치하는 SNAP을 찾을 수 없습니다.
+        </p>
+        <p class="no-results-hint">다른 검색어를 시도해보세요.</p>
+    </div>
+    {% endif %}
+</div>
+
     <!-- ================= 작가 탭 ================= -->
     <div id="authors-tab" class="tab-content">
         {% if authors %}
         <div class="authors-grid">
             {% for author in authors %}
+            <a href="{% url 'main:user_info' user.public_uuid %}" style="color: inherit; text-decoration: none; transition: color 0.2s;">
+
             <div class="author-item">
                 <div class="author-header">
                     <div class="author-avatar">
@@ -121,29 +222,12 @@
                 <div class="author-books">
                     <br>
                     <div class="author-books-list">
-                        {% for book in author.representative_books %}
-                        <a href="/book/detail/{{ book.id }}/"
-                           class="author-book-mini">
-                            <div class="author-book-mini-cover">
-                                {% if book.cover_img %}
-                                <img src="{{ book.cover_img }}"
-                                     alt="{{ book.name }}"
-                                     loading="lazy">
-                                {% else %}
-                                <div class="book-placeholder">
-                                    {{ book.name|slice:":2"|upper }}
-                                </div>
-                                {% endif %}
-                            </div>
-                            <div class="author-book-mini-title">
-                                {{ book.name }}
-                            </div>
-                        </a>
-                        {% endfor %}
+
                     </div>
                 </div>
                 {% endif %}
             </div>
+            </a>
             {% endfor %}
         </div>
         {% else %}

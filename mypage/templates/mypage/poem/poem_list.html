@@ -6,25 +6,6 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/mypage/poem/poem_list.css' %}">
 <style>
-    .poem-top-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 25px;
-    }
-
-    .btn-create-poem {
-        padding: 10px 16px;
-        background: #4a6bff;
-        color: white;
-        border-radius: 10px;
-        font-weight: 600;
-        transition: 0.2s;
-    }
-
-    .btn-create-poem:hover {
-        background: #3452d1;
-    }
 </style>
 {% endblock %}
 
@@ -43,7 +24,7 @@
 
     <div class="poem-grid" >
         {% for poem in poem_list %}
-<a href="/mypage/poems/{{ poem.id }}/" class="poem-card"
+<a href="/mypage/poems/{{ poem.public_uuid }}/" class="poem-card"
    style="background-image: url('{% if poem.image %}{{ poem.image.url }}{% else %}{% static 'images/default_poem_cover.jpg' %}{% endif %}');
           background-size: cover;
           background-position: center;">

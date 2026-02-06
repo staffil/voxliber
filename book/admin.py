@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Genres, Tags, Books, BookTag, Content, BookReview, BookComment, ContentComment, ReadingProgress, VoiceList, SoundEffectLibrary, BackgroundMusicLibrary, BookSnap, AuthorAnnouncement, AudioBookGuide, APIKey, VoiceType, Follow, BookmarkBook
-
+from character.models import HPImageMapping
 
 @admin.register(Genres)
 class GenresAdmin(admin.ModelAdmin):
@@ -106,7 +106,70 @@ class VoiceTypeAdmin(admin.ModelAdmin):
     )
 
     
-    
+    HPImageMapping
+
+
+
+@admin.register(HPImageMapping)
+class HPImageMappingAdmin(admin.ModelAdmin):
+    list_display = (
+        'llm',
+        'min_hp',
+        'max_hp',
+        'sub_image',
+        'priority',
+        'note',
+        'created_at',
+    )
+
+    list_filter = (
+        'llm',
+        'created_at',
+    )
+
+    search_fields = (
+        'llm__name',
+        'note',
+        'extra_condition',
+    )
+
+    ordering = (
+        '-priority',
+        'min_hp',
+        'max_hp',
+    )
+
+    readonly_fields = (
+        'created_at',
+        'updated_at',
+    )
+
+    fieldsets = (
+        ('기본 매핑 정보', {
+            'fields': (
+                'llm',
+                ('min_hp', 'max_hp'),
+                'priority',
+            )
+        }),
+        ('이미지 설정', {
+            'fields': (
+                'sub_image',
+            )
+        }),
+        ('추가 조건 (선택)', {
+            'fields': (
+                'extra_condition',
+                'note',
+            )
+        }),
+        ('시스템 정보', {
+            'fields': (
+                'created_at',
+                'updated_at',
+            )
+        }),
+    )
 
 
 @admin.register(SoundEffectLibrary)

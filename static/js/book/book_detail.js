@@ -1,367 +1,408 @@
-// Star rating selection
+// =============================================
+// 공통 유틸리티
+// =============================================
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+    return null;
+}
+
+const csrfToken = getCookie('csrftoken');
+
+// =============================================
+// 별점 (Star Rating)
+// =============================================
 let selectedRating = 5;
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Star rating initialization
-    const starRating = document.getElementById('starRating');
-    if (starRating) {
-        // Check if user has existing review
-        const reviewText = document.getElementById('reviewText');
-        if (reviewText && reviewText.value.trim()) {
-            // If there's existing review text, we need to get the rating from data attribute
-            const userRating = starRating.dataset.userRating;
-            if (userRating) {
-                selectedRating = parseInt(userRating);
-            }
-        }
-
-        const stars = starRating.querySelectorAll('.star');
-        updateStars(selectedRating);
-
-        stars.forEach(star => {
-            star.addEventListener('click', function() {
-                selectedRating = parseInt(this.dataset.rating);
-                updateStars(selectedRating);
-            });
-            star.addEventListener('mouseenter', function() {
-                updateStars(parseInt(this.dataset.rating));
-            });
-        });
-
-        starRating.addEventListener('mouseleave', function() {
-            updateStars(selectedRating);
-        });
-    }
-
-    // Initialize intro audio player if exists
-    initIntroAudioPlayer();
-});
-
 function updateStars(rating) {
-    const stars = document.querySelectorAll('#starRating .star');
-    stars.forEach((star, index) => {
-        star.textContent = index < rating ? '⭐' : '☆';
-        star.classList.toggle('active', index < rating);
+    document.querySelectorAll('#starRating .star').forEach((star, index) => {
+        const isActive = index < rating;
+        star.textContent = isActive ? '⭐' : '☆';
+        star.classList.toggle('active', isActive);
     });
 }
 
-async function submitReview() {
-    const reviewText = document.getElementById('reviewText').value.trim();
-    const submitUrl = document.getElementById('reviewText').dataset.submitUrl;
+document.addEventListener('DOMContentLoaded', () => {
+    const starRating = document.getElementById('starRating');
+    if (!starRating) return;
 
-    console.log('리뷰 제출:', { rating: selectedRating, text: reviewText });
+    // 기존 리뷰가 있으면 data 속성에서 평점 가져오기
+    const userRating = parseInt(starRating.dataset.userRating, 10);
+    if (!isNaN(userRating)) {
+        selectedRating = userRating;
+    }
 
-    try {
-        const response = await fetch(submitUrl, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: `rating=${selectedRating}&review_text=${encodeURIComponent(reviewText)}`
+    updateStars(selectedRating);
+
+    starRating.querySelectorAll('.star').forEach(star => {
+        star.addEventListener('click', () => {
+            selectedRating = parseInt(star.dataset.rating, 10);
+            updateStars(selectedRating);
         });
 
-        console.log('응답 상태:', response.status);
+        star.addEventListener('mouseenter', () => {
+            updateStars(parseInt(star.dataset.rating, 10));
+        });
+    });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('서버 오류:', errorText);
-            alert(`리뷰 등록 실패: ${response.status}`);
-            return;
-        }
+    starRating.addEventListener('mouseleave', () => {
+        updateStars(selectedRating);
+    });
 
-        const data = await response.json();
-        console.log('서버 응답:', data);
+    // 오디오 플레이어 초기화
+    initIntroAudioPlayer();
 
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        } else if (data.error) {
-            alert(data.error);
-        }
-    } catch (error) {
-        console.error('리뷰 제출 오류:', error);
-        alert('리뷰 등록 중 오류가 발생했습니다: ' + error.message);
-    }
-}
+    // 드래그 앤 드롭 초기화
+    initEpisodeDragAndDrop();
+});
 
-async function submitComment() {
-    const commentText = document.getElementById('commentInput').value.trim();
-    const submitUrl = document.getElementById('commentInput').dataset.submitUrl;
+// =============================================
+// 리뷰 제출
+// =============================================
+async function submitReview() {
+    const textarea = document.getElementById('reviewText');
+    if (!textarea) return;
 
-    if (!commentText) {
-        alert('댓글 내용을 입력해주세요.');
+    const reviewText = textarea.value.trim();
+    const submitUrl = textarea.dataset.submitUrl;
+
+    if (!reviewText) {
+        alert('리뷰 내용을 입력해주세요.');
         return;
     }
 
     try {
-        const response = await fetch(submitUrl, {
+        const res = await fetch(submitUrl, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: `comment=${encodeURIComponent(commentText)}`
+            body: `rating=${selectedRating}&review_text=${encodeURIComponent(reviewText)}`,
         });
 
-        const data = await response.json();
-        if (data.success) {
-            location.reload();
+        if (!res.ok) {
+            throw new Error(`서버 응답 오류: ${res.status}`);
         }
-    } catch (error) {
-        alert('댓글 작성 중 오류가 발생했습니다.');
+
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message || '리뷰가 등록되었습니다.');
+            location.reload(); // 또는 DOM에 직접 추가하는 방식으로 변경 가능
+        } else {
+            alert(data.error || '리뷰 등록에 실패했습니다.');
+        }
+    } catch (err) {
+        console.error('리뷰 제출 실패:', err);
+        alert('리뷰 등록 중 오류가 발생했습니다.');
     }
 }
 
-function toggleReplyForm(commentId) {
-    const replyForm = document.getElementById(`replyForm${commentId}`);
-    if (replyForm) {
-        replyForm.classList.toggle('active');
+// =============================================
+// 댓글 / 답글
+// =============================================
+async function submitComment() {
+    const input = document.getElementById('commentInput');
+    if (!input) return;
+
+    const text = input.value.trim();
+    const url = input.dataset.submitUrl;
+
+    if (!text) {
+        alert('댓글을 입력해주세요.');
+        return;
+    }
+
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `comment=${encodeURIComponent(text)}`,
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            addCommentToDOM(data.comment); // DOM에 바로 추가 (아래 함수 참고)
+            input.value = '';
+        } else {
+            alert(data.error || '댓글 등록 실패');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('댓글 작성 중 오류 발생');
     }
 }
 
-async function submitReply(parentId) {
-    const replyText = document.getElementById(`replyInput${parentId}`).value.trim();
-    const commentInput = document.getElementById('commentInput');
-    const submitUrl = commentInput ? commentInput.dataset.submitUrl : '';
+function toggleReplyForm(commentUuid) {
+    const form = document.getElementById(`replyForm${commentUuid}`);
+    if (form) {
+        form.classList.toggle('active');
+    }
+}
 
-    if (!replyText) {
+async function submitReply(parentUuid) {
+    const input = document.getElementById(`replyInput${parentUuid}`);
+    if (!input) return;
+
+    const text = input.value.trim();
+    if (!text) {
         alert('답글 내용을 입력해주세요.');
         return;
     }
 
+    const url = document.querySelector('#commentInput')?.dataset.submitUrl || '';
+
     try {
-        const response = await fetch(submitUrl, {
+        const res = await fetch(url, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: `comment=${encodeURIComponent(replyText)}&parent_id=${parentId}`
+            body: `comment=${encodeURIComponent(text)}&parent_uuid=${encodeURIComponent(parentUuid)}`,
         });
 
-        const data = await response.json();
-        if (data.success) {
-            location.reload();
+        if (!res.ok) {
+            throw new Error(`서버 오류: ${res.status}`);
         }
-    } catch (error) {
+
+        const data = await res.json();
+
+        if (data.success) {
+            addReplyToDOM(parentUuid, {
+                comment: text,
+                nickname: '나', // 실제로는 서버에서 내려오는 값 사용 권장
+                created_at: new Date().toLocaleString('ko-KR', {
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit'
+                })
+            });
+            input.value = '';
+            toggleReplyForm(parentUuid);
+        } else {
+            alert(data.error || '답글 등록 실패');
+        }
+    } catch (err) {
+        console.error('답글 제출 실패:', err);
         alert('답글 작성 중 오류가 발생했습니다.');
     }
 }
 
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
+// DOM에 댓글 바로 추가 (새로고침 없이)
+function addCommentToDOM(commentData) {
+    const list = document.getElementById('commentsList');
+    if (!list) return;
+
+    const item = document.createElement('div');
+    item.className = 'comment-item';
+    item.innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+            <span class="comment-author">${commentData.nickname || '나'}</span>
+            <span class="comment-date">${commentData.created_at}</span>
+        </div>
+        <div class="comment-text">${commentData.comment.replace(/\n/g, '<br>')}</div>
+        <div class="reply-form" id="replyForm${commentData.public_uuid}" style="display:none;">
+            <textarea class="comment-input" id="replyInput${commentData.public_uuid}" placeholder="답글을 입력하세요..."></textarea>
+            <button class="submit-comment-btn" onclick="submitReply('${commentData.public_uuid}')">답글 작성</button>
+        </div>
+    `;
+
+    list.insertBefore(item, list.firstChild);
 }
 
-function toggleAnnouncementForm() {
-    const form = document.getElementById('announcementForm');
-    if (form) {
-        if (form.style.display === 'none') {
-            form.style.display = 'block';
-        } else {
-            form.style.display = 'none';
-        }
-    }
+function addReplyToDOM(parentUuid, replyData) {
+    const replyForm = document.getElementById(`replyForm${parentUuid}`);
+    if (!replyForm) return;
+
+    const container = document.createElement('div');
+    container.className = 'comment-reply';
+    container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+            <span style="font-weight:700; color:#667eea;">${replyData.nickname}</span>
+            <span class="comment-date">${replyData.created_at}</span>
+        </div>
+        <div class="comment-text">${replyData.comment.replace(/\n/g, '<br>')}</div>
+    `;
+
+    replyForm.parentElement.appendChild(container);
 }
 
-/* 미리듣기 오디오 플레이어 기능 */
+// =============================================
+// 오디오 플레이어 (미리듣기)
+// =============================================
 function initIntroAudioPlayer() {
-    const introAudio = document.getElementById('introAudio');
-    if (!introAudio) return;
+    const audio = document.getElementById('introAudio');
+    if (!audio) return;
 
-    const introPlayBtn = document.getElementById('introPlayBtn');
-    const introProgressBar = document.getElementById('introProgressBar');
-    const introProgressContainer = document.getElementById('introProgressContainer');
-    const introCurrentTime = document.getElementById('introCurrentTime');
-    const introDuration = document.getElementById('introDuration');
-    const introVolumeBtn = document.getElementById('introVolumeBtn');
-    const introVolumeSlider = document.getElementById('introVolumeSlider');
+    const playBtn     = document.getElementById('introPlayBtn');
+    const progressBar = document.getElementById('introProgressBar');
+    const progressCon = document.getElementById('introProgressContainer');
+    const currentTime = document.getElementById('introCurrentTime');
+    const durationEl  = document.getElementById('introDuration');
+    const volumeBtn   = document.getElementById('introVolumeBtn');
+    const volumeSlider= document.getElementById('introVolumeSlider');
 
-    // 재생/일시정지 토글
-    window.toggleIntroAudio = function() {
-        if (introAudio.paused) {
-            introAudio.play();
-            introPlayBtn.textContent = '⏸';
+    function formatTime(sec) {
+        if (!sec || isNaN(sec)) return '0:00';
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${s.toString().padStart(2,'0')}`;
+    }
+
+    audio.addEventListener('loadedmetadata', () => {
+        durationEl.textContent = formatTime(audio.duration);
+    });
+
+    audio.addEventListener('timeupdate', () => {
+        if (!audio.duration) return;
+        const pct = (audio.currentTime / audio.duration) * 100;
+        progressBar.style.width = `${pct}%`;
+        currentTime.textContent = formatTime(audio.currentTime);
+    });
+
+    window.toggleIntroAudio = () => {
+        if (audio.paused) {
+            audio.play().catch(e => console.warn("재생 실패:", e));
+            playBtn.textContent = '⏸';
         } else {
-            introAudio.pause();
-            introPlayBtn.textContent = '▶';
+            audio.pause();
+            playBtn.textContent = '▶';
         }
     };
 
-    // 음소거 토글
-    window.toggleIntroMute = function() {
-        introAudio.muted = !introAudio.muted;
-        introVolumeBtn.textContent = introAudio.muted ? '🔇' : '🔊';
-        introVolumeSlider.value = introAudio.muted ? 0 : introAudio.volume * 100;
+    window.toggleIntroMute = () => {
+        audio.muted = !audio.muted;
+        volumeBtn.textContent = audio.muted ? '🔇' : '🔊';
+        volumeSlider.value = audio.muted ? 0 : audio.volume * 100;
     };
 
-    // 시간 포맷 함수
-    function formatTime(seconds) {
-        if (isNaN(seconds)) return '0:00';
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    // 메타데이터 로드 시 총 길이 표시
-    introAudio.addEventListener('loadedmetadata', function() {
-        introDuration.textContent = formatTime(introAudio.duration);
+    progressCon.addEventListener('click', e => {
+        const rect = progressCon.getBoundingClientRect();
+        const pct = (e.clientX - rect.left) / rect.width;
+        audio.currentTime = pct * audio.duration;
     });
 
-    // 재생 중 진행 상황 업데이트
-    introAudio.addEventListener('timeupdate', function() {
-        const progress = (introAudio.currentTime / introAudio.duration) * 100;
-        introProgressBar.style.width = progress + '%';
-        introCurrentTime.textContent = formatTime(introAudio.currentTime);
+    volumeSlider.addEventListener('input', () => {
+        audio.volume = volumeSlider.value / 100;
+        audio.muted = false;
+        volumeBtn.textContent = volumeSlider.value == 0 ? '🔇' : '🔊';
     });
 
-    // 진행 바 클릭으로 탐색
-    introProgressContainer.addEventListener('click', function(e) {
-        const rect = this.getBoundingClientRect();
-        const percent = (e.clientX - rect.left) / rect.width;
-        introAudio.currentTime = percent * introAudio.duration;
-    });
-
-    // 볼륨 슬라이더
-    introVolumeSlider.addEventListener('input', function() {
-        introAudio.volume = this.value / 100;
-        introAudio.muted = false;
-        introVolumeBtn.textContent = this.value == 0 ? '🔇' : '🔊';
-    });
-
-    // 재생 종료 시
-    introAudio.addEventListener('ended', function() {
-        introPlayBtn.textContent = '▶';
-        introProgressBar.style.width = '0%';
+    audio.addEventListener('ended', () => {
+        playBtn.textContent = '▶';
+        progressBar.style.width = '0%';
     });
 }
 
-/* 파일 업로드 - 선택된 파일명 표시 */
-window.showFileName = function(input) {
-    const fileInfo = document.getElementById('fileSelectedInfo');
-    const fileName = document.getElementById('selectedFileName');
+// =============================================
+// 에피소드 드래그 앤 드롭 재정렬
+// =============================================
+function initEpisodeDragAndDrop() {
+    const grid = document.getElementById('episodesGrid');
+    if (!grid) return;
 
-    if (input.files && input.files[0]) {
-        fileName.textContent = input.files[0].name;
-        fileInfo.classList.add('active');
-    } else {
-        fileInfo.classList.remove('active');
-    }
-};
-
-/* ==================== 에피소드 드래그 앤 드롭 재정렬 ==================== */
-document.addEventListener('DOMContentLoaded', function() {
-    const episodesGrid = document.getElementById('episodesGrid');
-    if (!episodesGrid) return;
-
-    let draggedElement = null;
+    let dragged = null;
     let placeholder = null;
 
-    // 드래그 시작
-    episodesGrid.addEventListener('dragstart', function(e) {
+    grid.addEventListener('dragstart', e => {
         const wrapper = e.target.closest('.episode-wrapper');
-        if (!wrapper || !wrapper.draggable) return;
+        if (!wrapper?.draggable) return;
 
-        draggedElement = wrapper;
-        wrapper.style.opacity = '0.5';
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', wrapper.innerHTML);
+        dragged = wrapper;
+        wrapper.classList.add('dragging');
+        wrapper.style.opacity = '0.6';
 
-        // 플레이스홀더 생성
         placeholder = document.createElement('div');
         placeholder.className = 'episode-placeholder';
-        placeholder.style.height = wrapper.offsetHeight + 'px';
-        placeholder.style.margin = '8px 0';
-        placeholder.style.border = '2px dashed rgba(99, 102, 241, 0.5)';
-        placeholder.style.borderRadius = '12px';
-        placeholder.style.background = 'rgba(99, 102, 241, 0.1)';
+        placeholder.style.height = `${wrapper.offsetHeight}px`;
     });
 
-    // 드래그 오버
-    episodesGrid.addEventListener('dragover', function(e) {
+    grid.addEventListener('dragover', e => {
         e.preventDefault();
-        if (!draggedElement) return;
+        if (!dragged) return;
 
-        const afterElement = getDragAfterElement(episodesGrid, e.clientY);
-        if (afterElement == null) {
-            episodesGrid.appendChild(placeholder);
+        const after = getDragAfterElement(grid, e.clientY);
+        if (after) {
+            grid.insertBefore(placeholder, after);
         } else {
-            episodesGrid.insertBefore(placeholder, afterElement);
+            grid.appendChild(placeholder);
         }
     });
 
-    // 드래그 엔드
-    episodesGrid.addEventListener('dragend', function(e) {
-        const wrapper = e.target.closest('.episode-wrapper');
-        if (!wrapper) return;
+    grid.addEventListener('dragend', () => {
+        if (!dragged) return;
 
-        wrapper.style.opacity = '1';
+        dragged.classList.remove('dragging');
+        dragged.style.opacity = '1';
 
-        if (placeholder && placeholder.parentNode) {
-            // 플레이스홀더 위치에 드래그된 요소 삽입
-            placeholder.parentNode.insertBefore(draggedElement, placeholder);
+        if (placeholder?.parentNode) {
+            placeholder.parentNode.insertBefore(dragged, placeholder);
             placeholder.remove();
-
-            // 순서 변경 저장
-            saveNewOrder();
+            saveEpisodeOrder();
         }
 
-        draggedElement = null;
+        dragged = null;
+        placeholder = null;
     });
 
-    // 마우스 위치 기준으로 삽입 위치 찾기
     function getDragAfterElement(container, y) {
-        const draggableElements = [...container.querySelectorAll('.episode-wrapper:not(.dragging)')];
+        const draggableEls = [...container.querySelectorAll('.episode-wrapper:not(.dragging)')];
 
-        return draggableElements.reduce((closest, child) => {
+        return draggableEls.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
             const offset = y - box.top - box.height / 2;
-
             if (offset < 0 && offset > closest.offset) {
-                return { offset: offset, element: child };
-            } else {
-                return closest;
+                return { offset, element: child };
             }
+            return closest;
         }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    // 새로운 순서 저장
-    function saveNewOrder() {
-        const wrappers = episodesGrid.querySelectorAll('.episode-wrapper');
-        const contentIds = Array.from(wrappers).map(wrapper => wrapper.dataset.contentId);
+    function saveEpisodeOrder() {
+        const wrappers = grid.querySelectorAll('.episode-wrapper');
+        const ids = Array.from(wrappers).map(w => w.dataset.contentId);
 
-        // AJAX로 순서 전송
-        fetch(window.location.pathname + 'reorder/', {
+        fetch(`${window.location.pathname}reorder/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': csrfToken,
             },
-            body: JSON.stringify({ content_ids: contentIds })
+            body: JSON.stringify({ content_ids: ids }),
         })
-        .then(res => res.json())
+        .then(r => r.json())
         .then(data => {
             if (data.success) {
-                // 페이지 새로고침하여 회차 번호 업데이트
-                location.reload();
+                location.reload(); // 필요 시 주석 처리하고 순서만 UI 반영 가능
             } else {
-                alert('순서 변경 실패: ' + (data.error || '알 수 없는 오류'));
+                alert('순서 저장 실패: ' + (data.error || '알 수 없는 오류'));
             }
         })
         .catch(err => {
-            console.error('순서 변경 오류:', err);
+            console.error('순서 저장 오류', err);
             alert('순서 변경 중 오류가 발생했습니다.');
         });
     }
-});
+}
+
+// =============================================
+// 파일 선택 시 파일명 표시 (필요 시 사용)
+// =============================================
+window.showFileName = function(input) {
+    const info = document.getElementById('fileSelectedInfo');
+    const nameEl = document.getElementById('selectedFileName');
+    if (!info || !nameEl) return;
+
+    if (input.files?.[0]) {
+        nameEl.textContent = input.files[0].name;
+        info.classList.add('active');
+    } else {
+        info.classList.remove('active');
+    }
+};

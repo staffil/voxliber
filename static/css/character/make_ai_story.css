@@ -1,0 +1,772 @@
+/* ==========================================
+   AI Story Creation Page - Cyberpunk Theme
+   ========================================== */
+
+:root {
+    --ai-primary: #00d4ff;
+    --ai-secondary: #a855f7;
+    --ai-accent: #f472b6;
+    --ai-bg-dark: #0a0a0f;
+    --ai-bg-card: #12121a;
+    --ai-bg-input: #1a1a25;
+    --ai-border: #2a2a3a;
+    --ai-text: #e0e0e0;
+    --ai-text-muted: #8888a0;
+    --ai-glow: rgba(0, 212, 255, 0.3);
+    --ai-gradient: linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #f472b6 100%);
+}
+
+/* Main Container */
+.story-create-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+    min-height: 100vh;
+}
+
+.story-create-container h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 2.5rem;
+    background: var(--ai-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+}
+
+.story-create-container h1::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 3px;
+    background: var(--ai-gradient);
+    border-radius: 2px;
+}
+/* 선정성 체크박스 전체 래퍼 */
+.terms-checkbox-wrapper {
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(102, 126, 234, 0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+/* 커스텀 체크박스 */
+.custom-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.custom-checkbox input {
+  position: absolute;
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+
+.custom-checkbox:hover {
+  color: #c4b5fd;
+}
+
+
+
+/* 커스텀 체크박스 아이콘 */
+.checkbox-icon {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #a78bfa;
+  border-radius: 6px;
+  margin-right: 12px;
+  position: relative;
+  flex-shrink: 0;
+  background: rgba(167, 139, 250, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* 체크됐을 때 */
+.custom-checkbox input:checked + .checkbox-icon {
+  background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%);
+  border-color: #c084fc;
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.5);
+}
+
+/* 체크 표시 (체크 시 나타남) */
+.checkbox-icon::after {
+  content: "❤️";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 16px;
+  color: white;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.custom-checkbox input:checked + .checkbox-icon::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* 텍스트 스타일 */
+.checkbox-text {
+  line-height: 1.5;
+}
+
+/* "잔인성, 선정성" 링크 강조 */
+.terms-link {
+  color: #f472b6;
+  text-decoration: underline;
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
+.terms-link:hover {
+  color: #ec4899;
+}
+/* Form Group */
+.form-group {
+    margin-bottom: 1.8rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--ai-primary);
+    margin-bottom: 0.6rem;
+    letter-spacing: 0.5px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="file"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    background: var(--ai-bg-input);
+    border: 1px solid var(--ai-border);
+    border-radius: 12px;
+    color: var(--ai-text);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--ai-primary);
+    box-shadow: 0 0 0 3px var(--ai-glow), 0 0 20px var(--ai-glow);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: var(--ai-text-muted);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--ai-text-muted);
+    font-size: 0.85rem;
+}
+
+/* Info Card (Genre/Tag Selection) */
+.info-card {
+    background: var(--ai-bg-card);
+    border: 1px solid var(--ai-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.8rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.info-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--ai-gradient);
+}
+
+.info-card > label {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ai-text);
+    margin-bottom: 1rem;
+}
+
+/* Genre Grid */
+.genre-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+}
+
+.genre-option {
+    cursor: pointer;
+}
+
+.genre-option input[type="checkbox"] {
+    display: none;
+}
+
+.genre-option .genre-box {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    background: var(--ai-bg-input);
+    border: 1px solid var(--ai-border);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: var(--ai-text-muted);
+    transition: all 0.3s ease;
+}
+
+.genre-option input:checked + .genre-box {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(168, 85, 247, 0.2));
+    border-color: var(--ai-primary);
+    color: var(--ai-primary);
+    box-shadow: 0 0 15px var(--ai-glow);
+}
+
+.genre-option:hover .genre-box {
+    border-color: var(--ai-secondary);
+    transform: translateY(-2px);
+}
+
+/* Tag Grid */
+.tag-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+}
+
+.tag-grid label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.4rem;
+}
+
+.tag-grid label:has(input:checked) {
+    color: var(--ai-secondary);
+}
+
+.tag-grid label:hover {
+    border-color: var(--ai-accent);
+}
+
+.tag-grid input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--ai-secondary);
+}
+
+/* Select Dropdown */
+.form-group select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300d4ff' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.2rem;
+    padding-right: 3rem;
+}
+
+/* File Input */
+.form-group input[type="file"] {
+    padding: 0.8rem;
+    cursor: pointer;
+}
+
+.form-group input[type="file"]::file-selector-button {
+    padding: 0.6rem 1.2rem;
+    background: var(--ai-gradient);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-group input[type="file"]::file-selector-button:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+/* Cover Image Preview */
+.form-group img {
+    border: 2px solid var(--ai-border);
+    box-shadow: 0 0 20px var(--ai-glow);
+}
+
+/* Submit Button */
+.submit-btn {
+    display: block;
+    width: 100%;
+    padding: 1.2rem 2rem;
+    background: var(--ai-gradient);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.submit-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.submit-btn:hover::before {
+    left: 100%;
+}
+
+.submit-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+}
+
+.submit-btn:active {
+    transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .story-create-container {
+        padding: 1.5rem 1rem 3rem;
+    }
+
+    .story-create-container h1 {
+        font-size: 1.8rem;
+    }
+
+    .genre-grid,
+    .tag-grid {
+        gap: 0.5rem;
+    }
+
+    .genre-option .genre-box {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Animation */
+@keyframes glow-pulse {
+    0%, 100% {
+        box-shadow: 0 0 5px var(--ai-glow);
+    }
+    50% {
+        box-shadow: 0 0 20px var(--ai-glow), 0 0 40px var(--ai-glow);
+    }
+}
+
+.info-card:hover {
+    animation: glow-pulse 2s infinite;
+}
+
+/* ========================================
+   추가 스타일 (새 템플릿 구조)
+   ======================================== */
+
+/* 헤더 */
+.story-create-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.page-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: var(--ai-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+}
+
+.title-icon {
+    font-size: 2rem;
+    -webkit-text-fill-color: initial;
+}
+
+.page-subtitle {
+    color: var(--ai-text-muted);
+    font-size: 1.1rem;
+}
+
+/* 폼 레이블 */
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ai-primary);
+    margin-bottom: 10px;
+}
+
+.label-icon {
+    font-size: 1.1rem;
+}
+
+/* 폼 입력 필드 */
+.form-input,
+.form-textarea,
+.form-select {
+    width: 100%;
+    padding: 14px 18px;
+    background: var(--ai-bg-input);
+    border: 2px solid var(--ai-border);
+    border-radius: 12px;
+    color: var(--ai-text);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+    outline: none;
+    border-color: var(--ai-primary);
+    box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.15);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.form-select {
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300d4ff' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 45px;
+}
+
+.form-hint {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--ai-text-muted);
+    margin-top: 8px;
+}
+
+/* 폼 섹션 */
+.form-section {
+    background: var(--ai-bg-card);
+    border: 1px solid var(--ai-border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+}
+
+/* 이미지 업로드 영역 */
+.image-upload-area {
+    position: relative;
+    width: 100%;
+    min-height: 200px;
+    background: var(--ai-bg-input);
+    border: 2px dashed var(--ai-border);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-upload-area:hover,
+.image-upload-area.dragover {
+    border-color: var(--ai-primary);
+    background: rgba(0, 212, 255, 0.05);
+}
+
+.file-input-hidden {
+    display: none;
+}
+
+.upload-placeholder {
+    text-align: center;
+    pointer-events: none;
+}
+
+.upload-icon {
+    display: block;
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.upload-text {
+    display: block;
+    font-size: 1rem;
+    color: var(--ai-text);
+}
+
+.cover-preview {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+/* 태그 옵션 */
+.tag-option {
+    cursor: pointer;
+}
+
+.tag-option input[type="checkbox"] {
+    display: none;
+}
+
+.tag-option .tag-box {
+    display: inline-block;
+    background: var(--ai-bg-input);
+    font-size: 0.7rem;
+    color: var(--ai-text-muted);
+    transition: all 0.3s ease;
+}
+
+.tag-option input:checked + .tag-box,
+.tag-option.selected .tag-box {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(244, 114, 182, 0.2));
+    border-color: var(--ai-secondary);
+    color: var(--ai-secondary);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+}
+
+.tag-option:hover .tag-box {
+    border-color: var(--ai-accent);
+    transform: translateY(-2px);
+}
+
+/* 태그 입력 영역 */
+.tag-input-wrapper {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.tag-search-input {
+    flex: 1;
+    padding: 12px 16px;
+    background: var(--ai-bg-input);
+    border: 2px solid var(--ai-border);
+    border-radius: 10px;
+    color: var(--ai-text);
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.tag-search-input:focus {
+    outline: none;
+    border-color: var(--ai-secondary);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+}
+
+.tag-search-input::placeholder {
+    color: var(--ai-text-muted);
+}
+
+.add-tag-btn {
+    padding: 12px 20px;
+    background: var(--ai-secondary);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.add-tag-btn:hover {
+    background: #9333ea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+}
+
+/* 선택된 태그 영역 */
+.selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+    min-height: 36px;
+    padding: 8px;
+    background: rgba(168, 85, 247, 0.05);
+    border-radius: 10px;
+    border: 1px dashed var(--ai-border);
+}
+
+.selected-tags:empty::before {
+    content: '선택된 태그가 없습니다';
+    color: var(--ai-text-muted);
+    font-size: 0.85rem;
+}
+
+.selected-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(244, 114, 182, 0.2));
+    border: 1px solid var(--ai-secondary);
+    border-radius: 20px;
+    color: var(--ai-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.remove-tag-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background: rgba(168, 85, 247, 0.3);
+    border: none;
+    border-radius: 50%;
+    color: var(--ai-secondary);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.remove-tag-btn:hover {
+    background: var(--ai-secondary);
+    color: white;
+}
+
+/* 태그 목록 래퍼 */
+.tag-list-wrapper {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 4px;
+    margin: 0 -4px;
+}
+
+.tag-list-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tag-list-wrapper::-webkit-scrollbar-track {
+    background: var(--ai-bg-input);
+    border-radius: 3px;
+}
+
+.tag-list-wrapper::-webkit-scrollbar-thumb {
+    background: var(--ai-border);
+    border-radius: 3px;
+}
+
+.tag-list-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--ai-secondary);
+}
+
+/* 장르 옵션 선택 */
+.genre-option.selected .genre-box {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(168, 85, 247, 0.2));
+    border-color: var(--ai-primary);
+    color: var(--ai-primary);
+    box-shadow: 0 0 15px var(--ai-glow);
+}
+
+/* 폼 액션 */
+.form-actions {
+    margin-top: 32px;
+}
+
+.submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 18px 32px;
+    background: var(--ai-gradient);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+}
+
+/* 반응형 추가 */
+@media (max-width: 600px) {
+    .form-section {
+        padding: 20px 16px;
+    }
+
+    .page-title {
+        font-size: 1.6rem;
+    }
+
+    .title-icon {
+        font-size: 1.5rem;
+    }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+        padding: 12px 14px;
+        font-size: 16px; /* iOS 줌 방지 */
+    }
+
+    .image-upload-area {
+        min-height: 160px;
+    }
+
+    .submit-btn {
+        padding: 16px 24px;
+        font-size: 1rem;
+    }
+}

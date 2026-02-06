@@ -7,6 +7,6 @@ from voice import views
 app_name = "voice"
 
 urlpatterns = [
-    path('voice_list/', views.voice_list, name='voice_list'),
+    path('voice/list/', views.voice_list, name='voice_list'),
 
 ]

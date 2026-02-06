@@ -7,7 +7,7 @@
 }
 
 .snap-preview-wrapper {
-    width: 400px;
+    width: 500px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -59,7 +59,93 @@
 }
 .message.error { background: rgba(255,50,50,0.25); color: #ff6b6b; }
 .message.success { background: rgba(60,240,120,0.25); color: #38ff99; }
+/* 선정성 체크박스 전체 래퍼 */
+.terms-checkbox-wrapper {
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(102, 126, 234, 0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
 
+/* 커스텀 체크박스 */
+.custom-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.custom-checkbox input {
+  position: absolute;
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+
+.custom-checkbox:hover {
+  color: #c4b5fd;
+}
+
+
+
+/* 커스텀 체크박스 아이콘 */
+.checkbox-icon {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #a78bfa;
+  border-radius: 6px;
+  margin-right: 12px;
+  position: relative;
+  flex-shrink: 0;
+  background: rgba(167, 139, 250, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* 체크됐을 때 */
+.custom-checkbox input:checked + .checkbox-icon {
+  background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%);
+  border-color: #c084fc;
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.5);
+}
+
+/* 체크 표시 (체크 시 나타남) */
+.checkbox-icon::after {
+  content: "❤️";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 16px;
+  color: white;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.custom-checkbox input:checked + .checkbox-icon::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* 텍스트 스타일 */
+.checkbox-text {
+  line-height: 1.5;
+}
+
+/* "잔인성, 선정성" 링크 강조 */
+.terms-link {
+  color: #f472b6;
+  text-decoration: underline;
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
+.terms-link:hover {
+  color: #ec4899;
+}
 .input-group {
     margin-bottom: 18px;
 }
@@ -110,3 +196,100 @@ textarea {
     #book_link option {
         color: #000000;
     }
+
+
+/* ============================= */
+/* 🌞 LIGHT MODE (Snap Page) */
+/* ============================= */
+
+body.light-mode {
+    background: #f9fafb;
+    color: #374151;
+}
+
+/* 컨테이너 */
+body.light-mode .snap-container {
+    background: transparent;
+}
+
+/* 미리보기 영역 */
+body.light-mode .snap-preview {
+    background: #ffffff;
+    border: 1px dashed #d1d5db;
+    color: #6b7280;
+}
+
+/* 폼 카드 */
+body.light-mode .snap-form {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    backdrop-filter: none;
+}
+
+/* 섹션 제목 */
+body.light-mode .section-title {
+    color: #111827;
+}
+
+/* 메시지 */
+body.light-mode .message.error {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+body.light-mode .message.success {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+/* 입력 필드 */
+body.light-mode .input-label {
+    color: #374151;
+}
+
+body.light-mode .input-field,
+body.light-mode textarea {
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    color: #111827;
+}
+
+body.light-mode .input-field::placeholder,
+body.light-mode textarea::placeholder {
+    color: #9ca3af;
+}
+
+/* 제출 버튼 */
+body.light-mode .submit-btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+body.light-mode .submit-btn:hover {
+    box-shadow: 0 8px 22px rgba(99,102,241,0.25);
+}
+
+/* 선정성 체크박스 래퍼 */
+body.light-mode .terms-checkbox-wrapper {
+    background: #f5f3ff;
+    border: 1px solid #ddd6fe;
+}
+
+/* 체크박스 아이콘 */
+body.light-mode .checkbox-icon {
+    background: #ffffff;
+    border-color: #a78bfa;
+}
+
+/* 체크박스 텍스트 */
+body.light-mode .checkbox-text {
+    color: #374151;
+}
+
+/* 링크 */
+body.light-mode .terms-link {
+    color: #db2777;
+}
+
+body.light-mode .terms-link:hover {
+    color: #be185d;
+}

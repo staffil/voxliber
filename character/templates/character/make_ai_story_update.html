@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}새 스토리 만들기 - VOXLIBER{% endblock %}
+
+{% block extra_head %}
+
+{% endblock %}
+
+{% block content %}
+<br><br><br><br>
+
+<main class="story-create-container">
+
+  <h1>새 스토리 만들기</h1>
+
+  <form method="POST" action="{% url 'character:make_ai_story' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- 스토리 제목 -->
+    <div class="form-group">
+      <label for="title">스토리 제목</label>
+      <input 
+        type="text" 
+        name="title" 
+        id="title" 
+        placeholder="예: 황혼의 검객, 별이 지는 밤" 
+        required 
+        maxlength="200" data-login-required
+      >
+      <small>스토리 전체를 대표하는 제목을 입력해주세요.</small>
+    </div>
+
+    <!-- 스토리 설명 -->
+    <div class="form-group">
+      <label for="description">스토리 설명 (선택)</label>
+      <textarea 
+        name="description" 
+        id="description" 
+        rows="5" 
+        placeholder="이 스토리의 배경, 분위기, 주요 테마 등을 간단히 적어주세요. 나중에 캐릭터를 만들 때 참고됩니다." data-login-required
+      ></textarea>
+      <small>AI가 스토리를 더 잘 이해할 수 있게 도와줍니다.</small>
+    </div>
+
+    <!-- 표지 이미지 -->
+    <div class="form-group">
+      <label for="cover_image">표지 이미지 (선택)</label>
+      <input type="file" name="cover_image" accept="image/*" id="cover_image" data-login-required>
+      <small>스토리 목록이나 상세 페이지에 표시될 이미지입니다.</small>
+    </div>
+
+    
+    <div class="info-card">
+        <label class="info-label">🎭 장르 선택 (여러 개 선택 가능)</label>
+        <div class="genre-grid">
+            {% for genre in genre_list %}
+            <label class="genre-option">
+                <input type="checkbox" name="genres" value="{{ genre.id }}"
+                    {% if book and genre in book.genres.all %}checked{% endif %} data-login-required>
+                <span class="genre-box" style="background-color: {{ genre.genres_color|default:'#FFF' }}">
+                    {{ genre.name }}
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 태그 검색/추가 -->
+    <div class="info-card">
+        <label class="info-label">🏷️ 태그 선택</label>
+        <div class="tag-input-wrapper">
+            <input type="text" id="tag-search" placeholder="태그 검색 또는 추가..." data-login-required>
+            <button type="button" id="add-tag-btn">추가</button>
+        </div>
+
+        <div class="selected-tags" id="selected-tags">
+            {% for tag in book.tags.all %}
+            <input type="hidden" name="tags" value="{{ tag.id }}" data-login-required>
+            <span class="selected-tag">{{ tag.name }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="tag-list-wrapper">
+            <div class="tag-grid" id="tag-grid">
+                {% for tag in tag_list %}
+                <label class="tag-option">
+                    <input type="checkbox" class="tag-checkbox" value="{{ tag.id }}"
+                        {% if book and tag in book.tags.all %}checked{% endif %} data-login-required>
+                    <span>{{ tag.name }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 제출 버튼 -->
+    <button type="submit" class="submit-btn" data-login-required>스토리 만들고 캐릭터 추가하기 →</button>
+
+  </form>
+
+</main>
+
+{% endblock %}
+
+
+{% block extra_js %}
+{% endblock %}

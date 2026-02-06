@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ story.title }} - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/character/story_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<br><br><br><br>
+
+<main class="story-detail-container">
+    <!-- 스토리 헤더 -->
+    <div class="story-header">
+<div class="story-cover-wrapper">
+    {% if story.story_desc_video %}
+        <video             controls  
+ loop muted playsinline class="story-cover-video">
+            <source src="{{ story.story_desc_video.url }}" type="video/mp4">
+        </video>
+    {% elif story.cover_image %}
+        <img src="{{ story.cover_image.url }}" alt="{{ story.title }}" class="story-cover">
+    {% else %}
+        <div class="story-cover-placeholder">
+            <span class="cover-icon">📖</span>
+        </div>
+    {% endif %}
+</div>
+
+
+        <div class="story-info">
+            <h1 class="story-title">{{ story.title }}</h1>
+            {% if story.description %}
+                <p class="story-description">{{ story.description }}</p>
+            {% endif %}
+
+            <div class="story-meta">
+                <span class="meta-item">
+                    <span class="meta-icon">👥</span>
+                    캐릭터 {{ characters.count }}명
+                </span>
+                <span class="meta-item">
+                    <span class="meta-icon">📅</span>
+                    {{ story.created_at|date:"Y.m.d" }}
+                </span>
+                {% if story.is_public %}
+                    <span class="meta-item status-public">
+                        <span class="meta-icon">🌐</span>
+                        출시됨
+                    </span>
+                {% else %}
+                    <span class="meta-item status-draft">
+                        <span class="meta-icon">📝</span>
+                        작업중
+                    </span>
+                {% endif %}
+            </div>
+
+            {% for s in story_list %}
+            <a href="{% url 'character:edit_ai_story' s.public_uuid %}" class="btn-edit-story" data-login-required>
+                <span>✏️</span> 스토리 편집
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 캐릭터 섹션 -->
+    <section class="characters-section">
+        <div class="section-header">
+            <h2>
+                <span class="section-icon">🤖</span>
+                캐릭터 목록
+            </h2>
+            <a href="{% url 'character:make_ai_with_story' story.public_uuid %}" class="btn-add-character" data-login-required>
+                <span>+</span> 새 캐릭터 추가
+            </a>
+        </div>
+
+        <div class="character-grid">
+            {% for char in characters %}
+            <div class="character-card">
+                <div class="character-avatar">
+                    {% if char.llm_image %}
+                        <img src="{{ char.llm_image.url }}" alt="{{ char.name }}">
+                    {% else %}
+                        <div class="avatar-placeholder">
+                            <span>🤖</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="character-info">
+                    <h3 class="character-name">{{ char.name }}</h3>
+                    <p class="character-desc">{{ char.description|truncatewords:20|default:"설명 없음" }}</p>
+                </div>
+
+                <div class="character-actions">
+                    <!-- <a href="{% url 'character:chat-view' char.public_uuid %}" class="btn-chat" data-login-required>
+                        <span>💬</span> 대화하기
+                    </a> -->
+                    <a href="{% url 'character:make_ai_update' char.public_uuid %}" class="btn-edit" data-login-required>
+                        <span>✏️</span> 편집
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <div class="empty-icon">🎭</div>
+                <h3>아직 캐릭터가 없어요</h3>
+                <p>첫 번째 AI 캐릭터를 만들어보세요!</p>
+                <a href="{% url 'character:make_ai_with_story' story.public_uuid %}" class="btn-create-first" data-login-required>
+                    + 첫 캐릭터 만들기
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- 출시 섹션 -->
+    <section class="publish-section">
+        {% if can_publish %}
+            {% if not story.is_public %}
+            <div class="publish-ready">
+                <h3>모든 준비가 완료되었어요!</h3>
+                <p>스토리를 출시하면 다른 사용자들도 즐길 수 있습니다</p>
+                <form method="POST" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="publish">
+                    <button type="submit" class="btn-publish" data-login-required>
+                        <span>🚀</span> 스토리 출시하기
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <div class="publish-done">
+                <span class="publish-icon">🎉</span>
+                <h3>이미 출시된 스토리입니다</h3>
+                <p>사용자들이 스토리를 즐기고 있어요!</p>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="publish-not-ready">
+                <span class="warning-icon">⚠️</span>
+                <p>최소 1개 이상의 캐릭터를 만들어야 출시할 수 있습니다</p>
+            </div>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/character/story_detail.js' %}"></script>
+{% endblock %}

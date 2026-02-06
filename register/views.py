@@ -71,7 +71,24 @@ def signup_view(request):
         gender = request.POST.get("gender")
         marketing = request.POST.get("terms_marketing") == "on"
         user_img = request.FILES.get("user-image")
+        # 🔴 닉네임 유효성 검사
+        if not nickname:
+            return render(request, "register/signup.html", {
+                "user": user,
+                "error": "닉네임을 입력해주세요."
+            })
+        elif len(nickname) > 20: 
+            return render(request, "register/signup.html", {
+                "user": user,
+                "error": "이름이 너무 깁니다. 20자 이내로 작성해 주세요."
+            })
 
+        # 🔴 닉네임 중복 검사 (본인 제외)
+        if User.objects.filter(nickname=nickname).exclude(pk=user.user_id).exists():
+            return render(request, "register/signup.html", {
+                "user": user,
+                "error": "이미 사용 중인 닉네임입니다."
+            })
         # 사용자 정보 저장
         user.nickname = nickname
         user.birthdate = birthdate

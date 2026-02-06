@@ -1,0 +1,570 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% if is_edit_mode %}AI 캐릭터 편집{% else %}AI 캐릭터 만들기{% endif %} - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/character/make_ai.css' %}">
+{% endblock %}
+
+{% block content %}
+<br><br><br><br>
+
+<main class="ai-create-container">
+    <div class="ai-create-header">
+        <h1 class="ai-create-title">
+            <span class="title-icon">🤖</span>
+            {% if is_edit_mode %}AI 캐릭터 편집{% else %}AI 캐릭터 만들기{% endif %}
+        </h1>
+        <p class="ai-create-subtitle">{% if is_edit_mode %}{{ llm.name }}의 설정을 수정하세요{% else %}나만의 AI 캐릭터를 생성하세요{% endif %}</p>
+    </div>
+
+    <!-- 탭 네비게이션 -->
+    <div class="tab-navigation">
+        <button type="button" class="tab-btn active" data-tab="tab-name">
+            <span class="tab-icon">✏️</span>
+            <span class="tab-text">기본 정보</span>
+        </button>
+        <button type="button" class="tab-btn" data-tab="tab-voice">
+            <span class="tab-icon">🎙️</span>
+            <span class="tab-text">목소리 설정</span>
+        </button>
+        <button type="button" class="tab-btn" data-tab="tab-lore">
+            <span class="tab-icon">📖</span>
+            <span class="tab-text">로어북</span>
+        </button>
+        <button type="button" class="tab-btn" data-tab="tab-image">
+            <span class="tab-icon">🖼️</span>
+            <span class="tab-text">이미지</span>
+        </button>
+    </div>
+
+    <!-- 진행 표시 바 -->
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: 25%;"></div>
+    </div>
+
+    <form method="POST" action="{% if is_edit_mode %}{% url 'character:make_ai_update' llm.public_uuid %}{% elif story_uuid %}{% url 'character:make_ai_with_story' story_uuid %}{% else %}{% url 'character:make_ai' %}{% endif %}" enctype="multipart/form-data" id="ai-create-form">
+        {% csrf_token %}
+
+        <!-- 탭 1: 기본 정보 -->
+        <div class="tab-content active" id="tab-name">
+            <div class="tab-panel">
+                <div class="panel-header">
+                    <h2>기본 정보</h2>
+                    <p>AI 캐릭터의 이름과 성격을 설정하세요</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="ai_name" class="form-label">
+                        <span class="label-icon">👤</span>
+                        AI 이름
+                    </label>
+                    <input type="text" name="ai_name" id="ai_name" class="form-input" placeholder="AI 캐릭터 이름을 입력하세요" value="{{ llm.name|default:'' }}" required>
+                    <span class="form-hint">캐릭터의 고유한 이름을 지어주세요</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="prompt" class="form-label">
+                        <span class="label-icon">💬</span>
+                        프롬프트
+                    </label>
+                    <textarea
+                        name="prompt"
+                        id="prompt"
+                        class="form-textarea"
+                        placeholder="AI의 성격, 말투, 배경 스토리 등을 자세히 작성하세요..."
+                        rows="6"
+                        maxlength="700"
+                        required
+                    >{{ llm.prompt|default:'' }}</textarea>
+                    <div class="textarea-counter">
+                        <span id="prompt-count">{{ llm.prompt|length|default:0 }}</span>/700자
+                    </div>
+                    <span class="form-hint">상세할수록 더 정확한 캐릭터가 생성됩니다</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="first_sentence" class="form-label">
+                        <span class="label-icon">💭</span>
+                        첫 마디
+                    </label>
+                    <input type="text" name="first_sentence" id="first_sentence" class="form-input" placeholder="AI가 대화를 시작할 때 할 말" value="{{ llm.first_sentence|default:'' }}" maxlength="200">
+                    <span class="form-hint">사용자와 처음 대화를 시작할 때 AI가 할 인사말</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="distribute" class="form-label">
+                        <span class="label-icon">📝</span>
+                        설명
+                    </label>
+                    <textarea
+                        name="description"
+                        id="distribute"
+                        class="form-textarea"
+                        placeholder="이 AI의 특징을 간단히 설명하세요. 예: 친근하고 유머러스한 대화 상대..."
+                        rows="3"
+                    >{{ llm.description|default:'' }}</textarea>
+                    <span class="form-hint">다른 사용자에게 보여질 AI 소개글</span>
+                </div>
+
+                <!-- AI 프로필 이미지 (기본 정보에서 빠르게 설정) -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">📷</span>
+                        프로필 이미지
+                    </label>
+                    <div class="profile-image-quick">
+                        <div class="profile-upload-mini" id="profile-upload-mini">
+                            <input type="file" name="llm_image" accept="image/*" id="llm_image" class="file-input-hidden">
+                            {% if llm.llm_image %}
+                                <div class="upload-mini-placeholder" id="upload-mini-placeholder" style="display: none;">
+                                    <span class="upload-mini-icon">📁</span>
+                                    <span class="upload-mini-text">이미지 선택</span>
+                                </div>
+                                <img id="preview-image-mini" class="preview-image-mini" src="{{ llm.llm_image.url }}" alt="미리보기" style="display: block;">
+                            {% else %}
+                                <div class="upload-mini-placeholder" id="upload-mini-placeholder">
+                                    <span class="upload-mini-icon">📁</span>
+                                    <span class="upload-mini-text">이미지 선택</span>
+                                </div>
+                                <img id="preview-image-mini" class="preview-image-mini" alt="미리보기" style="display: none;">
+                            {% endif %}
+                        </div>
+                        <div class="profile-upload-hint">
+                            <span class="form-hint">대화 중 표시될 AI 캐릭터의 얼굴 이미지</span>
+                            <span class="form-hint">이미지 탭에서 더 상세한 설정이 가능합니다</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 탭 2: 목소리 설정 -->
+        <div class="tab-content" id="tab-voice">
+            <div class="tab-panel">
+                <div class="panel-header">
+                    <h2>목소리 설정</h2>
+                    <p>AI의 언어와 음성을 선택하세요</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="language" class="form-label">
+                        <span class="label-icon">🌐</span>
+                        언어
+                    </label>
+                    <select name="language" id="language" class="form-select" required>
+                        <option value="ko" {% if llm.language == 'ko' or not llm %}selected{% endif %}>🇰🇷 한국어</option>
+                        <option value="en" {% if llm.language == 'en' %}selected{% endif %}>🇺🇸 English</option>
+                        <option value="ja" {% if llm.language == 'ja' %}selected{% endif %}>🇯🇵 日本語</option>
+                        <option value="zh" {% if llm.language == 'zh' %}selected{% endif %}>🇨🇳 中文</option>
+                        <option value="es" {% if llm.language == 'es' %}selected{% endif %}>🇪🇸 Español</option>
+                        <option value="fr" {% if llm.language == 'fr' %}selected{% endif %}>🇫🇷 Français</option>
+                        <option value="de" {% if llm.language == 'de' %}selected{% endif %}>🇩🇪 Deutsch</option>
+                        <option value="ru" {% if llm.language == 'ru' %}selected{% endif %}>🇷🇺 Русский</option>
+                        <option value="pt" {% if llm.language == 'pt' %}selected{% endif %}>🇧🇷 Português</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="model" class="form-label">
+                        <span class="label-icon">🧠</span>
+                        AI 모델
+                    </label>
+                    <select name="model" id="model" class="form-select" required>
+                        <option value="gpt-4o-mini" {% if llm.model == 'gpt-4o-mini' or not llm %}selected{% endif %}>GPT-4o-mini (빠른 응답)</option>
+                        <option value="grok-3-mini" {% if llm.model == 'grok-3-mini' %}selected{% endif %}>Grok-3-mini (창의적 대화)</option>
+                    </select>
+                    <span class="form-hint">Grok-3-mini는 응답이 느리지만 자극적인 대화를 진행할 수 있습니다..</span>
+                </div>
+
+                <!-- 숨겨진 voice_id 입력 필드 -->
+                <input type="hidden" name="voice_id" id="voice_id" value="{{ initial_voice_id|default:'' }}">
+
+                <div class="voice-selection">
+                    <label class="form-label">
+                        <span class="label-icon">🔊</span>
+                        목소리 선택
+                    </label>
+
+                    <!-- 목소리 검색 -->
+                    <div class="voice-search-wrapper">
+                        <input type="text" id="voice-search" class="form-input" placeholder="🔍 목소리 이름으로 검색...">
+                    </div>
+
+                    <!-- 목소리 타입 필터 -->
+                    <div class="voice-type-filters" id="voice-type-filters">
+                        {% for vtype in voice_types %}
+                        <button type="button" class="voice-type-btn" data-type-id="{{ vtype.id }}" data-type-name="{{ vtype.name }}">
+                            {{ vtype.name }}
+                        </button>
+                        {% endfor %}
+                    </div>
+
+                    <!-- 선택된 목소리 표시 -->
+                    <div class="selected-voice-display" id="selected-voice-display" style="display: none;">
+                        <div class="selected-voice-info">
+                            <img id="selected-voice-img" src="" alt="선택된 목소리">
+                            <div class="selected-voice-text">
+                                <span class="selected-voice-name" id="selected-voice-name"></span>
+                                <button type="button" class="btn-clear-voice" id="clear-voice-btn">✕ 선택 해제</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="voice-hint">원하는 목소리를 클릭하고 샘플을 들어보세요</p>
+
+                    <div class="voice-grid" id="voice-grid">
+                        {% for voice in voice_list %}
+                        <div class="voice-card {% if voice.voice_id == initial_voice_id %}selected{% endif %}"
+                             data-voice-id="{{ voice.voice_id }}"
+                             data-voice-name="{{ voice.voice_name }}"
+                             data-voice-types="{% for t in voice.types.all %}{{ t.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                             data-voice-image="{% if voice.voice_image %}{{ voice.voice_image.url }}{% endif %}"
+                             data-sample-audio="{% if voice.sample_audio %}{{ voice.sample_audio.url }}{% endif %}">
+                            <div class="voice-card-image">
+                                {% if voice.voice_image %}
+                                    <img src="{{ voice.voice_image.url }}" alt="{{ voice.voice_name }}">
+                                {% else %}
+                                    <div class="voice-card-placeholder">🎤</div>
+                                {% endif %}
+                            </div>
+                            <div class="voice-card-info">
+                                <span class="voice-name">{{ voice.voice_name }}</span>
+                                {% if voice.voice_description %}
+                                    <span class="voice-desc">{{ voice.voice_description|truncatewords:5 }}</span>
+                                {% endif %}
+                            </div>
+                            {% if voice.sample_audio %}
+                            <button type="button" class="btn-play-sample" data-audio="{{ voice.sample_audio.url }}">
+                                <span class="play-icon">▶</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <p class="no-voice">등록된 목소리가 없습니다</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- 오디오 플레이어 (숨김) -->
+                    <audio id="voice-sample-player" style="display: none;"></audio>
+                </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- 탭 3: 로어북 -->
+        <div class="tab-content" id="tab-lore">
+            <div class="tab-panel">
+                <div class="panel-header">
+                    <h2>로어북</h2>
+                    <p>키워드 기반으로 AI에게 주입할 설정을 추가하세요</p>
+                </div>
+
+                <div class="lore-info">
+                    <span class="info-icon">💡</span>
+                    <p>대화 중 특정 키워드가 나오면 해당 내용이 AI에게 자동으로 주입됩니다</p>
+                </div>
+
+                <div id="lore-entries-container">
+                    {% if is_edit_mode and lore_entries %}
+                        <!-- 기존 로어북 항목들 -->
+                        {% for entry in lore_entries %}
+                        <div class="lore-entry">
+                            <div class="lore-entry-header">
+                                <span class="lore-number">{{ forloop.counter }}</span>
+                                <button type="button" class="remove-lore-entry">
+                                    <span>✕</span>
+                                </button>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">활성화 키워드</label>
+                                <textarea
+                                    name="lore_keys[]"
+                                    class="form-textarea"
+                                    rows="2"
+                                    placeholder="쉼표(,) 또는 줄바꿈으로 구분 (예: 마을, 왕궁, 저주받은 검)"
+                                >{{ entry.keys }}</textarea>
+                                <span class="form-hint">이 키워드가 대화에 나오면 아래 내용이 주입됩니다</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">주입될 내용</label>
+                                <textarea
+                                    name="lore_content[]"
+                                    class="form-textarea"
+                                    rows="4"
+                                    placeholder="AI에게 주입할 설명, 사실, 설정 등을 자세히 작성하세요"
+                                >{{ entry.content }}</textarea>
+                            </div>
+
+                            <div class="lore-options">
+                                <div class="form-group form-group-inline">
+                                    <label class="form-label">우선순위</label>
+                                    <input type="number" name="lore_priority[]" class="form-input-small" value="{{ entry.priority|default:0 }}" min="0">
+                                    <span class="form-hint">높을수록 먼저 주입</span>
+                                </div>
+
+                                <div class="form-group form-group-inline">
+                                    <label class="form-label">카테고리</label>
+                                    <select name="lore_category[]" class="form-select-small">
+                                        <option value="" {% if not entry.category %}selected{% endif %}>선택 안 함</option>
+                                        <option value="personality" {% if entry.category == 'personality' %}selected{% endif %}>성격</option>
+                                        <option value="world" {% if entry.category == 'world' %}selected{% endif %}>세계관</option>
+                                        <option value="relationship" {% if entry.category == 'relationship' %}selected{% endif %}>관계</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group form-group-checkbox">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="lore_always_active[]" value="true" {% if entry.always_active %}checked{% endif %}>
+                                        <span class="checkbox-custom"></span>
+                                        <span>항상 포함</span>
+                                    </label>
+                                    <span class="form-hint">주의: 토큰 소모 증가</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- 기본 로어북 항목 (새로 만들기 모드) -->
+                        <div class="lore-entry">
+                            <div class="lore-entry-header">
+                                <span class="lore-number">1</span>
+                                <button type="button" class="remove-lore-entry">
+                                    <span>✕</span>
+                                </button>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">활성화 키워드</label>
+                                <textarea
+                                    name="lore_keys[]"
+                                    class="form-textarea"
+                                    rows="2"
+                                    placeholder="쉼표(,) 또는 줄바꿈으로 구분 (예: 마을, 왕궁, 저주받은 검)"
+                                ></textarea>
+                                <span class="form-hint">이 키워드가 대화에 나오면 아래 내용이 주입됩니다</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">주입될 내용</label>
+                                <textarea
+                                    name="lore_content[]"
+                                    class="form-textarea"
+                                    rows="4"
+                                    placeholder="AI에게 주입할 설명, 사실, 설정 등을 자세히 작성하세요"
+                                ></textarea>
+                            </div>
+
+                            <div class="lore-options">
+                                <div class="form-group form-group-inline">
+                                    <label class="form-label">우선순위</label>
+                                    <input type="number" name="lore_priority[]" class="form-input-small" value="0" min="0">
+                                    <span class="form-hint">높을수록 먼저 주입</span>
+                                </div>
+
+                                <div class="form-group form-group-inline">
+                                    <label class="form-label">카테고리</label>
+                                    <select name="lore_category[]" class="form-select-small">
+                                        <option value="">선택 안 함</option>
+                                        <option value="personality">성격</option>
+                                        <option value="world">세계관</option>
+                                        <option value="relationship">관계</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group form-group-checkbox">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="lore_always_active[]" value="true">
+                                        <span class="checkbox-custom"></span>
+                                        <span>항상 포함</span>
+                                    </label>
+                                    <span class="form-hint">주의: 토큰 소모 증가</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <button type="button" id="add-lore-entry" class="add-btn">
+                    <span>+</span> 로어북 항목 추가
+                </button>
+            </div>
+        </div>
+
+        <!-- 탭 4: 이미지 -->
+        <div class="tab-content" id="tab-image">
+            <div class="tab-panel">
+                <div class="panel-header">
+                    <h2>이미지</h2>
+                    <p>AI 캐릭터의 프로필 이미지를 설정하세요</p>
+                </div>
+
+                <!-- 프로필 이미지 -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">📷</span>
+                        프로필 이미지
+                    </label>
+                    <div class="image-upload-area" id="profile-upload-area">
+                        <input type="file" name="user_image" accept="image/*" id="user_image" class="file-input-hidden">
+                        {% if llm.llm_image %}
+                            <div class="upload-placeholder" id="upload-placeholder" style="display: none;">
+                                <span class="upload-icon">📁</span>
+                                <span class="upload-text">클릭하여 이미지 선택</span>
+                                <span class="upload-hint">또는 이미지를 드래그하세요</span>
+                            </div>
+                            <img id="preview-image" class="preview-image" src="{{ llm.llm_image.url }}" alt="미리보기" style="display: block;">
+                        {% else %}
+                            <div class="upload-placeholder" id="upload-placeholder">
+                                <span class="upload-icon">📁</span>
+                                <span class="upload-text">클릭하여 이미지 선택</span>
+                                <span class="upload-hint">또는 이미지를 드래그하세요</span>
+                            </div>
+                            <img id="preview-image" class="preview-image" alt="미리보기" style="display: none;">
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- 서브 이미지 -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">🖼️</span>
+                        서브 이미지 (선택)
+                    </label>
+                    <p class="form-hint">HP 범위는 0~100까지 입니다. 구간을 나눠서 이미지를 저장하면 해당 HP에 따라 이미지가 변합니다.</p>
+
+                    <div id="sub-images-container">
+                        {% if is_edit_mode and sub_images_with_hp %}
+                            <!-- 기존 서브 이미지 항목들 -->
+                            {% for item in sub_images_with_hp %}
+                            <div class="sub-image-entry">
+                                <div class="sub-image-header">
+                                    <span class="sub-image-number">{{ forloop.counter }}</span>
+                                    <button type="button" class="remove-sub-image">
+                                        <span>✕</span>
+                                    </button>
+                                </div>
+
+                                <div class="sub-image-content">
+                                    <div class="sub-image-upload">
+                                        <input type="file" name="sub_images" accept="image/*" class="sub-image-file">
+                                        {% if item.sub_image.image %}
+                                        <div class="existing-image-preview">
+                                            <img src="{{ item.sub_image.image.url }}" alt="서브 이미지" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
+                                            <span class="existing-label">현재 이미지</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="sub-image-options">
+                                        <div class="hp-range">
+                                            <label>HP 범위</label>
+                                            <div class="hp-inputs">
+                                                <input type="number" name="min_hp[]" placeholder="최소" min="0" class="form-input-small" value="{{ item.min_hp|default:'' }}" data-login-required>
+                                                <span class="hp-separator">~</span>
+                                                <input type="number" name="max_hp[]" placeholder="최대" min="0" class="form-input-small" value="{{ item.max_hp|default:'' }}" data-login-required>
+                                            </div>
+                                        </div>
+
+                                        <div class="sub-image-title">
+                                            <label>제목/메모</label>
+                                            <input type="text" name="sub_image_title[]" placeholder="예: 상처 입은 모습" class="form-input" value="{{ item.sub_image.title|default:'' }}" data-login-required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- 기본 서브 이미지 항목 (새로 만들기 모드) -->
+                            <div class="sub-image-entry">
+                                <div class="sub-image-header">
+                                    <span class="sub-image-number">1</span>
+                                    <button type="button" class="remove-sub-image" data-login-required>
+                                        <span>✕</span>
+                                    </button>
+                                </div>
+
+                                <div class="sub-image-content">
+                                    <div class="sub-image-upload">
+                                        <input type="file" name="sub_images" accept="image/*" class="sub-image-file">
+                                    </div>
+
+                                    <div class="sub-image-options">
+<div class="hp-range">
+        <label>HP 범위</label>
+        <div class="hp-inputs">
+            <!-- 최소 HP: 0 ~ 100 사이, 기본 0 -->
+            <input type="number" 
+                   name="min_hp[]" 
+                   placeholder="최소" 
+                   min="0" 
+                   max="100" 
+                   class="form-input-small" 
+                   value="0" 
+                   required 
+                   readonly
+                   oninput="this.value = Math.max(0, Math.min(100, this.value || 0)); validateHpRange(this)">
+            
+            <span class="hp-separator">~</span>
+            
+            <!-- 최대 HP: 0 ~ 100 사이, min보다 커야 함 -->
+            <input type="number" 
+                   name="max_hp[]" 
+                   placeholder="최대" 
+                   min="0" 
+                   max="100" 
+                   class="form-input-small" 
+                   required 
+                   oninput="this.value = Math.max(0, Math.min(100, this.value || 0)); validateHpRange(this)">
+        </div>
+    </div>
+                                        <div class="sub-image-title">
+                                            <label>제목/메모</label>
+                                            <input type="text" name="sub_image_title[]" placeholder="예: 상처 입은 모습" class="form-input" data-login-required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="image-action-buttons">
+                        <button type="button" id="add-sub-image-btn" class="add-btn" data-login-required>
+                            <span>+</span> 서브 이미지 추가
+                        </button>
+                        {% if is_edit_mode %}
+                        <a href="{% url 'character:ai_preview' llm.public_uuid %}?preview=1" target="_blank" class="preview-btn" data-login-required>
+                            <span>👁️</span> 미리보기
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 네비게이션 버튼 -->
+        <div class="form-navigation">
+            <button type="button" class="nav-btn nav-prev" id="prev-btn" style="display: none;" data-login-required>
+                <span>←</span> 이전
+            </button>
+            <button type="button" class="nav-btn nav-next" id="next-btn" data-login-required>
+                다음 <span>→</span>
+            </button>
+            <button type="submit" class="nav-btn nav-submit" id="submit-btn" style="display: none;" data-login-required>
+                {% if is_edit_mode %}💾 변경사항 저장{% else %}🚀 AI 캐릭터 생성{% endif %}
+            </button>
+        </div>
+    </form>
+
+</main>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/character/make_ai_page.js' %}"></script>
+<script src="{% static 'js/character/make_ai.js' %}"></script>
+{% endblock %}

@@ -29,9 +29,7 @@
       <div class="promo-banner">
           <a href="{{ advertisment.link }}">
               <img src="{{ advertisment.advertisment_img.url }}" alt="이벤트" loading="lazy">
-              {% if advertisment.title %}
-              <span class="promo-title">{{ advertisment.title }}</span>
-              {% endif %}
+
           </a>
       </div>
       {% endfor %}
@@ -72,30 +70,31 @@
 </div>
 
 
-  <!-- 
+
 <br>
 <div class="menu-grid">
   <div class="menu-circle">
-    <a href="/book/book-snap/">
+    <a href="/snap/list/" data-login-required="true" data-login-required >
                 <img src="{% static 'img/menu_snap.png' %}" alt="스냅">
     </a>
     <span>SNAP</span>
   </div>
 
-  <div class="menu-circle event-btn">
+<!-- <div class="menu-circle event-btn">
     <a href="event/">
       <img src="{% static 'img/menu_event.png' %}" alt="스냅">
 
     </a>
     <span>이벤트</span>
-  </div>
+  </div> -->
   <div class="menu-circle">
-    <a href="poem_winner/">
+    <a href="{% url 'book:book_tos' %}"  data-login-required>
             <img src="{% static 'img/menu_poem.png' %}" alt="스냅">
 
     </a>
-    <span>시 공모전</span>
+    <span>오디오북 만들기</span>
   </div>
+    <!-- 
 <div class="menu-circle">
     <a href="#" >
                         <img src="{% static 'img/menu_kid.png' %}" alt="스냅">
@@ -103,25 +102,33 @@
     </a>
     <span>복스키즈</span>
   </div> 
+ -->
+
   <div class="menu-circle">
-    <a href="snippet_all/">
-                  <img src="{% static 'img/menu_snippet.png' %}" alt="스냅">
+    <a href="{% url 'character:terms_ai' %}" data-login-required>
+                              <img src="{% static 'img/menu_audioBook.png' %}" alt="스냅">
 
     </a>
-    <span>북 스니펫</span>
+    <span>AI 소설 만들기</span>
   </div>
 
   <div class="menu-circle">
     <a href="/new_books/">
-                              <img src="{% static 'img/menu_audioBook.png' %}" alt="스냅">
+                  <img src="{% static 'img/menu_snippet.png' %}" alt="스냅">
 
     </a>
     <span>북 둘러보기</span>
   </div>
+  <div class="menu-circle">
+    <a href="ai/novel/main/">
+                              <img src="{% static 'img/galatea.png' %}" alt="스냅">
 
+    </a>
+    <span>AI 소설</span>
+  </div>
 
 </div>
--->
+
 
 
 
@@ -133,7 +140,7 @@
 <section class="content-section recent-section">
   <div class="section-header">
     <h2 class="section-title">
-      <span class="title-icon">📚</span>
+      <span class="title-icon"></span>
       최근 본 작품
     </h2>
   </div>
@@ -141,25 +148,14 @@
   <div class="recent-books-carousel">
     {% for progress in recent_books %}
 <div class="recent-book-card-wrapper">
-  <a href="{% if progress.current_content %}{% url 'book:content_detail' progress.current_content.id %}{% else %}{% url 'book:book_detail' progress.book.id %}{% endif %}" class="recent-book-card">
+  <a href="{% if progress.current_content %}{% url 'book:content_detail' progress.current_content.public_uuid %}{% else %}{% url 'book:book_detail' progress.book.public_uuid %}{% endif %}" class="recent-book-card">
     <div class="recent-cover">
       {% if progress.book.cover_img %}
         <img src="{{ progress.book.cover_img.url }}" alt="{{ progress.book.name }}" loading="lazy">
       {% else %}
         <div class="recent-placeholder">📖</div>
       {% endif %}
-      {% with first_episode=progress.book.contents.first %}
-        {% if first_episode and first_episode.audio_file %}
-        <button class="preview-audio-btn recent-preview"
-                data-audio="{{ first_episode.audio_file.url }}"
-                data-title="{{ progress.book.name }} - 1화"
-                data-cover="{% if progress.book.cover_img %}{{ progress.book.cover_img.url }}{% endif %}" >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        </button>
-        {% endif %}
-      {% endwith %}
+
       <!-- <div class="recent-progress">
         <div class="progress-bar" style="width: {{ progress.progress_percentage }}%"></div>
       </div> -->
@@ -185,7 +181,7 @@
 <section class="content-section continue-listening-section">
   <div class="section-header">
     <h2 class="section-title">
-      <span class="title-icon">▶️</span>
+      <span class="title-icon"></span>
       이어듣기
     </h2>
   </div>
@@ -202,15 +198,15 @@
 
         <!-- 이어듣기 버튼 -->
         <button class="resume-play-btn"
-                data-content-url="{% url 'book:content_detail' history.content.id %}"
-                data-position="{{ history.last_position }}">
+                data-content-url="{% url 'book:content_detail' history.content.public_uuid %}"
+                data-position="{{ history.last_position }}" data-login-required>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
             <path d="M8 5v14l11-7z"/>
           </svg>
           <span>이어듣기</span>
         </button>
+        
       </div>
-
       <div class="continue-info">
         <h4 class="continue-title">{{ history.book.name }}</h4>
         <p class="continue-episode">{{ history.content.number }}화. {{ history.content.title }}</p>
@@ -224,6 +220,47 @@
   </div>
 </section>
 {% endif %}
+
+
+
+<section class="hero-section">
+  <div class="hero-background">
+    {% for news in news_list %}
+      {% if news.news_img %}
+        <img src="{{ news.news_img.url }}" alt="VOXLIBER" loading="lazy">
+      {% else %}
+        <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
+      {% endif %}
+    {% empty %}
+      <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
+    {% endfor %}
+  </div>
+
+  <div class="hero-overlay" style="border-radius: 15px;"></div>
+
+  <div class="hero-content">
+    <h1 class="hero-title">목소리로 듣는 이야기</h1>
+    <p class="hero-subtitle">AI가 만드는 오디오북으로 새로운 독서 경험을 시작하세요</p>
+
+    {% if user.is_authenticated %}
+      <!-- 로그인 했으면 작품 만들기 버튼 -->
+      <a href="{% url 'book:book_tos' %}" class="hero-cta" data-login-required>
+        <span>작품 만들기</span>
+        <span>→</span>
+      </a>
+    {% else %}
+      <!-- 로그인 안 했으면 로그인 카드 -->
+      <div class="login-card">
+
+            <a href="book/book_tos/" class="hero-cta" onclick="openLogin(); return false;" >
+          <span>작품 만들기</span>
+          <span>→</span>
+        </a>
+      </div>
+    {% endif %}
+
+  </div>
+</section>
 
 
     <!-- 히어로 섹션 -->
@@ -337,12 +374,12 @@
 
 
 <div class="snap-reels-section">
-    <h3 class="snap-reels-title">📸 북스냅 미리보기</h3>
+    <h3 class="snap-reels-title">북스냅 미리보기</h3>
 
     <div class="snap-reels-wrapper">
         {% for snap in snap_list %}
         <div class="snap-reels-item">
-            <a href="{% url 'book:book_snap_detail' snap.id %}">
+            <a href="{% url 'book:book_snap_detail' snap.public_uuid %}" data-login-required>
                 <div class="snap-reels-media" style="position: relative; overflow: hidden;">
 
                     <!-- 섬네일 이미지 -->
@@ -488,7 +525,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="books-grid">
         {% for book in popular_books|slice:":6" %}
         <div class="book-item-wrapper">
-          <a href="{% url 'book:book_detail' book.id %}" class="book-item">
+          <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
             <div class="book-cover-wrapper">
               {% if book.cover_img %}
                 <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
@@ -536,18 +573,18 @@ document.addEventListener("DOMContentLoaded", () => {
     </section>
 -->
 
-    <!-- 오늘의 추천 작품 -->
+
 <!-- 오늘의 추천 작품 -->
 <section class="content-section spotlight-section">
   <div class="section-header">
-    <h2 class="section-title">✨ 오늘의 추천</h2>
+    <h2 class="section-title"> 오늘의 추천</h2>
   </div>
 
   <div class="scroll-container">
     <div class="spotlight-grid">
       {% for book in new_books|slice:":8" %}
       <div class="spotlight-card">
-        <a href="{% url 'book:book_detail' book.id %}" class="spotlight-link">
+        <a href="{% url 'book:book_detail' book.public_uuid %}" class="spotlight-link">
           <div class="spotlight-thumb">
             {% if book.cover_img %}
               <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
@@ -565,14 +602,17 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
   </div>
 
+
+
+
   <!-- 인기 순위 -->
   <div class="section-header" style="margin-top: 5rem;">
-    <h2 class="section-title">🔥 오늘의 인기 오디오북</h2>
+    <h2 class="section-title"> 오늘의 인기 오디오북</h2>
   </div>
 
   <div class="ranking-container">
-    {% for book in popular_books|slice:":50" %}
-    <a href="{% url 'book:book_detail' book.id %}" class="rank-card">
+    {% for book in popular_books|slice:":12" %}
+    <a href="{% url 'book:book_detail' book.public_uuid %}" class="rank-card">
       <div class="rank-badge">{{ forloop.counter }}</div>
       <div class="rank-thumb">
         {% if book.cover_img %}
@@ -598,51 +638,13 @@ document.addEventListener("DOMContentLoaded", () => {
   </div>
 </section>
 
-<section class="hero-section">
-  <div class="hero-background">
-    {% for news in news_list %}
-      {% if news.news_img %}
-        <img src="{{ news.news_img.url }}" alt="VOXLIBER" loading="lazy">
-      {% else %}
-        <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
-      {% endif %}
-    {% empty %}
-      <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
-    {% endfor %}
-  </div>
-
-  <div class="hero-overlay" style="border-radius: 15px;"></div>
-
-  <div class="hero-content">
-    <h1 class="hero-title">목소리로 듣는 이야기</h1>
-    <p class="hero-subtitle">AI가 만드는 오디오북으로 새로운 독서 경험을 시작하세요</p>
-
-    {% if user.is_authenticated %}
-      <!-- 로그인 했으면 작품 만들기 버튼 -->
-      <a href="{% url 'book:book_tos' %}" class="hero-cta">
-        <span>작품 만들기</span>
-        <span>→</span>
-      </a>
-    {% else %}
-      <!-- 로그인 안 했으면 로그인 카드 -->
-      <div class="login-card">
-
-            <a href="book/book_tos/" class="hero-cta" onclick="openLogin(); return false;" >
-          <span>작품 만들기</span>
-          <span>→</span>
-        </a>
-      </div>
-    {% endif %}
-
-  </div>
-</section>
 
 
     <!-- 실시간 인기 차트 -->
     <section class="content-section" data-section="2">
       <div class="section-header">
         <h2 class="section-title">
-          <span class="title-icon">🔥</span>
+          <span class="title-icon"></span>
           실시간 인기 차트
           <span class="live-indicator">LIVE</span>
         </h2>
@@ -651,7 +653,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="ranking-list">
         {% for book in popular_books|slice:":5" %}
         <div class="ranking-item-wrapper">
-          <a href="{% url 'book:book_detail' book.id %}" class="ranking-item">
+          <a href="{% url 'book:book_detail' book.public_uuid %}" class="ranking-item">
             <div class="rank-number rank-{{ forloop.counter }}">{{ forloop.counter }}</div>
             <div class="rank-cover">
               {% if book.cover_img %}
@@ -660,16 +662,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="rank-placeholder">📖</div>
               {% endif %}
               {% with first_episode=book.contents.first %}
-                {% if first_episode and first_episode.audio_file %}
-                <button class="preview-audio-btn rank-preview"
-                        data-audio="{{ first_episode.audio_file.url }}"
-                        data-title="{{ book.name }} - 1화"
-                        data-cover="{% if book.cover_img %}{{ book.cover_img.url }}{% endif %}">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                </button>
-                {% endif %}
+
               {% endwith %}
             </div>
             <div class="rank-info">
@@ -701,7 +694,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <section class="content-section">
       <div class="section-header">
         <h2 class="section-title">
-          <span class="title-icon">⚡</span>
+          <span class="title-icon"></span>
           지금 뜨는 작품
           <span class="trending-badge">HOT</span>
         </h2>
@@ -710,7 +703,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="books-grid">
         {% for book in trending_books %}
         <div class="book-item-wrapper">
-          <a href="{% url 'book:book_detail' book.id %}" class="book-item">
+          <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
             <div class="book-cover-wrapper">
               {% if book.cover_img %}
                 <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
@@ -725,27 +718,33 @@ document.addEventListener("DOMContentLoaded", () => {
               <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h3>
               <p class="book-meta">
                 {{ book.user.nickname }} •<br>
-                {% for genre in book.genres.all|slice:":2" %}
-                  {{ genre.name }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
+<div class="card-genres">
+  {% for genre in book.genres.all %}
+    <span class="genre-tag" style="background-color: {{ genre.genres_color|default:'#6366f1' }};">
+      {{ genre.name }}
+    </span>
+  {% empty %}
+    <span class="no-data">장르 없음</span>
+  {% endfor %}
+</div>
+
+<!-- 태그 표시 (해시태그 스타일 + 더 세련되게) -->
+<div class="card-tags">
+  {% for tag in book.tags.all %}
+    <span class="tag-item">
+      #{{ tag.name }}
+    </span>
+  {% empty %}
+    <span class="no-data">#태그 없음</span>
+  {% endfor %}
+</div>
               </p>
               <p class="book-stats">
                 ⭐ {{ book.book_score|default:"0.0" }} 
               </p>
             </div>
           </a>
-          {% with first_episode=book.contents.first %}
-            {% if first_episode and first_episode.audio_file %}
-            <button class="preview-audio-btn grid-preview"
-                    data-audio="{{ first_episode.audio_file.url }}"
-                    data-title="{{ book.name }} - 1화"
-                    data-cover="{% if book.cover_img %}{{ book.cover_img.url }}{% endif %}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </button>
-            {% endif %}
-          {% endwith %}
+
         </div>
         {% endfor %}
       </div>
@@ -753,18 +752,40 @@ document.addEventListener("DOMContentLoaded", () => {
     {% endif %}
 
 
+<section class="hero-section" style="height: 300px;">
+  <div class="hero-background">
+    {% for news in ai_advertismemt_img %}
+      {% if news.advertisment_img %}
+        <img src="{{ news.advertisment_img.url }}" alt="VOXLIBER" loading="lazy">
+      {% else %}
+        <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
+      {% endif %}
+    {% empty %}
+      <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
+    {% endfor %}
+  </div>
+
+  <div class="hero-overlay" style="border-radius: 15px;"></div>
+
+  <div class="hero-content">
+
+
+  </div>
+</section>
 
     <!-- 인기있는 작가 섹션 -->
     <section class="content-section">
       <div class="section-header">
         <h2 class="section-title">
-          <span class="title-icon">👑</span>
+          <span class="title-icon"></span>
           이달의 작가
         </h2>
       </div>
 
       <div class="featured-authors">
+        
         {% for author in popular_authors %}
+        <a href="{% url 'main:user_info' author.public_uuid %}" >
         <div class="author-item">
           <div class="author-rank rank-{{ forloop.counter }}">{{ forloop.counter }}</div>
           <div class="author-photo">
@@ -781,141 +802,17 @@ document.addEventListener("DOMContentLoaded", () => {
             <p>작품 {{ author.book_count }}개</p>
           </div>
         </div>
+        </a>
         {% empty %}
         <div class="empty-state">아직 등록된 작가가 없습니다</div>
+        
         {% endfor %}
       </div>
     </section>
 
-    <!-- 뜨끈뜨끈한 신작 섹션 -->
-    <section class="content-section" id="new-books">
-      
-      <div class="section-header">
-        
-        <h2 class="section-title">뜨끈뜨끈한 신작</h2>
-                <a href="/new_books/" class="view-more-link">더보기 →</a>
+  
 
-      </div>
-
-
-
-
-      <div class="books-grid">
-        
-        {% for book in new_books %}
-        <div class="book-item-wrapper">
-          <a href="{% url 'book:book_detail' book.id %}" class="book-item">
-            <div class="book-cover-wrapper">
-              {% if book.cover_img %}
-                <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
-              {% else %}
-                <div class="book-placeholder">
-                  {{ book.name|slice:":2"|upper }}
-                </div>
-              {% endif %}
-            </div>
-            <div class="book-details">
-              <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h3>
-              <p class="book-meta">
-                {% for genre in book.genres.all|slice:":2" %}
-                  {{ genre.name }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-              </p>
-              {% if book.tags.exists %}
-              <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                {% for tag in book.tags.all|slice:":5" %}
-                  #{{ tag.name }}{% if not forloop.last %} {% endif %}
-                {% endfor %}
-              </p>
-              {% endif %}
-            </div>
-          </a>
-          {% with first_episode=book.contents.first %}
-            {% if first_episode and first_episode.audio_file %}
-            <button class="preview-audio-btn grid-preview"
-                    data-audio="{{ first_episode.audio_file.url }}"
-                    data-title="{{ book.name }} - 1화"
-                    data-cover="{% if book.cover_img %}{{ book.cover_img.url }}{% endif %}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </button>
-            {% endif %}
-          {% endwith %}
-        </div>
-        {% empty %}
-        <div class="empty-state">아직 등록된 작품이 없습니다</div>
-        {% endfor %}
-      </div>
-    </section>
-
-
-   <!-- 에피소드 업데이트 -->
-    <section class="content-section" id="new-books">
-      
-      <div class="section-header">
-        
-        <h2 class="section-title">방금 업데이트 된 작품</h2>
-                <a href="/new_books/" class="view-more-link">더보기 →</a>
-
-      </div>
-
-
-
-
-      <div class="books-grid">
-        
-{% for item in latest_episode %}
-<div class="book-item-wrapper">
-<a href="{% if item.latest_episode %}{% url 'book:content_detail' item.latest_episode.id %}{% else %}{% url 'book:book_detail' item.book.id %}{% endif %}" class="recent-book-card">
-    <div class="book-cover-wrapper">
-      {% if item.book.cover_img %}
-        <img src="{{ item.book.cover_img.url }}" alt="{{ item.book.name }}" loading="lazy">
-      {% else %}
-        <div class="book-placeholder">
-          {{ item.book.name|slice:":2"|upper }}
-        </div>
-      {% endif %}
-    </div>
-    <div class="book-details">
-      <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ item.book.name }}</h3>
-      <p class="book-meta">
-        {% for genre in item.book.genres.all|slice:":2" %}
-          {{ genre.name }}{% if not forloop.last %}, {% endif %}
-        {% endfor %}
-      </p>
-      {% if item.book.tags.exists %}
-      <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1;">
-        {% for tag in item.book.tags.all|slice:":3" %}
-          #{{ tag.name }}{% if not forloop.last %} {% endif %}
-        {% endfor %}
-      </p>
-      {% endif %}
-    </div>
-  </a>
-
-  {% if item.latest_episode and item.latest_episode.audio_file %}
-<button class="preview-audio-btn grid-preview"
-        data-audio="{{ item.latest_episode.audio_file.url }}"
-        data-title="{{ item.book.name }} - {{ item.latest_episode.title }}"
-        data-cover="{% if item.book.cover_img %}{{ item.book.cover_img.url }}{% endif %}"
-        data-episode-id="{{ item.latest_episode.id }}">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M8 5v14l11-7z"/>
-    </svg>
-  </button>
-  {% endif %}
-</div>
-{% empty %}
-<div class="empty-state">아직 등록된 작품이 없습니다</div>
-{% endfor %}
-
-      </div>
-    </section>
-
-
-
-
+ 
 
     
     <!-- 맞춤 추천 섹션 (로그인 유저만) -->
@@ -923,7 +820,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <section class="content-section recommended-section">
       <div class="section-header">
         <h2 class="section-title">
-          <span class="title-icon">🎯</span>
+          <span class="title-icon"></span>
           {{ user.nickname }}님을 위한 장르 추천
         </h2>
         <p class="section-subtitle">당신이 좋아할 만한 작품들이에요</p>
@@ -932,7 +829,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="books-grid">
         {% for book in recommended_books %}
         <div class="book-item-wrapper">
-          <a href="{% url 'book:book_detail' book.id %}" class="book-item">
+          <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
             <div class="book-cover-wrapper">
               {% if book.cover_img %}
                 <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
@@ -941,33 +838,36 @@ document.addEventListener("DOMContentLoaded", () => {
                   {{ book.name|slice:":2"|upper }}
                 </div>
               {% endif %}
-              <div class="book-badge recommended">✨ 추천</div>
+              <div class="book-badge recommended"> 추천</div>
             </div>
             <div class="book-details">
               <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h3>
-              <p class="book-meta">
-                {{ book.user.nickname }} • <br>
-                {% for genre in book.genres.all|slice:":2" %}
-                  {{ genre.name }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-              </p>
+<div class="card-genres">
+  {% for genre in book.genres.all %}
+    <span class="genre-tag" style="background-color: {{ genre.genres_color|default:'#6366f1' }};">
+      {{ genre.name }}
+    </span>
+  {% empty %}
+    <span class="no-data">장르 없음</span>
+  {% endfor %}
+</div>
+
+<!-- 태그 표시 (해시태그 스타일 + 더 세련되게) -->
+<div class="card-tags">
+  {% for tag in book.tags.all %}
+    <span class="tag-item">
+      #{{ tag.name }}
+    </span>
+  {% empty %}
+    <span class="no-data">#태그 없음</span>
+  {% endfor %}
+</div>
               <p class="book-stats">
                 ⭐ {{ book.book_score|default:"0.0" }}
               </p>
             </div>
           </a>
-          {% with first_episode=book.contents.first %}
-            {% if first_episode and first_episode.audio_file %}
-            <button class="preview-audio-btn grid-preview"
-                    data-audio="{{ first_episode.audio_file.url }}"
-                    data-title="{{ book.name }} - 1화"
-                    data-cover="{% if book.cover_img %}{{ book.cover_img.url }}{% endif %}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </button>
-            {% endif %}
-          {% endwith %}
+
         </div>
         {% endfor %}
       </div>
@@ -980,7 +880,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <section class="content-section recommended-section">
       <div class="section-header">
         <h2 class="section-title">
-          <span class="title-icon">🎯</span>
+          <span class="title-icon"></span>
           AI 가 추천하는 책
         </h2>
         <p class="section-subtitle">당신이 좋아할 만한 작품들이에요</p>
@@ -989,7 +889,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="books-grid">
         {% for book in ai_recommended_books %}
         <div class="book-item-wrapper">
-          <a href="{% url 'book:book_detail' book.id %}" class="book-item">
+          <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
             <div class="book-cover-wrapper">
               {% if book.cover_img %}
                 <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
@@ -998,33 +898,36 @@ document.addEventListener("DOMContentLoaded", () => {
                   {{ book.name|slice:":2"|upper }}
                 </div>
               {% endif %}
-              <div class="book-badge recommended">✨ 추천</div>
+              <div class="book-badge recommended"> 추천</div>
             </div>
             <div class="book-details">
               <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h3>
-              <p class="book-meta">
-                {{ book.user.nickname }} •<br>
-                {% for genre in book.genres.all|slice:":2" %}
-                  {{ genre.name }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-              </p>
+<div class="card-genres">
+  {% for genre in book.genres.all %}
+    <span class="genre-tag" style="background-color: {{ genre.genres_color|default:'#6366f1' }};">
+      {{ genre.name }}
+    </span>
+  {% empty %}
+    <span class="no-data">장르 없음</span>
+  {% endfor %}
+</div>
+
+<!-- 태그 표시 (해시태그 스타일 + 더 세련되게) -->
+<div class="card-tags">
+  {% for tag in book.tags.all %}
+    <span class="tag-item">
+      #{{ tag.name }}
+    </span>
+  {% empty %}
+    <span class="no-data">#태그 없음</span>
+  {% endfor %}
+</div>
               <p class="book-stats">
                 ⭐ {{ book.book_score|default:"0.0" }}
               </p>
             </div>
           </a>
-          {% with first_episode=book.contents.first %}
-            {% if first_episode and first_episode.audio_file %}
-            <button class="preview-audio-btn grid-preview"
-                    data-audio="{{ first_episode.audio_file.url }}"
-                    data-title="{{ book.name }} - 1화"
-                    data-cover="{% if book.cover_img %}{{ book.cover_img.url }}{% endif %}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </button>
-            {% endif %}
-          {% endwith %}
+
         </div>
         {% endfor %}
       </div>
@@ -1044,7 +947,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <section class="content-section genre-curation-section">
       <div class="section-header">
         <h2 class="section-title">
-          <span class="title-icon">📚</span>
+          <span class="title-icon"></span>
           {{ item.genre.name }} 인기작
         </h2>
         <a href="{% url 'main:genres_books' item.genre.id %}" class="view-more-link">더보기 →</a>
@@ -1053,7 +956,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="genre-carousel">
         {% for book in item.books %}
         <div class="genre-book-card">
-          <a href="{% url 'book:book_detail' book.id %}" class="genre-book-link">
+          <a href="{% url 'book:book_detail' book.public_uuid %}" class="genre-book-link">
             <div class="genre-book-cover">
               {% if book.cover_img %}
                 <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
@@ -1062,18 +965,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   {{ book.name|slice:":2"|upper }}
                 </div>
               {% endif %}
-              {% with first_episode=book.contents.first %}
-                {% if first_episode and first_episode.audio_file %}
-                <button class="preview-audio-btn genre-preview"
-                        data-audio="{{ first_episode.audio_file.url }}"
-                        data-title="{{ book.name }} - 1화"
-                        data-cover="{% if book.cover_img %}{{ book.cover_img.url }}{% endif %}">
-                  <svg width="16" height="16" viewBox="0 0 24 24" >
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                </button>
-                {% endif %}
-              {% endwith %}
+
             </div>
             <div class="genre-book-info">
               <h4 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h4>
@@ -1082,11 +974,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span>⭐ {{ book.book_score|default:"0.0" }}</span>
               </div>
               {% if book.tags.exists %}
-              <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                {% for tag in book.tags.all|slice:":5" %}
-                  #{{ tag.name }}{% if not forloop.last %} {% endif %}
-                {% endfor %}
-              </p>
+<div class="card-genres">
+  {% for genre in book.genres.all %}
+    <span class="genre-tag" style="background-color: {{ genre.genres_color|default:'#6366f1' }};">
+      {{ genre.name }}
+    </span>
+  {% empty %}
+    <span class="no-data">장르 없음</span>
+  {% endfor %}
+</div>
+
+<!-- 태그 표시 (해시태그 스타일 + 더 세련되게) -->
+<div class="card-tags">
+  {% for tag in book.tags.all %}
+    <span class="tag-item">
+      #{{ tag.name }}
+    </span>
+  {% empty %}
+    <span class="no-data">#태그 없음</span>
+  {% endfor %}
+</div>
               {% endif %}
             </div>
           </a>
@@ -1113,7 +1020,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="books-grid" id="genreBooks" data-filter-url="{% url 'main:filter_books' %}">
         {% for book in popular_books %}
         <div class="book-item-wrapper">
-          <a href="{% url 'book:book_detail' book.id %}" class="book-item">
+          <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
             <div class="book-cover-wrapper">
               {% if book.cover_img %}
                 <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
@@ -1125,32 +1032,29 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
             <div class="book-details">
               <h3 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ book.name }}</h3>
-              <p class="book-meta">
-                {% for genre in book.genres.all|slice:":2" %}
-                  {{ genre.name }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-              </p>
-              {% if book.tags.exists %}
-              <p class="book-tags" style="margin-top: 4px; font-size: 0.3em; color: #6366f1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                {% for tag in book.tags.all|slice:":5" %}
-                  #{{ tag.name }}{% if not forloop.last %} {% endif %}
-                {% endfor %}
-              </p>
-              {% endif %}
+              <div class="card-genres">
+  {% for genre in book.genres.all %}
+    <span class="genre-tag" style="background-color: {{ genre.genres_color|default:'#6366f1' }};">
+      {{ genre.name }}
+    </span>
+  {% empty %}
+    <span class="no-data">장르 없음</span>
+  {% endfor %}
+</div>
+
+<!-- 태그 표시 (해시태그 스타일 + 더 세련되게) -->
+<div class="card-tags">
+  {% for tag in book.tags.all %}
+    <span class="tag-item">
+      #{{ tag.name }}
+    </span>
+  {% empty %}
+    <span class="no-data">#태그 없음</span>
+  {% endfor %}
+</div>
             </div>
           </a>
-          {% with first_episode=book.contents.first %}
-            {% if first_episode and first_episode.audio_file %}
-            <button class="preview-audio-btn grid-preview"
-                    data-audio="{{ first_episode.audio_file.url }}"
-                    data-title="{{ book.name }} - 1화"
-                    data-cover="{% if book.cover_img %}{{ book.cover_img.url }}{% endif %}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </button>
-            {% endif %}
-          {% endwith %}
+
         </div>
         {% empty %}
         <div class="empty-state">아직 등록된 작품이 없습니다</div>
@@ -1162,18 +1066,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   </div>
 </div>
-<!-- 하단 고정 오디오 플레이어 - Music Platform Style -->
-<div id="bottom-audio-player" class="bottom-audio-player hidden">
-  <div class="player-track-info">
-    <div class="player-cover">
-      <img id="player-cover-img" src="" alt="Book Cover" loading="lazy">
-      <div class="player-cover-placeholder">📖</div>
-    </div>
-    <div class="player-text-info">
-      <div class="player-title" id="player-book-name">책 이름</div>
-      <div class="player-subtitle">VOXLIBER</div>
-    </div>
-  </div>
+<!-- 
 
   <div class="player-controls-section">
     <div class="player-controls">
@@ -1226,7 +1119,7 @@ document.addEventListener("DOMContentLoaded", () => {
   </div>
 
   <audio id="miniAudio" style="display: none;" loading="lazy"></audio>
-</div>
+</div> -->
 
 
 <!-- Footer -->
@@ -1252,8 +1145,8 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="footer-links">
         <h3>서비스</h3>
         <ul>
-          <li><a href="/book/book-snap/">SNAP</a></li>
-          <li><a href="/book/author-dashboard/">작가 센터</a></li>
+          <li><a href="/book/book-snap/" data-login-required>SNAP</a></li>
+          <li><a href="/book/author-dashboard/" data-login-required>작가 센터</a></li>
           <li><a href="#">요금제</a></li>
         </ul>
       </div>
@@ -1264,7 +1157,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <ul>
           <li><a href="faq/">FAQ</a></li>
           <li><a href="notice/">공지사항</a></li>
-          <li><a href="contact/">문의하기</a></li>
+          <li><a href="contact/" data-login-required>문의하기</a></li>
         </ul>
       </div>
 
@@ -1272,10 +1165,10 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="footer-links">
         <h3>법적 정보</h3>
         <ul>
-          <li><a href="terms_of_service/">이용약관</a></li>
-          <li><a href="privacy_policy/">개인정보처리방침</a></li>
-          <li><a href="copyright_policy/">저작권 정책</a></li>
-          <li><a href="youth_protection/">청소년 보호정책</a></li>
+          <li><a href="terms/of/service/">이용약관</a></li>
+          <li><a href="privacy/policy/">개인정보처리방침</a></li>
+          <li><a href="copyright/policy/">저작권 정책</a></li>
+          <li><a href="youth/protection/">청소년 보호정책</a></li>
         </ul>
       </div>
     </div>

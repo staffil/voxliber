@@ -14,6 +14,9 @@ class VoiceProfile(models.Model):
     ]
 
 
+
+    
+
     voice_id = models.CharField(max_length=100, unique=True, db_index=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='voice_profiles')
     name = models.CharField(max_length=100)

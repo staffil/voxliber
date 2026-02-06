@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ target_user.nickname }} - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home/main/user_intro.css' %}">
+
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- 프로필 헤더 -->
+    <div class="profile-header">
+
+
+        <div class="profile-info-card">
+            <div class="profile-main">
+                <div class="profile-avatar">
+                    {% if target_user.user_img %}
+                    <img src="{{ target_user.user_img.url }}" alt="{{ target_user.nickname }}">
+                    {% else %}
+                    {{ target_user.nickname|slice:":1"|upper }}
+                    {% endif %}
+                </div>
+
+                <div class="profile-details">
+                    <h1 class="profile-name">{{ target_user.nickname }}</h1>
+                    {% if target_user.bio %}
+                    <p class="profile-bio">{{ target_user.bio }}</p>
+                    {% endif %}
+
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ book_list|length }}</div>
+                            <div class="stat-label">작품</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ story_list|length }}</div>
+                            <div class="stat-label">AI 스토리</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ snap_list|length }}</div>
+                            <div class="stat-label">SNAP</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ follower_count }}</div>
+                            <div class="stat-label">팔로워</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ following_count }}</div>
+                            <div class="stat-label">팔로잉</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if not is_own_profile %}
+            <div class="profile-actions">
+                {% if user.is_authenticated %}
+                <button id="followBtn"
+                        class="btn-follow {% if is_following %}following{% else %}follow{% endif %}"
+                        data-user-id="{{ target_user.user_id }}">
+                    {% if is_following %}팔로잉{% else %}팔로우{% endif %}
+                </button>
+                
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 탭 네비게이션 -->
+    <div class="profile-tabs">
+        <button class="profile-tab active" data-tab="books">
+            작품
+            <span class="tab-count">{{ book_list|length }}</span>
+        </button>
+        
+        <button class="profile-tab" data-tab="stories">
+            AI 스토리
+            <span class="tab-count">{{ story_list|length }}</span>
+        </button>
+        <button class="profile-tab" data-tab="sharedAI">
+            공유한 AI 
+            <span class="tab-count">{{ user_share_list|length }}</span>
+        </button>
+        <button class="profile-tab" data-tab="snaps">
+            SNAP
+            <span class="tab-count">{{ snap_list|length }}</span>
+        </button>
+    </div>
+
+    <!-- 작품 탭 -->
+    <div id="books-tab" class="tab-content active">
+        {% if book_list %}
+        <div class="works-grid">
+            {% for book in book_list %}
+            <a href="{% url 'book:book_detail' book.public_uuid %}" class="work-card">
+                <div class="work-cover">
+                    {% if book.cover_img %}
+                    <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                    {% else %}
+                    <div class="work-cover-placeholder">
+                        {{ book.name|slice:":2"|upper }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="work-info">
+                    <div class="work-title">{{ book.name }}</div>
+                    <div class="work-meta">{{ book.contents.count }}화</div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <p class="empty-text">아직 작품이 없습니다</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- AI 스토리 탭 -->
+    <div id="stories-tab" class="tab-content">
+        {% if story_list %}
+        <div class="works-grid">
+            {% for story in story_list %}
+            <a href="{% url 'character:story_intro' story.public_uuid %}" class="work-card ai-story">
+    <div class="work-cover">
+        {% if story.story_desc_video %}
+            <video 
+                autoplay 
+                loop 
+                muted 
+                playsinline
+                preload="metadata"
+                poster="{% if story.cover_image %}{{ story.cover_image.url }}{% endif %}" 
+                class="work-cover-video"
+            >
+                <source src="{{ story.story_desc_video.url }}" type="video/mp4">
+                <!-- fallback 이미지 -->
+                {% if story.cover_image %}
+                    <img src="{{ story.cover_image.url }}" alt="{{ story.title }}" loading="lazy">
+                {% else %}
+                    <div class="work-cover-placeholder" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        🤖
+                    </div>
+                {% endif %}
+            </video>
+        {% elif story.cover_image %}
+            <img src="{{ story.cover_image.url }}" alt="{{ story.title }}" loading="lazy">
+        {% else %}
+            <div class="work-cover-placeholder" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                🤖
+            </div>
+        {% endif %}
+
+        <!-- 오버레이: 제목과 캐릭터 수 -->
+        <div class="work-cover-overlay">
+            <div class="overlay-title">{{ story.title }}</div>
+            <div class="overlay-meta">👥 {{ story.characters.count }}명</div>
+        </div>
+    </div>
+</a>
+
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">🤖</div>
+            <p class="empty-text">아직 AI 스토리가 없습니다</p>
+        </div>
+        {% endif %}
+    </div>
+
+
+<!-- 공유한 AI 탭 -->
+<div id="sharedAI-tab" class="tab-panel">
+  <div class="recommend-grid">
+    {% for conv in user_share_list %}
+      <div class="recommend-card">
+        <a href="{% url 'main:shared_novel' conv.id %}" class="card-link" onclick="showAppInstallModal()">
+          <div class="card-image-box">
+            
+            <!-- 배경 이미지 -->
+            {% if conv.llm.llm_image %}
+              <img src="{{ conv.llm.llm_image.url }}" alt="{{ conv.llm.name }}" class="card-image" loading="lazy">
+            {% else %}
+              <div class="card-placeholder"><span class="placeholder-icon">🤖</span></div>
+            {% endif %}
+
+            <!-- 그라데이션 오버레이 -->
+            <div class="card-gradient-overlay">
+              <!-- 카드 내용: 제목 + 메시지 -->
+              <div class="card-content">
+                <h3 class="card-title">{{ conv.llm.name }}과의 이야기</h3>
+                {% if conv.messages.exists %}
+                  <p class="card-desc">{{ conv.messages.first.content|truncatechars:40|safe }}...</p>
+                {% else %}
+                  <p class="card-desc">아직 대화가 시작되지 않았어요</p>
+                {% endif %}
+              </div>
+
+ 
+            </div>
+
+          </div>
+
+          <!-- hover 아이콘 -->
+          <div class="card-hover-action"><i class="fas fa-arrow-right"></i></div>
+        </a>
+
+        <!-- 카드 하단 메타 -->
+        <div class="card-meta">
+          공유자: {{ conv.user.nickname|default:'익명' }} | {{ conv.shared_at|date:"m.d H:i" }}
+        </div>
+      </div>
+    {% empty %}
+      <div class="empty-card">
+        <p>아직 공개된 AI 대화가 없어요…</p>
+        <p>당신의 이야기를 공유해보는 건 어떨까요?</p>
+        <a href="{% url 'character:make_ai_story' %}" class="empty-btn">스토리 만들기</a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+
+    <!-- SNAP 탭 -->
+    <div id="snaps-tab" class="tab-content">
+        {% if snap_list %}
+        <div class="snap-grid">
+            {% for snap in snap_list %}
+            <div class="snap-grid-item">
+                <a href="{% url 'book:book_snap_detail' snap.public_uuid %}" data-login-required>
+                    <div class="snap-media-wrapper">
+                        {% if snap.thumbnail %}
+                        <img class="snap-thumbnail"
+                             src="{{ snap.thumbnail.url }}"
+                             alt="{{ snap.snap_title }}"
+                             loading="lazy">
+                        {% else %}
+                        <img class="snap-thumbnail"
+                             src="{% static 'images/book_snap_placeholder.png' %}"
+                             alt="{{ snap.snap_title }}"
+                             loading="lazy">
+                        {% endif %}
+
+                        {% if snap.snap_video %}
+                        <video class="hover-video"
+                               muted
+                               loop
+                               playsinline
+                               preload="none"
+                               data-src="{{ snap.snap_video.url }}">
+                        </video>
+                        {% endif %}
+
+                        <div class="snap-overlay">
+                            <h3>{{ snap.snap_title|default:"제목 없음" }}</h3>
+                            <div class="snap-meta">
+                                {% if snap.views %}
+                                <span>👁 {{ snap.views }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📸</div>
+            <p class="empty-text">아직 SNAP이 없습니다</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 탭 전환
+    const tabs = document.querySelectorAll('.profile-tab');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const target = this.dataset.tab;
+
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+
+            this.classList.add('active');
+            document.getElementById(`${target}-tab`).classList.add('active');
+        });
+    });
+
+    // 팔로우 버튼
+    const followBtn = document.getElementById('followBtn');
+    if (followBtn) {
+        followBtn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+
+            fetch(`/book/follow/${userId}/toggle/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.is_following) {
+                        this.textContent = '팔로잉';
+                        this.classList.remove('follow');
+                        this.classList.add('following');
+                    } else {
+                        this.textContent = '팔로우';
+                        this.classList.remove('following');
+                        this.classList.add('follow');
+                    }
+                    // 팔로워 수 업데이트
+                    const followerStat = document.querySelector('.stat-item:nth-child(4) .stat-value');
+                    if (followerStat) {
+                        followerStat.textContent = data.follower_count;
+                    }
+                }
+            })
+            .catch(error => console.error('팔로우 오류:', error));
+        });
+    }
+
+    // SNAP 비디오 호버 재생
+    const snapItems = document.querySelectorAll('.snap-grid-item');
+    snapItems.forEach(item => {
+        const video = item.querySelector('.hover-video');
+        if (!video) return;
+
+        item.addEventListener('mouseenter', function() {
+            if (!video.src && video.dataset.src) {
+                video.src = video.dataset.src;
+            }
+            video.currentTime = 0;
+            video.play().catch(() => {});
+        });
+
+        item.addEventListener('mouseleave', function() {
+            video.pause();
+            video.currentTime = 0;
+        });
+    });
+});
+</script>
+{% endblock %}

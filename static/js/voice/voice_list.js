@@ -186,7 +186,7 @@ function submitAlias() {
     formData.append('voice_id', selectedVoiceId);
     formData.append('alias_name', aliasName);
 
-fetch("/voice/voice_list/", {
+fetch("/voice/voice/list/", {
         method: "POST",
         body: formData,
         headers: {

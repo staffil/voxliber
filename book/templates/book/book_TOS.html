@@ -13,8 +13,10 @@
 
         <!-- 헤더 -->
         <div class="terms-header">
-            <div class="header-icon">📋</div>
-            <h1 class="terms-title">콘텐츠 생성 이용약관</h1>
+            <div class="header-icon">
+                <img src="{% static 'img/logo3.png'%}" alt="" style="width: 100px; height: 100px;">
+            </div>
+                        <h1 class="terms-title">콘텐츠 생성 이용약관</h1>
             <p class="terms-subtitle">오디오북 · Book Snap 생성 전 필수 동의 사항</p>
             <div class="last-updated">최종 수정일: {% now "Y년 m월 d일" %}</div>
         </div>
@@ -186,7 +188,7 @@
         <!-- 하단 버튼 -->
         <div class="terms-actions">
             <a href="javascript:history.back();" class="btn btn-secondary">이전으로</a>
-            <a href="{% url 'book:book_profile' %}" class="btn btn-primary">동의하고 북 만들기</a>
+            <a href="{% url 'book:book_profile' %}" class="btn btn-primary" data-login-required>동의하고 북 만들기</a>
         </div>
 
     </div>

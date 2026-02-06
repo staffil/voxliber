@@ -1,0 +1,565 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% if story %}스토리 편집{% else %}새 스토리 만들기{% endif %} - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/character/make_ai_story.css' %}">
+{% endblock %}
+
+{% block content %}
+<br><br><br><br>
+
+<main class="story-create-container">
+    <div class="story-create-header">
+        <h1 class="page-title">
+            <span class="title-icon">📖</span>
+            {% if story %}스토리 편집{% else %}새 스토리 만들기{% endif %}
+        </h1>
+        <p class="page-subtitle">AI 캐릭터들이 활동할 세계를 만들어보세요</p>
+    </div>
+
+    <form method="POST" action="" enctype="multipart/form-data" class="story-form">
+        {% csrf_token %}
+        {% if story_uuid %}
+            <input type="hidden" name="story_uuid" value="{{ story_uuid }}" >
+        {% endif %}
+
+        <div class="form-section">
+            <!-- 제목 -->
+            <div class="form-group">
+                <label for="title" class="form-label">
+                    <span class="label-icon">✨</span>
+                    스토리 제목
+                </label>
+                <input
+                    type="text"
+                    name="title"
+                    id="title"
+                    class="form-input"
+                    value="{{ story.title|default_if_none:'' }}"
+                    placeholder="예: 황혼의 검객, 별이 지는 밤"
+                    required
+                    maxlength="200" data-login-required
+                >
+            </div>
+
+            <!-- 설명 -->
+            <div class="form-group">
+                <label for="description" class="form-label">
+                    <span class="label-icon">📝</span>
+                    스토리 설명 (선택)
+                </label>
+                <textarea
+                    name="description"
+                    id="description"
+                    class="form-textarea"
+                    rows="5"
+                    placeholder="이 스토리의 배경, 분위기, 주요 테마 등을 간단히 적어주세요." data-login-required
+                >{{ story.description|default_if_none:'' }}</textarea>
+            </div>
+
+            <!-- 표지 이미지 -->
+<!-- 통합 미디어 업로드 (이미지 + 영상) -->
+<!-- 통합 미디어 업로드 (이미지 + 영상) -->
+<div class="form-group">
+    <label class="form-label">
+        <span class="label-icon">🖼️🎥</span>
+        표지 미디어 (이미지 또는 영상 선택)
+    </label>
+    <div class="image-upload-area" id="media-upload-area">
+        <!-- 미리보기 컨테이너 (저장된 값 있으면 보이게) -->
+        <div id="media-preview-container" style="display: {% if story.cover_image or story.story_desc_video %}block{% else %}none{% endif %};">
+            <!-- 저장된 영상 우선 표시 -->
+            {% if story.story_desc_video %}
+                <video id="media-preview-video" class="media-preview" controls loop muted style="max-height: 220px;">
+                    <source src="{{ story.story_desc_video.url }}" type="video/mp4">
+                </video>
+            {% endif %}
+
+            <!-- 저장된 이미지만 있는 경우 -->
+            {% if story.cover_image and not story.story_desc_video %}
+                <img id="media-preview-image" src="{{ story.cover_image.url }}" alt="표지 미리보기" class="media-preview" style="max-height: 220px;">
+            {% endif %}
+        </div>
+
+        <!-- 플레이스홀더 (아무것도 없을 때) -->
+        <div class="upload-placeholder" id="media-placeholder" style="display: {% if not story.cover_image and not story.story_desc_video %}block{% else %}none{% endif %}">
+            <span class="upload-icon">🖼️🎥</span>
+            <span class="upload-text">클릭하여 이미지 또는 영상 선택</span>
+        </div>
+
+        <!-- 파일 입력 -->
+        <input type="file" name="cover_media" accept="image/*,video/mp4,video/webm" id="cover_media_input" class="file-input-hidden" data-login-required>
+    </div>
+    <span class="form-hint">이미지(JPG/PNG) 또는 짧은 영상(MP4/WebM)을 업로드하세요. 최대 10MB 추천.</span>
+</div>
+
+
+<div class="form-group">
+    <label class="form-label">
+        <span class="label-icon">🖼️</span>
+        설명 이미지(선택)
+    </label>
+    <div class="image-upload-area" id="desc-upload-area">
+        <!-- 미리보기 이미지 -->
+        <img 
+            src="{% if story and story.desc_img %}{{ story.desc_img.url }}{% else %}{% static 'images/default-placeholder.jpg' %}{% endif %}" 
+            alt="설명 이미지 미리보기" 
+            class="cover-preview" 
+            id="desc-preview"
+            {% if not story or not story.desc_img %}style="display:none;"{% endif %}
+        >
+
+        <!-- 플레이스홀더 (이미지가 없을 때) -->
+        <div class="upload-placeholder" id="desc-placeholder"
+             {% if story and story.desc_img %}style="display:none;"{% endif %}>
+            <span class="upload-icon">📁</span>
+            <span class="upload-text">AI 소설을 꾸밀 이미지를 선택해주세요.</span>
+        </div>
+
+        <!-- 실제 파일 입력 -->
+        <input type="file" name="desc_img" accept="image/*" id="desc-image-input" class="file-input-hidden" data-login-required>
+    </div>
+</div>
+
+
+        <div class="form-section">
+            <!-- 장르 선택 -->
+            <div class="form-group">
+                <label class="form-label">
+                    <span class="label-icon">🎭</span>
+                    장르 선택 (여러 개 가능)
+                </label>
+                <div class="genre-grid">
+                    {% for genre in genre_list %}
+                    <label class="genre-option">
+                        <input type="checkbox" name="genres" value="{{ genre.id }}"
+                            {% if genre.id in initial_genres %}checked{% endif %} data-login-required>
+                        <span class="genre-box" style="--genre-color: {{ genre.genres_color|default:'#6366f1' }}">
+                            {{ genre.name }}
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 태그 선택 -->
+            <div class="form-group">
+                <label class="form-label">
+                    <span class="label-icon">🏷️</span>
+                    태그 선택
+                </label>
+
+                <!-- 태그 검색/추가 입력 -->
+                <div class="tag-input-wrapper">
+                    <input type="text" id="tag-search" class="tag-search-input" placeholder="태그 검색 또는 추가..." data-login-required>
+                    <button type="button" id="add-tag-btn" class="add-tag-btn" data-login-required>추가</button>
+                </div>
+
+                <!-- 선택된 태그 표시 영역 -->
+                <div class="selected-tags" id="selected-tags">
+                    {% if story %}
+                        {% for tag in story.tags.all %}
+                        <input type="hidden" name="tags" value="{{ tag.id }}" data-login-required>
+                        <span class="selected-tag" data-tag-id="{{ tag.id }}">#{{ tag.name }} <button type="button" class="remove-tag-btn" data-login-required>&times;</button></span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- 태그 목록 -->
+                <div class="tag-list-wrapper">
+                    <div class="tag-grid" id="tag-grid">
+                        {% for tag in tag_list %}
+                        <label class="tag-option">
+                            <input type="checkbox" class="tag-checkbox" value="{{ tag.id }}"
+                                {% if tag.id in initial_tags %}checked{% endif %} data-login-required>
+                            <span class="tag-box">#{{ tag.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <!-- TTS 나레이션 목소리 -->
+            <div class="form-group">
+                <label for="voice_id" class="form-label">
+                    <span class="label-icon">🎙️</span>
+                    TTS 나레이션 목소리
+                </label>
+                <select name="voice_id" id="voice_id" class="form-select" data-login-required>
+                    <option value="" >선택 없음 (기본 목소리)</option>
+                    {% for voice in voice_list %}
+                    <option value="{{ voice.voice_id }}" {% if voice.voice_id == initial_voice_id %}selected{% endif %}>
+                        {{ voice.voice_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="form-hint">스토리 내레이션에 사용될 목소리입니다</span>
+            </div>
+        </div>
+        <div class="form-section">
+
+                                <div class="terms-checkbox-wrapper">
+                                <label class="custom-checkbox">
+<input type="checkbox"
+       id="adult_choice"
+       name="adult_choice"
+       value="on"
+       {% if story and story.adult_choice %}checked{% endif %} data-login-required>
+       
+                                    <span class="checkbox-icon"></span>
+                                    <span class="checkbox-text">
+                                    <a href="/terms/of/service/" class="terms-link" target="_blank" data-login-required>잔인성, 선정성이 있는 작품</a>이면 동의를 눌러주세요.
+                                    </span>
+                                </label>
+                                </div>
+        </div>
+
+        <!-- 제출 버튼 -->
+        <div class="form-actions">
+            <button type="submit" class="submit-btn">
+                {% if story %}
+                    <span>💾</span> 스토리 저장
+                {% else %}
+                    <span>🚀</span> 스토리 만들고 캐릭터 추가하기
+                {% endif %}
+            </button>
+        </div>
+    </form>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+const mediaUploadArea = document.getElementById('media-upload-area');
+    const mediaFileInput = document.getElementById('cover_media_input');
+    const previewContainer = document.getElementById('media-preview-container');
+    const previewImage = document.getElementById('media-preview-image');
+    const previewVideo = document.getElementById('media-preview-video');
+    const placeholder = document.getElementById('media-placeholder');
+
+    if (mediaUploadArea && mediaFileInput) {
+        mediaUploadArea.addEventListener('click', () => mediaFileInput.click());
+
+        mediaFileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            console.log('[MEDIA] 파일 선택됨:', file.name, file.type); // 디버깅용
+
+            const url = URL.createObjectURL(file);
+            placeholder.style.display = 'none';
+            previewContainer.style.display = 'block';
+
+            // 기존 미리보기 초기화
+            previewImage.style.display = 'none';
+            previewVideo.style.display = 'none';
+
+            if (file.type.startsWith('image/')) {
+                previewImage.src = url;
+                previewImage.style.display = 'block';
+            } else if (file.type.startsWith('video/')) {
+                previewVideo.src = url;
+                previewVideo.style.display = 'block';
+                previewVideo.muted = true;
+                previewVideo.loop = true;
+                previewVideo.play().catch(err => {
+                    console.log('[MEDIA] 자동 재생 실패:', err);
+                });
+            } else {
+                console.warn('[MEDIA] 지원하지 않는 파일 형식:', file.type);
+                alert('이미지 또는 MP4/WebM 영상만 지원합니다.');
+            }
+        });
+
+        // 드래그 앤 드롭
+        mediaUploadArea.addEventListener('dragover', e => {
+            e.preventDefault();
+            mediaUploadArea.classList.add('dragover');
+        });
+
+        mediaUploadArea.addEventListener('dragleave', () => {
+            mediaUploadArea.classList.remove('dragover');
+        });
+
+        mediaUploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            mediaUploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
+                mediaFileInput.files = e.dataTransfer.files;
+                mediaFileInput.dispatchEvent(new Event('change'));
+            }
+        });
+    }
+
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    if (placeholder) placeholder.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 드래그 앤 드롭
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+    }
+
+    // 장르 선택 시각적 피드백
+    document.querySelectorAll('.genre-option input').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            this.closest('label').classList.toggle('selected', this.checked);
+        });
+
+        // 초기 상태 설정
+        if (checkbox.checked) {
+            checkbox.closest('label').classList.add('selected');
+        }
+    });
+
+    // ========================================
+    // 태그 검색/추가 기능
+    // ========================================
+    const tagSearchInput = document.getElementById('tag-search');
+    const selectedTagsContainer = document.getElementById('selected-tags');
+    const tagGrid = document.getElementById('tag-grid');
+    const addTagBtn = document.getElementById('add-tag-btn');
+
+    // 선택된 태그 업데이트 함수
+    function updateSelectedTags() {
+        const checkboxes = document.querySelectorAll('.tag-checkbox:checked');
+        selectedTagsContainer.innerHTML = '';
+
+        checkboxes.forEach(checkbox => {
+            const tagName = checkbox.parentElement.querySelector('.tag-box').textContent;
+            const tagId = checkbox.value;
+
+            // hidden input 추가
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'tags';
+            input.value = tagId;
+            selectedTagsContainer.appendChild(input);
+
+            // 선택된 태그 표시
+            const span = document.createElement('span');
+            span.className = 'selected-tag';
+            span.dataset.tagId = tagId;
+            span.innerHTML = `${tagName} <button type="button" class="remove-tag-btn">&times;</button>`;
+            selectedTagsContainer.appendChild(span);
+        });
+    }
+
+    // 태그 제거 버튼 클릭 이벤트
+    selectedTagsContainer?.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-tag-btn')) {
+            const tagSpan = e.target.closest('.selected-tag');
+            const tagId = tagSpan.dataset.tagId;
+
+            // 체크박스 해제
+            const checkbox = document.querySelector(`.tag-checkbox[value="${tagId}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+                checkbox.closest('label').classList.remove('selected');
+            }
+
+            updateSelectedTags();
+        }
+    });
+
+    // 태그 체크박스 클릭 이벤트
+    tagGrid?.addEventListener('change', function(e) {
+        if (e.target.classList.contains('tag-checkbox')) {
+            e.target.closest('label').classList.toggle('selected', e.target.checked);
+            updateSelectedTags();
+        }
+    });
+
+    // 태그 검색 기능
+    tagSearchInput?.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        const tagOptions = document.querySelectorAll('.tag-option');
+
+        tagOptions.forEach(option => {
+            const tagName = option.querySelector('.tag-box').textContent.toLowerCase();
+            if (tagName.includes(searchTerm) || searchTerm === '') {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    });
+
+    // 쿠키 가져오기
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // 태그 추가 버튼
+    addTagBtn?.addEventListener('click', async function() {
+        const name = tagSearchInput.value.trim();
+        if (!name) {
+            alert('태그 이름을 입력해주세요.');
+            return;
+        }
+
+        try {
+            const res = await fetch('/book/tags/add/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `name=${encodeURIComponent(name)}`
+            });
+
+            if (!res.ok) {
+                throw new Error('태그 추가 실패');
+            }
+
+            const tag = await res.json();
+
+            // 이미 존재하는 태그인지 확인
+            const existingCheckbox = document.querySelector(`.tag-checkbox[value="${tag.id}"]`);
+            if (existingCheckbox) {
+                existingCheckbox.checked = true;
+                existingCheckbox.closest('label').classList.add('selected');
+            } else {
+                // 새 태그를 태그 그리드에 추가
+                const label = document.createElement('label');
+                label.className = 'tag-option selected';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'tag-checkbox';
+                checkbox.value = tag.id;
+                checkbox.checked = true;
+
+                const span = document.createElement('span');
+                span.className = 'tag-box';
+                span.textContent = '#' + tag.name;
+
+                label.appendChild(checkbox);
+                label.appendChild(span);
+                tagGrid.appendChild(label);
+            }
+
+            // 선택된 태그 업데이트
+            updateSelectedTags();
+
+            tagSearchInput.value = '';
+
+            // 검색 필터 초기화
+            document.querySelectorAll('.tag-option').forEach(option => {
+                option.style.display = '';
+            });
+
+            if (tag.created) {
+                alert(`새 태그 "#${tag.name}"가 추가되었습니다.`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('태그 추가 중 오류가 발생했습니다.');
+        }
+    });
+
+    // Enter 키로 태그 추가
+    tagSearchInput?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addTagBtn.click();
+        }
+    });
+
+    // 초기 선택된 태그 표시
+    updateSelectedTags();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('desc-upload-area');
+    const fileInput = document.getElementById('desc-image-input');
+    const preview = document.getElementById('desc-preview');
+    const placeholder = document.getElementById('desc-placeholder');
+
+    // 클릭 시 파일 선택창 열기
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // 파일 선택 시 미리보기 업데이트
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    if (placeholder) placeholder.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 드래그 앤 드롭 지원 (옵션, 편의성 ↑)
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover'); // CSS로 hover 효과 주기
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+    }
+});
+
+</script>
+{% endblock %}

@@ -1,0 +1,187 @@
+/* =========================
+   공통 컨테이너
+========================= */
+
+.library-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 120px 50px 80px;
+  min-height: 100vh;
+}
+
+/* 헤더 */
+.library-header {
+  margin-bottom: 40px;
+}
+
+.library-title {
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.library-subtitle {
+  font-size: 14px;
+  color: #888;
+  margin-top: 6px;
+}
+
+/* =========================
+   AI 결과 카드
+========================= */
+
+.ai-stories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 24px;
+}
+
+.ai-story-card {
+  position: relative;
+  display: block;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.ai-story-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(102, 126, 234, 0.4);
+  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.25);
+}
+
+/* 커버 */
+.story-cover-section {
+  width: 100%;
+  height: 280px;
+  overflow: hidden;
+  position: relative;
+}
+
+.story-cover-section img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.ai-story-card:hover img {
+  transform: scale(1.1);
+}
+
+/* 커버 없을 때 */
+.story-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.story-cover-placeholder span {
+  font-size: 64px;
+  opacity: 0.7;
+}
+
+/* 하단 텍스트 오버레이 */
+.story-info-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 16px;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.85),
+    rgba(0, 0, 0, 0.3),
+    transparent
+  );
+}
+
+.story-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.story-desc{
+      font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================
+   반응형
+========================= */
+
+@media (max-width: 768px) {
+  .library-container {
+    padding: 100px 20px 60px;
+  }
+
+  .library-title {
+    font-size: 24px;
+  }
+
+  .ai-stories-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .story-cover-section {
+    height: 300px;
+  }
+}
+@media (max-width: 418px) {
+  .library-container {
+    padding: 100px 20px 60px;
+  }
+
+  .library-title {
+    font-size: 24px;
+  }
+
+  .ai-stories-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .story-cover-section {
+    height: 300px;
+  }
+}
+/* =========================
+   Light Mode
+========================= */
+
+body.light-mode .library-title {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+body.light-mode .ai-story-card {
+  background: #fff;
+  border-color: #e5e7eb;
+}
+
+body.light-mode .ai-story-card:hover {
+  background: #fafafa;
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+body.light-mode .story-title {
+  color: #0f172a;
+}

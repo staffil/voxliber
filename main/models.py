@@ -167,3 +167,17 @@ class Policy(models.Model):
     def __str__(self):
         return f"{self.get_policy_type_display()} - {self.title}"
 
+
+
+# 광고 테이블
+class ScreenAI(models.Model):
+    title = models.CharField(max_length=300)
+    link = models.CharField(max_length=200)
+    advertisment_img = models.ImageField(upload_to="upload/advertisment/", null=True)
+
+    class Meta:
+        db_table= "screen_ai"
+        verbose_name = "ai 광고 테이블"
+    def __str__(self):
+        return self.title
+

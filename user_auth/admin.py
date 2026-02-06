@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from main.models import SnapBtn, Advertisment,Notice, FAQ, Contact, Terms, Policy
+from main.models import SnapBtn, Advertisment,Notice, FAQ, Contact, Terms, Policy, ScreenAI
 
 from book.models import Books, Genres, Content, Poem_list
 
@@ -96,6 +96,25 @@ class AdvertismentAdmin(admin.ModelAdmin):
     
 
 
+# ai 광고 관리자
+@admin.register(ScreenAI)
+class ScreenAIAdmin(admin.ModelAdmin):
+    list_display = ("제목", "이미지", "링크")
+    search_fields = ("title", "link")
+
+    @admin.display(description="제목")
+    def 제목(self, obj):
+        return obj.title
+
+    
+    @admin.display(description="이미지")
+    def 이미지(self, obj):
+        return obj.advertisment_img
+    
+    @admin.display(description="링크")
+    def 링크(self, obj):
+        return obj.link
+    
 # 시 관리자
 @admin.register(Poem_list)
 class Poem_listAdmin(admin.ModelAdmin):

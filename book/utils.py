@@ -135,20 +135,35 @@ def merge_audio_files(audio_files, pages_text=None):
         for idx, audio_file in enumerate(audio_files):
             print(f"🔄 {idx + 1}/{len(audio_files)} 오디오 처리 중...")
 
-            temp_path = os.path.join(temp_dir, f'temp_{uuid4().hex}.mp3')
+            temp_path = None
+            is_temp_file = False
 
-            # 파일 저장
+            # 파일 경로(문자열) 또는 파일 객체 처리
             try:
-                audio_file.seek(0)  # 파일 포인터 리셋
-                if hasattr(audio_file, 'chunks'):
-                    with open(temp_path, 'wb') as f:
-                        for chunk in audio_file.chunks():
-                            f.write(chunk)
+                if isinstance(audio_file, str):
+                    # 파일 경로인 경우 - 직접 사용
+                    if os.path.exists(audio_file):
+                        temp_path = audio_file
+                        is_temp_file = False
+                        print(f"📂 파일 경로 사용: {temp_path}")
+                    else:
+                        print(f"❌ 파일이 존재하지 않습니다: {audio_file}")
+                        return None, None
                 else:
-                    with open(temp_path, 'wb') as f:
-                        f.write(audio_file.read())
+                    # 파일 객체인 경우 - 임시 파일로 저장
+                    temp_path = os.path.join(temp_dir, f'temp_{uuid4().hex}.mp3')
+                    is_temp_file = True
+                    audio_file.seek(0)  # 파일 포인터 리셋
+                    if hasattr(audio_file, 'chunks'):
+                        with open(temp_path, 'wb') as f:
+                            for chunk in audio_file.chunks():
+                                f.write(chunk)
+                    else:
+                        with open(temp_path, 'wb') as f:
+                            f.write(audio_file.read())
+                    print(f"💾 임시 파일 저장: {temp_path}")
             except Exception as e:
-                print(f"❌ 파일 저장 실패: {e}")
+                print(f"❌ 파일 처리 실패: {e}")
                 traceback.print_exc()
                 return None, None
 
@@ -187,11 +202,14 @@ def merge_audio_files(audio_files, pages_text=None):
             except Exception as e:
                 print(f"❌ AudioSegment 로드 실패: {e}")
                 traceback.print_exc()
-                os.remove(temp_path)
+                # 임시 파일만 삭제 (외부에서 전달받은 파일 경로는 삭제하지 않음)
+                if is_temp_file and temp_path and os.path.exists(temp_path):
+                    os.remove(temp_path)
                 return None, None
 
-            # 임시 파일 삭제
-            os.remove(temp_path)
+            # 임시 파일만 삭제 (외부에서 전달받은 파일 경로는 삭제하지 않음)
+            if is_temp_file and temp_path and os.path.exists(temp_path):
+                os.remove(temp_path)
 
         # 최종 오디오 export
 

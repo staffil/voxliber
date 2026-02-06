@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER - AI 채팅 콘텐츠 이용약관{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/book/book_tos.css' %}">
+{% endblock %}
+
+{% block content %}
+<br><br><br><br>
+
+<div class="terms-wrapper" style="margin-top: 100px;">
+    <div class="terms-container">
+
+        <!-- 헤더 -->
+        <div class="terms-header">
+            <div class="header-icon">
+                <img src="{% static 'img/galatea.png'%}" alt="" style="width: 100px; height: 100px;">
+            </div>
+            <h1 class="terms-title">콘텐츠 생성 이용약관</h1>
+            <p class="terms-subtitle">AI 콘텐츠 생성 전 필수 동의 사항</p>
+            <div class="last-updated">최종 수정일: {% now "Y년 m월 d일" %}</div>
+        </div>
+
+        <!-- 목차 -->
+        <div class="terms-toc">
+            <h3 class="toc-title">목차</h3>
+            <ul class="toc-list">
+                <li><a href="#article1">제1조 (목적 및 근거)</a></li>
+                <li><a href="#article2">제2조 (용어 정의)</a></li>
+                <li><a href="#article3">제3조 (약관의 효력)</a></li>
+                <li><a href="#article4">제4조 (콘텐츠 생성 자격)</a></li>
+                <li><a href="#article5">제5조 (서비스 제공 범위)</a></li>
+                <li><a href="#article6">제6조 (금지 콘텐츠 기준)</a></li>
+                <li><a href="#article7">제7조 (콘텐츠 책임의 귀속)</a></li>
+                <li><a href="#article8">제8조 (통지 및 운영 정책)</a></li>
+                <li><a href="#article9">제9조 (저작권 정책)</a></li>
+                <li><a href="#article10">제10조 (면책 조항)</a></li>
+                <li><a href="#article11">제11조 (준거법)</a></li>
+            </ul>
+        </div>
+
+        <!-- 본문 -->
+        <div class="terms-content">
+
+            <!-- 제1조 -->
+            <article class="terms-article" id="article1">
+                <h2 class="article-title">제1조 (목적 및 근거)</h2>
+                <div class="article-content">
+                    <p>
+                        본 약관은 「전자상거래 등에서의 소비자보호에 관한 법률」,
+                        「정보통신망 이용촉진 및 정보보호 등에 관한 법률」,
+                        「저작권법」 등 관계 법령을 근거로 하여,
+                        VOXLIBER(이하 “회사”)의 AI 기반 오디오북 및 Book Snap 콘텐츠 생성 서비스 이용 시
+                        회원과 회사 간의 권리·의무 및 책임 소재를 명확히 함을 목적으로 합니다.
+                    </p>
+                </div>
+            </article>
+
+            <!-- 제2조 -->
+            <article class="terms-article" id="article2">
+                <h2 class="article-title">제2조 (용어 정의)</h2>
+                <div class="article-content">
+                    <ol>
+                        <li><strong>“서비스”</strong>란 회사가 제공하는 AI 음성 합성, 텍스트 기반 오디오북 및 Book Snap 생성 기능을 말합니다.</li>
+                        <li><strong>“회원”</strong>이란 본 약관에 동의하고 콘텐츠를 생성하는 이용자를 의미합니다.</li>
+                        <li><strong>“콘텐츠”</strong>란 회원이 입력하거나 AI를 통해 생성한 모든 텍스트, 음성, 오디오 파일을 말합니다.</li>
+                    </ol>
+                </div>
+            </article>
+
+            <!-- 제3조 -->
+            <article class="terms-article" id="article3">
+                <h2 class="article-title">제3조 (약관의 효력)</h2>
+                <div class="article-content">
+                    <ol>
+                        <li>본 약관은 콘텐츠 생성 버튼을 클릭하여 동의함과 동시에 효력이 발생합니다.</li>
+                        <li>본 약관은 회사의 전체 이용약관 및 개인정보처리방침의 일부로 적용됩니다.</li>
+                    </ol>
+                </div>
+            </article>
+
+            <!-- 제4조 -->
+            <article class="terms-article" id="article4">
+                <h2 class="article-title">제4조 (콘텐츠 생성 자격)</h2>
+                <div class="article-content">
+                    <p>
+                        본 서비스는 회원만 이용 가능하며,
+                        청소년 보호법에 따라 연령 제한 콘텐츠는 성인 인증 후에만 생성할 수 있습니다.
+                    </p>
+                </div>
+            </article>
+
+            <!-- 제5조 -->
+            <article class="terms-article" id="article5">
+                <h2 class="article-title">제5조 (서비스 제공 범위)</h2>
+                <div class="article-content">
+                    <ol>
+                        <li>회사는 AI 기술을 활용한 콘텐츠 생성 도구를 제공합니다.</li>
+                        <li>AI 생성 결과물은 입력 데이터 및 알고리즘 특성에 따라 달라질 수 있습니다.</li>
+                        <li>본 조항은 「정보통신망법」 제44조의7에 따른 서비스 제공자 책임 제한을 근거로 합니다.</li>
+                    </ol>
+                </div>
+            </article>
+
+            <!-- 제6조 -->
+            <article class="terms-article" id="article6">
+                <h2 class="article-title">제6조 (금지 콘텐츠 기준)</h2>
+                <div class="article-content">
+                    <ol>
+                        <li>회원은 다음 기준을 위반하는 콘텐츠를 생성할 수 없습니다:
+                            <ul>
+                                <li>「저작권법」을 위반하는 타인의 저작물</li>
+                                <li>「형법」, 「정보통신망법」상 불법·혐오 콘텐츠</li>
+                                <li>실존 인물의 명예, 초상권, 개인정보를 침해하는 내용</li>
+                                <li>「청소년 보호법」상 유해 매체물</li>
+                            </ul>
+                        </li>
+                        <li>회사는 위반 콘텐츠에 대해 사전 통지 없이 삭제 또는 접근 제한할 수 있습니다.</li>
+                    </ol>
+                </div>
+            </article>
+
+            <!-- 제7조 -->
+            <article class="terms-article" id="article7">
+                <h2 class="article-title">제7조 (콘텐츠 책임의 귀속)</h2>
+                <div class="article-content">
+                    <ol>
+                        <li>콘텐츠의 내용과 사용에 대한 법적 책임은 전적으로 회원에게 귀속됩니다.</li>
+                        <li>회사는 AI 생성 결과물의 적법성, 정확성, 상업적 활용 가능성을 보증하지 않습니다.</li>
+                        <li>본 조항은 「저작권법」 및 판례상 사용자 책임 원칙을 따릅니다.</li>
+                    </ol>
+                </div>
+            </article>
+
+            <!-- 제8조 -->
+            <article class="terms-article" id="article8">
+                <h2 class="article-title">제8조 (통지 및 운영 정책)</h2>
+                <div class="article-content">
+                    <p>
+                        회사는 서비스 운영과 관련된 사항을 공지사항 또는 이메일을 통해 고지할 수 있으며,
+                        이는 「전자문서 및 전자거래 기본법」에 따른 통지로 효력을 가집니다.
+                    </p>
+                </div>
+            </article>
+
+            <!-- 제9조 -->
+            <article class="terms-article" id="article9">
+                <h2 class="article-title">제9조 (저작권 정책)</h2>
+                <div class="article-content">
+                    <ol>
+                        <li>회원이 생성한 콘텐츠의 저작권은 회원에게 귀속됩니다.</li>
+                        <li>회사는 서비스 제공, 품질 개선, 홍보 목적에 한하여 비독점적으로 이를 이용할 수 있습니다.</li>
+                        <li>본 조항은 「저작권법」 제10조 및 제46조를 근거로 합니다.</li>
+                    </ol>
+                </div>
+            </article>
+
+            <!-- 제10조 -->
+            <article class="terms-article" id="article10">
+                <h2 class="article-title">제10조 (면책 조항)</h2>
+                <div class="article-content">
+                    <ol>
+                        <li>회사는 AI 기술 특성상 발생하는 결과에 대해 책임을 지지 않습니다.</li>
+                        <li>이는 「정보통신망법」상 정보제공자 면책 원칙에 따릅니다.</li>
+                    </ol>
+                </div>
+            </article>
+
+            <!-- 제11조 -->
+            <article class="terms-article" id="article11">
+                <h2 class="article-title">제11조 (준거법)</h2>
+                <div class="article-content">
+                    <p>
+                        본 약관은 대한민국 법률을 준거법으로 하며,
+                        분쟁 발생 시 민사소송법상 관할 법원을 따릅니다.
+                    </p>
+                </div>
+            </article>
+
+        </div>
+
+        <!-- 부칙 -->
+        <div class="terms-addendum">
+            <h3 class="addendum-title">부칙</h3>
+            <p>본 약관은 {% now "Y년 m월 d일" %}부터 시행됩니다.</p>
+        </div>
+
+        <!-- 하단 버튼 -->
+        <div class="terms-actions">
+            <a href="javascript:history.back();" class="btn btn-secondary">이전으로</a>
+            <a href="{% url 'character:make_ai_story' %}" class="btn btn-primary" data-login-required>동의하고 AI 소설 만들기</a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/book/book_tos.js' %}"></script>
+{% endblock %}

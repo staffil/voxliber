@@ -24,7 +24,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 환경변수 로드
 load_dotenv(BASE_DIR / ".env")
-
 # 외부 서비스 URL
 EXTERNAL_TTS_URL = os.getenv('EXTERNAL_TTS_URL')
 if not EXTERNAL_TTS_URL and not os.getenv('DEBUG', 'False') == 'True':
@@ -49,11 +48,15 @@ if not SECRET_KEY:
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'  # 기본값 False로 변경
+API_KEY = os.getenv("API_KEY")
 
 # 프로덕션 호스트
 ALLOWED_HOSTS = [
-    'voxliber.ink',
-    'www.voxliber.ink',
+    # 'voxliber.ink',
+    # 'www.voxliber.ink',
+    #  "192.168.35.8",
+    #  "127.0.0.1",
+    "*"
 ]
 
 # 개발 환경
@@ -100,8 +103,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework.authtoken',
-
     "django_celery_results",
+    "character",
+    "introduce_ai",
     
 
     
@@ -175,7 +179,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "ko-kr"
 
 TIME_ZONE = "UTC"
 

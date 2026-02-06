@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ llm.name }} - AI 소개{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/character/ai_intro.css' %}">
+{% endblock %}
+
+{% block content %}
+<br><br><br>
+<div class="ai-intro-container">
+    <!-- 헤더 -->
+    <div class="intro-header">
+        <span class="intro-header-title">AI 캐릭터 정보</span>
+        <a href="javascript:history.back()" class="intro-close-btn">&times;</a>
+    </div>
+
+    <!-- 메인 이미지 -->
+    <div class="intro-main-image">
+        {% if llm.llm_image %}
+            <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}">
+        {% else %}
+            <div class="intro-main-image-placeholder">🤖</div>
+        {% endif %}
+        <div class="intro-like-badge">
+            <span>👍</span>
+            <span>{{ llm.likes|default:0 }}</span>
+        </div>
+    </div>
+
+    <!-- 컨텐츠 -->
+    <div class="intro-content">
+        <!-- 제목 -->
+        <h1 class="intro-title">{{ llm.name }}</h1>
+
+        <!-- 작성자 -->
+        <div class="intro-author-row">
+            <div class="intro-author-avatar">
+                {{ llm.user.username|slice:":1"|upper }}
+            </div>
+            <span class="intro-author-name">
+                @ <a href="#">{{ llm.user.nickname }}</a>
+            </span>
+        </div>
+
+        <!-- 태그 -->
+        <div class="intro-tags">
+            {% if llm.story %}
+            <span class="intro-tag highlight">📖 {{ llm.story.title }}</span>
+            {% endif %}
+   
+            {% if llm.language %}
+            <span class="intro-tag">🌐 {{ llm.language|upper }}</span>
+            {% endif %}
+        </div>
+
+        <!-- 설명 -->
+        {% if llm.description %}
+        <div class="intro-description">
+            <div class="intro-description-label">소개</div>
+            <div class="intro-description-text">{{ llm.description }}</div>
+        </div>
+        {% endif %}
+
+        <!-- 첫 마디 -->
+        {% if llm.first_sentence %}
+        <div class="intro-first-message">
+            
+            <div class="message-avatar">
+                {% if llm.llm_image %}
+                    <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}">
+                {% else %}
+                    <div class="message-avatar-placeholder">🤖</div>
+                {% endif %}
+            </div>
+            <div class="intro-first-message-bubble">
+                "{{ llm.first_sentence }}"
+            </div>
+        </div>
+        {% endif %}
+        <!-- 플레이 버튼 -->
+        {% if is_preview %}
+        <button type="button" class="intro-play-btn" onclick="if(opener){opener.document.getElementById('submit-btn').click();window.close();}else{history.back();}" data-login-required>
+            💬 AI 캐릭터 생성하기
+        </button>
+        {% else %}
+        <!-- {% url 'character:chat-view' llm.public_uuid %} -->
+        <a href="#" class="intro-play-btn" data-login-required  onclick="showAppInstallModal()">
+            💬 대화 시작하기
+        </a>
+        {% endif %}
+
+            <div class="intro-description-label">다른 캐릭터</div>
+
+        <!-- 캐릭터 카드 -->
+        <div class="intro-character-card">
+{% if other_llms %}
+    <h3>같은 스토리의 다른 AI 캐릭터들</h3>
+    <div class="other-llms-container">
+        {% for other in other_llms %}
+            <div class="intro-character-card">
+                <div class="intro-character-avatar">
+                    {% if other.llm_image %}
+                        <img src="{{ other.llm_image.url }}" alt="{{ other.name }}">
+                    {% else %}
+                        <div class="avatar-placeholder">🤖</div>
+                    {% endif %}
+                </div>
+                <div class="intro-character-info">
+                    <div class="intro-character-name">{{ other.name }}</div>
+                    {% if other.first_sentence %}
+                        <div class="intro-character-bio">"{{ other.first_sentence }}"</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+        </div>
+
+
+
+        <!-- 전체보기 -->
+        <a href="javascript:history.back()" class="intro-more-link" data-login-required>← 돌아가기</a>
+    </div>
+</div>
+{% endblock %}

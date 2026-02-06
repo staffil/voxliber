@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}내 AI 캐릭터 - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage/ai_list.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+<br><br><br>
+
+<main class="ai-list-page">
+    <!-- 헤더 -->
+
+
+    <!-- 스토리 목록 -->
+    <section class="content-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <span class="section-icon">📚</span>
+                스토리 목록
+            </h2>
+            {% if story_list %}
+            <span class="section-count">{{ story_list|length }}개</span>
+            {% endif %}
+        </div>
+
+        {% if story_list %}
+        <div class="story-grid">
+            {% for story in story_list %}
+            <a href="{% url 'character:story_detail' story.public_uuid %}" class="story-card">
+<div class="card-image">
+    {% if story.cover_image %}
+        <img
+            src="{{ story.cover_image.url }}"
+            alt="{{ story.title }}"
+            loading="lazy"
+        >
+
+    {% elif story.story_desc_video %}
+        <video
+            controls  
+            loop
+            muted
+            playsinline
+            preload="metadata"
+            
+        >
+            <source src="{{ story.story_desc_video.url }}" type="video/mp4">
+        </video>
+
+    {% else %}
+        <div class="image-placeholder">
+            <span class="placeholder-icon">📖</span>
+        </div>
+    {% endif %}
+
+    <div class="card-badge {% if story.is_public %}public{% else %}private{% endif %}">
+        {% if story.is_public %}공개{% else %}비공개{% endif %}
+    </div>
+</div>
+
+                <div class="card-content">
+                    <h3 class="card-title">{{ story.title }}</h3>
+                    {% if story.description %}
+                    <p class="card-desc">{{ story.description|truncatewords:20 }}</p>
+                    {% endif %}
+                    <div class="card-meta">
+                        <span class="meta-item">
+                            <span class="meta-icon">👤</span>
+                            캐릭터 {{ story.characters.count }}명
+                        </span>
+                        <span class="meta-item">
+                            <span class="meta-icon">📅</span>
+                            {{ story.created_at|date:"Y.m.d" }}
+                        </span>
+                    </div>
+                </div>
+            </a>
+            
+            {% endfor %}
+        </div>
+<br>
+        <a href="{% url 'character:make_ai_story' %}" class="create-btn">
+            <span class="btn-icon">+</span>
+            새 스토리 만들기
+        </a>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <h3 class="empty-title">아직 스토리가 없습니다</h3>
+            <p class="empty-desc">첫 번째 스토리를 만들어 AI 캐릭터와 함께하세요!</p>
+            <a href="{% url 'character:make_ai_story' %}" class="empty-btn" data-login-required>
+                스토리 만들기
+            </a>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- AI 캐릭터 목록 -->
+    {% if llm_list %}
+    <section class="content-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <span class="section-icon">🤖</span>
+                AI 캐릭터 목록
+            </h2>
+            <span class="section-count">{{ llm_list|length }}명</span>
+        </div>
+
+        <div class="character-grid">
+            {% for llm in llm_list %}
+            <a href="{% url 'character:ai_intro' llm.public_uuid %}" class="character-card">
+                <div class="card-avatar">
+                    {% if llm.llm_image %}
+                    <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}">
+                    {% else %}
+                    <div class="avatar-placeholder">🤖</div>
+                    {% endif %}
+                </div>
+                <div class="card-info">
+                    <h3 class="card-name">{{ llm.name }}</h3>
+                    {% if llm.story %}
+                    <span class="card-story">{{ llm.story.title }}</span>
+                    {% endif %}
+                    {% if llm.description %}
+                    <p class="card-bio">{{ llm.description|truncatewords:15 }}</p>
+                    {% endif %}
+                </div>
+                <div class="card-action">
+                    <span class="chat-btn">대화하기</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</main>
+
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

@@ -41,12 +41,12 @@
 
         <div class="input-group">
             <label class="input-label">이미지 업로드</label>
-            <input type="file" name="image" accept="image/*" id="image-input" class="input-field">
+            <input type="file" name="image" accept="image/*" id="image-input" class="input-field"  data-login-required>
         </div>
 
         <div class="input-group">
             <label class="input-label">비디오 업로드 (선택)</label>
-            <input type="file" name="video" accept="video/*" id="video-input" class="input-field">
+            <input type="file" name="video" accept="video/*" id="video-input" class="input-field"  data-login-required>
         </div>
 
 
@@ -55,29 +55,54 @@
 
         <div class="input-group">
 
-            <label class="input-label">연결할 책 링크</label>
-            <select name="book_link" id="book_link" class="input-field">
+            <label class="input-label">연결할 오디오북 링크</label>
+            <select name="selected_book_url" id="selected_book_url" class="input-field"  data-login-required>
                 <option value="">선택 안 함</option>
-                {% for url, name in select_link %}
-                    <option value="{{ url }}">{{ name }}</option>
-                {% endfor %}
-            </select>
+                    {% for url, name in my_book_options %}
+                            <option value="{{ url }}">{{ name }}</option>
+                        {% endfor %}
+                                </select>
         </div>
+
+                <div class="input-group">
+
+            <label class="input-label">연결할 AI 소설 링크</label>
+            <select name="selected_story_url" id="selected_story_url" class="input-field"  data-login-required>
+                <option value="">선택 안 함</option>
+                {% for url, name in my_story_options %}
+                        <option value="{{ url }}">{{ name }}</option>
+                    {% endfor %}
+                            </select>
+        </div>
+        
         
         <div class="input-group">
             <label class="input-label">타 링크 선택 (연결할 책을 우설 링크로 합니다)</label>
-            <input type="url" name="link" placeholder="https://example.com" class="input-field">
+            <input type="url" name="link" placeholder="https://example.com" class="input-field"  data-login-required>
         </div>
 
         <div class="input-group">
             <label class="input-label">제목</label>
-            <input type="text" name="title" class="input-field" placeholder="스냅 제목 입력">
+            <input type="text" name="title" class="input-field" placeholder="스냅 제목 입력"  data-login-required>
         </div>
 
         <div class="input-group">
             <label class="input-label">설명</label>
-            <textarea name="description" class="input-field" placeholder="설명 입력"></textarea>
+            <textarea name="description" class="input-field" placeholder="설명 입력"  data-login-required></textarea>
         </div>
+        <div class="terms-checkbox-wrapper">
+                                <label class="custom-checkbox">
+<input type="checkbox"
+       id="adult_choice"
+       name="adult_choice"
+       value="on"
+       {% if snap and snap.adult_choice %}checked{% endif %} >
+                                           <span class="checkbox-icon"></span>
+                                    <span class="checkbox-text">
+                                    <a href="/terms/of/service/" class="terms-link" target="_blank"  data-login-required>잔인성, 선정성이 있는 작품</a>이면 동의를 눌러주세요
+                                    </span>
+                                </label>
+                                </div>
 
         <button class="submit-btn" type="submit">스냅 생성하기</button>
 

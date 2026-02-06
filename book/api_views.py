@@ -10,6 +10,7 @@ from book.models import Books, Content, BookReview, ReadingProgress, ListeningHi
 from book.api_utils import require_api_key, paginate, api_response
 from rest_framework.decorators import api_view
 import json
+from django.utils import timezone
 
 
 # ==================== 📚 Books API ====================
@@ -17,7 +18,7 @@ import json
 @require_api_key
 def api_books_list(request):
     """
-    책 목록 API
+    책 목록 API (UUID 기반)
 
     Query Parameters:
         - page: 페이지 번호 (기본: 1)
@@ -37,9 +38,7 @@ def api_books_list(request):
     search = request.GET.get('search')
 
     # 기본 쿼리
-    books = Books.objects.select_related('user').prefetch_related(
-        'genres', 'tags'
-    ).annotate(
+    books = Books.objects.select_related('user').prefetch_related('genres', 'tags').annotate(
         episodes_count=Count('contents'),
         avg_rating=Avg('reviews__rating')
     )
@@ -62,7 +61,7 @@ def api_books_list(request):
     books_data = []
     for book in result['items']:
         books_data.append({
-            'id': book.id,
+            'id': str(book.public_uuid),  # UUID
             'name': book.name,
             'description': book.description,
             'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
@@ -74,15 +73,15 @@ def api_books_list(request):
             'total_duration': book.get_total_duration_formatted(),
             'created_at': book.created_at.isoformat(),
             'author': {
-                'id': book.user.user_id,
+                'id': str(book.user.public_uuid),  # UUID
                 'nickname': book.user.nickname,
             },
             'genres': [
-                {'id': g.id, 'name': g.name, 'color': g.genres_color}
+                {'id': str(g.id), 'name': g.name, 'color': getattr(g, 'genres_color', None)}
                 for g in book.genres.all()
             ],
             'tags': [
-                {'id': t.id, 'name': t.name}
+                {'id': str(t.id), 'name': t.name}
                 for t in book.tags.all()
             ]
         })
@@ -93,13 +92,14 @@ def api_books_list(request):
     })
 
 
+
 @require_api_key
-def api_book_detail(request, book_id):
+def api_book_detail(request, book_uuid):
     """
     책 상세 정보 API (에피소드 포함)
 
     Example:
-        GET /api/books/1/
+        GET /api/books/<uuid>/
     """
     book = get_object_or_404(
         Books.objects.select_related('user')
@@ -109,14 +109,14 @@ def api_book_detail(request, book_id):
             avg_rating=Avg('reviews__rating'),
             reviews_count=Count('reviews')
         ),
-        id=book_id
+        public_uuid=book_uuid
     )
 
     # 최근 5개 리뷰
     recent_reviews = book.reviews.select_related('user').order_by('-created_at')[:5]
 
     data = {
-        'id': book.id,
+        'id': str(book.public_uuid),  # UUID
         'name': book.name,
         'description': book.description,
         'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
@@ -132,21 +132,21 @@ def api_book_detail(request, book_id):
         'episode_interval_weeks': book.episode_interval_weeks,
         'created_at': book.created_at.isoformat(),
         'author': {
-            'id': book.user.user_id,
+            'id': str(book.user.public_uuid),  # UUID
             'nickname': book.user.nickname,
             'email': book.user.email,
         },
         'genres': [
-            {'id': g.id, 'name': g.name, 'color': g.genres_color}
+            {'id': str(g.id), 'name': g.name, 'color': getattr(g, 'genres_color', None)}
             for g in book.genres.all()
         ],
         'tags': [
-            {'id': t.id, 'name': t.name}
+            {'id': str(t.id), 'name': t.name}
             for t in book.tags.all()
         ],
         'contents': [
             {
-                'id': content.id,
+                'id': str(content.public_uuid),  # UUID
                 'title': content.title,
                 'number': content.number,
                 'text': content.text,
@@ -159,11 +159,12 @@ def api_book_detail(request, book_id):
         ],
         'recent_reviews': [
             {
-                'id': r.id,
+                'id': str(r.id),  # 여기도 리뷰 UUID 필요하면 수정 가능
                 'rating': r.rating,
                 'review_text': r.review_text,
                 'created_at': r.created_at.isoformat(),
                 'user': {
+                    'id': str(r.user.public_uuid),  # 리뷰 작성자 UUID
                     'nickname': r.user.nickname
                 }
             }
@@ -174,33 +175,39 @@ def api_book_detail(request, book_id):
     return api_response(data)
 
 
+
 # ==================== 📖 Contents (Episodes) API ====================
 
 @require_api_key
-def api_contents_list(request, book_id):
+def api_contents_list(request, book_uuid):
     """
-    에피소드 목록 API
+    에피소드 목록 API (UUID 기반)
 
     Query Parameters:
         - page: 페이지 번호 (기본: 1)
         - per_page: 페이지당 아이템 수 (기본: 20)
 
     Example:
-        GET /api/books/1/contents/
+        GET /api/books/<uuid>/contents/
     """
-    book = get_object_or_404(Books, id=book_id)
+    # 책 조회
+    book = get_object_or_404(Books, public_uuid=book_uuid)
 
+    # 페이지네이션 파라미터
     page = request.GET.get('page', 1)
     per_page = request.GET.get('per_page', 20)
 
+    # 에피소드 조회
     contents = Content.objects.filter(book=book).order_by('number')
 
+    # 페이지네이션 적용
     result = paginate(contents, page, per_page)
 
+    # 데이터 직렬화
     contents_data = []
     for content in result['items']:
         contents_data.append({
-            'id': content.id,
+            'id': str(content.public_uuid),  # UUID
             'title': content.title,
             'number': content.number,
             'episode_image': request.build_absolute_uri(content.episode_image.url) if content.episode_image else None,
@@ -212,7 +219,7 @@ def api_contents_list(request, book_id):
 
     return api_response({
         'book': {
-            'id': book.id,
+            'id': str(book.public_uuid),  # UUID
             'name': book.name
         },
         'contents': contents_data,
@@ -220,17 +227,18 @@ def api_contents_list(request, book_id):
     })
 
 
+
 @require_api_key
-def api_content_detail(request, content_id):
+def api_content_detail(request, content_uuid):
     """
-    에피소드 상세 정보 API
+    에피소드 상세 정보 API (UUID 기반)
 
     Example:
-        GET /api/contents/1/
+        GET /api/contents/<uuid>/
     """
     content = get_object_or_404(
         Content.objects.select_related('book', 'book__user'),
-        id=content_id
+        public_uuid=content_uuid
     )
 
     # 이전/다음 에피소드
@@ -245,7 +253,7 @@ def api_content_detail(request, content_id):
     ).order_by('number').first()
 
     data = {
-        'id': content.id,
+        'id': str(content.public_uuid),  # UUID
         'title': content.title,
         'number': content.number,
         'text': content.text,
@@ -256,22 +264,22 @@ def api_content_detail(request, content_id):
         'duration_formatted': content.get_duration_formatted(),
         'created_at': content.created_at.isoformat(),
         'book': {
-            'id': content.book.id,
+            'id': str(content.book.public_uuid),  # UUID
             'name': content.book.name,
             'cover_img': request.build_absolute_uri(content.book.cover_img.url) if content.book.cover_img else None,
             'author': {
-                'id': content.book.user.user_id,
+                'id': str(content.book.user.public_uuid),  # UUID
                 'nickname': content.book.user.nickname
             }
         },
         'navigation': {
             'prev': {
-                'id': prev_content.id,
+                'id': str(prev_content.public_uuid),
                 'title': prev_content.title,
                 'number': prev_content.number
             } if prev_content else None,
             'next': {
-                'id': next_content.id,
+                'id': str(next_content.public_uuid),
                 'title': next_content.title,
                 'number': next_content.number
             } if next_content else None
@@ -284,18 +292,18 @@ def api_content_detail(request, content_id):
 # ==================== ⭐ Reviews API ====================
 
 @require_api_key
-def api_reviews_list(request, book_id):
+def api_reviews_list(request, book_uuid):
     """
-    책 리뷰 목록 API
+    책 리뷰 목록 API (UUID 기반)
 
     Query Parameters:
         - page: 페이지 번호 (기본: 1)
         - per_page: 페이지당 아이템 수 (기본: 20)
 
     Example:
-        GET /api/books/1/reviews/
+        GET /api/books/<uuid>/reviews/
     """
-    book = get_object_or_404(Books, id=book_id)
+    book = get_object_or_404(Books, public_uuid=book_uuid)
 
     page = request.GET.get('page', 1)
     per_page = request.GET.get('per_page', 20)
@@ -307,7 +315,7 @@ def api_reviews_list(request, book_id):
     reviews_data = []
     for review in result['items']:
         reviews_data.append({
-            'id': review.id,
+            'id': str(review.public_uuid) if hasattr(review, 'public_uuid') else review.id,
             'rating': review.rating,
             'review_text': review.review_text,
             'created_at': review.created_at.isoformat(),
@@ -319,7 +327,7 @@ def api_reviews_list(request, book_id):
 
     return api_response({
         'book': {
-            'id': book.id,
+            'id': str(book.public_uuid),
             'name': book.name,
             'avg_rating': float(book.book_score)
         },
@@ -333,7 +341,7 @@ def api_reviews_list(request, book_id):
 @require_api_key
 def api_my_progress(request):
     """
-    내 독서 진행 상황 API
+    내 독서 진행 상황 API (UUID 기반)
 
     Query Parameters:
         - status: reading/wishlist/completed (선택)
@@ -355,20 +363,20 @@ def api_my_progress(request):
     progress_data = []
     for progress in progress_list:
         progress_data.append({
-            'id': progress.id,
+            'id': str(progress.public_uuid) if hasattr(progress, 'public_uuid') else progress.id,
             'status': progress.status,
             'status_display': progress.get_status_display(),
             'last_read_content_number': progress.last_read_content_number,
             'last_read_at': progress.last_read_at.isoformat() if progress.last_read_at else None,
             'completed_at': progress.completed_at.isoformat() if progress.completed_at else None,
             'book': {
-                'id': progress.book.id,
+                'id': str(progress.book.public_uuid),
                 'name': progress.book.name,
                 'cover_img': request.build_absolute_uri(progress.book.cover_img.url) if progress.book.cover_img else None,
                 'total_episodes': progress.book.contents.count()
             },
             'current_content': {
-                'id': progress.current_content.id,
+                'id': str(progress.current_content.public_uuid),
                 'title': progress.current_content.title,
                 'number': progress.current_content.number
             } if progress.current_content else None
@@ -377,10 +385,11 @@ def api_my_progress(request):
     return api_response({'progress': progress_data})
 
 
+
 @require_api_key
 def api_my_listening_history(request):
     """
-    내 청취 기록 API
+    내 청취 기록 API (UUID 기반)
 
     Example:
         GET /api/my/listening-history/
@@ -388,42 +397,42 @@ def api_my_listening_history(request):
     qs = ListeningHistory.objects.filter(
         user=request.api_user,
         last_position__gt=0
-    ).select_related('book', 'content').order_by('-last_listened_at')
+    ).select_related('book', 'content', 'book__user').order_by('-last_listened_at')
 
     seen_books = set()
     history = []
 
     for lh in qs:
-        if lh.book_id not in seen_books:  # 아직 추가되지 않은 책이면
+        if lh.book.public_uuid not in seen_books:  # 아직 추가되지 않은 책이면
             history.append(lh)
-            seen_books.add(lh.book_id)
+            seen_books.add(lh.book.public_uuid)
         if len(history) >= 5:  # 최대 5권까지만
             break
 
     history_data = []
     for h in history:
         history_data.append({
-            'id': h.id,
+            'id': str(h.public_uuid) if hasattr(h, 'public_uuid') else h.id,
             'listened_seconds': h.listened_seconds,
             'last_position': h.last_position,
             'last_listened_at': h.last_listened_at.isoformat(),
             'book': {
-                'id': h.book.id,
+                'id': str(h.book.public_uuid),
                 'name': h.book.name,
-                'cover_img': h.book.cover_img.url if h.book.cover_img else None,
+                'cover_img': request.build_absolute_uri(h.book.cover_img.url) if h.book.cover_img else None,
                 'author': {
-                    'id': h.book.user.user_id if h.book.user else None,
+                    'id': str(h.book.user.public_uuid) if h.book.user else None,
                     'nickname': h.book.user.nickname if h.book.user else None,
                 } if h.book.user else None,
             },
             'content': {
-                'id': h.content.id,
-                'title': h.content.title,
-                'number': h.content.number,
-                'text':h.content.text,
-                'audio_file': h.content.audio_file.url if h.content.audio_file else None,
-                'episode_image': h.content.episode_image.url if h.content.episode_image else None,
-            }
+                'id': str(h.content.public_uuid) if h.content else None,
+                'title': h.content.title if h.content else None,
+                'number': h.content.number if h.content else None,
+                'text': h.content.text if h.content else None,
+                'audio_file': request.build_absolute_uri(h.content.audio_file.url) if h.content and h.content.audio_file else None,
+                'episode_image': request.build_absolute_uri(h.content.episode_image.url) if h.content and h.content.episode_image else None,
+            } if h.content else None
         })
 
     return api_response({'listening_history': history_data})
@@ -657,7 +666,7 @@ def api_register(request):
         return JsonResponse({
             'token': api_key_obj.key,
             'user': {
-                'id': user.user_id if hasattr(user, 'user_id') else user.id,
+                'id':  str(user.public_uuid),
                 'username': user.username,
                 'email': user.email,
                 'nickname': user.nickname if hasattr(user, 'nickname') else username,
@@ -774,6 +783,7 @@ def api_refresh_key(request):
 def _serialize_book(book, request):
     """책 데이터를 직렬화"""
     # 작가 정보 안전하게 가져오기
+    print(f"Serializing book: name={book.name}, public_uuid={book.public_uuid}")
     author_data = None
     if hasattr(book, 'user') and book.user:
         try:
@@ -786,7 +796,7 @@ def _serialize_book(book, request):
             author_data = None
 
     return {
-        'id': book.id,
+        'id': str(book.public_uuid),
         'name': book.name,
         'description': book.description or '',
         'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
@@ -1109,7 +1119,7 @@ def api_snaps_list(request):
     snaps_data = []
     for snap in snaps_page:
         snaps_data.append({
-            'id': snap.id,
+            'id': str(snap.public_uuid),
             'snap_title': snap.snap_title,
             'snap_video': request.build_absolute_uri(snap.snap_video.url) if snap.snap_video else None,
             'thumbnail': request.build_absolute_uri(snap.thumbnail.url) if snap.thumbnail else None,
@@ -1118,13 +1128,14 @@ def api_snaps_list(request):
             'shares': snap.shares,
             'comments_count': snap.comments.count(),
             'allow_comments': snap.allow_comments,
-            'book_id': snap.book.id if snap.book else None,
+            # 책 관련 ID는 숫자 PK -> UUID로 변경
+            'book_id': str(snap.book.public_uuid) if snap.book else None,
             'book_link': snap.book_link,
             'book_comment': snap.book_comment,
             'duration': snap.duration,
             'created_at': snap.created_at.isoformat(),
             'user': {
-                'id': snap.user.user_id if snap.user else None,
+                'id': str(snap.user.public_uuid) if snap.user else None,  # 유저 UUID
                 'nickname': snap.user.nickname if snap.user else 'Unknown',
                 'profile_img': request.build_absolute_uri(snap.user.user_img.url) if snap.user and snap.user.user_img else None,
             } if snap.user else None,
@@ -1142,32 +1153,33 @@ def api_snaps_list(request):
 
 
 @require_api_key
-def api_snap_detail(request, snap_id):
+def api_snap_detail(request, snap_uuid):
     """
-    스냅 상세 정보 API
+    스냅 상세 정보 API (UUID 기반)
 
     Example:
-        GET /book/api/snaps/1/
+        GET /book/api/snaps/<uuid>/
     """
     from book.models import BookSnap
 
+    # Snap 조회 (UUID)
     snap = get_object_or_404(
-        BookSnap.objects.select_related('user').prefetch_related(
+        BookSnap.objects.select_related('user', 'book').prefetch_related(
             'booksnap_like', 'comments__user'
         ),
-        id=snap_id
+        public_uuid=snap_uuid
     )
 
     # 댓글 데이터
     comments_data = []
     for comment in snap.comments.filter(parent__isnull=True).order_by('-created_at')[:50]:
         comments_data.append({
-            'id': comment.id,
+            'id': str(comment.public_uuid) if hasattr(comment, 'public_uuid') else comment.id,  # UUID
             'content': comment.content,
             'likes': comment.likes,
             'created_at': comment.created_at.isoformat(),
             'user': {
-                'id': comment.user.user_id if comment.user else None,
+                'id': str(comment.user.public_uuid) if comment.user and hasattr(comment.user, 'public_uuid') else None,  # UUID
                 'nickname': comment.user.nickname if comment.user else 'Unknown',
                 'profile_img': request.build_absolute_uri(comment.user.user_img.url) if comment.user and comment.user.user_img else None,
             },
@@ -1175,7 +1187,7 @@ def api_snap_detail(request, snap_id):
         })
 
     data = {
-        'id': snap.id,
+        'id': str(snap.public_uuid),  # Snap 자체도 UUID 사용
         'snap_title': snap.snap_title,
         'snap_video': request.build_absolute_uri(snap.snap_video.url) if snap.snap_video else None,
         'thumbnail': request.build_absolute_uri(snap.thumbnail.url) if snap.thumbnail else None,
@@ -1184,13 +1196,13 @@ def api_snap_detail(request, snap_id):
         'shares': snap.shares,
         'comments_count': snap.comments.count(),
         'allow_comments': snap.allow_comments,
-        'book_id': snap.book.id if snap.book else None,
+        'book_id': str(snap.book.public_uuid) if snap.book else None,  # 책 UUID
         'book_link': snap.book_link,
         'book_comment': snap.book_comment,
         'duration': snap.duration,
         'created_at': snap.created_at.isoformat(),
         'user': {
-            'id': snap.user.user_id if snap.user else None,
+            'id': str(snap.user.public_uuid) if snap.user and hasattr(snap.user, 'public_uuid') else None,  # 유저 UUID
             'nickname': snap.user.nickname if snap.user else 'Unknown',
             'profile_img': request.build_absolute_uri(snap.user.user_img.url) if snap.user and snap.user.user_img else None,
         } if snap.user else None,
@@ -1202,16 +1214,16 @@ def api_snap_detail(request, snap_id):
 
 @csrf_exempt
 @api_view(['POST'])
-def api_snap_like(request, snap_id):
+def api_snap_like(request, snap_uuid):
     """
     스냅 좋아요 토글 API
 
     Example:
-        POST /book/api/snaps/1/like/
+        POST /book/api/snaps/<uuid>/like/
     """
     from book.models import BookSnap, APIKey
 
-    snap = get_object_or_404(BookSnap, id=snap_id)
+    snap = get_object_or_404(BookSnap, public_uuid=snap_uuid)
 
     # API 키로 사용자 확인
     api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
@@ -1241,11 +1253,11 @@ def api_snap_like(request, snap_id):
 
 @csrf_exempt
 @api_view(['POST'])
-def api_snap_comment(request, snap_id):
+def api_snap_comment(request, snap_uuid):
     from book.models import BookSnap, BookSnapComment, APIKey
     import json
 
-    snap = get_object_or_404(BookSnap, id=snap_id)
+    snap = get_object_or_404(BookSnap, public_uuid=snap_uuid)
 
 
     # API Key로 유저 가져오기
@@ -1295,12 +1307,14 @@ def api_snap_comment(request, snap_id):
 
 
 from book.models import BookSnap
+from django.http import JsonResponse
+
 def snap_main_view(request):
     snap_qs = BookSnap.objects.all().order_by("?")
     snap_list = []
     for s in snap_qs:
         snap_list.append({
-            'id': s.id,
+            'id': str(s.public_uuid),  # UUID 사용
             'snap_title': s.snap_title,
             'snap_video': request.build_absolute_uri(s.snap_video.url) if s.snap_video else None,
             'thumbnail': request.build_absolute_uri(s.thumbnail.url) if s.thumbnail else None,
@@ -1326,11 +1340,13 @@ def api_main_new(reqeust):
 
 
 from django.contrib.auth import get_user_model
+from django.http import JsonResponse
+from book.service.recommendation import recommend_books
 
 User = get_user_model()
-from book.service.recommendation import recommend_books
+
 # AI 추천 책들
-def api_ai_recommned(request, user_id):
+def api_ai_recommend(request, user_id):
     try:
         user = User.objects.get(user_id=user_id)
     except User.DoesNotExist:
@@ -1341,19 +1357,19 @@ def api_ai_recommned(request, user_id):
     data = []
     for book in recommended:
         data.append({
-            "id": book.id,
+            "id": str(book.public_uuid),  # UUID 사용
             "name": book.name,
             'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
             "genres": [g.name for g in book.genres.all()],
             "book_score": book.book_score,
             "author": {
-                "id": book.user.user_id,
-                "nickname": book.user.nickname,  
+                "id": book.user.user_id,        # user_id는 그대로
+                "nickname": book.user.nickname,
                 "email": book.user.email,        
-        }
+            }
         })
     return JsonResponse({"ai_recommended": data}, json_dumps_params={'ensure_ascii': False})
-    
+
 
 
 # 시 공모전 작품
@@ -1397,55 +1413,26 @@ def api_book_snippet_main(request):
     return JsonResponse({"snippet":snippet_list })
 
 
-# ==================== 🔍 통합 검색 API (웹용) ====================
+# ==================== 🔍 통합 검색 API (웹용 + 앱용) ====================
+
+from django.db.models import Q, Count
+from django.http import JsonResponse
+from register.models import Users
+from book.models import Books, Tags
 
 def api_search(request):
     """
-    통합 검색 API - 작품, 작가, 태그 검색
+    통합 검색 API - 작품, 스토리, LLM(AI캐릭터), 유저 검색
 
     Query Parameters:
         - q: 검색어 (필수)
-        - filter: 필터 타입 - 'all', 'book', 'author', 'tag' (기본: 'all')
-
-    Returns:
-        {
-            "results": [
-                {
-                    "type": "book",
-                    "id": 1,
-                    "title": "책 제목",
-                    "author": "작가 닉네임",
-                    "cover_image": "/media/...",
-                    "genre": "장르명"
-                },
-                {
-                    "type": "author",
-                    "id": 1,
-                    "name": "작가 닉네임",
-                    "profile_image": "/media/...",
-                    "book_count": 5
-                },
-                {
-                    "type": "tag",
-                    "id": 1,
-                    "name": "태그명",
-                    "book_count": 10
-                }
-            ]
-        }
-
-    Example:
-        GET /book/api/search/?q=판타지
-        GET /book/api/search/?q=작가&filter=author
+        - filter: 검색 필터 - 'all', 'book', 'story', 'llm', 'user' (기본: 'all')
     """
-    from django.db.models import Q, Count
-    from register.models import Users
-
     query = request.GET.get('q', '').strip()
     filter_type = request.GET.get('filter', 'all')
 
     if not query:
-        return JsonResponse({'results': []})
+        return JsonResponse({'success': True, 'results': []})
 
     results = []
 
@@ -1462,55 +1449,100 @@ def api_search(request):
             genre_names = ', '.join([g.name for g in book.genres.all()[:2]])
             results.append({
                 'type': 'book',
-                'id': book.id,
+                'id': str(book.public_uuid),
                 'title': book.name,
+                'description': book.description[:100] if book.description else '',
                 'author': book.user.nickname if book.user else '알 수 없음',
-                'cover_image': book.cover_img.url if book.cover_img else None,
-                'genre': genre_names if genre_names else '기타'
+                'author_id': str(book.user.public_uuid) if book.user else None,
+                'cover_image': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
+                'genre': genre_names if genre_names else '기타',
+                'book_score': float(book.book_score) if book.book_score else 0
             })
 
-    # 작가 검색
-    if filter_type in ['all', 'author']:
-        authors = Users.objects.filter(
+    # AI 스토리 검색
+    if filter_type in ['all', 'story']:
+        from character.models import Story
+        stories = Story.objects.filter(
+            Q(title__icontains=query) |
+            Q(description__icontains=query) |
+            Q(genres__name__icontains=query) |
+            Q(tags__name__icontains=query),
+            is_public=True
+        ).select_related('user').prefetch_related('genres', 'characters').distinct()[:30]
+
+        for story in stories:
+            genre_names = ', '.join([g.name for g in story.genres.all()[:2]])
+            results.append({
+                'type': 'story',
+                'id': str(story.public_uuid),
+                'title': story.title,
+                'description': story.description[:100] if story.description else '',
+                'author': story.user.nickname if story.user else '알 수 없음',
+                'author_id': str(story.user.public_uuid) if story.user else None,
+                'cover_image': request.build_absolute_uri(story.cover_image.url) if story.cover_image else None,
+                'genre': genre_names if genre_names else 'AI 스토리',
+                'character_count': story.characters.count()
+            })
+
+    # LLM (AI 캐릭터) 검색
+    if filter_type in ['all', 'llm']:
+        from character.models import LLM
+        llms = LLM.objects.filter(
+            Q(name__icontains=query) |
+            Q(title__icontains=query) |
+            Q(description__icontains=query),
+            is_public=True
+        ).select_related('user', 'story').distinct()[:30]
+
+        for llm in llms:
+            results.append({
+                'type': 'llm',
+                'id': str(llm.public_uuid),
+                'name': llm.name,
+                'title': llm.title or '',
+                'description': llm.description[:100] if llm.description else '',
+                'author': llm.user.nickname if llm.user else '알 수 없음',
+                'author_id': str(llm.user.public_uuid) if llm.user else None,
+                'llm_image': request.build_absolute_uri(llm.llm_image.url) if llm.llm_image else None,
+                'story_title': llm.story.title if llm.story else None,
+                'story_id': str(llm.story.public_uuid) if llm.story else None,
+                'like_count': llm.llm_like_count or 0
+            })
+
+    # 유저 검색
+    if filter_type in ['all', 'user']:
+        from register.models import Users
+        users = Users.objects.filter(
             Q(nickname__icontains=query) |
             Q(username__icontains=query)
-        ).annotate(
-            book_count=Count('books')
-        ).filter(book_count__gt=0)[:20]
+        ).distinct()[:30]
 
-        for author in authors:
+        for user in users:
+            # 작품 수 계산
+            book_count = Books.objects.filter(user=user).count()
+            # AI 스토리 수 계산
+            from character.models import Story
+            story_count = Story.objects.filter(user=user).count()
+
             results.append({
-                'type': 'author',
-                'id': author.user_id,
-                'name': author.nickname or author.username,
-                'profile_image': author.profile_img.url if hasattr(author, 'profile_img') and author.profile_img else None,
-                'book_count': author.book_count
+                'type': 'user',
+                'id': str(user.public_uuid),
+                'nickname': user.nickname or user.username,
+                'username': user.username,
+                'profile_image': request.build_absolute_uri(user.user_img.url) if user.user_img else None,
+                'book_count': book_count,
+                'story_count': story_count
             })
 
-    # 태그 검색
-    if filter_type in ['all', 'tag']:
-        tags = Tags.objects.filter(
-            name__icontains=query
-        ).annotate(
-            book_count=Count('books')
-        ).filter(book_count__gt=0)[:20]
+    return JsonResponse({'success': True, 'results': results})
 
-        for tag in tags:
-            results.append({
-                'type': 'tag',
-                'id': tag.id,
-                'name': tag.name,
-                'book_count': tag.book_count
-            })
-
-    return JsonResponse({'results': results})
 
 
 # ==================== 💬 Book Comments API ====================
 
 @csrf_exempt
 @api_view(['GET', 'POST'])
-def api_book_comments(request, book_id):
+def api_book_comments(request, book_uuid):
     """
     책 댓글 API
 
@@ -1528,7 +1560,7 @@ def api_book_comments(request, book_id):
     from book.models import BookComment, APIKey
     import json
 
-    book = get_object_or_404(Books, id=book_id)
+    book = get_object_or_404(Books, public_uuid=book_uuid)
 
     # GET: 댓글 목록 조회
     if request.method == 'GET':
@@ -1577,7 +1609,7 @@ def api_book_comments(request, book_id):
 
         return api_response({
             'book': {
-                'id': book.id,
+                'id': str(book.public_uuid),
                 'name': book.name
             },
             'comments': comments_data,
@@ -1632,35 +1664,42 @@ def api_book_comments(request, book_id):
                 'like_count': comment.like_count,
                 'created_at': comment.created_at.isoformat(),
                 'user': {
-                    'id': user.user_id,
+                    'id': str(user.public_uuid),
                     'nickname': user.nickname,
                     'profile_img': request.build_absolute_uri(user.user_img.url) if user.user_img else None,
                 },
                 'replies_count': 0
             }
         })
-
-
 # ==================== ⭐ Book Reviews Create/Update API ====================
+
+from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
+from django.http import JsonResponse
+from book.models import Books, BookReview, APIKey
+import json
+
+def _update_book_score(book):
+    """책의 전체 평점 업데이트"""
+    reviews = BookReview.objects.filter(book=book)
+    if reviews.exists():
+        book.book_score = round(sum(r.rating for r in reviews) / reviews.count(), 1)
+    else:
+        book.book_score = 0.0
+    book.save()
 
 @csrf_exempt
 @api_view(['POST', 'PATCH', 'DELETE'])
-def api_book_review_create(request, book_id):
+def api_book_review_create(request, book_uuid):
     """
     책 리뷰/평가 작성/수정/삭제 API
 
     POST: 리뷰 작성
     PATCH: 리뷰 수정
     DELETE: 리뷰 삭제
-
-    Body Parameters (POST, PATCH):
-        - rating: 평점 (1-5, 필수)
-        - review_text: 리뷰 내용 (선택)
     """
-    from book.models import BookReview, APIKey
-    import json
-
-    book = get_object_or_404(Books, id=book_id)
+    book = get_object_or_404(Books, public_uuid=book_uuid)
 
     # API 키로 사용자 확인
     api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
@@ -1677,34 +1716,25 @@ def api_book_review_create(request, book_id):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            print(f"[REVIEW DEBUG] Received data: {data}")
             rating = data.get('rating')
             review_text = data.get('review_text', '').strip()
-        except json.JSONDecodeError as e:
-            print(f"[REVIEW DEBUG] JSON decode error: {e}")
+        except json.JSONDecodeError:
             return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
 
-        print(f"[REVIEW DEBUG] Rating: {rating}, Review text: {review_text}")
-
         if not rating:
-            print(f"[REVIEW DEBUG] Rating is missing")
             return JsonResponse({'success': False, 'error': 'Rating is required'}, status=400)
 
         try:
             rating = int(rating)
             if rating < 1 or rating > 5:
                 raise ValueError
-        except (ValueError, TypeError) as e:
-            print(f"[REVIEW DEBUG] Rating validation error: {e}, rating={rating}")
+        except (ValueError, TypeError):
             return JsonResponse({'success': False, 'error': 'Rating must be between 1 and 5'}, status=400)
 
-        # 이미 리뷰가 있는지 확인
         existing_review = BookReview.objects.filter(user=user, book=book).first()
         if existing_review:
-            print(f"[REVIEW DEBUG] Existing review found for user {user.user_id}, book {book_id}")
             return JsonResponse({'success': False, 'error': 'You have already reviewed this book. Use PATCH to update.'}, status=400)
 
-        # 리뷰 생성
         review = BookReview.objects.create(
             user=user,
             book=book,
@@ -1712,7 +1742,6 @@ def api_book_review_create(request, book_id):
             review_text=review_text
         )
 
-        # 책 평점 업데이트
         _update_book_score(book)
 
         return JsonResponse({
@@ -1727,6 +1756,10 @@ def api_book_review_create(request, book_id):
                     'id': user.user_id,
                     'nickname': user.nickname,
                     'profile_img': request.build_absolute_uri(user.user_img.url) if user.user_img else None,
+                },
+                'book': {
+                    'id': str(book.public_uuid),  # UUID 사용
+                    'name': book.name
                 }
             }
         })
@@ -1745,7 +1778,6 @@ def api_book_review_create(request, book_id):
         except json.JSONDecodeError:
             return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
 
-        # 평점 업데이트
         if rating is not None:
             try:
                 rating = int(rating)
@@ -1755,13 +1787,10 @@ def api_book_review_create(request, book_id):
             except (ValueError, TypeError):
                 return JsonResponse({'success': False, 'error': 'Rating must be between 1 and 5'}, status=400)
 
-        # 리뷰 텍스트 업데이트
         if review_text is not None:
             review.review_text = review_text.strip()
 
         review.save()
-
-        # 책 평점 업데이트
         _update_book_score(book)
 
         return JsonResponse({
@@ -1776,6 +1805,10 @@ def api_book_review_create(request, book_id):
                     'id': user.user_id,
                     'nickname': user.nickname,
                     'profile_img': request.build_absolute_uri(user.user_img.url) if user.user_img else None,
+                },
+                'book': {
+                    'id': str(book.public_uuid),  # UUID 사용
+                    'name': book.name
                 }
             }
         })
@@ -1785,16 +1818,14 @@ def api_book_review_create(request, book_id):
         try:
             review = BookReview.objects.get(user=user, book=book)
             review.delete()
-
-            # 책 평점 업데이트
             _update_book_score(book)
-
             return JsonResponse({
                 'success': True,
                 'message': 'Review deleted successfully'
             })
         except BookReview.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Review not found'}, status=404)
+
 
 
 def _update_book_score(book):
@@ -1900,7 +1931,7 @@ def api_user_followers(request, user_id):
     for follow in result['items']:
         follower = follow.follower
         followers_data.append({
-            'user_id': follower.user_id,
+            'user_id': str(follower.public_uuid),
             'nickname': follower.nickname,
             'profile_img': request.build_absolute_uri(follower.user_img.url) if follower.user_img else None,
             'followed_at': follow.created_at.isoformat()
@@ -1913,21 +1944,21 @@ def api_user_followers(request, user_id):
 
 
 @require_api_key
-def api_user_following(request, user_id):
+def api_user_following(request, user_uuid):
     """
-    특정 사용자가 팔로우하는 작가 목록 API
+    특정 사용자가 팔로우하는 작가 목록 API (UUID 기준)
 
-    GET /api/users/<user_id>/following/?page=1&per_page=20
+    GET /api/users/<uuid>/following/?page=1&per_page=20
     """
     from register.models import CustomUser
 
     try:
-        target_user = CustomUser.objects.get(user_id=user_id)
+        target_user = CustomUser.objects.get(public_uuid=user_uuid)
     except CustomUser.DoesNotExist:
         return JsonResponse({'success': False, 'error': '사용자를 찾을 수 없습니다'}, status=404)
 
-    page = request.GET.get('page', 1)
-    per_page = request.GET.get('per_page', 20)
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 20))
 
     # 팔로잉 목록
     following = Follow.objects.filter(follower=target_user).select_related('following')
@@ -1936,12 +1967,11 @@ def api_user_following(request, user_id):
     following_data = []
     for follow in result['items']:
         author = follow.following
-        # 작가의 책 수와 총 팔로워 수
         books_count = Books.objects.filter(user=author).count()
         followers_count = Follow.objects.filter(following=author).count()
 
         following_data.append({
-            'user_id': author.user_id,
+            'id': str(author.public_uuid),
             'nickname': author.nickname,
             'profile_img': request.build_absolute_uri(author.user_img.url) if author.user_img else None,
             'books_count': books_count,
@@ -1958,25 +1988,25 @@ def api_user_following(request, user_id):
 @require_api_key
 def api_following_feed(request):
     """
-    팔로우한 작가들의 최신 책 피드 API
+    팔로우한 작가들의 최신 책 피드 API (UUID 기준)
 
     GET /api/following/feed/?page=1&per_page=20
 
     팔로우한 작가들이 작성한 책을 최신순으로 반환
     """
     user = request.api_user
-    page = request.GET.get('page', 1)
-    per_page = request.GET.get('per_page', 20)
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 20))
 
-    # 팔로우한 작가들의 ID 목록
-    following_ids = Follow.objects.filter(follower=user).values_list('following_id', flat=True)
+    # 팔로우한 작가들의 UUID 목록
+    following_uuids = Follow.objects.filter(follower=user).values_list('following__public_uuid', flat=True)
 
-    if not following_ids:
+    if not following_uuids:
         return api_response({
             'books': [],
             'pagination': {
-                'page': 1,
-                'per_page': 20,
+                'page': page,
+                'per_page': per_page,
                 'total': 0,
                 'total_pages': 0,
                 'has_next': False,
@@ -1986,7 +2016,7 @@ def api_following_feed(request):
 
     # 팔로우한 작가들의 책 목록
     books = Books.objects.filter(
-        user_id__in=following_ids
+        user__public_uuid__in=following_uuids
     ).select_related('user').prefetch_related('genres', 'tags').annotate(
         episodes_count=Count('contents'),
         avg_rating=Avg('reviews__rating')
@@ -1997,7 +2027,7 @@ def api_following_feed(request):
     books_data = []
     for book in result['items']:
         books_data.append({
-            'id': book.id,
+            'id': str(book.public_uuid),
             'name': book.name,
             'description': book.description,
             'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
@@ -2009,7 +2039,7 @@ def api_following_feed(request):
             'total_duration': book.get_total_duration_formatted(),
             'created_at': book.created_at.isoformat(),
             'author': {
-                'id': book.user.user_id,
+                'id': str(book.user.public_uuid),
                 'nickname': book.user.nickname,
                 'profile_img': request.build_absolute_uri(book.user.user_img.url) if book.user.user_img else None,
             },
@@ -2032,11 +2062,11 @@ def api_following_feed(request):
 # ==================== 🔖 Bookmark API ====================
 
 @csrf_exempt
-def api_bookmark_toggle(request, book_id):
+def api_bookmark_toggle(request, book_uuid):
     """
     책 북마크(나중에 보기) 토글 API
 
-    POST /api/books/<book_id>/bookmark/
+    POST /api/books/<uuid>/bookmark/
 
     Body (optional):
         {
@@ -2053,7 +2083,7 @@ def api_bookmark_toggle(request, book_id):
         from book.models import APIKey
         import traceback
 
-        print(f"📍 [BOOKMARK] book_id={book_id}, method={request.method}")
+        print(f"📍 [BOOKMARK] book_uuid={book_uuid}, method={request.method}")
 
         if request.method != 'POST':
             return JsonResponse({'error': 'POST 요청만 허용됩니다'}, status=405)
@@ -2076,7 +2106,7 @@ def api_bookmark_toggle(request, book_id):
 
         # 책 확인
         try:
-            book = Books.objects.get(id=book_id)
+            book = Books.objects.get(public_uuid=book_uuid)
             print(f"✅ [BOOKMARK] Book: {book.name}")
         except Books.DoesNotExist:
             print(f"❌ [BOOKMARK] Book not found")
@@ -2123,18 +2153,19 @@ def api_bookmark_toggle(request, book_id):
 
 
 @csrf_exempt
-def api_bookmark_update_note(request, book_id):
+def api_bookmark_update_note(request, book_uuid):
     """
-    북마크 메모 업데이트 API
+    북마크 메모 업데이트 API (UUID 기준)
 
-    PATCH /api/books/<book_id>/bookmark/note/
+    PATCH /api/books/<uuid>/bookmark/note/
 
     Body:
         {
             "note": "새로운 메모 내용"
         }
     """
-    from book.models import APIKey
+    from book.models import APIKey, Books, BookmarkBook
+    import json
 
     if request.method != 'PATCH':
         return JsonResponse({'error': 'PATCH 요청만 허용됩니다'}, status=405)
@@ -2150,39 +2181,49 @@ def api_bookmark_update_note(request, book_id):
     except APIKey.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Invalid API Key'}, status=401)
 
+    # 책 찾기 (UUID 기준)
+    book = get_object_or_404(Books, public_uuid=book_uuid)
+
+    # 북마크 확인
     try:
-        bookmark = BookmarkBook.objects.get(user=user, book_id=book_id)
+        bookmark = BookmarkBook.objects.get(user=user, book=book)
     except BookmarkBook.DoesNotExist:
         return JsonResponse({'success': False, 'error': '북마크를 찾을 수 없습니다'}, status=404)
 
+    # 요청 본문에서 note 가져오기
     try:
         data = json.loads(request.body)
-        note = data.get('note', '')
+        note = data.get('note', '').strip()
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
 
+    # 메모 업데이트
     bookmark.note = note
     bookmark.save()
 
     return JsonResponse({
         'success': True,
         'data': {
-            'book_id': book_id,
+            'book_id': str(book.public_uuid),
             'note': bookmark.note,
-            'updated_at': bookmark.created_at.isoformat()
+            'updated_at': bookmark.updated_at.isoformat() if hasattr(bookmark, 'updated_at') else bookmark.created_at.isoformat()
         }
     })
+
 
 
 @require_api_key
 def api_user_bookmarks(request):
     """
-    사용자의 북마크 목록 API
+    사용자의 북마크 목록 API (UUID 기준)
 
     GET /api/bookmarks/?page=1&per_page=20
 
     Returns bookmarked books with notes
     """
+    from book.models import BookmarkBook, Books, Content, BookReview
+    from django.db.models import Avg
+
     user = request.api_user
     page = request.GET.get('page', 1)
     per_page = request.GET.get('per_page', 20)
@@ -2208,7 +2249,7 @@ def api_user_bookmarks(request):
             'bookmarked_at': bookmark.created_at.isoformat(),
             'note': bookmark.note,
             'book': {
-                'id': book.id,
+                'id': str(book.public_uuid),  # UUID로 반환
                 'name': book.name,
                 'description': book.description,
                 'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,

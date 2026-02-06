@@ -106,7 +106,7 @@
   overflow: hidden;
   background: var(--bg-tertiary);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border-radius: 5px 10px 10px 0px;
+  border-radius: 0px 10px 10px 0px;
   transition: all 0.3s ease;
 }
 body.light-mode .genre-book-cover {

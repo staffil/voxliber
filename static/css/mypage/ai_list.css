@@ -1,0 +1,457 @@
+/* AI List Page Styles */
+:root {
+    --ai-bg: #0f0f17;
+    --ai-card: #1a1a25;
+    --ai-card-hover: #22222f;
+    --ai-border: #2a2a3a;
+    --ai-text: #e0e0e0;
+    --ai-text-muted: #8888a0;
+    --ai-primary: #6366f1;
+    --ai-accent: #a78bfa;
+    --ai-success: #22c55e;
+    --ai-warning: #f59e0b;
+}
+
+body {
+    background: var(--ai-bg);
+}
+.card-image img,
+.card-image video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.ai-list-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 24px 80px;
+}
+
+/* 헤더 */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--ai-border);
+}
+
+.header-content {
+    flex: 1;
+}
+
+.page-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--ai-text);
+    margin: 0 0 8px;
+}
+
+.title-icon {
+    font-size: 2rem;
+}
+
+.page-subtitle {
+    color: var(--ai-text-muted);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.create-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, var(--ai-primary) 0%, #818cf8 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.create-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+}
+
+.btn-icon {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+/* 섹션 */
+.content-section {
+    margin-bottom: 48px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--ai-text);
+    margin: 0;
+}
+
+.section-icon {
+    font-size: 1.4rem;
+}
+
+.section-count {
+    padding: 4px 12px;
+    background: rgba(99, 102, 241, 0.15);
+    border-radius: 20px;
+    color: var(--ai-accent);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* 스토리 그리드 */
+.story-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 24px;
+}
+
+.story-card {
+    display: block;
+    background: var(--ai-card);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--ai-border);
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.story-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--ai-primary);
+    box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+}
+
+.card-image {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a1a25 0%, #2a2a3a 100%);
+}
+
+.card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s;
+}
+
+.story-card:hover .card-image img {
+    transform: scale(1.08);
+}
+
+.image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(167, 139, 250, 0.1) 100%);
+}
+
+.placeholder-icon {
+    font-size: 4rem;
+    opacity: 0.5;
+}
+
+.card-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.card-badge.public {
+    background: rgba(34, 197, 94, 0.9);
+    color: white;
+}
+
+.card-badge.private {
+    background: rgba(245, 158, 11, 0.9);
+    color: white;
+}
+
+.card-content {
+    padding: 20px;
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--ai-text);
+    margin: 0 0 8px;
+    line-height: 1.4;
+}
+
+.card-desc {
+    font-size: 0.9rem;
+    color: var(--ai-text-muted);
+    line-height: 1.5;
+    margin: 0 0 16px;
+}
+
+.card-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--ai-text-muted);
+}
+
+.meta-icon {
+    font-size: 0.9rem;
+}
+
+/* 캐릭터 그리드 */
+.character-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 16px;
+}
+
+.character-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--ai-card);
+    border-radius: 14px;
+    border: 1px solid var(--ai-border);
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.character-card:hover {
+    background: var(--ai-card-hover);
+    border-color: var(--ai-primary);
+    transform: translateX(4px);
+}
+
+.card-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 2px solid var(--ai-primary);
+}
+
+.card-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--ai-primary) 0%, var(--ai-accent) 100%);
+    font-size: 1.5rem;
+}
+
+.card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.card-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ai-text);
+    margin: 0 0 4px;
+}
+
+.card-story {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(99, 102, 241, 0.15);
+    border-radius: 6px;
+    color: var(--ai-accent);
+    font-size: 0.75rem;
+    margin-bottom: 6px;
+}
+
+.card-bio {
+    font-size: 0.85rem;
+    color: var(--ai-text-muted);
+    margin: 0;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-action {
+    flex-shrink: 0;
+}
+
+.chat-btn {
+    display: inline-block;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, var(--ai-primary) 0%, #818cf8 100%);
+    border-radius: 10px;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.character-card:hover .chat-btn {
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+/* 빈 상태 */
+.empty-state {
+    text-align: center;
+    padding: 60px 30px;
+    background: var(--ai-card);
+    border-radius: 20px;
+    border: 2px dashed var(--ai-border);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.empty-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--ai-text);
+    margin: 0 0 8px;
+}
+
+.empty-desc {
+    font-size: 0.95rem;
+    color: var(--ai-text-muted);
+    margin: 0 0 24px;
+}
+
+.empty-btn {
+    display: inline-block;
+    padding: 14px 32px;
+    background: linear-gradient(135deg, var(--ai-primary) 0%, #818cf8 100%);
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.empty-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .ai-list-page {
+        padding: 16px;
+    }
+
+    .page-header {
+        flex-direction: column;
+        gap: 20px;
+        align-items: flex-start;
+    }
+
+    .create-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .story-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .character-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .character-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 24px;
+    }
+
+    .card-action {
+        width: 100%;
+    }
+
+    .chat-btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* 라이트 모드 */
+body.light-mode .ai-list-page {
+    background: #f8f9fa;
+}
+
+body.light-mode .story-card,
+body.light-mode .character-card,
+body.light-mode .empty-state {
+    background: #ffffff;
+    border-color: #e0e0e0;
+}
+
+body.light-mode .card-title,
+body.light-mode .card-name,
+body.light-mode .page-title,
+body.light-mode .section-title,
+body.light-mode .empty-title {
+    color: #1a1a1a;
+}
+
+body.light-mode .card-desc,
+body.light-mode .card-bio,
+body.light-mode .page-subtitle,
+body.light-mode .meta-item,
+body.light-mode .empty-desc {
+    color: #666666;
+}

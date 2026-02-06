@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER - 마이페이지{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage/my_profile.css' %}">
+{% endblock %}
+
+{% block content %}       
+       
+<div class="profile-wrapper">
+    <div class="book-container">
+       
+       <!-- 내 작품 목록 -->
+        <div class="my-books-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    내 작품 ({{ books_count }})
+                    
+                </h2>
+                <div class="sibal-btn">
+                    <a href="{% url 'book:book_tos' %}" class="btn btn-secondary" data-login-required>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    오디오북 등록
+                </a>
+                    <a href="/book/my/snap/list/" class="btn btn-secondary" data-login-required>
+                    snap 만들기
+                </a>
+
+                <a href="/voice/voice/list/" class="btn btn-secondary" data-login-required>
+                    목소리 리스트
+                </a>
+
+                <a href="/mypage/ai/list/" class="btn btn-secondary" data-login-required>
+                    AI 리스트
+                </a>
+
+
+                </div>
+            </div>
+
+
+            
+            {% if books %}
+            <div class="books-grid">
+                {% for book in books %}
+                <div class="book-card">
+                    <div class="book-card-header">
+                        <div class="book-cover-mini">
+                            {% if book.cover_img %}
+                                <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;" loading="lazy">
+                            {% else %}
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                                </svg>
+                            {% endif %}
+                        </div>
+                        <div class="book-card-info">
+                            <h3 class="book-card-title">{{ book.name }}</h3>
+                            <div class="book-card-meta">
+                                <span class="meta-badge">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                    {{ book.book_score }}
+                                </span>
+                                <span class="meta-badge">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <polyline points="14 2 14 8 20 8"/>
+                                    </svg>
+                                    {{ book.contents.count }}개 에피소드
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="book-card-genres">
+                        {% for genre in book.genres.all %}
+                        <span class="genre-mini-badge" style="background-color: {{ genre.genres_color }}30; color: {{ genre.genres_color }};">
+                            {{ genre.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+
+                    {% if book.description %}
+                    <div class="book-card-description">
+                        {{ book.description|truncatewords:15 }}
+                    </div>
+                    {% endif %}
+
+                    <div class="book-card-footer">
+                        <span class="book-date">{{ book.created_at|date:"Y.m.d" }}</span>
+                        <div class="book-card-actions">
+                            <a href="{% url 'book:book_detail' book.public_uuid %}" class="btn-icon" title="상세보기">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </a>
+                            <a href="{% url 'book:book_profile' %}?public_uuid={{ book.public_uuid }}" class="btn-icon" title="수정">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                                </svg>
+                            </a>
+                            <a href="{% url 'book:book_serialization' %}?public_uuid={{ book.public_uuid }}" class="btn-icon" title="집필">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                            </a>
+
+                            <button class="btn-icon btn-delete" data-book-id="{{ book.public_uuid }}" data-book-name="{{ book.name }}" title="삭제">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                    <line x1="10" y1="11" x2="10" y2="17"/>
+                                    <line x1="14" y1="11" x2="14" y2="17"/>
+                                </svg>
+                            </button>
+
+
+
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-books">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                <p>아직 작성한 작품이 없습니다</p>
+                <a href="{% url 'book:book_profile' %}" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    첫 작품 등록하기
+                </a>
+            </div>
+            {% endif %}
+            
+        </div>
+
+    </div>
+</div>
+{% endblock %}

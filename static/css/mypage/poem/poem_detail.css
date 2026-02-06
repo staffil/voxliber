@@ -14,6 +14,42 @@
     margin-bottom: 40px;
 }
 
+    .edit-mode textarea {
+        width: 100%;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        min-height: 200px;
+        font-size: 16px;
+        line-height: 1.7;
+    }
+
+    .edit-btn-box {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .edit-save {
+        padding: 10px 16px;
+        background: #4a73ff;
+        color: #fff;
+        border-radius: 8px;
+    }
+
+    .edit-cancel {
+        padding: 10px 16px;
+        background: #999;
+        color: white;
+        border-radius: 8px;
+    }
+
+    .poem-audio {
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 12px;
+        background: #f4f6fc;
+    }
 .poem-title {
     font-size: 38px;
     font-weight: 900;

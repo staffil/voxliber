@@ -1,0 +1,509 @@
+/* ==========================================
+   Novel Reader - 소설 읽기 스타일
+   ========================================== */
+
+:root {
+    --novel-bg: #0a0a0f;
+    --novel-paper: #151520;
+    --novel-paper-light: #1a1a28;
+    --novel-border: rgba(255, 255, 255, 0.06);
+    --novel-primary: #6366f1;
+    --novel-primary-soft: rgba(99, 102, 241, 0.15);
+    --novel-text: #e8e8ed;
+    --novel-text-muted: #8b8b9e;
+    --novel-narration: #9CA3AF;
+    --novel-dialogue: #F9FAFB;
+    --novel-user: #a78bfa;
+    --novel-accent: #818cf8;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background: var(--novel-bg);
+    color: var(--novel-text);
+    font-family: 'Noto Serif KR', 'Georgia', serif;
+    line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================
+   메인 컨테이너 - 책 느낌
+   ========================================== */
+.novel-container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 60px 40px 100px;
+    background: var(--novel-paper);
+    min-height: 100vh;
+    box-shadow:
+        -20px 0 60px rgba(0, 0, 0, 0.5),
+        20px 0 60px rgba(0, 0, 0, 0.5);
+    position: relative;
+}
+
+/* 책 페이지 효과 */
+.novel-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.3),
+        transparent
+    );
+}
+
+.novel-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(
+        to left,
+        rgba(0, 0, 0, 0.3),
+        transparent
+    );
+}
+
+/* ==========================================
+   제목 영역
+   ========================================== */
+.novel-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--novel-text);
+    letter-spacing: 2px;
+    line-height: 1.4;
+    padding-bottom: 30px;
+    border-bottom: 1px solid var(--novel-border);
+}
+
+.novel-prologue {
+    font-style: italic;
+    color: var(--novel-narration);
+    font-size: 1.05rem;
+    text-align: center;
+    margin-bottom: 50px;
+    padding: 0 20px;
+    line-height: 2;
+}
+
+/* AI 대화하기 링크 */
+.ai-chat-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 28px;
+    margin: 20px auto 50px;
+    background: var(--novel-primary);
+    color: #fff;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 30px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+}
+
+.ai-chat-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+    background: var(--novel-accent);
+}
+
+/* ==========================================
+   챕터 영역
+   ========================================== */
+.chapter {
+    margin-bottom: 80px;
+    padding-top: 40px;
+}
+
+.chapter:not(:first-of-type) {
+    border-top: 1px solid var(--novel-border);
+}
+
+/* 챕터 이미지 */
+.chapter-image {
+    position: relative;
+    margin: 0 -40px 40px;
+    overflow: hidden;
+}
+
+.chapter-image img {
+    width: 100%;
+    height: auto;
+    max-height: 800px;
+    object-fit: cover;
+    display: block;
+    filter: brightness(0.9);
+    transition: filter 0.3s ease;
+}
+
+.chapter-image:hover img {
+    filter: brightness(1);
+}
+
+.chapter-image-title {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px 40px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 500;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+.chapter-image-placeholder {
+    height: 200px;
+    margin: 0 -40px 40px;
+    background: linear-gradient(135deg, var(--novel-paper-light), var(--novel-paper));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--novel-text-muted);
+    font-size: 0.9rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    border-top: 1px solid var(--novel-border);
+    border-bottom: 1px solid var(--novel-border);
+}
+
+/* 챕터 제목 */
+.chapter-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 30px;
+    color: var(--novel-text);
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+.hp-range {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--novel-primary);
+    font-weight: 400;
+    margin-top: 8px;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* ==========================================
+   대화 콘텐츠 - 소설 스타일
+   ========================================== */
+.chapter-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.dialogue-block {
+    padding: 20px 0;
+    position: relative;
+}
+
+.dialogue-block + .dialogue-block {
+    border-top: none;
+}
+
+/* AI(캐릭터) 대사 - 메인 스토리 */
+.dialogue-block.assistant {
+    padding-left: 0;
+}
+
+.dialogue-block.assistant .dialogue-text {
+    text-indent: 1.5em;
+}
+
+.dialogue-block.assistant .dialogue-text strong {
+    display: none;
+}
+
+/* 유저 대사 - 인용 스타일 */
+.dialogue-block.user {
+    margin: 30px 0;
+    padding: 20px 30px;
+    background: var(--novel-primary-soft);
+    border-left: 3px solid var(--novel-primary);
+    border-radius: 0 12px 12px 0;
+}
+
+.dialogue-block.user .dialogue-text {
+    text-indent: 0;
+    color: var(--novel-user);
+    font-style: normal;
+}
+
+.dialogue-block.user .dialogue-text strong {
+    display: inline;
+    color: var(--novel-accent);
+    font-size: 0.85rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    margin-right: 8px;
+}
+
+/* 대화 텍스트 */
+.dialogue-text {
+    margin: 0;
+    font-size: 1.1rem;
+    line-height: 2;
+    color: var(--novel-dialogue);
+    word-break: keep-all;
+}
+
+/* 나레이션 스타일 (문장이 * 로 감싸진 경우) */
+.dialogue-text em,
+.narration-text {
+    font-style: italic;
+    color: var(--novel-narration);
+    font-size: 1rem;
+}
+
+/* 대사 (따옴표로 감싸진 텍스트) 강조 */
+.dialogue-text q,
+.speech-text {
+    quotes: none;
+    color: var(--novel-dialogue);
+    font-weight: 500;
+}
+
+/* ==========================================
+   오디오 컨트롤
+   ========================================== */
+.audio-controls {
+    margin-top: 12px;
+}
+
+.tts-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--novel-border);
+    border-radius: 20px;
+    color: var(--novel-text-muted);
+    font-size: 0.8rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tts-btn:hover {
+    background: var(--novel-primary-soft);
+    border-color: var(--novel-primary);
+    color: var(--novel-primary);
+}
+
+.tts-btn.playing {
+    background: var(--novel-primary);
+    border-color: var(--novel-primary);
+    color: #fff;
+}
+
+/* ==========================================
+   에필로그
+   ========================================== */
+.novel-epilogue {
+    margin-top: 80px;
+    padding-top: 50px;
+    border-top: 1px solid var(--novel-border);
+    font-style: italic;
+    color: var(--novel-narration);
+    text-align: center;
+    font-size: 1.05rem;
+    line-height: 2;
+}
+
+.novel-epilogue::before {
+    content: '— 끝 —';
+    display: block;
+    font-size: 0.9rem;
+    color: var(--novel-text-muted);
+    margin-bottom: 30px;
+    letter-spacing: 8px;
+}
+
+/* ==========================================
+   빈 챕터
+   ========================================== */
+.no-chapters {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--novel-text-muted);
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+.no-chapters p {
+    font-size: 1rem;
+}
+
+/* ==========================================
+   공유 버튼
+   ========================================== */
+.share-consent-box {
+    margin: 50px 0 30px;
+    padding: 24px 30px;
+    background: var(--novel-paper-light);
+    border: 1px solid var(--novel-border);
+    border-radius: 16px;
+    text-align: center;
+}
+
+.share-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 30px;
+    background: transparent;
+    border: 1px solid var(--novel-border);
+    border-radius: 25px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.share-btn:hover {
+    background: var(--novel-primary-soft);
+    border-color: var(--novel-primary);
+}
+
+.share-text.share-on {
+    color: #22c55e;
+}
+
+.share-text.share-off {
+    color: #ef4444;
+}
+
+.share-note {
+    margin-top: 12px;
+    font-size: 0.8rem;
+    color: var(--novel-text-muted);
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* ==========================================
+   반응형
+   ========================================== */
+@media (max-width: 768px) {
+    .novel-container {
+        padding: 40px 24px 80px;
+        margin: 0;
+        box-shadow: none;
+    }
+
+    .novel-container::before,
+    .novel-container::after {
+        display: none;
+    }
+
+    .novel-title {
+        font-size: 1.8rem;
+    }
+
+    .chapter-image {
+        margin: 0 -24px 30px;
+    }
+
+    .chapter-image-placeholder {
+        margin: 0 -24px 30px;
+    }
+
+    .chapter-title {
+        font-size: 1.3rem;
+    }
+
+    .dialogue-text {
+        font-size: 1rem;
+    }
+
+    .dialogue-block.user {
+        padding: 16px 20px;
+        margin: 20px 0;
+    }
+}
+
+/* ==========================================
+   라이트 모드
+   ========================================== */
+body.light-mode {
+    --novel-bg: #f5f5f7;
+    --novel-paper: #ffffff;
+    --novel-paper-light: #fafafa;
+    --novel-border: rgba(0, 0, 0, 0.08);
+    --novel-text: #1a1a1a;
+    --novel-text-muted: #6b6b7a;
+    --novel-narration: #6B7280;
+    --novel-dialogue: #1F2937;
+    --novel-user: #6366f1;
+}
+
+body.light-mode .novel-container {
+    box-shadow:
+        -10px 0 40px rgba(0, 0, 0, 0.08),
+        10px 0 40px rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .chapter-image img {
+    filter: brightness(1);
+}
+
+/* ==========================================
+   애니메이션
+   ========================================== */
+.chapter {
+    animation: fadeInUp 0.6s ease forwards;
+    opacity: 0;
+}
+
+.chapter:nth-child(1) { animation-delay: 0.1s; }
+.chapter:nth-child(2) { animation-delay: 0.2s; }
+.chapter:nth-child(3) { animation-delay: 0.3s; }
+.chapter:nth-child(4) { animation-delay: 0.4s; }
+.chapter:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 스크롤바 스타일 */
+.novel-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.novel-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.novel-container::-webkit-scrollbar-thumb {
+    background: var(--novel-border);
+    border-radius: 3px;
+}

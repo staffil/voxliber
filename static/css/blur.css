@@ -1,0 +1,98 @@
+/* 블러 오버레이 전체 */
+  .snap-detail-container {
+    position: relative;
+    min-height: 100vh;
+  }
+
+  .blurred {
+    filter: blur(12px);
+    pointer-events: none;
+    user-select: none;
+    transition: filter 0.6s ease;
+  }
+
+  .adult-blur-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .blur-message-box {
+    text-align: center;
+    color: white;
+    padding: 40px 24px;
+    background: rgba(30, 30, 50, 0.9);
+    border-radius: 20px;
+    border: 1px solid rgba(236, 72, 153, 0.3);
+    max-width: 90%;
+    width: 420px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+  }
+
+  .blur-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+    color: #ec4899;
+  }
+
+  .blur-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .blur-subtitle {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  .blur-btn {
+    display: inline-block;
+    padding: 14px 32px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 16px;
+    margin: 10px 8px;
+    transition: all 0.3s ease;
+  }
+
+  .blur-btn.primary {
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    color: white;
+  }
+
+  .blur-btn.primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(236, 72, 153, 0.5);
+  }
+
+  .blur-btn.secondary {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+
+  .blur-btn.secondary:hover {
+    background: rgba(255,255,255,0.25);
+  }
+
+  @media (max-width: 480px) {
+    .blur-message-box {
+      padding: 32px 16px;
+    }
+    .blur-title {
+      font-size: 24px;
+    }
+    .blur-btn {
+      padding: 12px 28px;
+      font-size: 15px;
+    }
+  }

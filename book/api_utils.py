@@ -228,8 +228,9 @@ def require_api_key_secure(view_func):
             print(f"🌐 [require_api_key_secure] Origin: '{origin}', Referer: '{referer}'")
 
             allowed_origins = [
-                'https://voxliber.ink',
-                'https://www.voxliber.ink',
+                # 'https://voxliber.ink',
+                # 'https://www.voxliber.ink',
+                "*"
             ]
 
             # 모바일 앱은 origin이 없을 수 있음

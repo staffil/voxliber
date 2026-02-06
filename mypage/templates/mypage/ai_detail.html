@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER - AI 결과{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage/ai_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="library-container">
+
+  <!-- 헤더 -->
+  <div class="library-header">
+    <h1 class="library-title">🤖 AI 생성 결과</h1>
+    <p class="library-subtitle">AI가 생성한 나만의 이야기</p>
+  </div>
+
+  <!-- AI 결과 카드 -->
+  <div class="ai-stories-grid">
+    {% for llm in llm_list %}
+    <a href="{% url 'mypage:novel_result' llm.public_uuid %}"
+       class="ai-story-card">
+
+      <div class="story-cover-section">
+        {% if llm.llm_image %}
+          <img src="{{ llm.llm_image.url }}"
+               alt="{{ llm.name }}"
+               loading="lazy">
+        {% else %}
+          <div class="story-cover-placeholder">
+            <span>🤖</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="story-info-overlay">
+        <h3 class="story-title">{{ llm.name }}</h3>
+      </div>
+
+    </a>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

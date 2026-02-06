@@ -3,10 +3,11 @@ from django.http import HttpResponse
 from book.models import VoiceList, MyVoiceList, VoiceType
 from django.db.models import Count
 from django.db.models import Count, Q
+from register.decorator import login_required_to_main
 
 # Create your views here.
 
-
+@login_required_to_main
 def voice_list(request):
     if request.method == 'POST':
         voice_id = request.POST.get('voice_id')

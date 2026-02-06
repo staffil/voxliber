@@ -5,7 +5,7 @@
         --border-color: #2d3561;
         --text-primary: #ffffff;
         --text-secondary: #cbd5e1;
-        --bg-main: #0f172a;
+        --bg-main: #0b0b0b;
         --success-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
         --danger-gradient: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
     }
@@ -61,7 +61,6 @@
         display: flex;
         gap: 12px;
         flex-wrap: wrap;
-        margin: 30px;
     }
 
     .filter-btn {
@@ -114,6 +113,40 @@
 
     .filter-btn.active::before {
         opacity: 1;
+    }
+
+    /* 검색 & 필터 섹션 */
+    .search-filter-section {
+        padding: 20px 60px;
+        background: rgba(22, 33, 62, 0.3);
+        border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+    }
+
+    .voice-search-box {
+        margin-bottom: 16px;
+    }
+
+    .voice-search-input {
+        width: 100%;
+        max-width: 400px;
+        padding: 14px 20px;
+        background: var(--card-bg);
+        border: 2px solid var(--border-color);
+        border-radius: 14px;
+        color: var(--text-primary);
+        font-size: 15px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .voice-search-input:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
+    }
+
+    .voice-search-input::placeholder {
+        color: var(--text-secondary);
     }
 
     /* 메인 레이아웃 - 왼쪽/오른쪽 */

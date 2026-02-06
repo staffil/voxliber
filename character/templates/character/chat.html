@@ -1,0 +1,712 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ llm.name }} - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/character/chat.css' %}?v=3">
+{% endblock %}
+
+{% block content %}
+<br><br><br>
+<!-- 배경 이미지 뷰어 (토글) -->
+<div class="background-viewer" id="background-viewer">
+    <img src="{% if sub_images_data %}{{ sub_images_data.0.image_url }}{% elif llm.llm_image %}{{ llm.llm_image.url }}{% endif %}"
+         alt="{{ llm.name }}"
+         class="background-viewer-image"
+         id="background-viewer-image">
+    <button class="background-viewer-close" id="close-viewer-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span>채팅으로 돌아가기</span>
+    </button>
+</div>
+
+<div class="chat-container" id="chat-container">
+    <!-- 사이드 프로필 패널 -->
+    <aside class="profile-panel">
+        <div class="profile-image-wrapper">
+            {% if llm.llm_image %}
+            <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}" class="profile-image" id="profile-image">
+            {% else %}
+            <div class="profile-image-placeholder">
+                <span>{{ llm.name|slice:":1" }}</span>
+            </div>
+            {% endif %}
+            <div class="profile-gradient-overlay"></div>
+        </div>
+
+        <div class="profile-info">
+            <h2 class="profile-name">{{ llm.name }}</h2>
+            <div class="profile-status">
+                <span class="status-dot"></span>
+                <span>온라인</span>
+            </div>
+        </div>
+
+        <!-- HP 바 -->
+        <div class="hp-section">
+            <div class="hp-header">
+                <span class="hp-label">호감도</span>
+                <span class="hp-value" id="hp-value">{{ current_hp|default:100 }} / {{ max_hp|default:100 }}</span>
+            </div>
+            <div class="hp-bar">
+                <div class="hp-fill" id="hp-bar"></div>
+            </div>
+        </div>
+
+        <!-- 배경 보기 버튼 (데스크탑) -->
+        <button class="view-background-btn" id="desktop-toggle-background-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span>배경 이미지 보기</span>
+        </button>
+
+        <a href="javascript:history.back()" class="back-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            <span>돌아가기</span>
+        </a>
+    </aside>
+
+    <!-- 메인 채팅 영역 -->
+    <main class="chat-main">
+        <!-- 모바일 헤더 -->
+        <header class="mobile-header">
+            <a href="javascript:history.back()" class="mobile-back-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div class="mobile-profile">
+                {% if llm.llm_image %}
+                <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}" class="mobile-avatar">
+                {% endif %}
+                <div class="mobile-info">
+                    <span class="mobile-name">{{ llm.name }}</span>
+                    <span class="mobile-status">온라인</span>
+                </div>
+            </div>
+            <div class="mobile-header-actions">
+                <!-- 배경 보기 버튼 -->
+                <button class="header-icon-btn" id="toggle-background-btn" title="배경 이미지 보기">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                </button>
+                <button class="mobile-menu-btn" id="toggle-profile-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- 메시지 영역 -->
+        <div class="messages-container" id="message-area">
+            {% if not messages %}
+            <!-- 첫 인사 메시지 -->
+            <div class="message ai-message">
+                <div class="message-avatar">
+                    {% if llm.llm_image %}
+                    <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}">
+                    {% else %}
+                    <span>{{ llm.name|slice:":1" }}</span>
+                    {% endif %}
+                </div>
+                <div class="message-body">
+                    <div class="message-bubble">
+                        {% if llm.description %}
+                        <p class="narration">{{ llm.description }}</p>
+                        {% endif %}
+                        <p class="dialogue">{% if llm.first_sentence %}{{ llm.first_sentence }}{% else %}안녕하세요!{% endif %}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% for msg in messages %}
+            <div class="message {% if msg.role == 'assistant' %}ai-message{% else %}user-message{% endif %}" data-msg-id="{{ msg.id }}">
+                {% if msg.role == 'assistant' %}
+                <div class="message-avatar">
+                    {% if llm.llm_image %}
+                    <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}">
+                    {% else %}
+                    <span>{{ llm.name|slice:":1" }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="message-body">
+                    <div class="message-bubble">
+                        <p>{{ msg.content|linebreaksbr|safe }}</p>
+                    </div>
+                    {% if msg.role == 'assistant' %}
+                    <div class="message-actions">
+                        {% if msg.audio %}
+                        <button class="audio-btn has-audio" data-audio-url="{{ msg.audio.url }}" title="음성 재생">
+                            <svg class="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <svg class="icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                                <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                            </svg>
+                        </button>
+                        {% else %}
+                        <button class="tts-btn" data-msg-id="{{ msg.id }}" title="음성 생성">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                            </svg>
+                            <span>음성 생성</span>
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- 입력 영역 -->
+        <div class="input-container">
+            <div class="input-wrapper">
+                <input type="text"
+                       id="text-input"
+                       class="message-input"
+                       placeholder="{{ llm.name }}에게 메시지 보내기..."
+                       autocomplete="off"
+                       data-login-required>
+                <button class="send-btn" id="send-btn" title="전송">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 숨겨진 오디오 요소 -->
+<audio id="global-audio" style="display:none;"></audio>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ====================================
+// 기본 설정
+// ====================================
+const aiImage = '{% if llm.llm_image %}{{ llm.llm_image.url }}{% endif %}';
+const aiName = '{{ llm.name|escapejs }}';
+const llmUuid = '{{ llm.public_uuid }}';
+const ttsUrl = '{% url "character:chat-tts" llm.public_uuid %}';
+const chatUrl = '{% url "character:chat-logic" llm.public_uuid %}';
+const csrfToken = '{{ csrf_token }}';
+
+// HP 설정
+let currentHp = {{ current_hp|default:0 }};
+let maxHp = {{ max_hp|default:100 }};
+
+// 서브 이미지
+const subImages = [
+    {% for sub in sub_images_data %}
+    { image: '{{ sub.image_url }}', minHp: {{ sub.min_hp }}, maxHp: {{ sub.max_hp }}, title: '{{ sub.title|escapejs|default:"" }}' }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+// ====================================
+// 오디오 관리 (단일 재생)
+// ====================================
+const globalAudio = document.getElementById('global-audio');
+let currentPlayingBtn = null;
+
+function stopAllAudio() {
+    if (globalAudio) {
+        globalAudio.pause();
+        globalAudio.currentTime = 0;
+    }
+    if (currentPlayingBtn) {
+        currentPlayingBtn.classList.remove('playing');
+        const playIcon = currentPlayingBtn.querySelector('.icon-play');
+        const pauseIcon = currentPlayingBtn.querySelector('.icon-pause');
+        if (playIcon) playIcon.style.display = '';
+        if (pauseIcon) pauseIcon.style.display = 'none';
+        currentPlayingBtn = null;
+    }
+    // 모든 버튼 활성화
+    document.querySelectorAll('.audio-btn').forEach(btn => {
+        btn.disabled = false;
+        btn.classList.remove('disabled');
+    });
+}
+
+function playAudio(audioUrl, btn) {
+    if (currentPlayingBtn === btn && !globalAudio.paused) {
+        // 현재 재생 중이면 일시정지
+        globalAudio.pause();
+        btn.classList.remove('playing');
+        const playIcon = btn.querySelector('.icon-play');
+        const pauseIcon = btn.querySelector('.icon-pause');
+        if (playIcon) playIcon.style.display = '';
+        if (pauseIcon) pauseIcon.style.display = 'none';
+
+        // 다른 버튼들 활성화
+        document.querySelectorAll('.audio-btn').forEach(b => {
+            b.disabled = false;
+            b.classList.remove('disabled');
+        });
+        currentPlayingBtn = null;
+        return;
+    }
+
+    // 다른 오디오 중지
+    stopAllAudio();
+
+    // 새 오디오 재생
+    globalAudio.src = audioUrl;
+    globalAudio.play();
+    currentPlayingBtn = btn;
+    btn.classList.add('playing');
+
+    const playIcon = btn.querySelector('.icon-play');
+    const pauseIcon = btn.querySelector('.icon-pause');
+    if (playIcon) playIcon.style.display = 'none';
+    if (pauseIcon) pauseIcon.style.display = '';
+
+    // 다른 버튼들 비활성화
+    document.querySelectorAll('.audio-btn').forEach(b => {
+        if (b !== btn) {
+            b.disabled = true;
+            b.classList.add('disabled');
+        }
+    });
+}
+
+globalAudio.addEventListener('ended', () => {
+    stopAllAudio();
+});
+
+globalAudio.addEventListener('error', () => {
+    stopAllAudio();
+});
+
+// ====================================
+// HP 업데이트
+// ====================================
+function updateHp(newHp) {
+    currentHp = Math.max(0, Math.min(newHp, maxHp));
+    const percentage = (currentHp / maxHp) * 100;
+
+    const hpBar = document.getElementById('hp-bar');
+    const hpValue = document.getElementById('hp-value');
+
+    if (hpBar) {
+        hpBar.style.width = percentage + '%';
+
+        // HP에 따른 색상
+        if (percentage > 70) {
+            hpBar.className = 'hp-fill hp-high';
+        } else if (percentage > 30) {
+            hpBar.className = 'hp-fill hp-medium';
+        } else {
+            hpBar.className = 'hp-fill hp-low';
+        }
+    }
+
+    if (hpValue) {
+        hpValue.textContent = `${currentHp} / ${maxHp}`;
+    }
+
+    updateProfileImage(currentHp);
+}
+
+function updateProfileImage(hp) {
+    const profileImg = document.getElementById('profile-image');
+    if (!profileImg) return;
+
+    const matchingImage = subImages.find(sub => hp >= sub.minHp && hp <= sub.maxHp);
+    const nextSrc = (matchingImage && matchingImage.image) ? matchingImage.image : aiImage;
+
+    if (!nextSrc || profileImg.src.includes(nextSrc)) return;
+
+    profileImg.style.opacity = '0';
+    setTimeout(() => {
+        profileImg.src = nextSrc;
+        profileImg.style.opacity = '1';
+    }, 300);
+}
+
+// ====================================
+// 텍스트 포맷팅 (나레이션/대사 분리)
+// ====================================
+function formatAIText(text) {
+    let result = '';
+    let remaining = text;
+
+    // 패턴 1: *나레이션* 형식
+    // 패턴 2: "대사" 형식
+    // 패턴 3: [감정] 형식
+
+    // 정규식으로 파싱
+    const parts = [];
+    let lastIndex = 0;
+
+    // "대사" 찾기
+    const dialogueRegex = /"([^"]+)"/g;
+    let match;
+
+    while ((match = dialogueRegex.exec(text)) !== null) {
+        // 대사 앞 부분 (나레이션)
+        if (match.index > lastIndex) {
+            const narration = text.substring(lastIndex, match.index).trim();
+            if (narration) {
+                parts.push({ type: 'narration', text: narration });
+            }
+        }
+
+        // 대사
+        parts.push({ type: 'dialogue', text: match[1] });
+        lastIndex = match.index + match[0].length;
+    }
+
+    // 남은 부분 (나레이션)
+    if (lastIndex < text.length) {
+        const remaining = text.substring(lastIndex).trim();
+        if (remaining) {
+            parts.push({ type: 'narration', text: remaining });
+        }
+    }
+
+    // 파싱 결과가 없으면 전체를 대사로 처리
+    if (parts.length === 0) {
+        parts.push({ type: 'dialogue', text: text });
+    }
+
+    // HTML 생성
+    parts.forEach(part => {
+        let content = part.text
+            .replace(/\n/g, '<br>')
+            .replace(/\*([^*]+)\*/g, '<em>$1</em>') // *이탤릭*
+            .replace(/\[([^\]]+)\]/g, '<span class="text-emotion">$1</span>'); // [감정]
+
+        if (part.type === 'narration') {
+            result += `<span class="text-narration">${content}</span>`;
+        } else {
+            result += `<span class="text-dialogue">"${content}"</span>`;
+        }
+    });
+
+    return result;
+}
+
+// ====================================
+// 메시지 추가
+// ====================================
+function addMessage(text, isAi = true, messageId = null) {
+    const area = document.getElementById('message-area');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${isAi ? 'ai-message' : 'user-message'}`;
+    if (messageId) {
+        msgDiv.dataset.msgId = messageId;
+    }
+
+    if (isAi) {
+        const formattedText = formatAIText(text);
+        msgDiv.innerHTML = `
+            <div class="message-avatar">
+                ${aiImage ? `<img src="${aiImage}" alt="${aiName}">` : `<span>${aiName.charAt(0)}</span>`}
+            </div>
+            <div class="message-body">
+                <div class="message-bubble">
+                    ${formattedText}
+                </div>
+                <div class="message-actions">
+                    <button class="tts-btn" data-msg-id="${messageId || ''}" title="음성 생성">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                        </svg>
+                        <span>음성 생성</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    } else {
+        const formattedText = text.replace(/\n/g, '<br>');
+        msgDiv.innerHTML = `
+            <div class="message-body">
+                <div class="message-bubble">
+                    <p>${formattedText}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    area.appendChild(msgDiv);
+    area.scrollTop = area.scrollHeight;
+    return msgDiv;
+}
+
+// ====================================
+// 타이핑 인디케이터
+// ====================================
+function showTypingIndicator() {
+    const area = document.getElementById('message-area');
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'message ai-message typing-indicator';
+    typingDiv.id = 'typing-indicator';
+    typingDiv.innerHTML = `
+        <div class="message-avatar">
+            ${aiImage ? `<img src="${aiImage}" alt="${aiName}">` : `<span>${aiName.charAt(0)}</span>`}
+        </div>
+        <div class="message-body">
+            <div class="message-bubble typing-bubble">
+                <div class="typing-dots">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+        </div>
+    `;
+    area.appendChild(typingDiv);
+    area.scrollTop = area.scrollHeight;
+}
+
+function hideTypingIndicator() {
+    const typing = document.getElementById('typing-indicator');
+    if (typing) typing.remove();
+}
+
+// ====================================
+// 메시지 전송
+// ====================================
+async function sendTextMessage() {
+    const input = document.getElementById('text-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage(message, false);
+    input.value = '';
+
+    showTypingIndicator();
+
+    try {
+        const response = await fetch(chatUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({ message: message })
+        });
+
+        hideTypingIndicator();
+        const data = await response.json();
+
+        if (data.success) {
+            addMessage(data.text, true, data.message_id);
+
+            if (data.hp !== undefined) {
+                updateHp(data.hp);
+            }
+        } else {
+            addMessage('오류: ' + (data.error || '알 수 없는 오류'), true);
+        }
+    } catch (error) {
+        hideTypingIndicator();
+        console.error('채팅 오류:', error);
+        addMessage('연결 오류가 발생했습니다.', true);
+    }
+}
+
+// ====================================
+// TTS 생성 (버튼 클릭 시만)
+// ====================================
+async function generateTTS(btn, msgId) {
+    const msgDiv = btn.closest('.message');
+    const textEl = msgDiv.querySelector('.message-bubble p');
+    const text = textEl ? textEl.innerText : '';
+
+    if (!text) return;
+
+    // 버튼 상태 변경
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.innerHTML = `
+        <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+        <span>생성 중...</span>
+    `;
+
+    try {
+        const response = await fetch(ttsUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({ text: text, message_id: msgId })
+        });
+
+        const data = await response.json();
+
+        if (data.success && (data.audio || data.audio_url)) {
+            const audioUrl = data.audio_url || data.audio;
+
+            // TTS 버튼을 오디오 버튼으로 교체
+            btn.classList.remove('loading', 'tts-btn');
+            btn.classList.add('audio-btn', 'has-audio');
+            btn.disabled = false;
+            btn.dataset.audioUrl = audioUrl;
+            btn.innerHTML = `
+                <svg class="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                <svg class="icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                    <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                </svg>
+            `;
+
+            // 자동 재생
+            playAudio(audioUrl, btn);
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            btn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                </svg>
+                <span>재시도</span>
+            `;
+        }
+    } catch (error) {
+        console.error('TTS 오류:', error);
+        btn.disabled = false;
+        btn.classList.remove('loading');
+        btn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+            </svg>
+            <span>실패</span>
+        `;
+    }
+}
+
+// ====================================
+// 이벤트 리스너
+// ====================================
+document.addEventListener('DOMContentLoaded', function() {
+    // HP 초기화
+    updateHp(currentHp);
+
+    // 기존 AI 메시지 포맷팅
+    document.querySelectorAll('.ai-message .message-bubble').forEach(bubble => {
+        const p = bubble.querySelector('p');
+        if (p && !bubble.querySelector('.text-dialogue') && !bubble.querySelector('.text-narration')) {
+            const originalText = p.innerText;
+            if (originalText) {
+                bubble.innerHTML = formatAIText(originalText);
+            }
+        }
+    });
+
+    // 스크롤 맨 아래로
+    const area = document.getElementById('message-area');
+    if (area) area.scrollTop = area.scrollHeight;
+
+    // 입력 필드 엔터 키
+    const input = document.getElementById('text-input');
+    if (input) {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendTextMessage();
+            }
+        });
+    }
+
+    // 전송 버튼
+    const sendBtn = document.getElementById('send-btn');
+    if (sendBtn) {
+        sendBtn.addEventListener('click', sendTextMessage);
+    }
+
+    // 모바일 프로필 토글
+    const toggleProfileBtn = document.getElementById('toggle-profile-btn');
+    const profilePanel = document.querySelector('.profile-panel');
+    if (toggleProfileBtn && profilePanel) {
+        toggleProfileBtn.addEventListener('click', function() {
+            profilePanel.classList.toggle('show');
+        });
+    }
+
+    // 배경 이미지 뷰어 토글
+    const backgroundViewer = document.getElementById('background-viewer');
+    const chatContainer = document.getElementById('chat-container');
+    const toggleBgBtn = document.getElementById('toggle-background-btn');
+    const desktopToggleBgBtn = document.getElementById('desktop-toggle-background-btn');
+    const closeViewerBtn = document.getElementById('close-viewer-btn');
+    const bgViewerImage = document.getElementById('background-viewer-image');
+
+    function showBackgroundViewer() {
+        // HP에 따른 배경 이미지 업데이트
+        const matchingImage = subImages.find(sub => currentHp >= sub.minHp && currentHp <= sub.maxHp);
+        const imgSrc = (matchingImage && matchingImage.image) ? matchingImage.image : aiImage;
+        if (bgViewerImage && imgSrc) {
+            bgViewerImage.src = imgSrc;
+        }
+        backgroundViewer.classList.add('show');
+        chatContainer.classList.add('hidden');
+    }
+
+    function hideBackgroundViewer() {
+        backgroundViewer.classList.remove('show');
+        chatContainer.classList.remove('hidden');
+    }
+
+    if (toggleBgBtn) {
+        toggleBgBtn.addEventListener('click', showBackgroundViewer);
+    }
+    if (desktopToggleBgBtn) {
+        desktopToggleBgBtn.addEventListener('click', showBackgroundViewer);
+    }
+    if (closeViewerBtn) {
+        closeViewerBtn.addEventListener('click', hideBackgroundViewer);
+    }
+
+    // ESC 키로 배경 뷰어 닫기
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && backgroundViewer.classList.contains('show')) {
+            hideBackgroundViewer();
+        }
+    });
+});
+
+// 이벤트 위임 - TTS 버튼 및 오디오 버튼
+document.addEventListener('click', function(e) {
+    // TTS 생성 버튼
+    const ttsBtn = e.target.closest('.tts-btn');
+    if (ttsBtn && !ttsBtn.disabled) {
+        const msgId = ttsBtn.dataset.msgId;
+        generateTTS(ttsBtn, msgId);
+        return;
+    }
+
+    // 오디오 재생 버튼
+    const audioBtn = e.target.closest('.audio-btn');
+    if (audioBtn && !audioBtn.disabled) {
+        const audioUrl = audioBtn.dataset.audioUrl;
+        if (audioUrl) {
+            playAudio(audioUrl, audioBtn);
+        }
+        return;
+    }
+});
+</script>
+{% endblock %}

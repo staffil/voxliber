@@ -1,0 +1,645 @@
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0a0a1a 100%);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+}
+
+.user-nickname {
+  display: flex;             /* 이미지와 텍스트를 가로로 배치 */
+  align-items: center;       /* 세로 가운데 정렬 */
+  gap: 8px;                  /* 이미지와 텍스트 사이 간격 */
+  font-size: 14px;           /* 글씨 크기 */
+  color: #d0d0d0;               /* 텍스트 색상 */
+}
+
+.user-nickname img {
+  width: 29px;               /* 원형 이미지 크기 */
+  height: 29px;
+  border-radius: 50%;        /* 원형으로 만들기 */
+  object-fit: cover;         /* 이미지 비율 유지하며 채우기 */
+  flex-shrink: 0;            /* 이미지가 줄어들지 않도록 고정 */
+}
+
+.user-nickname span {
+  font-weight: 300;           /* 이름 강조 */
+  white-space: nowrap;        /* 줄바꿈 방지 */
+  overflow: hidden;
+  text-overflow: ellipsis;    /* 이름이 길면 … 처리 */
+}
+/* AI Novel 페이지 헤더 */
+.ai-novel-header {
+    display: block !important;
+    background: linear-gradient(180deg, rgba(30, 30, 30, 0.98) 0%, rgba(30, 30, 30, 0.9) 100%);
+    padding: 16px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+}
+
+.ai-novel-header .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.ai-novel-header .back-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #a0a0c8;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.ai-novel-header .back-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ai-novel-header .back-link i {
+    font-size: 0.85rem;
+}
+
+.ai-novel-header .page-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    flex: 1;
+    text-align: center;
+}
+
+.ai-novel-header .header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.ai-novel-header .create-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #9f7aea 0%, #7f5af0 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.ai-novel-header .create-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(159, 122, 234, 0.4);
+}
+
+.ai-novel-header .create-btn i {
+    font-size: 0.8rem;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 480px) {
+      .card-title {
+    font-size: 0.5rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+    .ai-novel-header {
+        padding: 12px 16px;
+    }
+
+
+
+    .ai-novel-header .back-link span {
+        display: none;
+    }
+
+    .ai-novel-header .page-title {
+        font-size: 1rem;
+    }
+
+    .ai-novel-header .create-btn span {
+        display: none;
+    }
+
+    .ai-novel-header .create-btn {
+        padding: 8px 12px;
+    }
+}
+
+
+/* 맨 위 고정 광고 배너 */
+.ad-banner-wrapper {
+  position: relative;
+  width: 100%;
+  height: 120px;           /* 높이 조절 가능 */
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  margin-top: 90px;
+}
+
+.ad-banner-carousel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.ad-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+.ad-slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ad-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ad-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.ad-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, rgba(10,10,18,0.85) 70%, #0a0a12 100%);
+  opacity: 0.9;
+}
+
+.ad-text {
+  position: absolute;
+  bottom: 30px;
+  left: 30px;
+  right: 30px;
+  color: white;
+  z-index: 2;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+
+.ad-text h3 {
+  font-size: 1.6rem;
+  margin: 0 0 8px;
+  font-weight: 800;
+}
+
+.ad-text p {
+  font-size: 1rem;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.ad-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1e1e2e;
+  color: #64748b;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+/* 캐러셀 버튼 */
+.carousel-prev,
+.carousel-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  background: rgba(0,0,0,0.4);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  z-index: 5;
+  transition: all 0.3s;
+}
+
+.carousel-prev {
+  left: 20px;
+}
+
+.carousel-next {
+  right: 20px;
+}
+
+.carousel-prev:hover,
+.carousel-next:hover {
+  background: rgba(192, 132, 252, 0.6);
+  transform: translateY(-50%) scale(1.15);
+}
+
+/* 모바일에서 버튼 작게 */
+@media (max-width: 480px) {
+  .carousel-prev, .carousel-next {
+    width: 40px;
+    height: 40px;
+    font-size: 1.6rem;
+  }
+  
+}
+/* 모바일 화면 고정 */
+.app-wrapper {
+    width: 600px;              /* iPhone 14 기준 */
+    max-width: 100%;
+    min-height: 100dvh;
+    margin: 0 auto;            /* 데스크탑 중앙 */
+    background: #1e1e1e;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,0,0,0.5);
+}
+
+.recommend-section {
+  padding: 0px 20px;
+  position: relative;
+  padding-bottom: 180px;
+  overflow-y: auto;
+    height: 100vh;
+
+
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.section-title {
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #f0f0ff;
+  margin: 0 0 12px;
+  letter-spacing: -0.5px;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+
+.section-desc {
+  color: #a0a0c8;
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.recommend-grid {
+  display: grid;
+  position: relative;
+  top: 10px;
+  grid-template-columns: repeat(2, 1fr); 
+   gap: 8px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.recommend-card {
+  position: relative;
+  border-radius: 3%;
+  overflow: hidden;
+  background: #11111a;
+  box-shadow: 0 15px 50px rgba(0,0,0,0.7);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  aspect-ratio: 3 / 4.2;
+    max-width: 300px;
+}
+
+
+
+.card-link {
+  display: block;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+
+}
+
+.card-image-box {
+  position: relative;
+  height: 68%;
+  overflow: hidden;
+  
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s ease;
+  
+}
+
+.recommend-card:hover .card-image {
+  transform: scale(1.12);
+}
+
+.card-gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, rgba(10,10,18,0.85) 70%, rgba(10,10,18,1) 100%);
+  opacity: 0.9;
+  transition: opacity 0.5s;
+}
+
+.recommend-card:hover .card-gradient-overlay {
+  opacity: 0.75;
+}
+
+.card-image-box {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+}
+
+.card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-gradient-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to top,
+        rgba(0,0,0,0.75),
+        rgba(0,0,0,0.15),
+        transparent
+    );
+    z-index: 1;
+}
+
+/* ⭐ 이미지 내부 콘텐츠 */
+.card-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+    z-index: 2;
+    color: #fff;
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.card-desc {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+.card-genres,
+.card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.genre-tag {
+    padding: 3px 7px;
+    font-size: 0.7rem;
+    border-radius: 999px;
+    color: #fff;
+}
+
+.tag-item {
+    font-size: 0.6rem;
+    opacity: 0.85;
+}
+
+.card-title-wrapper {
+  margin-bottom: 12px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-hashtags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.hashtag {
+  padding: 5px 14px;
+  background: rgba(150, 80, 200, 0.18);
+  font-size: 0.85rem;
+  color: #d0b0ff;
+  border: 1px solid rgba(150, 80, 200, 0.3);
+}
+
+.card-hover-action {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  opacity: 0;
+  z-index: 3;
+}
+
+.recommend-card:hover .card-hover-action {
+  opacity: 1;
+}
+.genres-column {
+    column-count: 2;          /* 컬럼 개수 */
+    column-gap: 24px;         /* 컬럼 사이 간격 */
+}
+
+.genres_detail {
+    margin: 0 0 6px 0;
+    break-inside: avoid; 
+    font-size: 10px;     /* 컬럼 중간에서 잘리는 거 방지 */
+}
+.action-text {
+  padding: 18px 48px;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.5);
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.empty-card {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 100px 20px;
+  color: #888;
+  font-size: 1.3rem;
+  background: rgba(20,20,35,0.6);
+  
+}
+
+.empty-btn {
+  margin-top: 24px;
+  padding: 14px 40px;
+  background: linear-gradient(135deg, #9f7aea, #7f5af0);
+  color: white;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: all 0.3s;
+}
+
+.empty-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(159,122,234,0.4);
+}
+
+.card-genres {
+    display: flex;
+    flex-wrap: wrap; /* 여러 줄 허용 */
+    gap: 4px;
+} 
+
+body.light-mode .recommend-section{
+  background-color: rgba(255, 255, 255);;
+}
+
+.genre-tag{
+  padding: 1.5px 4px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.card-tags{
+  font-size: 4px;
+  color: rgb(255, 255, 255);
+  font-weight: 300;
+  margin-top: 3px;
+}
+/* 기존 스타일 유지하면서 반응형만 추가/조정 */
+
+/* 제목과 설명 기본값은 그대로 두고, 모바일에서만 조정 */
+.card-title {
+  font-size: clamp(0.95rem, 3.5vw, 1.15rem); /* 기존 유지 */
+  font-weight: 700;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-desc {
+  font-size: clamp(0.78rem, 3vw, 0.88rem); /* 기존 유지 */
+  opacity: 0.88;
+  margin-bottom: 8px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;        /* 2줄까지만 보이게 */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card:hover video {
+  animation: none;
+}
+
+
+/* 모바일 반응형 (600px 이하) */
+@media (max-width: 600px) {
+  .recommend-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* 1열로 자연스럽게 */
+    gap: 10px; /* 간격 조금 줄임 */
+  }
+.genre-tag{
+  padding: 1.5px 4px;
+  border-radius: 6px;
+  font-size: 10px;
+}
+.card-tags{
+  font-size: 6px;
+  color: rgb(255, 255, 255);
+  font-weight: 300;
+  margin-top: 3px;
+}
+  .recommend-card {
+    aspect-ratio: 3 / 4.8; /* 세로 조금 더 길게 */
+  }
+
+  .card-title {
+    font-size: clamp(0.9rem, 4.2vw, 1.05rem); /* 모바일에서 살짝 작게 */
+    -webkit-line-clamp: 1; /* 제목도 2줄 허용 */
+    white-space: normal;   /* 강제 줄바꿈 허용 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+  }
+
+  .card-desc {
+    font-size: clamp(0.75rem, 3.2vw, 0.82rem);
+    -webkit-line-clamp: 3; /* 설명은 2줄 고정 */
+    line-height: 1.35;     /* 줄간격 조금 좁혀서 여백 확보 */
+  }
+}
+
+/* 아주 작은 화면 (480px 이하) - 추가 보정 */
+@media (max-width: 480px) {
+  .card-title {
+    font-size: clamp(0.7rem, 4.5vw, 0.5rem);
+            -webkit-line-clamp: 1;
+
+  }
+
+  .card-desc {
+    font-size: clamp(0.4rem, 3.4vw, 0.3rem);
+    -webkit-line-clamp: 2;
+  }
+}
+
+  @media (max-width: 370px) {
+  .card-title {
+    font-size: clamp(0.7rem, 4.5vw, 0.5rem);
+        -webkit-line-clamp: 1;
+
+  }
+  .genre-tag{
+  padding: 1.5px 4px;
+  border-radius: 6px;
+  font-size: 0.5rem;
+}
+
+  .card-desc {
+    font-size: clamp(0.4rem, 3.4vw, 0.3rem);
+    -webkit-line-clamp: 2;
+  }
+}

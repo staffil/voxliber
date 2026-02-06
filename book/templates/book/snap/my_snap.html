@@ -23,16 +23,15 @@
 
     <div class="snap-header">
         <div class="snap-title">내 북 스냅</div>
-        <a href="/book/create_snap/" class="btn-primary-glow">+ 스냅 만들기</a>
+        <a href="/book/create/snap/" class="btn-primary-glow">+ 스냅 만들기</a>
     </div>
     <div class="bakc-btn-wrapper">
-        <a href="{% url 'mypage:my_profile' %}" class="back-btn">← 마이페이지로 돌아가기</a>
     </div>
     {% if book_snap_list %}
     <div class="snap-grid">
 
         {% for snap in book_snap_list %}
-        <div class="snap-card" onclick="location.href='/book/book-snap/{{ snap.id }}/'">
+        <div class="snap-card" onclick="location.href='/book/book/snap/{{ snap.public_uuid }}/'" data-login-required>
 
             {% if snap.thumbnail %}
                 <img src="{{ snap.thumbnail.url }}" class="snap-thumb">
@@ -51,8 +50,8 @@
                 </div>
 
                 <div class="snap-actions">
-                    <a href="/book/snap/{{ snap.id }}/edit/" class="btn-mini">수정</a>
-                    <a href="/book/snap/{{ snap.id }}/delete/" class="btn-mini" onclick="return confirm('진짜 삭제하시겠습니까?')">삭제</a>
+                    <a href="/book/snap/{{ snap.public_uuid }}/edit/" class="btn-mini" data-login-required>수정</a>
+                    <a href="/book/snap/{{ snap.public_uuid }}/delete/" class="btn-mini" onclick="return confirm('진짜 삭제하시겠습니까?')" data-login-required>삭제</a>
                 </div>
             </div>
 
@@ -63,7 +62,7 @@
     {% else %}
         <div class="empty-box">
             아직 만든 스냅이 없습니다.<br>
-            <a href="/book/create_snap/" class="btn-primary-glow" style="margin-top:15px; display:inline-block;">
+            <a href="/book/create/snap/" class="btn-primary-glow" style="margin-top:15px; display:inline-block;" data-login-required>
                 스냅 만들기
             </a>
         </div>

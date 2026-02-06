@@ -18,13 +18,13 @@
     <form method="post" class="contact-form">
         {% csrf_token %}
         <label for="email">이메일 *</label>
-        <input type="email" id="email" name="email" placeholder="example@example.com" required>
+        <input type="email" id="email" name="email" placeholder="example@example.com" required data-login-required>
 
         <label for="subject">제목 *</label>
-        <input type="text" id="subject" name="subject" placeholder="문의 제목을 입력하세요" required>
+        <input type="text" id="subject" name="subject" placeholder="문의 제목을 입력하세요" required data-login-required>
 
         <label for="message">내용 *</label>
-        <textarea id="message" name="message" placeholder="문의 내용을 입력하세요" required></textarea>
+        <textarea id="message" name="message" placeholder="문의 내용을 입력하세요" required data-login-required></textarea>
 
         <button type="submit">문의 제출</button>
     </form>

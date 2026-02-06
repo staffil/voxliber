@@ -24,6 +24,7 @@
   flex-direction: column;
   gap: var(--spacing-sm);
   transition: transform 0.3s ease;
+  
 }
 .recent-book-card:hover {
   transform: translateY(-8px);
@@ -41,8 +42,9 @@
   background: rgba(99, 102, 241, 0.95);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
   z-index: 5;
+
   transition: all 0.3s ease;
-  border: none;
+  border: 0px 10px 10px 0px;
   color: white;
   cursor: pointer;
   display: flex;
@@ -65,7 +67,7 @@
   padding-top: 140%;
   overflow: hidden;
   box-shadow: var(--shadow-lg);
-  border-radius: 5px 10px 10px 0px;
+  border-radius: 0px 10px 10px 0px;
 }
 .recent-cover img {
   position: absolute;
@@ -74,7 +76,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 5px 10px 10px 0px;
+  border-radius: 0px 10px 10px 0px;
 }
 .recent-placeholder {
   position: absolute;
@@ -124,13 +126,14 @@
 /* Recent Section - Responsive */
 @media (max-width: 1200px) {
   .recent-books-carousel {
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-    grid-auto-columns: minmax(90px, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    grid-auto-columns: minmax(110px, 1fr);
     gap: calc(var(--spacing-lg) * 0.8);
   }
   .recent-cover {
     padding-top: 115%;
     border-radius: 4px 8px 8px 0px;
+    height: 170px;
   }
   .recent-info h4 {
     font-size: 14px;
@@ -146,12 +149,14 @@
 }
 @media (max-width: 992px) {
   .recent-books-carousel {
-    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
-    grid-auto-columns: minmax(85px, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    grid-auto-columns: minmax(110px, 1fr);
     gap: calc(var(--spacing-md) * 0.8);
   }
   .recent-cover {
     padding-top: 110%;
+        height: 170px;
+
   }
   .recent-info h4 {
     font-size: 13px;
@@ -167,12 +172,14 @@
 }
 @media (max-width: 768px) {
   .recent-books-carousel {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    grid-auto-columns: minmax(80px, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    grid-auto-columns: minmax(110px, 1fr);
     gap: calc(var(--spacing-md) * 0.7);
   }
   .recent-cover {
     padding-top: 105%;
+        height: 170px;
+
   }
   .recent-info h4 {
     font-size: 12px;

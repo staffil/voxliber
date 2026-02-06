@@ -5,211 +5,240 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/author_dashboard.css' %}">
-
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
 
-    <div class="dashboard-header">
-        <h1>📊 작가 센터</h1>
-        <p>작품의 통계와 독자 분석을 확인하세요</p>
+
+
+    <!-- ===================== -->
+    <!-- 탭 버튼 -->
+    <!-- ===================== -->
+    <div class="dashboard-tabs">
+        <button class="tab-btn active" data-tab="audiobook">
+            📚 오디오북 소설
+        </button>
+        <button class="tab-btn" data-tab="ai">
+            🤖 AI 소설
+        </button>
     </div>
 
-    {% if total_books > 0 %}
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-card-header"><div class="stat-icon primary">📚</div></div>
-            <div class="stat-card-value">{{ total_books }}</div>
-            <div class="stat-card-title">총 작품 수</div>
-            <div class="stat-card-subtitle">{{ total_contents }}개 에피소드</div>
+    <!-- ===================== -->
+    <!-- 오디오북 소설 탭 -->
+    <!-- ===================== -->
+    <div class="tab-content active" id="tab-audiobook">
+
+        {% if total_books > 0 %}
+        <div class="stats-grid">
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-icon primary">📚</div>
+                </div>
+                <div class="stat-card-value">{{ total_books }}</div>
+                <div class="stat-card-title">총 작품 수</div>
+                <div class="stat-card-subtitle">{{ total_contents }}개 에피소드</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-icon success">👥</div>
+                </div>
+                <div class="stat-card-value">{{ total_readers }}</div>
+                <div class="stat-card-title">총 독자 수</div>
+                <div class="stat-card-subtitle">최근 30일: {{ recent_readers }}명</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-icon info">❤️</div>
+                </div>
+                <div class="stat-card-value">{{ total_followers }}</div>
+                <div class="stat-card-title">팔로워 수</div>
+                <div class="stat-card-subtitle">나를 팔로우하는 독자</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-icon warning">🎧</div>
+                </div>
+                <div class="stat-card-value">{{ total_audio_duration }}</div>
+                <div class="stat-card-title">총 오디오 길이</div>
+                <div class="stat-card-subtitle">전체 작품 합계</div>
+            </div>
+
         </div>
 
-        <div class="stat-card">
-            <div class="stat-card-header"><div class="stat-icon success">👥</div></div>
-            <div class="stat-card-value">{{ total_readers }}</div>
-            <div class="stat-card-title">총 독자 수</div>
-            <div class="stat-card-subtitle">최근 30일: {{ recent_readers }}명</div>
-        </div>
+        <!-- 작품별 통계 -->
+        <div class="book-stats-section">
+            <h2 class="section-title">작품별 통계</h2>
 
-        <div class="stat-card">
-            <div class="stat-card-header"><div class="stat-icon info">❤️</div></div>
-            <div class="stat-card-value">{{ total_followers }}</div>
-            <div class="stat-card-title">팔로워 수</div>
-            <div class="stat-card-subtitle">나를 팔로우하는 독자</div>
-        </div>
+            <div class="book-stats-grid">
+                {% for stat in book_stats %}
+                <div class="book-stat-card">
 
-        <div class="stat-card">
-            <div class="stat-card-header"><div class="stat-icon warning">🎧</div></div>
-            <div class="stat-card-value">{{ total_audio_duration }}</div>
-            <div class="stat-card-title">총 오디오 길이</div>
-            <div class="stat-card-subtitle">전체 작품 합계</div>
-        </div>
+                    <div class="book-stat-header">
+                        <div class="book-cover-mini">
+                            {% if stat.book.cover_img %}
+                            <img src="{{ stat.book.cover_img.url }}" alt="{{ stat.book.name }}">
+                            {% else %}
+                            <div class="book-cover-placeholder">📖</div>
+                            {% endif %}
+                        </div>
 
-        <div class="stat-card">
-            <div class="stat-card-header"><div class="stat-icon info">⭐</div></div>
-            <div class="stat-card-value">{{ book_stats|length }}</div>
-            <div class="stat-card-title">활성 작품</div>
-            <div class="stat-card-subtitle">독자가 있는 작품</div>
-        </div>
-    </div>
-
-    <div class="book-stats-section">
-        <h2 class="section-title">작품별 통계</h2>
-
-        <div class="book-stats-grid">
-            {% for stat in book_stats %}
-            <div class="book-stat-card">
-
-                <div class="book-stat-header">
-                    <div class="book-cover-mini">
-                        {% if stat.book.cover_img %}
-                        <img src="{{ stat.book.cover_img.url }}" alt="{{ stat.book.name }}" loading="lazy">
-                        {% else %}
-                        <div class="book-cover-placeholder">📖</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="book-stat-info">
-                        <h3>{{ stat.book.name }}</h3>
-                        <div class="meta">
-                            <span>👥 {{ stat.reader_count }}명</span>
-                            <span>🎧 총 길이: {{ stat.book_duration }}</span>
-                            <span>⏱️ 총 청취: {{ stat.total_listening_formatted }}</span>
-                            <span>📊 진행률: {{ stat.avg_progress_percent }}%</span>
+                        <div class="book-stat-info">
+                            <h3>{{ stat.book.name }}</h3>
+                            <div class="meta">
+                                <span>👥 {{ stat.reader_count }}명</span>
+                                <span>🎧 {{ stat.book_duration }}</span>
+                                <span>⏱️ {{ stat.total_listening_formatted }}</span>
+                                <span>📊 {{ stat.avg_progress_percent }}%</span>
+                            </div>
                         </div>
                     </div>
 
-
-                </div>
-<div class="status-buttons" data-book-id="{{ stat.book.id }}">
-    <button class="status-btn" data-status="ongoing"
-        {% if stat.book.status == "ongoing" %}disabled{% endif %}>연재 중</button>
-    <button class="status-btn" data-status="paused"
-        {% if stat.book.status == "paused" %}disabled{% endif %}>휴재</button>
-    <button class="status-btn" data-status="ended"
-        {% if stat.book.status == "ended" %}disabled{% endif %}>연재 종료</button>
-</div>
-
-
-
-                <div class="charts-grid">
-                    <div class="chart-container">
-                        <div class="chart-title">성별 분포</div>
-                        <canvas id="genderChart{{ forloop.counter }}"></canvas>
+                    <!-- 상태 버튼 -->
+                    <div class="status-buttons" data-book-id="{{ stat.book.public_uuid }}">
+                        <button class="status-btn" data-status="ongoing"
+                            {% if stat.book.status == "ongoing" %}disabled{% endif %}>
+                            연재 중
+                        </button>
+                        <button class="status-btn" data-status="paused"
+                            {% if stat.book.status == "paused" %}disabled{% endif %}>
+                            휴재
+                        </button>
+                        <button class="status-btn" data-status="ended"
+                            {% if stat.book.status == "ended" %}disabled{% endif %}>
+                            연재 종료
+                        </button>
                     </div>
 
-                    <div class="chart-container">
-                        <div class="chart-title">연령대 분포</div>
-                        <canvas id="ageChart{{ forloop.counter }}"></canvas>
-                    </div>
                 </div>
-
+                {% endfor %}
             </div>
-            {% endfor %}
+        </div>
+
+        <script id="book-stats-data" type="application/json">
+            {{ book_stats_json|safe }}
+        </script>
+
+        {% else %}
+        <div class="empty-state">
+            <h2>아직 작성한 오디오북이 없습니다</h2>
+            <p>첫 작품을 등록해보세요</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ===================== -->
+    <!-- AI 소설 탭 -->
+    <!-- ===================== -->
+<div class="tab-content" id="tab-ai">
+
+    {% if ai_stats %}
+ <div class="stats-grid">
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div class="stat-icon primary">🤖</div>
+        </div>
+        <div class="stat-card-value">
+            {{ ai_summary.total_llms }}
+        </div>
+        <div class="stat-card-title">총 AI 수</div>
+        <div class="stat-card-subtitle">생성한 LLM 캐릭터</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div class="stat-icon success">👥</div>
+        </div>
+        <div class="stat-card-value">
+            {{ ai_summary.total_ai_readers }}
+        </div>
+        <div class="stat-card-title">AI 독자 수</div>
+        <div class="stat-card-subtitle">중복 제거 기준</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div class="stat-icon warning">🎧</div>
+        </div>
+        <div class="stat-card-value">
+            {{ ai_summary.total_ai_tts_duration|floatformat:0 }}초
+        </div>
+        <div class="stat-card-title">총 AI 오디오 길이</div>
+        <div class="stat-card-subtitle">모든 TTS 합계</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div class="stat-icon info">❤️</div>
+        </div>
+        <div class="stat-card-value">
+            {{ ai_summary.total_llm_likes }}
+        </div>
+        <div class="stat-card-title">AI 좋아요 수</div>
+        <div class="stat-card-subtitle">전체 LLM 기준</div>
+    </div>
+
+</div>
+    
+    <div class="book-stats-section">
+        <h2 class="section-title">AI 소설 통계</h2>
+
+        <div class="book-stats-grid">
+{% for stat in ai_stats %}
+<div class="book-stat-card">
+
+    <div class="book-stat-header">
+        <div class="book-cover-mini">
+
+            {% if stat.llm_image %}
+                <img src="{{ stat.llm_image.url }}" alt="{{ stat.name }}">
+            {% else %}
+                <div class="intro-main-image-placeholder">🤖</div>
+            {% endif %}
+
+        </div>
+
+        <div class="book-stat-info">
+            <h3>{{ stat.name }}</h3>
+
+            {% if stat.story %}
+                <div class="sub">{{ stat.story.title }}</div>
+            {% endif %}
+
+            <div class="meta">
+                <span>👥 {{ stat.reader_count }}명</span>
+                <span>❤️ {{ stat.like_count }}</span>
+                <span>🎧 {{ stat.total_tts_duration|floatformat:0 }}초</span>
+            </div>
         </div>
     </div>
 
-    <!-- JSON 데이터 전달 -->
-    <script id="book-stats-data" type="application/json">
-        {{ book_stats_json|safe }}
-    </script>
-
+</div>
+{% endfor %}
+        </div>
+    </div>
     {% else %}
     <div class="empty-state">
-        <svg width="120" height="120" viewBox="0 0 24 24">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-        </svg>
-        <h2>아직 작성한 작품이 없습니다</h2>
-        <p>새로운 작품을 등록하고 독자들과 소통하세요!</p>
-        <a href="{% url 'book:book_profile' %}" class="btn-primary">
-            <svg width="20" height="20" viewBox="0 0 24 24">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            첫 작품 등록하기
-        </a>
+        <h2>AI 소설이 없습니다</h2>
+        <p>AI 캐릭터를 만들어보세요</p>
     </div>
     {% endif %}
+</div>
 
 </div>
 {% endblock %}
+
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-    const dataEl = document.getElementById("book-stats-data");
-    const stats = dataEl ? JSON.parse(dataEl.textContent) : [];
 
-    if (!stats.length) return;
-
-    stats.forEach((stat, i) => {
-        const id = i + 1;
-
-        /* --------------------------
-           성별 차트
-        --------------------------- */
-        const genderCtx = document.getElementById(`genderChart${id}`);
-        if (genderCtx) {
-            new Chart(genderCtx, {
-                type: "doughnut",
-                data: {
-                    labels: ["남성", "여성", "기타"],
-                    datasets: [{
-                        data: [
-                            stat.gender_data.M || 0,
-                            stat.gender_data.F || 0,
-                            stat.gender_data.O || 0
-                        ],
-                        backgroundColor: ["#3b82f6", "#ec4899", "#8b5cf6"],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    plugins: {
-                        legend: { position: "bottom" }
-                    }
-                }
-            });
-        }
-
-        /* --------------------------
-           연령대 차트
-        --------------------------- */
-        const ageCtx = document.getElementById(`ageChart${id}`);
-        if (ageCtx) {
-            new Chart(ageCtx, {
-                type: "bar",
-                data: {
-                    labels: ["어린이", "10대", "20대", "30대", "40대", "50대+"],
-                    datasets: [{
-                        data: [
-                            stat.age_data["어린이"] || 0,
-                            stat.age_data["10대"] || 0,
-                            stat.age_data["20대"] || 0,
-                            stat.age_data["30대"] || 0,
-                            stat.age_data["40대"] || 0,
-                            stat.age_data["50대 이상"] || 0
-                        ],
-                        backgroundColor: "rgba(99, 102, 241, 0.8)",
-                        borderColor: "#6366f1",
-                        borderWidth: 2,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        }
-    });
-});
 
 function getCookie(name) {
     let cookieValue = null;
@@ -251,6 +280,16 @@ document.querySelectorAll('.status-buttons').forEach(container => {
 });
 
 
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
 
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+    });
+});
 </script>
 {% endblock %}

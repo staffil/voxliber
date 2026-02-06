@@ -29,10 +29,112 @@
   color: #888;
 }
 
+/* =========================
+   AI 스토리 카드
+========================= */
+
+.ai-stories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.story-cover-section {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* 전체 카드 */
+.ai-story-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #111;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-story-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* 커버 이미지 */
+.ai-story-card img,
+.ai-story-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 커버 없을 때 */
+.story-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+}
+/* 상세 보기 버튼 스타일 */
+.detail-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(102, 126, 234, 0.9); /* 보라빛 투명 배경 */
+  color: white;
+  border-radius: 50px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+    pointer-events: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: all 0.3s ease;
+}
+.ai-story-card div[style*="linear-gradient"] {
+  pointer-events: none;
+}
+
+.detail-btn:hover {
+  background: rgba(118, 75, 162, 1); /* 더 진한 보라 */
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+}
+
+.detail-btn i {
+  font-size: 14px;
+}
+
+.detail-btn span {
+  white-space: nowrap;
+}
+
+/* 모바일에서 버튼 작게 */
+@media (max-width: 768px) {
+  .detail-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    top: 12px;
+    right: 12px;
+  }
+}
+
 /* 통계 카드 */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 20px;
   margin-bottom: 40px;
 }
@@ -343,7 +445,7 @@
   }
 
   .books-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns:  repeat(2, 1fr);
     gap: 16px;
   }
 }
@@ -404,3 +506,417 @@ body.light-mode .filter-tab.active {
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
 }
+
+/* ==========================================
+   AI 스토리 섹션
+   ========================================== */
+.section-header {
+  margin: 40px 0 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* AI 스토리 그리드 */
+.ai-stories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 24px;
+}
+
+.ai-story-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.ai-story-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(99, 102, 241, 0.2);
+}
+
+.story-cover-section {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+}
+
+.story-cover-section img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+
+.ai-story-card:hover .story-cover-section img {
+  transform: scale(1.1);
+}
+
+.story-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.story-cover-placeholder span {
+  font-size: 4rem;
+  opacity: 0.6;
+}
+
+/* 북마크 버튼 */
+.bookmark-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #888;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  z-index: 3;
+}
+
+.bookmark-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: rgba(251, 191, 36, 0.5);
+  color: #fbbf24;
+  transform: scale(1.1);
+}
+
+.bookmark-btn.active {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.6);
+  color: #fbbf24;
+}
+
+.bookmark-btn.active:hover {
+  background: rgba(251, 191, 36, 0.3);
+}
+
+.story-info-section {
+  display: none;
+}
+
+.story-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.story-description {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.story-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.character-count {
+  font-size: 12px;
+  color: #a78bfa;
+  font-weight: 600;
+}
+
+.genre-tag {
+  padding: 4px 10px;
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #a78bfa;
+}
+
+.story-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 반응형 - AI 스토리 */
+@media (max-width: 768px) {
+  .ai-stories-grid {
+    grid-template-columns:  repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .story-cover-section {
+    height: 150px;
+  }
+
+  .section-title {
+    font-size: 18px;
+  }
+}
+/* LLM 그리드 */
+.llms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* LLM 카드 */
+.llm-card {
+  background-color: #1f1f2e;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.llm-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+}
+
+.llm-card a {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 아바타 이미지 */
+.llm-avatar {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* 정사각형 */
+  object-fit: cover;
+  display: block;
+}
+
+/* 기본 이미지 대체 */
+.llm-placeholder {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  color: white;
+}
+
+/* LLM 정보 영역 */
+.llm-info {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.llm-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.llm-description {
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* 최대 3줄 */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .llms-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
+
+/* Light Mode - AI 스토리 */
+body.light-mode .section-header {
+  border-top-color: #e5e7eb;
+}
+
+body.light-mode .section-title {
+  color: #0f172a;
+}
+
+body.light-mode .ai-story-card {
+  background: #fff;
+  border-color: #e5e7eb;
+}
+
+body.light-mode .ai-story-card:hover {
+  background: #fafafa;
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+body.light-mode .story-title {
+  color: #0f172a;
+}
+
+body.light-mode .story-description {
+  color: #64748b;
+}
+
+body.light-mode .bookmark-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #e5e7eb;
+  color: #94a3b8;
+}
+body.light-mode .book-status-badge{
+    background: rgba(255, 255, 255, 0.9);
+
+}
+body.light-mode .bookmark-btn:hover {
+  background: #fff;
+  border-color: rgba(251, 191, 36, 0.5);
+  color: #f59e0b;
+}
+
+body.light-mode .bookmark-btn.active {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.6);
+  color: #f59e0b;
+}
+
+/* =========================
+   Tablet 이하 (≤ 768px)
+========================= */
+@media (max-width: 768px) {
+
+  /* 전체 여백 */
+  .library-container {
+    padding: 96px 20px 60px;
+  }
+
+  /* 제목 */
+  .library-title {
+    font-size: 24px;
+  }
+
+  /* 통계 카드 */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  /* 책 카드 */
+  .books-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .book-cover-section {
+    height: 160px;
+  }
+
+  /* AI 스토리 */
+  .ai-stories-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .story-cover-section {
+    height: 150px;
+  }
+
+  .section-title {
+    font-size: 18px;
+  }
+
+  /* LLM */
+  .llms-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
+
+/* =========================
+   Mobile (≤ 480px)
+========================= */
+@media (max-width: 480px) {
+
+  /* 통계 */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* 책 */
+  .books-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .book-cover-section {
+    height: 180px;
+  }
+
+  /* AI 스토리 */
+  .ai-stories-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .story-cover-section {
+    height: 180px;
+  }
+
+  /* LLM */
+  .llms-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .llm-avatar,
+  .llm-placeholder {
+    aspect-ratio: 1 / 1;
+  }
+}
+

@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseU
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
-
+import uuid 
 
 
 class UserManager(BaseUserManager):
@@ -37,7 +37,7 @@ class Users(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=100)
     email = models.EmailField(max_length=100, unique=True, null=True)
     nickname = models.CharField(max_length=100, unique=True, null=True)
-
+    public_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True, null=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICE, default='O')
     age = models.IntegerField(default=0)
     created_at = models.DateTimeField(default=timezone.now)

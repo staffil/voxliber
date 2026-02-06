@@ -2,8 +2,8 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseU
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
-
-
+import uuid
+from character.models import Story
 
 
 
@@ -45,6 +45,7 @@ class Books(models.Model):
         ('paused', '휴재'),
         ('ended', '연재 종료'),
     ]
+    public_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True, null=True, blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='books')
     name = models.CharField(max_length=190, unique=True)
     description = models.TextField(null=True, blank=True)
@@ -61,8 +62,7 @@ class Books(models.Model):
         default='ongoing',
         help_text="작품 연재 상태"
     )
-
-
+    adult_choice = models.BooleanField(default=False)
 
 
     class Meta:
@@ -108,6 +108,7 @@ class BookTag(models.Model):
 
 # 에피소드 테이블
 class Content(models.Model):
+    public_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     book = models.ForeignKey("Books", on_delete=models.CASCADE, related_name='contents')
     title = models.CharField(max_length=190)
     number = models.IntegerField(default=1)
@@ -365,8 +366,10 @@ class APIKey(models.Model):
 
 # 북 스냅 테이블
 class BookSnap(models.Model):
+    public_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     book = models.ForeignKey('Books', on_delete=models.CASCADE, null=True, blank=True, related_name='snaps')
+    story = models.ForeignKey(Story, null=True, blank=True, on_delete=models.SET_NULL)
 
     snap_title = models.CharField(max_length=200, null=True, blank=True)
 
@@ -385,8 +388,10 @@ class BookSnap(models.Model):
     # Settings
     allow_comments = models.BooleanField(default=True)
     book_link = models.URLField(max_length=1000, null=True, blank=True)
+    story_link = models.URLField(max_length=1000, null=True, blank=True)
     book_comment = models.CharField(max_length=200, null=True, blank=True)
     duration = models.FloatField(null=True, blank=True)
+    adult_choice = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(default=timezone.now)
 

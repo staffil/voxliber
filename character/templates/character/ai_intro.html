@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ llm.name }} - AI 소개{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/character/ai_intro.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+
+<div class="ai-intro-container">
+    <!-- 헤더 -->
+    <div class="intro-header">
+        <span class="intro-header-title">캐릭터 정보</span>
+        <a href="javascript:history.back()" class="intro-close-btn">&times;</a>
+    </div>
+
+    <!-- 메인 이미지 -->
+<!-- 메인 이미지 -->
+<div class="intro-main-image">
+    {% if llm.llm_image %}
+        <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}">
+    {% else %}
+        <div class="intro-main-image-placeholder">🤖</div>
+    {% endif %}
+
+    {% if conversation_has %}
+    <!-- 대화 버튼 (책 아이콘) -->
+    <a href="{% url 'mypage:novel_result' llm.public_uuid %}"
+       class="novel-btn"
+       aria-label="대화하기">
+        <!-- Book SVG -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M4 3c-1.1 0-2 .9-2 2v14c0 
+                     1.1.9 2 2 2h14c1.1 
+                     0 2-.9 2-2V5c0-1.1-.9-2-2-2H4zm0 
+                     2h14v14H4V5zm2 2v10h2V7H6zm4 
+                     0v10h2V7h-2z"/>
+        </svg>
+    </a>
+    {% endif %}
+    <div class="intro-like-badge" id="like-badge">
+        <span class="like-icon">{% if user_liked %}❤️{% else %}🤍{% endif %}</span>
+        <span class="like-count" id="like-count">{{ like_count }}</span>
+    </div>
+</div>
+
+    <!-- 컨텐츠 -->
+    <div class="intro-content">
+        <!-- 제목 -->
+        <h1 class="intro-title">{{ llm.name }}</h1>
+
+        <!-- 작성자 -->
+        <div class="intro-author-row">
+            <div class="intro-author-avatar">
+                {% if llm.user.user_img %}
+                    <img src="{{ llm.user.user_img.url }}" alt="{{ llm.user.nickname }}" class="user_img">
+                {% else %}
+                {{ llm.user.username|slice:":1"|upper }}
+                {% endif %}
+
+            </div>
+            <span class="intro-author-name">
+
+            <a href="{% url 'main:user_info' llm.user.public_uuid %}" style="color: inherit; text-decoration: none; transition: color 0.2s;">
+                @ {{ llm.user.nickname|default:llm.user.username }}
+
+            </a>
+            </span>
+            {% if user.is_authenticated %}
+            <button class="intro-like-btn {% if user_liked %}liked{% endif %}" id="like-btn" data-llm-uuid="{{ llm.public_uuid }}" data-login-required> 
+                <span>{% if user_liked %}❤️ 좋아요 취소{% else %}🤍 좋아요{% endif %}</span>
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- 태그 -->
+        <div class="intro-tags">
+            {% if llm.story %}
+            <a href="{% url 'character:story_intro' llm.story.public_uuid %}" class="intro-tag highlight">📖 {{ llm.story.title }}</a>
+            {% endif %}
+
+            {% if llm.language %}
+            <span class="intro-tag">🌐 {{ llm.language|upper }}</span>
+            {% endif %}
+        </div>
+
+        <!-- 설명 -->
+        {% if llm.description %}
+        <div class="intro-description">
+            <div class="intro-description-label">소개</div>
+            <div class="intro-description-text">{{ llm.description }}</div>
+        </div>
+        {% endif %}
+
+        <!-- 첫 마디 -->
+        {% if llm.first_sentence %}
+        <div class="intro-first-message">
+            <div class="message-avatar">
+                {% if llm.llm_image %}
+                    <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}">
+                {% else %}
+                    <div class="message-avatar-placeholder">🤖</div>
+                {% endif %}
+            </div>
+            <div class="intro-first-message-bubble">
+                "{{ llm.first_sentence }}"
+            </div>
+        </div>
+        {% endif %}
+        <!-- 플레이 버튼 -->
+        {% if is_preview %}
+        <button type="button" class="intro-play-btn" onclick="if(opener){opener.document.getElementById('submit-btn').click();window.close();}else{history.back();}" data-login-required>
+            💬 AI 캐릭터 생성하기
+        </button>
+        {% else %}
+        <a href="{% url 'character:chat-view' llm.public_uuid %}" class="intro-play-btn" data-login-required>
+            💬 대화 시작하기
+        </a>
+        {% endif %}
+        <!-- 같은 스토리의 다른 캐릭터 -->
+        {% if other_llms %}
+        <div class="other-characters-section">
+            <div class="intro-description-label">같은 스토리의 다른 캐릭터</div>
+            <div class="other-llms-grid">
+                {% for other in other_llms %}
+                <a href="{% url 'character:ai_intro' other.public_uuid %}" class="character-card-link">
+                    <div class="character-card">
+                        <div class="card-image-wrapper">
+                            {% if other.llm_image %}
+                                <img src="{{ other.llm_image.url }}" alt="{{ other.name }}">
+                            {% else %}
+                                <div class="card-image-placeholder">🤖</div>
+                            {% endif %}
+                            <div class="card-overlay">
+                                <h3 class="card-name">{{ other.name }}</h3>
+                                <p class="card-desc">{{ other.description|truncatewords:10|default:"" }}</p>
+                                
+                            </div>
+                        </div>
+                
+
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+
+
+        <!-- 댓글 섹션 -->
+        <div class="comments-section">
+            <div class="intro-description-label">댓글 <span class="comment-count-num">{{ comments.count }}</span></div>
+
+            <!-- 댓글 작성 -->
+            {% if user.is_authenticated %}
+            <div class="comment-form">
+                <div class="form-avatar">
+                <div class="form-avatar">
+                    {% if user.user_img %}
+                    <img src="{{ user.user_img.url }}" alt="{{ user.nickname }}">
+                    {% else %}
+                        {{ user.username|slice:":1"|upper }}
+                        {% endif %}
+                                    </div>
+                                                </div>
+                <div class="form-input-wrapper">
+                    <textarea id="comment-input" placeholder="댓글을 작성하세요..." rows="2" data-login-required></textarea>
+                    <button type="button" class="submit-comment-btn" id="submit-comment-btn" data-login-required>
+                        작성
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div class="login-prompt">
+                <p>댓글을 작성하려면 <a href="" data-login-required>로그인</a>하세요.</p>
+            </div>
+            {% endif %}
+
+            <!-- 댓글 목록 -->
+            <div class="comments-list" id="comments-list">
+                {% for comment in comments %}
+                <div class="comment-item" data-comment-id="{{ comment.id }}">
+                    <div class="comment-avatar">
+                        {{ comment.user.username|slice:":1"|upper }}
+                    </div>
+                    <div class="comment-body">
+                        <div class="comment-header">
+                            <span class="comment-author">{{ comment.user.nickname|default:comment.user.username }}</span>
+                            <span class="comment-date">{{ comment.created_at|date:"Y.m.d H:i" }}</span>
+                        </div>
+                        <div class="comment-content">{{ comment.content }}</div>
+                        <div class="comment-actions">
+                            <!-- <button class="reply-btn" data-comment-id="{{ comment.public_uuid }}" data-login-required>답글</button> -->
+                            {% if comment.user == user %}
+                            <button class="delete-btn" data-comment-id="{{ comment.public_uuid }}" data-login-required>삭제</button>
+                            {% endif %}
+                        </div>
+                        <!-- 답글 목록 -->
+                        {% if comment.replies.exists %}
+                        <div class="replies-list">
+                            {% for reply in comment.replies.all %}
+                            <div class="reply-item" data-comment-id="{{ reply.id }}">
+                                <div class="comment-avatar small">
+                                    {% if user.user_img %}
+                                    <img src="{{ user.user_img.url }}" alt="{{ user.nickname }}">
+                                    {% else %}
+                                        {{ user.username|slice:":1"|upper }}
+                                        {% endif %}                                </div>
+                                <div class="comment-body">
+                                    <div class="comment-header">
+                                        <span class="comment-author">{{ reply.user.nickname|default:reply.user.username }}</span>
+                                        <span class="comment-date">{{ reply.created_at|date:"Y.m.d H:i" }}</span>
+                                    </div>
+                                    <div class="comment-content">{{ reply.content }}</div>
+                                    {% if reply.user == user %}
+                                    <div class="comment-actions">
+                                        <button class="delete-btn" data-comment-id="{{ reply.id }}">삭제</button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="no-comments" id="no-comments">
+                    <p>아직 댓글이 없습니다. 첫 댓글을 작성해보세요!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 전체보기 -->
+        <a href="javascript:history.back()" class="intro-more-link">← 돌아가기</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+    function renderAvatar(user) {
+    if (user.user_img) {
+        return `<img src="${user.user_img}" alt="${user.username}">`;
+    }
+    return `<span class="avatar-text">
+        ${user.username.charAt(0).toUpperCase()}
+    </span>`;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const llmUuid = '{{ llm.public_uuid }}';
+    const csrfToken = '{{ csrf_token }}';
+
+    // 좋아요 토글
+    const likeBtn = document.getElementById('like-btn');
+    const likeBadge = document.getElementById('like-badge');
+
+    if (likeBtn) {
+        likeBtn.addEventListener('click', function() {
+            fetch(`/character/api/llm/${llmUuid}/like/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const likeCount = document.getElementById('like-count');
+                const badgeIcon = likeBadge.querySelector('.like-icon');
+
+                if (data.liked) {
+                    likeBtn.classList.add('liked');
+                    likeBtn.innerHTML = '<span>❤️ 좋아요 취소</span>';
+                    badgeIcon.textContent = '❤️';
+                } else {
+                    likeBtn.classList.remove('liked');
+                    likeBtn.innerHTML = '<span>🤍 좋아요</span>';
+                    badgeIcon.textContent = '🤍';
+                }
+                likeCount.textContent = data.like_count;
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    }
+
+    // 댓글 작성
+    const submitBtn = document.getElementById('submit-comment-btn');
+    const commentInput = document.getElementById('comment-input');
+
+    if (submitBtn && commentInput) {
+        submitBtn.addEventListener('click', function() {
+            const content = commentInput.value.trim();
+            if (!content) {
+                alert('댓글 내용을 입력해주세요.');
+                return;
+            }
+
+            fetch(`/character/api/llm/${llmUuid}/comment/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ content: content })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const commentsList = document.getElementById('comments-list');
+                    const noComments = document.getElementById('no-comments');
+                    if (noComments) noComments.remove();
+
+                    const newComment = createCommentElement(data.comment);
+                    commentsList.insertBefore(newComment, commentsList.firstChild);
+                    commentInput.value = '';
+                } else {
+                    alert(data.error || '댓글 작성에 실패했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('댓글 작성 중 오류가 발생했습니다.');
+            });
+        });
+    }
+
+    // 댓글 삭제
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-btn')) {
+            const commentId = e.target.dataset.commentId;
+            if (confirm('댓글을 삭제하시겠습니까?')) {
+                fetch(`/character/api/llm/comment/${commentId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const commentItem = e.target.closest('.comment-item, .reply-item');
+                        if (commentItem) commentItem.remove();
+                    } else {
+                        alert(data.error || '삭제에 실패했습니다.');
+                    }
+                });
+            }
+        }
+    });
+
+    function createCommentElement(comment) {
+        const div = document.createElement('div');
+        div.className = 'comment-item';
+        div.dataset.commentId = comment.id;
+        div.innerHTML = `
+            <div class="comment-avatar">
+                    {% if user.user_img %}
+                    <img src="{{ user.user_img.url }}" alt="{{ user.nickname }}">
+                    {% else %}
+                        {{ user.username|slice:":1"|upper }}
+                        {% endif %}        
+                            </div>
+            <div class="comment-body">
+                <div class="comment-header">
+                    <span class="comment-author">${comment.username}</span>
+                    <span class="comment-date">${comment.created_at}</span>
+                </div>
+                <div class="comment-content">${comment.content}</div>
+                <div class="comment-actions">
+                    <button class="delete-btn" data-comment-id="${comment.id}">삭제</button>
+                </div>
+            </div>
+        `;
+        return div;
+    }
+});
+</script>
+{% endblock %}

@@ -38,7 +38,7 @@
             left: 0;
             right: 0;
             z-index: 1000;
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(24, 24, 24, 0.8);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border);
             transition: all 0.3s ease;
@@ -727,7 +727,9 @@ body:not(.light-mode) .modal-content {
             .logo-text {
                 font-size: 20px;
             }
-
+            .logo-text {
+                display: none;
+            }
             .theme-toggle {
                 width: 40px;
                 height: 40px;

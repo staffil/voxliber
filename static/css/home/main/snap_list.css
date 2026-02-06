@@ -1,0 +1,172 @@
+
+/* SNAP 리스트 페이지 전용 스타일 */
+.snap-list-container {
+    max-width: 1200px;
+    margin: 120px auto 60px;
+    padding: 0 20px;
+}
+
+.snap-list-header {
+    margin-bottom: 32px;
+}
+
+.snap-list-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.snap-list-header p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+}
+
+/* 5열 그리드 레이아웃 */
+.snap-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+}
+
+.snap-grid-item {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #111;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.snap-grid-item:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.snap-grid-item a {
+    display: block;
+    text-decoration: none;
+}
+
+.snap-media-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 177.78%; /* 9:16 비율 */
+    overflow: hidden;
+}
+
+.snap-media-wrapper img,
+.snap-media-wrapper video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.snap-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 40px 12px 12px;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 50%, transparent 100%);
+    color: #fff;
+}
+
+.snap-overlay h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.snap-overlay .snap-meta {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 비디오 호버 재생 */
+.snap-media-wrapper .hover-video {
+    display: none;
+}
+
+.snap-grid-item:hover .hover-video {
+    display: block;
+}
+
+.snap-grid-item:hover .snap-thumbnail {
+    display: none;
+}
+
+/* Light Mode */
+body.light-mode .snap-list-header h1 {
+    color: #0f172a;
+}
+
+body.light-mode .snap-list-header p {
+    color: #64748b;
+}
+
+/* 반응형 */
+@media (max-width: 1200px) {
+    .snap-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .snap-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .snap-overlay h3 {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 768px) {
+    .snap-list-container {
+        margin-top: 100px;
+        padding: 0 16px;
+    }
+
+    .snap-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .snap-list-header h1 {
+        font-size: 24px;
+    }
+
+    .snap-overlay h3 {
+        font-size: 12px;
+    }
+
+    .snap-overlay .snap-meta {
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .snap-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .snap-overlay {
+        padding: 30px 8px 8px;
+    }
+
+    .snap-overlay h3 {
+        font-size: 11px;
+    }
+}

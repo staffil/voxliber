@@ -38,7 +38,9 @@
         </div>
 
         <!-- 입력 폼 -->
-
+{% if error %}
+<p class="form-error">{{ error }}</p>
+{% endif %}
             
             <!-- 닉네임 -->
             <div class="form-group">
@@ -70,7 +72,7 @@
                     value="{{ user.birthdate|default_if_none:'' }}"
                 >
             </div>
-
+            <p style="font-size: small; color: rgb(157, 157, 0);">생년월일 입력은 회원가입 이후 수정할 수 없습니다. 상세히 기록해주세요.</p>
             <!-- 성별 -->
             <div class="form-group">
                 <label class="form-label">
@@ -119,7 +121,7 @@
                     <span class="checkbox-custom"></span>
                     <span class="checkbox-text">
                         <span class="required-badge">[필수]</span>
-                        <a href="terms_of_service/" class="terms-link">이용약관</a> 동의
+                        <a href="/terms/of/service/" class="terms-link">이용약관</a> 동의
                     </span>
                 </label>
 
@@ -128,7 +130,7 @@
                     <span class="checkbox-custom"></span>
                     <span class="checkbox-text">
                         <span class="required-badge">[필수]</span>
-                        <a href="privacy_policy/" class="terms-link">개인정보처리방침</a> 동의
+                        <a href="/privacy/policy/" class="terms-link">개인정보처리방침</a> 동의
                     </span>
                 </label>
 
@@ -137,7 +139,7 @@
                     <span class="checkbox-custom"></span>
                     <span class="checkbox-text">
                         <span class="required-badge">[필수]</span>
-                        <a href="copyright_policy/" class="terms-link">저작권 정책</a> 동의
+                        <a href="/copyright/policy/" class="terms-link">저작권 정책</a> 동의
                     </span>
                 </label>
 
@@ -146,7 +148,7 @@
                     <span class="checkbox-custom"></span>
                     <span class="checkbox-text">
                         <span class="required-badge">[필수]</span>
-                        <a href="youth_protection/" class="terms-link">청소년 보호정책</a> 동의
+                        <a href="/youth/protection/" class="terms-link">청소년 보호정책</a> 동의
                     </span>
                 </label>
 

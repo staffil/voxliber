@@ -8,11 +8,15 @@ import json
 import os
 from uuid import uuid4
 from django.conf import settings
-from main.models import SnapBtn, Advertisment, Event
+from main.models import SnapBtn, Advertisment, Event, ScreenAI
 from book.models import Books,ReadingProgress, BookSnap, Content, Poem_list, BookTag, Tags, BookSnippet
+from character.models import Story, CharacterMemory, LLM, LoreEntry, ConversationMessage, Conversation
 from book.service.recommendation import recommend_books
 from django.db.models import Max
 import random
+from register.decorator import login_required_to_main
+
+
 
 # Colab API URL
 COLAB_TTS_URL = "https://dolabriform-intense-jameson.ngrok-free.dev"
@@ -31,6 +35,10 @@ def main(request):
     # 뉴스/배너
     news_list = SnapBtn.objects.all()[:5]
     advertisment_list = Advertisment.objects.all()
+    story_list = Story.objects.all()
+
+
+
     
 
     # 📌 신작 (최근 30일 이내 생성된 책, 최신 콘텐츠 기준 정렬)
@@ -155,6 +163,8 @@ def main(request):
 
     snippet_list = BookSnippet.objects.all().order_by("?")[:10]
 
+    ai_advertismemt_img = ScreenAI.objects.all()
+
 
     context = {
         "news_list": news_list,
@@ -174,7 +184,9 @@ def main(request):
         "snap_list":snap_list,
         "latest_episode":latest_episodes,
         "poem_list":poem_list,
-        "snippet_list":snippet_list
+        "snippet_list":snippet_list,
+        "ai_stories":story_list,
+        "ai_advertismemt_img":ai_advertismemt_img
     }
     return render(request, "main/main.html", context)
 
@@ -295,10 +307,11 @@ def search_books(request):
         return render(request, "main/search_result.html", {
             'books': [],
             'authors': [],
+            'ai_stories': [],
             'query': '',
-            'books_count': 0,     
-        'authors_count': 0,    
-            
+            'books_count': 0,
+            'authors_count': 0,
+            'ai_stories_count': 0,
         })
 
     # 📚 책 검색 (제목, 설명, 태그로 검색)
@@ -312,6 +325,7 @@ def search_books(request):
     for book in books:
         books_data.append({
             'id': book.id,
+            'public_uuid': str(book.public_uuid),
             'name': book.name,
             'cover_img': book.cover_img.url if book.cover_img else None,
             'author': book.user.nickname,
@@ -338,6 +352,7 @@ def search_books(request):
         authors_data.append({
             'id': author.user_id,
             'nickname': author.nickname,
+            
             'profile_img': author.user_img.url if author.user_img else None,
             'bio': author.bio if hasattr(author, 'bio') else '',
             'books_count': author.books_count,
@@ -346,17 +361,64 @@ def search_books(request):
                     'id': book.id,
                     'name': book.name,
                     'cover_img': book.cover_img.url if book.cover_img else None,
+                    'public_uuid': str(book.public_uuid),
+
                 } for book in representative_books
             ]
         })
 
+    # 🤖 AI 스토리 검색
+    from character.models import Story
+    ai_stories = Story.objects.filter(
+        Q(title__icontains=query) |
+        Q(description__icontains=query) |
+        Q(genres__name__icontains=query) |
+        Q(tags__name__icontains=query),
+        is_public=True
+    ).select_related('user').prefetch_related('genres', 'characters').distinct()[:20]
+
+    ai_stories_data = []
+    for story in ai_stories:
+        ai_stories_data.append({
+            'id': story.id,
+            'public_uuid': str(story.public_uuid),
+            'title': story.title,
+            'cover_image': story.cover_image.url if story.cover_image else None,
+            'author': story.user.nickname if story.user else '알 수 없음',
+            'description': story.description[:100] if story.description else '',
+            'genres': [{'name': g.name, 'color': g.genres_color} for g in story.genres.all()],
+            'character_count': story.characters.count(),
+        })
+
+    # snap 검색
+    snaps = BookSnap.objects.filter(
+        Q(snap_title__icontains=query),
+    ).select_related('user').distinct()[:20]
+
+    snap_result = []
+    for s in snaps:
+        snap_result.append({
+            'public_uuid': str(s.public_uuid),
+            'snap_title': s.snap_title,
+            'thumbnail': s.thumbnail.url if s.thumbnail else None,
+
+        })
+
+
+
     return render(request, "main/search_result.html", {
         'books': books_data,
         'authors': authors_data,
+        'ai_stories': ai_stories_data,
+        'snap_result':snap_result,
         'query': query,
         'books_count': len(books_data),
         'authors_count': len(authors_data),
+        'ai_stories_count': len(ai_stories_data),
+        'snap_result_count': len(snap_result)
     })
+
+
 
 
 @require_POST
@@ -452,7 +514,7 @@ def genres_books(request, genres_id):
     return render(request, "main/genres_books.html", context)
 
 
-
+@login_required_to_main
 def poem_winner(request):
     poem_ids = list(Poem_list.objects.values_list('id', flat=True))
     selected_ids = random.sample(poem_ids, min(10, len(poem_ids)))
@@ -467,7 +529,7 @@ def poem_winner(request):
 
 
 # 스니펫 리스트
-
+@login_required_to_main
 def snippet_all(request):
     snippet_ids = list(BookSnippet.objects.values_list('id', flat=True))
     selected_ids = random.sample(snippet_ids, min(10, len(snippet_ids)))
@@ -517,6 +579,7 @@ def faq(request):
 
 
 # 3️⃣ 문의하기 (목록 조회)
+@login_required_to_main
 def contact_list(request):
     contacts = Contact.objects.all().order_by('-created_at')
     context = {
@@ -539,7 +602,7 @@ def contact_write(request):
                 email=email,
                 status="pending"
             )
-            return redirect('contact/')  # 제출 후 감사 페이지
+            return redirect('/contact/')  # 제출 후 감사 페이지
         else:
             error = "모든 필드를 채워주세요."
     else:
@@ -555,7 +618,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 
 from django.http import HttpResponseForbidden
 
-
+@login_required_to_main
 def contact_detail(request, contact_id):
     contact = get_object_or_404(Contact, id=contact_id)
 
@@ -609,7 +672,7 @@ from book.service.recommendation import generate_ai_reason, get_user_preference
 # AI 가 추천하는 책 뷰
 from django.shortcuts import render
 from book.service.recommendation import generate_ai_reason
-
+@login_required_to_main
 def ai_recommended(request):
     user = request.user
 
@@ -632,3 +695,171 @@ def ai_recommended(request):
     return render(request, "main/ai_recommended.html", {
         "chat_messages": chat_messages
     })
+
+
+
+
+# AI 소설 페이지
+def ai_novel_main(request):
+    # 1. 랜덤 스토리 (성능 위해 10개만)
+    story_list = Story.objects.all().order_by('?')  # 10개로 제한 추천
+
+    # 2. ScreenAI 전체 (필요하면 필터링)
+    screen_list = ScreenAI.objects.all()[:20]  # 너무 많으면 제한
+
+    # 3. 공개된 대화 목록 (최근 20개)
+    user_share_list = Conversation.objects.filter(
+        is_public=True
+    ).select_related('llm', 'user').order_by('-shared_at')
+
+    # 4. 본인 대화도 포함하고 싶다면 (선택)
+    if request.user.is_authenticated:
+        my_conversations = Conversation.objects.filter(
+            user=request.user,
+            is_public=True
+        ).select_related('llm').order_by('-shared_at')[:10]
+    else:
+        my_conversations = []
+
+    content = {
+        "ai_stories": story_list,
+        "screen_list": screen_list,
+        "user_share_list": user_share_list,
+        "my_conversations": my_conversations,  # 본인 공개 대화 (선택)
+        "is_authenticated": request.user.is_authenticated,
+    }
+
+    return render(request, "main/ai_novel_main.html", content)
+
+
+# snap list 
+def snap_list(request):
+    snap_list = BookSnap.objects.order_by("?")[:15]  # 랜덤 15개
+
+    content = {
+        "snap_list": snap_list
+    }
+    return render(request, "main/snap_list.html", content)
+
+from book.models import Books, Follow
+# user 정보
+def user_info(request, user_uuid):
+
+    # URL의 user_uuid로 해당 유저 조회
+    target_user = get_object_or_404(Users, public_uuid=user_uuid)
+
+    # 해당 유저의 책과 스토리
+    book_list = Books.objects.filter(user=target_user)
+    story_list = Story.objects.filter(user=target_user)
+
+
+     # 3. 공개된 대화 목록 (최근 20개)
+    user_share_list = Conversation.objects.filter(
+        is_public=True
+    ).select_related('llm', 'user').order_by('-shared_at')
+
+
+    # 해당 유저의 스냅
+    snap_list = BookSnap.objects.filter(user=target_user).order_by('-created_at')
+
+    # 팔로워/팔로잉 수
+    follower_count = Follow.objects.filter(following=target_user).count()
+    following_count = Follow.objects.filter(follower=target_user).count()
+
+    # 로그인한 유저가 이 유저를 팔로우 중인지
+    is_following = False
+    if request.user.is_authenticated:
+        is_following = Follow.objects.filter(
+            follower=request.user,
+            following=target_user
+        ).exists()
+
+    context = {
+        "target_user": target_user,
+        "book_list": book_list,
+        "story_list": story_list,
+        "snap_list": snap_list,
+        "follower_count": follower_count,
+        "following_count": following_count,
+        "is_following": is_following,
+        "is_own_profile": request.user == target_user,
+        "user_share_list":user_share_list
+    }
+    
+    return render(request, "main/user_intro.html", context)
+
+from django.utils import timezone
+from character.models import HPImageMapping
+
+
+def shared_novel(request, conv_id):
+    """
+    공개된 대화(Conversation)를 공유용으로 보여주는 뷰
+    - 로그인 없이도 접근 가능
+    - is_public=True인 대화만 허용
+    """
+    # conv_id로 대화 직접 조회 (본인 여부 상관없이)
+    conversation = get_object_or_404(Conversation, id=conv_id)
+
+    # 공개되지 않은 대화면 접근 차단
+    if not conversation.is_public:
+        return render(request, 'novel/private_novel.html', {
+            'message': '이 소설은 현재 비공개 상태입니다.'
+        })
+
+    llm = conversation.llm
+
+    # HP 매핑 로드
+    hp_mappings = list(
+        HPImageMapping.objects.filter(llm=llm, sub_image__isnull=False)
+        .select_related('sub_image')
+        .order_by('min_hp')
+    )
+
+    # 메시지 불러오기
+    messages = conversation.messages.order_by('created_at')
+
+    novel = {
+        'title': f"{llm.name}과의 이야기",
+        'prologue': f"*그날, {llm.name}과의 대화는 조용히 시작되었다.*",
+        'chapters': [],
+        'epilogue': f"*HP {messages.last().hp_after_message if messages.exists() else 0}에 도달했다.*",
+    }
+
+    current_chapter = None
+    current_range = None
+
+    for msg in messages:
+        msg_range = (msg.hp_range_min, msg.hp_range_max)
+
+        if msg_range != current_range:
+            current_range = msg_range
+            matched_mapping = next(
+                (m for m in hp_mappings if (m.min_hp or 0) == (msg.hp_range_min or 0)),
+                None
+            )
+
+            current_chapter = {
+                'title': matched_mapping.note if matched_mapping else f"HP {msg.hp_range_min or 0} ~ {msg.hp_range_max or 100}",
+                'image': matched_mapping.sub_image if matched_mapping else None,
+                'hp_range': msg_range,
+                'messages': [],
+            }
+            novel['chapters'].append(current_chapter)
+            print(f"[SHARED CHAPTER] 새 구간: {current_chapter['title']}, img={matched_mapping.sub_image.id if matched_mapping else '없음'}")
+
+        if current_chapter:
+            current_chapter['messages'].append({
+                'role': msg.role,
+                'speaker': llm.name if msg.role == 'assistant' else '너',
+                'content': msg.content,
+                'audio': msg.audio.url if msg.audio else None,
+            })
+
+    context = {
+        'novel': novel,
+        'conversation': conversation,
+        'is_shared': True,  # 공유 모드임을 템플릿에 알림
+        'llm': llm,
+    }
+    return render(request, 'main/shared_conversation.html', context)

@@ -102,3 +102,9 @@ def api_signup(request):
         import traceback
         log_to_file(traceback.format_exc())
         return JsonResponse({"error": f"서버 오류: {str(e)}"}, status=500)
+
+
+
+
+
+

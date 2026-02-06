@@ -7,10 +7,13 @@ app_name = "mypage"
 urlpatterns = [
     path("profile/", views.my_profile, name="my_profile"),
     path("profile/update/", views.my_profile_update, name="my_profile_update"),
+    path("my/book/list/", views.my_book_list, name="my_book_list"),
     path("library/", views.my_library, name="my_library"),
-    path("snippet/<int:book_id>/", views.book_snippet_form, name="book_snippet_form"),
-    path("poem_list/", views.poem_list, name="poem_list"),
+    path("ai/detail/<uuid:public_uuid>/", views.ai_detail, name="ai_detail"),
+    path("novel/result/<uuid:llm_uuid>/", views.novel_result, name="novel_result"),
+    path("snippet/<uuid:book_uuid>/", views.book_snippet_form, name="book_snippet_form"),
     path("poems/create/", views.poem_create, name="poem_create"),
+    path("ai/list/", views.ai_list, name="ai_list"),
     path("poems/<int:pk>/", views.poem_detail, name="poem_detail"),
     path("poem/<int:pk>/edit/", views.poem_update, name="poem_update"),
     path("poem/<int:pk>/delete/", views.poem_delete, name="poem_delete"),
@@ -23,5 +26,6 @@ urlpatterns = [
 
     # api 구간
     path("api/user_info/", api_views.api_user_info, name="api_user_info"),
+    path("api/user/intro/<uuid:user_uuid>/", api_views.public_user_profile, name="public_user_profile")
 
 ]

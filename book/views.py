@@ -9,12 +9,26 @@ from book.api_utils import require_api_key_secure
 from voxliber.security import validate_image_file, validate_video_file, validate_audio_file
 import os
 from django.conf import settings
+from register.decorator import login_required_to_main
+from character.models import LLM, Story, Conversation, ConversationMessage
+
 
 COLAB_TTS_URL = os.getenv('COLAB_TTS_URL', 'https://xxxx.ngrok-free.app')
 
 # 작품 등록 이용약관
 
 def book_tos(request):
+    context = {
+        'some_data': ..., 
+    }
+
+    # 로그인 여부 체크
+    if not request.user.is_authenticated:
+        context['show_login_card'] = True
+        context['content_locked'] = True  # 콘텐츠 숨기기 플래그
+    else:
+        context['show_login_card'] = False
+        context['content_locked'] = False
     return render(request, "book/book_TOS.html")
 
 
@@ -60,18 +74,21 @@ def add_tags(request):
 
 
 # 작품 프로필 등록
+@login_required_to_main
 def book_profile(request):
     genres_list = Genres.objects.all()
     tag_list = Tags.objects.all()
     voice_list = VoiceList.objects.all()
-    book_id = request.GET.get("book_id")
-    book = Books.objects.filter(id=book_id).first() if book_id else None
+    book_uuid = request.GET.get("public_uuid")
+    book = Books.objects.filter(public_uuid=book_uuid).first() if book_uuid else None
 
     if request.method == "POST":
         novel_title = request.POST.get("novel_title", "").strip()
         novel_description = request.POST.get("novel_description", "").strip()
         genre_ids = request.POST.getlist("genres")
         episode_interval_weeks = request.POST.get("episode_interval_weeks", "1")
+        is_adult = request.POST.get("adult_choice") == "on"
+        print(f"[DEBUG] is_adult 값: {is_adult}")        
 
         if not novel_title:
             context = {
@@ -86,6 +103,8 @@ def book_profile(request):
             book.name = novel_title
             book.description = novel_description
             book.episode_interval_weeks = int(episode_interval_weeks)
+            book.adult_choice = is_adult
+
             # 커버 이미지 업데이트
             if "cover-image" in request.FILES:
                 book.cover_img = request.FILES["cover-image"]
@@ -98,6 +117,8 @@ def book_profile(request):
                 book = existing
                 book.description = novel_description
                 book.episode_interval_weeks = int(episode_interval_weeks)
+                book.adult_choice = is_adult
+
                 if "cover-image" in request.FILES:
                     book.cover_img = request.FILES["cover-image"]
                 book.save()
@@ -107,28 +128,40 @@ def book_profile(request):
                     user=request.user,
                     name=novel_title,
                     description=novel_description,
-                    episode_interval_weeks=int(episode_interval_weeks)
+                    episode_interval_weeks=int(episode_interval_weeks),
+                    adult_choice = is_adult
+
                 )
                 if "cover-image" in request.FILES:
                     book.cover_img = request.FILES["cover-image"]
                     book.save()
 
-        # 장르 처리 (ManyToMany)
+        
+
+        # 장르 처리 (ManyToMany) - 빈 문자열 필터링
         if genre_ids:
-            genres = Genres.objects.filter(id__in=genre_ids)
-            book.genres.set(genres)
+            genre_ids = [int(g) for g in genre_ids if g.strip().isdigit()]
+            if genre_ids:
+                genres = Genres.objects.filter(id__in=genre_ids)
+                book.genres.set(genres)
+            else:
+                book.genres.clear()
         else:
             book.genres.clear()
 
-        # 태그 처리
+        # 태그 처리 - 빈 문자열 필터링
         tag_ids = request.POST.getlist("tags")
         if tag_ids:
-            tags = Tags.objects.filter(id__in=tag_ids)
-            book.tags.set(tags)
+            tag_ids = [int(t) for t in tag_ids if t.strip().isdigit()]
+            if tag_ids:
+                tags = Tags.objects.filter(id__in=tag_ids)
+                book.tags.set(tags)
+            else:
+                book.tags.clear()
         else:
             book.tags.clear()
 
-        return redirect(f"/book/book_serialization/?book_id={book.id}")
+        return redirect(f"/book/book/serialization/?public_uuid={book.public_uuid}")
 
     context = {
         "genres_list": genres_list,
@@ -140,13 +173,14 @@ def book_profile(request):
 
 from uuid import uuid4
 # 작품 연재 등록 (집필 페이지)
+@login_required_to_main
 def book_serialization(request):
     import json
     from book.models import Content, AudioBookGuide
     from django.core import serializers
 
-    book_id = request.GET.get("book_id") or request.POST.get("book_id")
-    book = Books.objects.filter(id=book_id).first()
+    book_uuid = request.GET.get("public_uuid") or request.POST.get("public_uuid")
+    book = Books.objects.filter(public_uuid=book_uuid).first() if book_uuid else None
 
     # 오디오북 가이드
     audioBookGuide = AudioBookGuide.objects.all()
@@ -443,7 +477,7 @@ def book_serialization(request):
                 "success": True,
                 "message": "에피소드가 성공적으로 저장되었습니다.",
                 "content_id": content.id,
-                "redirect_url": f"/book/detail/{book.id}/"
+                "redirect_url": f"/book/detail/{book.public_uuid}/"
             })
         except Exception as e:
             print(f"❌ 에피소드 저장 오류: {e}")
@@ -459,12 +493,10 @@ def book_serialization(request):
     latest_episode_number = latest_episode.number if latest_episode else 0
 
     # 음성 목록 가져오기
-    book_id = request.GET.get("book_id")
-
     voice_list = MyVoiceList.objects.filter(user=request.user)
 
-    if book_id:
-        voice_list = voice_list.filter(book_id=book_id)  # 선택한 책 기준 필터링
+    if book:
+        voice_list = voice_list.filter(book=book)  # 선택한 책 기준 필터링
 
     voice_list = voice_list.order_by('-is_favorite', '-created_at')
     context = {
@@ -701,9 +733,10 @@ def get_background_music_library(request):
         print("❌ 배경음 라이브러리 조회 오류:", e)
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
+from register.models import Users
 
 # 책 상세보기
-def book_detail(request, book_id):
+def book_detail(request, book_uuid):
     from book.models import BookReview, BookComment, ReadingProgress, AuthorAnnouncement
     from django.db.models import Avg, Prefetch
     from django.core.paginator import Paginator
@@ -715,8 +748,12 @@ def book_detail(request, book_id):
             'tags',
             Prefetch('contents', queryset=Content.objects.filter(is_deleted=False).order_by('-number'))
         ),
-        id=book_id
+        public_uuid=book_uuid
     )
+
+    is_adult_content = book.adult_choice
+    is_authorized = request.user.is_authenticated and request.user.is_adult()
+    show_blur = is_adult_content and not is_authorized
 
     # 컨텐츠 가져오기 (삭제되지 않은 것만)
     contents = book.contents.filter(is_deleted=False).order_by('-number')
@@ -724,6 +761,9 @@ def book_detail(request, book_id):
     paginator = Paginator(contents, 10)
     page = request.GET.get('page')
     contents_page = paginator.get_page(page)
+
+    # 1화 가져오기 (미리듣기용)
+    first_episode = Content.objects.filter(book=book, number=1, is_deleted=False).first()
 
     avg_rating = book.reviews.aggregate(Avg('rating'))['rating__avg'] or 0
     review_count = book.reviews.count()
@@ -738,9 +778,83 @@ def book_detail(request, book_id):
     comments = book.book_comments.filter(parent=None).select_related('user').prefetch_related('replies__user').order_by('-created_at')
     announcements = book.announcements.select_related('author').order_by('-is_pinned', '-created_at')
 
+        # ------------------------------
+        # 📌 성별 통계 (Users 테이블에서 직접 조회)
+        # ------------------------------
+    book_stats = []
+    book_stats_json = []
+    readers = ReadingProgress.objects.filter(book=book)
+    reader_count = readers.values('user').distinct().count()
+    # ReadingProgress에서 user_id만 추출
+    reader_user_ids = readers.values_list('user_id', flat=True).distinct()
+
+    # Users 테이블에서 성별 통계 직접 조회 (user_id 사용)
+    gender_stats = Users.objects.filter(user_id__in=reader_user_ids).values('gender').annotate(count=Count('user_id'))
+    gender_data = {'M': 0, 'F': 0, 'O': 0}
+    for g in gender_stats:
+        key = g['gender'] or 'O'
+        gender_data[key] = g['count']
+
+    # ------------------------------
+    # 📌 연령대 통계 (Users 테이블에서 직접 조회)
+    # ------------------------------
+    # Users 테이블에서 age 직접 조회 (user_id 사용)
+    ages = Users.objects.filter(
+        user_id__in=reader_user_ids,
+        age__gt=0  # age가 0보다 큰 것만
+    ).values_list('age', flat=True)
+    # 디버깅: 연령대 데이터 확인
+    print(f"📊 [{book.name}] 독자 수: {reader_count}")
+    print(f"📊 [{book.name}] 독자 user_id 목록: {list(reader_user_ids)[:10]}...")
+    print(f"📊 [{book.name}] 조회된 나이 데이터: {list(ages)}")
+
+    age_data = {
+        "어린이":0,
+        "10대": 0,
+        "20대": 0,
+        "30대": 0,
+        "40대": 0,
+        "50대 이상": 0,
+    }
+
+    for age in ages:
+        if age <10:
+            age_data["어린이"] +=1
+        if 10 <= age < 20:
+            age_data["10대"] += 1
+        elif 20 <= age < 30:
+            age_data["20대"] += 1
+        elif 30 <= age < 40:
+            age_data["30대"] += 1
+        elif 40 <= age < 50:
+            age_data["40대"] += 1
+        elif age >= 50:
+            age_data["50대 이상"] += 1
+
+    print(f"📊 [{book.name}] 연령대 분포: {age_data}")
+
+    book_stats.append({
+        "book": book,
+        "gender_data": gender_data,
+        "age_data": age_data,
+
+        "book_duration": book.get_total_duration_formatted(),
+    })
+
+
+    # JS에서 쓰기 위한 JSON
+    book_stats_json.append({
+        "book_id": book.id,
+        "book_name": book.name,
+        "gender_data": gender_data,
+        "age_data": age_data,
+
+    })
+    print ("책 상태:",book_stats_json)
     context = {
         "book": book,
         "contents": contents_page,
+        "first_episode": first_episode,
         "avg_rating": round(avg_rating, 1),
         "review_count": review_count,
         "user_review": user_review,
@@ -748,6 +862,9 @@ def book_detail(request, book_id):
         "comments": comments,
         "reading_progress": reading_progress,
         "announcements": announcements,
+        "show_blur":show_blur,
+        "book_stats": book_stats,
+        "book_stats_json": json.dumps(book_stats_json),
     }
 
     return render(request, "book/book_detail.html", context)
@@ -755,6 +872,7 @@ def book_detail(request, book_id):
 
 # 내 작품 관리
 @login_required
+@login_required_to_main
 def my_books(request):
     # ✅ 쿼리 최적화: prefetch_related 적용
     books = Books.objects.filter(user=request.user).prefetch_related(
@@ -771,19 +889,21 @@ def my_books(request):
 # 책 삭제
 @login_required
 @require_POST
-def delete_book(request, book_id):
-    book = get_object_or_404(Books, id=book_id, user=request.user)
+@login_required_to_main
+def delete_book(request, book_uuid):
+    book = get_object_or_404(Books, public_uuid=book_uuid, user=request.user)
     book.delete()
     return JsonResponse({"success": True})
 
 
 # 에피소드 상세보기
-def content_detail(request, content_id):
+@login_required_to_main
+def content_detail(request, content_uuid):
     from book.models import Content, ReadingProgress, ListeningHistory, AuthorAnnouncement
     from django.utils import timezone
 
     # 삭제되지 않은 에피소드만 조회 가능
-    content = get_object_or_404(Content, id=content_id, is_deleted=False)
+    content = get_object_or_404(Content, public_uuid=content_uuid, is_deleted=False)
     book = content.book
 
     # 이전/다음 에피소드 (삭제되지 않은 것만)
@@ -847,7 +967,7 @@ def content_detail(request, content_id):
 # 청취 시간 기록
 @login_required
 @require_POST
-def save_listening_history(request, content_id):
+def save_listening_history(request, content_uuid):
     from book.models import Content, ListeningHistory
     from django.utils import timezone
     import json
@@ -861,7 +981,7 @@ def save_listening_history(request, content_id):
         if listened_seconds <= 0 and last_position <= 0:
             return JsonResponse({'success': False, 'error': '청취 시간 또는 재생 위치가 필요합니다.'})
 
-        content = get_object_or_404(Content, id=content_id)
+        content = get_object_or_404(Content, public_uuid=content_uuid)
         book = content.book
 
         # 청취 기록 생성 또는 업데이트
@@ -907,7 +1027,7 @@ def update_listening_position_api(request):
     try:
         data = json.loads(request.body)
         api_key = data.get('api_key')
-        book_id = data.get('book_id')
+        book_id = data.get('public_uuid')
         content_id = data.get('content_id')
         last_position = float(data.get('last_position', 0))
         listened_seconds = int(data.get('listened_seconds', 0))
@@ -961,12 +1081,12 @@ def update_listening_position_api(request):
 # 책 리뷰 작성/수정
 @login_required
 @require_POST
-def submit_review(request, book_id):
+def submit_review(request, book_uuid):
     from book.models import BookReview
     from django.db.models import Avg
 
     try:
-        book = get_object_or_404(Books, id=book_id)
+        book = get_object_or_404(Books, public_uuid=book_uuid)
         rating = int(request.POST.get('rating', 5))
         review_text = request.POST.get('review_text', '').strip()
 
@@ -1002,10 +1122,10 @@ def submit_review(request, book_id):
 # 책 댓글 작성
 @login_required
 @require_POST
-def submit_book_comment(request, book_id):
+def submit_book_comment(request, book_uuid):
     from book.models import BookComment
 
-    book = get_object_or_404(Books, id=book_id)
+    book = get_object_or_404(Books, public_uuid=book_uuid)
     comment_text = request.POST.get('comment', '').strip()
     parent_id = request.POST.get('parent_id', None)
 
@@ -1036,9 +1156,10 @@ def submit_book_comment(request, book_id):
 
 
 # 미리듣기 페이지
+@login_required_to_main
 def preview_page(request):
-    book_id = request.GET.get("book_id")
-    book = get_object_or_404(Books, id=book_id) if book_id else None
+    book_uuid = request.GET.get("public_uuid")
+    book = get_object_or_404(Books, public_uuid=book_uuid) if book_uuid else None
 
     if not book:
         return redirect("book:book_profile")
@@ -1359,6 +1480,7 @@ from django.core.paginator import Paginator
 import random
 
 # 북 스냅 리스트 페이지
+@login_required_to_main
 def book_snap_list(request):
     # 첫 번째 스냅으로 리디렉션 (유튜브 쇼츠 스타일)
     first_snap = BookSnap.objects.first()
@@ -1369,6 +1491,7 @@ def book_snap_list(request):
     return render(request, "book/snap/snap_detail.html", {"no_snaps": True})
 
 # 개인 북 스냅 리스트 페이지
+@login_required_to_main
 def my_book_snap_list(request):
     if not request.user.is_authenticated:
         return render(request, "book/snap/my_snap.html", {"error": "로그인이 필요합니다."})
@@ -1382,148 +1505,203 @@ def my_book_snap_list(request):
     return render(request, "book/snap/my_snap.html", context)
 
 import re  # 정규식으로 id 추출
-
+@login_required_to_main
 def create_book_snap(request):
     if not request.user.is_authenticated:
         return render(request, "book/snap/create_snap.html", {"error": "로그인이 필요합니다."})
 
     user = request.user
-    # (URL, 책 이름) 튜플 리스트 - 그대로 유지
-    select_link = [
-        (f"/book/detail/{book.id}/", book.name)
-        for book in Books.objects.filter(user=user)
-    ]
 
     if request.method == "POST":
-        title = request.POST.get("title", "").strip()
-        description = request.POST.get("description", "").strip()
-        image = request.FILES.get("image")
-        video = request.FILES.get("video")
+        snap_title       = request.POST.get("title", "").strip()
+        snap_description = request.POST.get("description", "").strip()
+        is_adult         = request.POST.get("adult_choice") == "on"
+        thumbnail_image  = request.FILES.get("image")
+        snap_video       = request.FILES.get("video")
 
         # 파일 검증
         try:
-            if image:
-                validate_image_file(image)
-            if video:
-                validate_video_file(video)
+            if thumbnail_image:
+                validate_image_file(thumbnail_image)
+            if snap_video:
+                validate_video_file(snap_video)
         except ValidationError as e:
             return JsonResponse({"error": str(e)}, status=400)
 
-        # select에서 선택한 책 링크 (URL)
-        selected_link = request.POST.get("book_link", "").strip()
-        # 직접 입력한 URL
-        custom_link = request.POST.get("link", "").strip()
+        # ── 선택지 준비 (GET/POST 공통으로 사용 가능하도록) ──
+        my_book_options = [
+            (f"/book/detail/{book.public_uuid}/", book.name)
+            for book in Books.objects.filter(user=user)
+        ]
 
-        final_link = selected_link or custom_link
+        my_story_options = [
+            (f"/character/story/intro/{story.public_uuid}/", story.title)
+            for story in Story.objects.filter(user=user)
+        ]
 
-        # book 객체 찾기
-        book_obj = None
-        if final_link:
-            # URL에서 book.id 추출 (예: /book/detail/123/ → 123)
-            match = re.search(r'/book/detail/(\d+)/?', final_link)
+        # ── 폼에서 넘어온 값들 ──
+        selected_book_url  = request.POST.get("selected_book_url", "").strip()
+        selected_story_url = request.POST.get("selected_story_url", "").strip()
+        custom_url         = request.POST.get("custom_url", "").strip()
+
+        # 우선순위: 책 선택 → 스토리 선택 → 직접 입력
+        final_content_url = selected_book_url or selected_story_url or custom_url
+
+        # 연결할 Book 객체 찾기 (책인 경우에만)
+        connected_book = None
+        if final_content_url:
+            match = re.search(r'/book/detail/([a-f0-9\-]+)/?$', final_content_url)
             if match:
-                book_id = match.group(1)
+                uuid_str = match.group(1)
                 try:
-                    book_obj = Books.objects.get(id=book_id)
+                    connected_book = Books.objects.get(public_uuid=uuid_str)
                 except Books.DoesNotExist:
-                    pass  # 없으면 None
+                    pass
 
-        if not title or not description or not image:
+        # 필수값 체크
+        if not snap_title or not snap_description or not thumbnail_image:
             context = {
-                "error": "모든 필드를 입력해주세요.",
-                "select_link": select_link
+                "error": "제목, 설명, 썸네일 이미지는 필수입니다.",
+                "my_book_options": my_book_options,
+                "my_story_options": my_story_options,
             }
             return render(request, "book/snap/create_snap.html", context)
 
         # 스냅 생성
         snap = BookSnap.objects.create(
             user=user,
-            snap_title=title,
-            book_comment=description,
-            thumbnail=image,
-            snap_video=video,
-            book=book_obj,          # ← 여기! book 객체 저장
-            book_link=final_link    # URL은 그대로 저장
+            snap_title=snap_title,
+            book_comment=snap_description,
+            thumbnail=thumbnail_image,
+            snap_video=snap_video,
+            book=connected_book,           # 연결된 Books 객체 (있을 때만)
+            book_link=final_content_url,   # 실제 사용된 최종 URL
+            adult_choice=is_adult,
+            # story_link 필드가 모델에 있다면 아래처럼 추가 가능
+            # story_link = selected_story_url or custom_url if not connected_book else ""
         )
 
         return redirect("book:my_book_snap_list")
 
-    return render(request, "book/snap/create_snap.html", {"select_link": select_link})
+    # GET 요청일 때 선택지 준비
+    my_book_options = [
+        (f"/book/detail/{book.public_uuid}/", book.name)
+        for book in Books.objects.filter(user=user)
+    ]
+
+    my_story_options = [
+        (f"/character/story/intro/{story.public_uuid}/", story.title)
+        for story in Story.objects.filter(user=user)
+    ]
+
+    context = {
+        "my_book_options": my_book_options,
+        "my_story_options": my_story_options,
+    }
+    return render(request, "book/snap/create_snap.html", context)
+
+
 
 # 북 스냅 수정
-import re  
-
 @login_required
-def edit_snap(request, snap_id):
-    snap = get_object_or_404(BookSnap, id=snap_id)
+@login_required_to_main
+def edit_snap(request, snap_uuid):
+    snap = get_object_or_404(BookSnap, public_uuid=snap_uuid)
 
-    # 작성자만 수정 가능
     if snap.user != request.user:
         return redirect("book:my_book_snap_list")
 
     user = request.user
-    # (URL, 책 이름) 튜플 리스트 - 그대로 유지
-    select_link = [
-        (f"/book/detail/{book.id}/", book.name)
+
+    # 선택지 준비 (항상 최신 상태로)
+    my_book_options = [
+        (f"/book/detail/{book.public_uuid}/", book.name)
         for book in Books.objects.filter(user=user)
     ]
 
+    my_story_options = [
+        (f"/character/story/intro/{story.public_uuid}/", story.title)
+        for story in Story.objects.filter(user=user)
+    ]
+
     if request.method == "POST":
-        title = request.POST.get("title", "").strip()
-        description = request.POST.get("description", "").strip()
-        image = request.FILES.get("image")
-        video = request.FILES.get("video")
-        selected_link = request.POST.get("book_link", "").strip()
-        custom_link = request.POST.get("link", "").strip()
+        snap_title       = request.POST.get("title", "").strip()
+        snap_description = request.POST.get("description", "").strip()
+        is_adult         = request.POST.get("adult_choice") == "on"
+        thumbnail_new    = request.FILES.get("image")
+        video_new        = request.FILES.get("video")
 
-        final_link = selected_link or custom_link
-
-        if not title or not description:
+        # 파일 검증 (create와 동일)
+        try:
+            if thumbnail_new:
+                validate_image_file(thumbnail_new)
+            if video_new:
+                validate_video_file(video_new)
+        except ValidationError as e:
             context = {
-                "error": "제목과 설명을 입력해주세요.",
-                "select_link": select_link,
-                "snap": snap
+                "error": str(e),
+                "snap": snap,
+                "my_book_options": my_book_options,
+                "my_story_options": my_story_options,
             }
             return render(request, "book/snap/edit_snap.html", context)
 
-        # book 객체 찾기
-        book_obj = None
-        if final_link:
-            # URL에서 book.id 추출 (예: /book/detail/123/ → 123)
-            match = re.search(r'/book/detail/(\d+)/?', final_link)
+        selected_book_url  = request.POST.get("selected_book_url", "").strip()
+        selected_story_url = request.POST.get("selected_story_url", "").strip()
+        custom_url         = request.POST.get("custom_url", "").strip()
+
+        final_content_url = selected_book_url or selected_story_url or custom_url
+
+        # Book 객체 연결 (책 URL 패턴일 때만)
+        connected_book = None
+        if final_content_url:
+            match = re.search(r'/book/detail/([a-f0-9\-]+)/?$', final_content_url)
             if match:
-                book_id = match.group(1)
+                uuid_str = match.group(1)
                 try:
-                    book_obj = Books.objects.get(id=book_id)
+                    connected_book = Books.objects.get(public_uuid=uuid_str)
                 except Books.DoesNotExist:
-                    pass  # 없으면 None
+                    pass
+
+        if not snap_title or not snap_description:
+            context = {
+                "error": "제목과 설명은 필수입니다.",
+                "snap": snap,
+                "my_book_options": my_book_options,
+                "my_story_options": my_story_options,
+            }
+            return render(request, "book/snap/edit_snap.html", context)
 
         # 업데이트
-        snap.snap_title = title
-        snap.book_comment = description
-        snap.book_link = final_link
-        snap.book = book_obj  # ← 핵심! book 객체 저장
+        snap.snap_title     = snap_title
+        snap.book_comment   = snap_description
+        snap.adult_choice   = is_adult
+        snap.book_link      = final_content_url
+        snap.book           = connected_book
 
-        if image:
-            snap.thumbnail = image
-        if video:
-            snap.snap_video = video
+        if thumbnail_new:
+            snap.thumbnail = thumbnail_new
+        if video_new:
+            snap.snap_video = video_new
 
         snap.save()
 
         return redirect("book:my_book_snap_list")
 
+    # GET
     context = {
         "snap": snap,
-        "select_link": select_link
+        "my_book_options": my_book_options,
+        "my_story_options": my_story_options,
     }
     return render(request, "book/snap/edit_snap.html", context)
 
 
 # 북 스냅 삭제
 @login_required
-def delete_snap(request, snap_id):
-    snap = get_object_or_404(BookSnap, id=snap_id)
+@login_required_to_main
+def delete_snap(request, snap_uuid):
+    snap = get_object_or_404(BookSnap, public_uuid=snap_uuid)
 
     # 작성자만 삭제 가능
     if snap.user != request.user:
@@ -1534,44 +1712,84 @@ def delete_snap(request, snap_id):
 
 
 # 북 스냅 상세 페이지 (유튜브 쇼츠 스타일)
-def book_snap_detail(request, snap_id):
-    snap = get_object_or_404(BookSnap, id=snap_id)
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+import uuid  # 필요 시
 
-    # 모든 스냅 ID 리스트 가져오기
-    all_snap_ids = list(BookSnap.objects.values_list('id', flat=True).order_by('id'))
+@login_required_to_main
+def book_snap_detail(request, snap_uuid):
+    snap = get_object_or_404(BookSnap, public_uuid=snap_uuid)
+    print(f"요청된 snap_uuid (str): {snap_uuid}")
 
-    # 현재 스냅의 인덱스 찾기
+    # 성인 콘텐츠 처리
+    is_adult_content = snap.adult_choice
+    is_authorized = request.user.is_authenticated and request.user.is_adult()
+    show_blur = is_adult_content and not is_authorized
+
+    # 모든 스냅 UUID 리스트 - 최신순으로 변경 추천
+    all_snap_uuids = list(
+        BookSnap.objects
+        .values_list('public_uuid', flat=True)
+        .order_by('-created_at')  # ← 최신이 위로 오게 (또는 '-views' 등)
+    )
+
+    # 디버깅 로그 강화
+    print(f"[DEBUG] 전체 스냅 개수: {len(all_snap_uuids)}")
+    if all_snap_uuids:
+        print(f"[DEBUG] 리스트 첫 3개: {all_snap_uuids[:3]}")
+        print(f"[DEBUG] 리스트 마지막 3개: {all_snap_uuids[-3:]}")
+
+    # 문자열로 비교하기 위해 모두 str로 변환
+    all_snap_str_uuids = [str(u) for u in all_snap_uuids]
+    current_str_uuid = str(snap_uuid)  # 요청된 uuid를 문자열로
+
     try:
-        current_index = all_snap_ids.index(snap_id)
+        current_index = all_snap_str_uuids.index(current_str_uuid)
+        print(f"[DEBUG] 현재 인덱스: {current_index} (UUID 매칭 성공)")
     except ValueError:
+        print(f"[ERROR] UUID 매칭 실패! 리스트에 {current_str_uuid} 없음")
         current_index = 0
 
-    # 이전/다음 스냅 ID 찾기
-    prev_snap_id = all_snap_ids[current_index - 1] if current_index > 0 else None
-    next_snap_id = all_snap_ids[current_index + 1] if current_index < len(all_snap_ids) - 1 else None
+    prev_snap_uuid = all_snap_uuids[current_index - 1] if current_index > 0 else None
+    next_snap_uuid = all_snap_uuids[current_index + 1] if current_index < len(all_snap_uuids) - 1 else None
+    if next_snap_uuid is None and len(all_snap_uuids) > 1:
+            # 자기 자신 제외한 나머지 중 랜덤 하나 뽑기
+            candidates = [uuid for uuid in all_snap_uuids if uuid != snap.public_uuid]
+            if candidates:
+                next_snap_uuid = random.choice(candidates)
+                print(f"[DEBUG] 랜덤 다음 스냅 선택: {next_snap_uuid}")
 
-    # 댓글 가져오기
+    # 이전도 필요하면 랜덤으로 (보통은 안 해도 되지만 일관성 위해)
+    if prev_snap_uuid is None and len(all_snap_uuids) > 1:
+        candidates = [uuid for uuid in all_snap_uuids if uuid != snap.public_uuid]
+        if candidates:
+            prev_snap_uuid = random.choice(candidates)
+    print(f"[DEBUG] prev_snap_uuid: {prev_snap_uuid}")
+    print(f"[DEBUG] next_snap_uuid: {next_snap_uuid}")
+
+    # 댓글 (기존 그대로)
     comments = snap.comments.filter(parent=None).order_by('-created_at')
 
     context = {
         "snap": snap,
-        "prev_snap_id": prev_snap_id,
-        "next_snap_id": next_snap_id,
+        "prev_snap_uuid": prev_snap_uuid,
+        "next_snap_uuid": next_snap_uuid,
         "comments": comments,
-        "total_snaps": len(all_snap_ids),
+        "total_snaps": len(all_snap_uuids),
         "current_position": current_index + 1,
+        "show_blur": show_blur,
     }
     return render(request, "book/snap/snap_detail.html", context)
-
 
 # 좋아요 API
 @require_POST
 @login_required
-def book_snap_like(request, snap_id):
+def book_snap_like(request, snap_uuid):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=400)
-    
-    snap = get_object_or_404(BookSnap, id=snap_id)
+    print(snap_uuid)
+
+    snap = get_object_or_404(BookSnap, public_uuid=snap_uuid)
     user = request.user
 
     if user in snap.booksnap_like.all():
@@ -1587,17 +1805,18 @@ def book_snap_like(request, snap_id):
 # 조회수 증가 API
 @require_POST
 @login_required
-def book_snap_view_count(request, snap_id):
+def book_snap_view_count(request, snap_uuid):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=400)
 
-    snap = get_object_or_404(BookSnap, id=snap_id)
+    snap = get_object_or_404(BookSnap, public_uuid=snap_uuid)
     user = request.user
+    print(snap_uuid)
 
     # 조회수 중복 방지
     if user not in snap.viewed_users.all():
         snap.views += 1
-        snap.viewed_users.add(user.id)
+        snap.viewed_users.add(user)
         snap.save()
 
     return JsonResponse({"views": snap.views})
@@ -1606,7 +1825,7 @@ def book_snap_view_count(request, snap_id):
 # 댓글 작성 API
 @require_POST
 @login_required
-def book_snap_comment(request, snap_id):
+def book_snap_comment(request, snap_uuid):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=400)
 
@@ -1616,7 +1835,7 @@ def book_snap_comment(request, snap_id):
     if not content:
         return JsonResponse({"error": "댓글 내용 없음"}, status=400)
 
-    snap = get_object_or_404(BookSnap, id=snap_id)
+    snap = get_object_or_404(BookSnap, public_uuid=snap_uuid)
 
     comment = BookSnapComment.objects.create(
         snap=snap,
@@ -1645,21 +1864,21 @@ def test(request):
 def chat_api(request):
     """Ajax로 들어오는 메시지 처리 API"""
     if request.method == "POST":
-        book_id = request.POST.get("book_id")
+        book_uuid = request.POST.get("public_uuid")
         user_msg = request.POST.get("message")
 
-        if not book_id or not user_msg:
+        if not book_uuid or not user_msg:
             return JsonResponse({"error": "필수 데이터 누락"}, status=400)
 
         # 책 존재 확인
         try:
-            Books.objects.get(id=book_id)
+            book = Books.objects.get(public_uuid=book_uuid)
         except Books.DoesNotExist:
             return JsonResponse({"error": "책을 찾을 수 없음"}, status=404)
 
         # AI 함수 호출 (현재 MOCK)
         try:
-            result = chat_with_character(book_id=book_id, message=user_msg)
+            result = chat_with_character(book_id=book.id, message=user_msg)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
 
@@ -1704,7 +1923,13 @@ def normalize_age(age):
         return "50대 이상"
     return "기타"
 
+
+
+from django.db.models import Count, Sum, Q
+from django.db.models.functions import Coalesce
+
 @login_required
+@login_required_to_main
 def author_dashboard(request):
     import json
     from django.db.models import Count, Sum, Avg, Prefetch
@@ -1749,51 +1974,7 @@ def author_dashboard(request):
         # ReadingProgress에서 user_id만 추출
         reader_user_ids = readers.values_list('user_id', flat=True).distinct()
 
-        # Users 테이블에서 성별 통계 직접 조회 (user_id 사용)
-        gender_stats = Users.objects.filter(user_id__in=reader_user_ids).values('gender').annotate(count=Count('user_id'))
-        gender_data = {'M': 0, 'F': 0, 'O': 0}
-        for g in gender_stats:
-            key = g['gender'] or 'O'
-            gender_data[key] = g['count']
 
-        # ------------------------------
-        # 📌 연령대 통계 (Users 테이블에서 직접 조회)
-        # ------------------------------
-        # Users 테이블에서 age 직접 조회 (user_id 사용)
-        ages = Users.objects.filter(
-            user_id__in=reader_user_ids,
-            age__gt=0  # age가 0보다 큰 것만
-        ).values_list('age', flat=True)
-
-        # 디버깅: 연령대 데이터 확인
-        print(f"📊 [{book.name}] 독자 수: {reader_count}")
-        print(f"📊 [{book.name}] 독자 user_id 목록: {list(reader_user_ids)[:10]}...")
-        print(f"📊 [{book.name}] 조회된 나이 데이터: {list(ages)}")
-
-        age_data = {
-            "어린이":0,
-            "10대": 0,
-            "20대": 0,
-            "30대": 0,
-            "40대": 0,
-            "50대 이상": 0,
-        }
-
-        for age in ages:
-            if age <10:
-                age_data["어린이"] +=1
-            if 10 <= age < 20:
-                age_data["10대"] += 1
-            elif 20 <= age < 30:
-                age_data["20대"] += 1
-            elif 30 <= age < 40:
-                age_data["30대"] += 1
-            elif 40 <= age < 50:
-                age_data["40대"] += 1
-            elif age >= 50:
-                age_data["50대 이상"] += 1
-
-        print(f"📊 [{book.name}] 연령대 분포: {age_data}")
 
         # ------------------------------
         # 📌 청취 시간 총합 (초)
@@ -1830,8 +2011,6 @@ def author_dashboard(request):
         book_stats.append({
             "book": book,
             "reader_count": reader_count,
-            "gender_data": gender_data,
-            "age_data": age_data,
             "total_listening_seconds": total_listening_seconds,
             "total_listening_formatted": total_listening_formatted,
             "avg_progress_percent": avg_progress_percent,
@@ -1843,8 +2022,7 @@ def author_dashboard(request):
             "book_id": book.id,
             "book_name": book.name,
             "reader_count": reader_count,
-            "gender_data": gender_data,
-            "age_data": age_data,
+
             "total_listening_seconds": total_listening_seconds,
             "avg_progress_percent": avg_progress_percent,
         })
@@ -1857,6 +2035,75 @@ def author_dashboard(request):
         .count()
     )
 
+
+
+    #__________________________
+    # AI 통계 
+    user = request.user
+    ai_stats = (
+        LLM.objects
+        .filter(user=request.user)
+        .select_related('story')  # story.title 같은 거 쓸 때
+        .annotate(
+            # 👥 AI 당 대화 유저 수
+            reader_count=Count(
+                'conversation__user',
+                distinct=True
+            ),
+
+            # ❤️ 좋아요 수
+            like_count=Count(
+                'llmlike',
+                distinct=True
+            ),
+
+            # 🎧 TTS 오디오 총 duration
+            total_tts_duration=Coalesce(
+                Sum(
+                    'conversation__messages__audio_duration',
+                    filter=Q(
+                        conversation__messages__audio_duration__isnull=False
+                    )
+                ),
+                0.0
+            )
+        )
+        .order_by('-reader_count')
+    )
+
+    ai_summary = (
+        LLM.objects
+        .filter(user=request.user)
+        .aggregate(
+            # 🤖 총 LLM 수
+            total_llms=Count('id', distinct=True),
+
+            # 👥 전체 AI 독자 수 (중복 제거)
+            total_ai_readers=Count(
+                'conversation__user',
+                distinct=True
+            ),
+
+            # ❤️ 전체 LLM 좋아요 수
+            total_llm_likes=Count(
+                'llmlike',
+                distinct=True
+            ),
+
+            # 🎧 전체 TTS 오디오 길이
+            total_ai_tts_duration=Coalesce(
+                Sum(
+                    'conversation__messages__audio_duration',
+                    filter=Q(
+                        conversation__messages__audio_duration__isnull=False
+                    )
+                ),
+                0.0
+            )
+        )
+    )
+
+
     context = {
         "total_books": total_books,
         "total_contents": total_contents,
@@ -1866,6 +2113,8 @@ def author_dashboard(request):
         "recent_readers": recent_readers,
         "book_stats": book_stats,
         "book_stats_json": json.dumps(book_stats_json),
+        "ai_stats": ai_stats,
+        "ai_summary": ai_summary,
     }
 
     return render(request, "book/author_dashboard.html", context)
@@ -1874,9 +2123,9 @@ def author_dashboard(request):
 
 @require_POST
 @login_required
-def toggle_status(request, book_id):
+def toggle_status(request, book_uuid):
     if request.method == "POST":
-        book = get_object_or_404(Books, id=book_id)
+        book = get_object_or_404(Books, public_uuid=book_uuid)
         import json
         data = json.loads(request.body)
         new_status = data.get("status")
@@ -1894,9 +2143,9 @@ def toggle_status(request, book_id):
 
 # 공지사항 생성
 @login_required
-def create_announcement(request, book_id):
+def create_announcement(request, book_uuid):
     from book.models import AuthorAnnouncement
-    book = get_object_or_404(Books, id=book_id)
+    book = get_object_or_404(Books, public_uuid=book_uuid)
 
     # 작가만 공지사항 생성 가능
     if request.user != book.user:
@@ -1918,9 +2167,9 @@ def create_announcement(request, book_id):
             is_pinned=is_pinned
         )
 
-        return redirect("book:book_detail", book_id=book.id)
+        return redirect("book:book_detail", book_uuid=book.public_uuid)
 
-    return redirect("book:book_detail", book_id=book.id)
+    return redirect("book:book_detail", book_uuid=book.public_uuid)
 
 
 # 공지사항 수정
@@ -1939,9 +2188,9 @@ def update_announcement(request, announcement_id):
         announcement.is_pinned = request.POST.get("is_pinned") == "on"
         announcement.save()
 
-        return redirect("book:book_detail", book_id=announcement.book.id)
+        return redirect("book:book_detail", book_uuid=announcement.book.public_uuid)
 
-    return redirect("book:book_detail", book_id=announcement.book.id)
+    return redirect("book:book_detail", book_uuid=announcement.book.public_uuid)
 
 
 # 공지사항 삭제
@@ -1954,19 +2203,19 @@ def delete_announcement(request, announcement_id):
     if request.user != announcement.author:
         return JsonResponse({"success": False, "error": "권한이 없습니다."}, status=403)
 
-    book_id = announcement.book.id
+    book_uuid = announcement.book.public_uuid
     announcement.delete()
 
-    return redirect("book:book_detail", book_id=book_id)
+    return redirect("book:book_detail", book_uuid=book_uuid)
 
 
 # 에피소드 삭제 (작가만) - Soft Delete
 @login_required
-def delete_content(request, content_id):
+def delete_content(request, content_uuid):
     from book.models import Content
     from django.utils import timezone
 
-    content = get_object_or_404(Content, id=content_id, is_deleted=False)
+    content = get_object_or_404(Content, public_uuid=content_uuid, is_deleted=False)
     book = content.book
 
     # 작가만 삭제 가능
@@ -1985,20 +2234,20 @@ def delete_content(request, content_id):
             c.number = idx
             c.save()
 
-        return redirect("book:book_detail", book_id=book.id)
+        return redirect("book:book_detail", book_uuid=book.public_uuid)
 
-    return redirect("book:book_detail", book_id=book.id)
+    return redirect("book:book_detail", book_uuid=book.public_uuid)
 
 
 # 에피소드 순서 변경
 @login_required
 @require_POST
-def reorder_content(request, book_id):
+def reorder_content(request, book_uuid):
     from book.models import Content
     import json
 
     try:
-        book = get_object_or_404(Books, id=book_id)
+        book = get_object_or_404(Books, public_uuid=book_uuid)
 
         # 작가만 순서 변경 가능
         if request.user != book.user:
@@ -2026,7 +2275,7 @@ def reorder_content(request, book_id):
 # 북마크/메모 생성/수정
 @login_required
 @require_POST
-def save_bookmark(request, content_id):
+def save_bookmark(request, content_uuid):
     from book.models import ContentBookmark, Content
     import json
 
@@ -2038,7 +2287,7 @@ def save_bookmark(request, content_id):
         if position < 0:
             return JsonResponse({'success': False, 'error': '위치가 올바르지 않습니다.'}, status=400)
 
-        content = get_object_or_404(Content, id=content_id)
+        content = get_object_or_404(Content, public_uuid=content_uuid)
 
         # 같은 위치에 북마크가 있는지 확인 (±1초 범위)
         existing = ContentBookmark.objects.filter(
@@ -2075,13 +2324,15 @@ def save_bookmark(request, content_id):
 
 # 북마크 목록 조회
 @login_required
-def get_bookmarks(request, content_id):
+@login_required_to_main
+def get_bookmarks(request, content_uuid):
     from book.models import ContentBookmark
 
     try:
+        content = get_object_or_404(Content, public_uuid=content_uuid)
         bookmarks = ContentBookmark.objects.filter(
             user=request.user,
-            content_id=content_id
+            content=content
         ).order_by('position')
 
         bookmarks_data = [{
@@ -2127,11 +2378,11 @@ def search_page(request):
 # ==================== 북마크 기능 ====================
 
 @login_required
-def toggle_bookmark(request, book_id):
+def toggle_bookmark(request, book_uuid):
     """
     북마크 토글 (추가/제거)
     """
-    print(f"🔖 북마크 토글 요청 - 사용자: {request.user}, 책 ID: {book_id}")
+    print(f"🔖 북마크 토글 요청 - 사용자: {request.user}, 책 UUID: {book_uuid}")
 
     if request.method != 'POST':
         print(f"❌ 잘못된 메서드: {request.method}")
@@ -2140,10 +2391,10 @@ def toggle_bookmark(request, book_id):
     from book.models import BookmarkBook
 
     try:
-        book = Books.objects.get(id=book_id)
+        book = Books.objects.get(public_uuid=book_uuid)
         print(f"📖 책 찾음: {book.name}")
     except Books.DoesNotExist:
-        print(f"❌ 책을 찾을 수 없음: {book_id}")
+        print(f"❌ 책을 찾을 수 없음: {book_uuid}")
         return JsonResponse({'error': '책을 찾을 수 없습니다'}, status=404)
 
     # 북마크 토글
@@ -2180,25 +2431,80 @@ def toggle_bookmark(request, book_id):
 
 
 @login_required
+@login_required_to_main
 def my_bookmarks(request):
     """
-    내 북마크 목록 페이지
+    내 북마크 목록 페이지 (책 + AI 스토리)
     """
     from book.models import BookmarkBook
+    from character.models import StoryBookmark, Story
     from django.core.paginator import Paginator
-    
+
+    # 책 북마크
     bookmarks = BookmarkBook.objects.filter(
         user=request.user
     ).select_related('book', 'book__user').prefetch_related(
         'book__genres', 'book__tags'
     ).order_by('-created_at')
-    
+
     paginator = Paginator(bookmarks, 20)
     page = request.GET.get('page')
     bookmarks_page = paginator.get_page(page)
-    
+
+    # AI 스토리 북마크
+    story_bookmarks = StoryBookmark.objects.filter(
+        user=request.user
+    ).select_related('story', 'story__user').prefetch_related(
+        'story__genres', 'story__characters'
+    ).order_by('-created_at')
+
     context = {
-        'bookmarks': bookmarks_page
+        'bookmarks': bookmarks_page,
+        'story_bookmarks': story_bookmarks,
     }
-    
+
     return render(request, 'book/my_bookmarks.html', context)
+
+
+# ==================== 팔로우 기능 (웹용) ====================
+@login_required
+@require_POST
+def toggle_follow(request, user_id):
+    """
+    웹에서 사용하는 팔로우/언팔로우 토글
+    POST /book/follow/<user_id>/toggle/
+    """
+    from register.models import Users
+    from book.models import Follow
+
+    try:
+        target_user = get_object_or_404(Users, user_id=user_id)
+
+        # 자기 자신은 팔로우 불가
+        if request.user.user_id == target_user.user_id:
+            return JsonResponse({'success': False, 'error': '자기 자신을 팔로우할 수 없습니다'}, status=400)
+
+        # 팔로우 토글
+        follow, created = Follow.objects.get_or_create(
+            follower=request.user,
+            following=target_user
+        )
+
+        if not created:
+            # 이미 팔로우 중이면 언팔로우
+            follow.delete()
+            is_following = False
+        else:
+            is_following = True
+
+        # 팔로워 수 계산
+        follower_count = Follow.objects.filter(following=target_user).count()
+
+        return JsonResponse({
+            'success': True,
+            'is_following': is_following,
+            'follower_count': follower_count
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

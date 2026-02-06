@@ -8,9 +8,12 @@ from django.utils import timezone
 from book.models import Books, ReadingProgress, Content, MyVoiceList, Books
 from book.utils import generate_tts
 from django.conf import settings
-
+from character.models import Story, LLM, LLMSubImage, LoreEntry, Conversation, StoryBookmark, ConversationMessage, ConversationState, HPImageMapping
+import re 
+from register.decorator import login_required_to_main
 
 @login_required
+@login_required_to_main
 def my_profile(request):
     user = request.user
     books = Books.objects.filter(user=user).order_by('-created_at')
@@ -81,7 +84,7 @@ def my_profile(request):
 
 
 
-@login_required
+@login_required_to_main
 def my_profile_update(request):
     user = request.user
 
@@ -143,6 +146,7 @@ def my_profile_update(request):
 
 
 @login_required
+@login_required_to_main
 def my_library(request):
     user = request.user
 
@@ -171,18 +175,36 @@ def my_library(request):
     # 동적 상태 기반 통계 계산
     reading_count = sum(1 for p in all_progress if p.get_reading_status() == 'reading')
     completed_count = sum(1 for p in all_progress if p.get_reading_status() == 'completed')
+    chatted_llm_ids = Conversation.objects.filter(user=user).values_list('llm_id', flat=True).distinct()
+
+    # AI 스토리: 사용자가 대화한 스토리 목록
+    chatted_stories = Story.objects.filter(
+        characters__id__in=chatted_llm_ids
+    ).distinct().prefetch_related('characters', 'genres')
+
+    llms = LLM.objects.filter(
+        id__in=chatted_llm_ids
+    ).distinct()
+
+    # 북마크 ID (아이콘 표시용)
+    bookmarked_story_ids = StoryBookmark.objects.filter(user=user).values_list('story_id', flat=True)
 
     stats = {
         'total': all_progress.count(),
         'reading': reading_count,
         'completed': completed_count,
         'favorite': all_progress.filter(is_favorite=True).count(),
+        'ai_stories': chatted_stories.count(),
+        "llms":llms.count()
     }
 
     context = {
         'reading_progress_list': reading_progress_list,
         'filter_status': filter_status,
         'stats': stats,
+        'chatted_stories': chatted_stories,
+        'bookmarked_story_ids': list(bookmarked_story_ids),
+        'chatted_llms': llms, 
     }
 
     return render(request, "mypage/my_library.html", context)
@@ -235,7 +257,7 @@ def api_my_library(request):
     for progress in reading_progress_list:
         book = progress.book
         books_data.append({
-            'id': book.id,
+            'id': book.public_uuid,
             'name': book.name,
             'description': book.description,
             'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
@@ -385,6 +407,7 @@ def select_book(request, pk):
 import os
 from book.models import Poem_list
 # 시 리스트
+@login_required_to_main
 def poem_list(request):
     user = request.user
     poem_list = Poem_list.objects.filter(user=user).order_by("-created_at")
@@ -441,7 +464,7 @@ def poem_create(request):
     })
 
 
-
+@login_required_to_main
 def poem_detail(request, pk):
     poem = get_object_or_404(Poem_list, pk=pk, user=request.user)
 
@@ -453,7 +476,7 @@ def poem_detail(request, pk):
 
     return render(request, "mypage/poem/poem_detail.html", {"poem": poem})
 
-
+@login_required_to_main
 def poem_update(request, pk):
     poem = get_object_or_404(Poem_list, pk=pk, user=request.user)
 
@@ -478,8 +501,9 @@ def poem_delete(request, pk):
 from django.shortcuts import get_object_or_404, redirect, render
 from book.models import BookSnippet
 import time
-def book_snippet_form(request, book_id):
-    book = get_object_or_404(Books, id=book_id)
+@login_required_to_main
+def book_snippet_form(request, book_uuid):
+    book = get_object_or_404(Books, public_uuid=book_uuid)
     
     # 이미 스니펫이 있으면 수정 모드
     snippet = BookSnippet.objects.filter(book=book).first()
@@ -520,7 +544,7 @@ def book_snippet_form(request, book_id):
             snippet = BookSnippet.objects.create(
                 book=book,
                 sentence=sentence,
-                link=f"http://127.0.0.1:8000/book/detail/{book_id}/"
+                link=f"http://127.0.0.1:8000/book/detail/{book.public_uuid}/"
             )
             if audio_file:
                 snippet.audio_file.save(audio_file.name, audio_file, save=True)
@@ -559,3 +583,123 @@ def delete_account(request):
     
     # GET 요청은 확인 페이지로
     return render(request, 'mypage/delete_account_confirm.html')
+
+
+@login_required_to_main
+def ai_list(request):
+    
+
+    if request.method == 'POST':
+        user = request.user
+    story_list = Story.objects.filter(user=request.user)
+
+    content = {
+        "story_list": story_list
+    }
+    return render(request,"mypage/ai_list.html", content)
+
+
+
+
+# ai 와 했던 대화 목록 소설로 저장
+@login_required_to_main
+def ai_detail(request, public_uuid ):
+    story = get_object_or_404(Story, public_uuid=public_uuid )
+    llm_list = LLM.objects.filter(story=story,conversation__messages__isnull=False ).distinct()
+    context = {
+        "llm_list": llm_list
+    }
+    return render(request, "mypage/ai_detail.html" ,context)
+
+
+
+from collections import OrderedDict
+
+@login_required_to_main
+def novel_result(request, llm_uuid):
+    llm = get_object_or_404(LLM, public_uuid=llm_uuid)
+
+    # 대화 찾기 (본인 대화만)
+    conversation = Conversation.objects.filter(user=request.user, llm=llm).last()
+    if not conversation:
+        return render(request, 'novel/no_conversation.html')
+
+    # POST: 공개 여부 토글 (본인만 가능)
+    if request.method == "POST":
+        share_choice = request.POST.get('share_choice') == "on"
+        conversation.is_public = share_choice
+        if share_choice:
+            conversation.shared_at = timezone.now()
+        else:
+            conversation.shared_at = None
+        conversation.save()
+        print(f"[SHARE TOGGLE] 대화 {conversation.id} → is_public: {conversation.is_public}")
+
+        # POST 후 새로고침 (GET으로 다시 로드)
+        return redirect('mypage:novel_result', llm_uuid=llm_uuid)
+
+    # GET: 페이지 렌더링
+    # HP 매핑 + novel 생성 로직 (기존 그대로)
+    hp_mappings = list(
+        HPImageMapping.objects.filter(llm=llm, sub_image__isnull=False)
+        .select_related('sub_image')
+        .order_by('min_hp')
+    )
+
+    messages = conversation.messages.order_by('created_at')
+
+    novel = {
+        'title': f"{llm.name}과의 이야기",
+        'prologue': f"*그날, {llm.name}과의 대화는 조용히 시작되었다.*",
+        'chapters': [],
+        'epilogue': f"*HP {messages.last().hp_after_message if messages.exists() else 0}에 도달했다.*",
+    }
+
+    current_chapter = None
+    current_range = None
+
+    for msg in messages:
+        msg_range = (msg.hp_range_min, msg.hp_range_max)
+
+        if msg_range != current_range:
+            current_range = msg_range
+            matched_mapping = next(
+                (m for m in hp_mappings if (m.min_hp or 0) == (msg.hp_range_min or 0)),
+                None
+            )
+
+            current_chapter = {
+                'title': matched_mapping.note if matched_mapping else f"HP {msg.hp_range_min or 0} ~ {msg.hp_range_max or 100}",
+                'image': matched_mapping.sub_image if matched_mapping else None,
+                'hp_range': msg_range,
+                'messages': [],
+            }
+            novel['chapters'].append(current_chapter)
+
+        if current_chapter:
+            current_chapter['messages'].append({
+                'role': msg.role,
+                'speaker': llm.name if msg.role == 'assistant' else '너',
+                'content': msg.content,
+                'audio': msg.audio.url if msg.audio else None,
+            })
+
+    context = {
+        'novel': novel,
+        'conversation': conversation,
+        'is_public': conversation.is_public,
+    }
+    return render(request, 'mypage/novel_result.html', context)
+
+
+@login_required_to_main
+def my_book_list(request):
+    user = request.user
+    books = Books.objects.filter(user=user).order_by('-created_at')
+    books_count = books.count()
+
+    content ={
+        "books_count": books_count,
+        "books": books,
+    }
+    return render (request, "mypage/my_book_list.html", content)

@@ -17,7 +17,107 @@
 .novel-title-wrapper * {
     box-sizing: border-box;
 }
+/* 선정성 체크박스 전체 래퍼 */
+.terms-checkbox-wrapper {
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(102, 126, 234, 0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
 
+/* 커스텀 체크박스 */
+.custom-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.custom-checkbox input {
+  position: absolute;
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+
+.custom-checkbox:hover {
+  color: #c4b5fd;
+}
+
+
+
+/* 커스텀 체크박스 아이콘 */
+.checkbox-icon {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #a78bfa;
+  border-radius: 6px;
+  margin-right: 12px;
+  position: relative;
+  flex-shrink: 0;
+  background: rgba(167, 139, 250, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* 체크됐을 때 */
+.custom-checkbox input:checked + .checkbox-icon {
+  background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%);
+  border-color: #c084fc;
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.5);
+}
+
+/* 체크 표시 (체크 시 나타남) */
+.checkbox-icon::after {
+  content: "❤️";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 16px;
+  color: white;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.custom-checkbox input:checked + .checkbox-icon::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* 텍스트 스타일 */
+.checkbox-text {
+  line-height: 1.5;
+}
+
+/* "잔인성, 선정성" 링크 강조 */
+.terms-link {
+  color: #f472b6;
+  text-decoration: underline;
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
+.terms-link:hover {
+  color: #ec4899;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .terms-checkbox-wrapper {
+    padding: 12px;
+  }
+  .custom-checkbox {
+    font-size: 14px;
+  }
+  .checkbox-icon {
+    width: 22px;
+    height: 22px;
+  }
+}
 body {
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
     background: #0a0a0f;

@@ -1,0 +1,602 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ story.title }} - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/character/story_intro.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/blur.css' %}">
+
+{% endblock %}
+
+{% block content %}
+<br><br><br><br>
+<!-- 성인 콘텐츠 블러 오버레이 -->
+  {% if show_blur %}
+  <div class="adult-blur-overlay">
+    <div class="blur-message-box">
+      <div class="blur-icon">🔞</div>
+      <h2 class="blur-title">성인 콘텐츠입니다</h2>
+      <p class="blur-subtitle">이 콘텐츠는 19세 이상만 이용 가능합니다.</p>
+
+
+
+      <a href="/" class="blur-btn secondary">홈으로 돌아가기</a>
+    </div>
+  </div>
+  {% endif %}
+
+<main class="story-intro-page">
+
+  
+    <!-- 스토리 헤더 -->
+    <header class="story-header">
+        <div class="header-bg">
+            {% if story.cover_image %}
+            <img src="{{ story.cover_image.url }}" alt="{{ story.title }}">
+            {% else %}
+            <source src="{{ story.story_desc_video.url }}" type="video/mp4">
+
+            {% endif %}
+            <div class="header-overlay"></div>
+        </div>
+        <div class="header-content">
+            <div class="header-left">
+<div class="cover-image">
+    {% if story.story_desc_video %}
+        <video autoplay loop muted playsinline>
+            <source src="{{ story.story_desc_video.url }}" type="video/mp4">
+        </video>
+
+    {% elif story.cover_image %}
+        <img src="{{ story.cover_image.url }}" alt="{{ story.title }}">
+
+    {% else %}
+        <div class="cover-placeholder">
+            <span>📖</span>
+        </div>
+    {% endif %}
+</div>
+            </div>
+            <div class="header-right">
+                <h1 class="story-title">{{ story.title }}</h1>
+                <div class="story-author">
+                    <div class="author-avatar">
+                    {% if story.user.user_img %}
+                    <img src="{{ story.user.user_img.url }}" alt="{{ story.user.nickname }}">
+                    {% else %}
+                        {{ story.user.username|slice:":1"|upper }}
+                        {% endif %}
+                    </div>
+                            <a href="{% url 'main:user_info' story.user.public_uuid %}" style="color: inherit; text-decoration: none; transition: color 0.2s;">
+                    <span class="author-name">@ {{ story.user.nickname|default:story.user.username }}</span>
+                        </a>
+                </div>
+
+                <div class="story-stats">
+                    <span class="stat-item">
+                        <span class="stat-icon">👤</span>
+                        캐릭터 {{ llm_list.count }}명
+                    </span>
+                    <span class="stat-item">
+                        <span class="stat-icon">❤️</span>
+                        좋아요 <span id="like-count">{{ like_count }}</span>
+                    </span>
+                    <span class="stat-item">
+                        <span class="stat-icon">💬</span>
+                        댓글 {{ comments.count }}
+                    </span>
+                </div>
+                <!-- 좋아요 버튼 -->
+                {% if user.is_authenticated %}
+                <button class="like-btn {% if user_liked %}liked{% endif %}" id="like-btn" data-story-uuid="{{ story.public_uuid }}" data-login-required>
+                    <span class="like-icon">{% if user_liked %}❤️{% else %}🤍{% endif %}</span>
+                    <span class="like-text">{% if user_liked %}좋아요 취소{% else %}좋아요{% endif %}</span>
+                </button>
+                                {% if story.description %}
+                <p class="story-desc">{{ story.description }}</p>
+                {% endif %}
+        {% endif %}
+        <!-- 북마크 버튼 영역 -->
+{% if user.is_authenticated %}
+<div style="position: absolute; top: 12px; right: 12px; z-index: 2;">
+    {% if story_bookmarks %}
+    <!-- 북마크 있음 → 제거 버튼 -->
+    <button onclick="event.preventDefault(); event.stopPropagation(); removeStoryBookmark('{{ story.public_uuid }}')"
+            style="width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: #fbbf24; cursor: pointer; display: flex; align-items: center; justify-content: center;" data-login-required>
+                        <svg id="bookmarkIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                        </svg>    </button>
+    {% else %}
+    <!-- 북마크 없음 → 추가 버튼 -->
+    <button onclick="event.preventDefault(); event.stopPropagation(); addStoryBookmark('{{ story.public_uuid }}')"
+            style="width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.4); border: 2px solid #353535; color: #4a4a4a; cursor: pointer; display: flex; align-items: center; justify-content: center;" data-login-required>
+                        <svg id="bookmarkIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                        </svg>
+    </button>
+    {% endif %}
+</div>
+{% endif %}
+
+
+            </div>
+        </div>
+    </header>
+
+    <div class="content-wrapper">
+        <!-- 캐릭터 목록 -->
+        <section class="section characters-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    캐릭터 목록
+                </h2>
+            </div>
+
+            {% if llm_list %}
+            <div class="character-grid">
+                {% for character in llm_list %}
+                <a href="{% url 'character:ai_intro' character.public_uuid %}" class="character-card-link">
+                    <div class="character-card">
+                        <div class="card-image-wrapper">
+                            {% if character.llm_image %}
+                            <img src="{{ character.llm_image.url }}" alt="{{ character.name }}" loading="lazy">
+                            {% else %}
+                            <div class="card-image-placeholder">🤖</div>
+                            {% endif %}
+                            <div class="card-overlay">
+                                <h3 class="card-name">{{ character.name }}</h3>
+                                <p class="card-desc">{{ character.description|truncatewords:12|default:"" }}</p>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🤖</div>
+                <p>아직 등록된 캐릭터가 없습니다.</p>
+            </div>
+            {% endif %}
+
+        </section>
+
+<div class="desc_img">
+    {% if story.story_desc_img %}
+    <div class="story-desc-image">
+        <img
+        src="{{ story.story_desc_img.url }}"
+        alt="{{ story.title }} 설명 이미지"
+        loading="lazy"
+        >
+    </div>
+    {% endif %}
+</div>
+
+{% if stats_json %}
+<div id="storyStatsView">
+
+    <h2 class="section-title">
+        📊 독자 통계 ({{ stats_json.reader_count|default:0 }}명)
+    </h2>
+
+    <div class="charts-grid">
+        <div class="chart-container">
+            <div class="chart-title">성별 분포</div>
+            <canvas id="genderChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">연령대 분포</div>
+            <canvas id="ageChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script id="story-stats-data" type="application/json">
+    {{ stats_json|safe }}
+</script>
+{% endif %}
+
+
+        <!-- 댓글 섹션 -->
+        <section class="section comments-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span class="title-icon">💬</span>
+                    댓글 <span class="comment-count">{{ comments.count }}</span>
+                </h2>
+            </div>
+
+            <!-- 댓글 작성 -->
+            {% if user.is_authenticated %}
+            <div class="comment-form">
+                <div class="form-avatar">
+                    {% if user.user_img %}
+                    <img src="{{ user.user_img.url }}" alt="{{ story.user.nickname }}">
+                    {% else %}
+                        {{ user.username|slice:":1"|upper }}
+                        {% endif %}
+                                    </div>
+                <div class="form-input-wrapper">
+                    <textarea id="comment-input" placeholder="댓글을 작성하세요..." rows="2" data-login-required></textarea>
+                    <button type="button" class="submit-comment-btn" id="submit-comment-btn" data-login-required>
+                        댓글 작성
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div class="login-prompt">
+                <p>댓글을 작성하려면 <a href="#" data-login-required="">로그인</a>하세요.</p>
+            </div>
+            {% endif %}
+
+            <!-- 댓글 목록 -->
+            <div class="comments-list" id="comments-list">
+                {% for comment in comments %}
+                <div class="comment-item" data-comment-id="{{ comment.id }}">
+                    <div class="comment-avatar">
+                        {{ comment.user.username|slice:":1"|upper }}
+                    </div>
+                    <div class="comment-body">
+                        <div class="comment-header">
+                            <span class="comment-author">{{ comment.user.nickname|default:comment.user.username }}</span>
+                            <span class="comment-date">{{ comment.created_at|date:"Y.m.d H:i" }}</span>
+                        </div>
+                        <div class="comment-content">{{ comment.content }}</div>
+                        <div class="comment-actions">
+                            <!-- <button class="reply-btn" data-comment-id="{{ comment.id }}" data-login-required>답글</button> -->
+                            {% if comment.user == user %}
+                            <button class="delete-btn" data-comment-id="{{ comment.id }}" data-login-required>삭제</button>
+                            {% endif %}
+                        </div>
+                        <!-- 답글 목록 -->
+                        {% if comment.replies.exists %}
+                        <div class="replies-list">
+                            {% for reply in comment.replies.all %}
+                            <div class="reply-item" data-comment-id="{{ reply.id }}">
+                                <div class="comment-avatar small">
+                                    {{ reply.user.username|slice:":1"|upper }}
+                                </div>
+                                <div class="comment-body">
+                                    <div class="comment-header">
+                                        <span class="comment-author">{{ reply.user.nickname|default:reply.user.username }}</span>
+                                        <span class="comment-date">{{ reply.created_at|date:"Y.m.d H:i" }}</span>
+                                    </div>
+                                    <div class="comment-content">{{ reply.content }}</div>
+                                    {% if reply.user == user %}
+                                    <div class="comment-actions">
+                                        <button class="delete-btn" data-comment-id="{{ reply.id }}">삭제</button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="no-comments" id="no-comments">
+                    <p>아직 댓글이 없습니다. 첫 댓글을 작성해보세요!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <!-- 뒤로가기 -->
+    <div class="back-link-wrapper">
+        <a href="javascript:history.back()" class="back-link">← 돌아가기</a>
+    </div>
+    
+</main>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const dataEl = document.getElementById("story-stats-data");
+    if (!dataEl) return;
+
+    const stats = JSON.parse(dataEl.textContent);
+
+    /* --------------------------
+       성별 차트
+    --------------------------- */
+    const genderCanvas = document.getElementById("genderChart");
+    if (genderCanvas) {
+        new Chart(genderCanvas, {
+            type: "doughnut",
+            data: {
+                labels: ["남성", "여성", "기타"],
+                datasets: [{
+                    data: [
+                        stats.gender_data.M || 0,
+                        stats.gender_data.F || 0,
+                        stats.gender_data.O || 0,
+                    ],
+                    backgroundColor: [
+                        "#3b82f6",
+                        "#ec4899",
+                        "#8b5cf6"
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: "bottom"
+                    }
+                }
+            }
+        });
+    }
+
+    /* --------------------------
+       연령대 차트
+    --------------------------- */
+    const ageCanvas = document.getElementById("ageChart");
+    if (ageCanvas) {
+        new Chart(ageCanvas, {
+            type: "bar",
+            data: {
+                labels: ["어린이", "10대", "20대", "30대", "40대", "50대+"],
+                datasets: [{
+                    data: [
+                        stats.age_data["어린이"] || 0,
+                        stats.age_data["10대"] || 0,
+                        stats.age_data["20대"] || 0,
+                        stats.age_data["30대"] || 0,
+                        stats.age_data["40대"] || 0,
+                        stats.age_data["50대 이상"] || 0,
+                    ],
+                    backgroundColor: "rgba(99, 102, 241, 0.8)",
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const storyUuid = '{{ story.public_uuid }}';
+    const csrfToken = '{{ csrf_token }}';
+
+    // 좋아요 토글
+    const likeBtn = document.getElementById('like-btn');
+    if (likeBtn) {
+        likeBtn.addEventListener('click', function() {
+            fetch(`/character/api/story/${storyUuid}/like/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const likeIcon = likeBtn.querySelector('.like-icon');
+                const likeText = likeBtn.querySelector('.like-text');
+                const likeCount = document.getElementById('like-count');
+
+                if (data.liked) {
+                    likeBtn.classList.add('liked');
+                    likeIcon.textContent = '❤️';
+                    likeText.textContent = '좋아요 취소';
+                } else {
+                    likeBtn.classList.remove('liked');
+                    likeIcon.textContent = '🤍';
+                    likeText.textContent = '좋아요';
+                }
+                likeCount.textContent = data.like_count;
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    }
+
+    // 댓글 작성
+    const submitBtn = document.getElementById('submit-comment-btn');
+    const commentInput = document.getElementById('comment-input');
+
+    if (submitBtn && commentInput) {
+        submitBtn.addEventListener('click', function() {
+            const content = commentInput.value.trim();
+            if (!content) {
+                alert('댓글 내용을 입력해주세요.');
+                return;
+            }
+
+            fetch(`/character/api/story/${storyUuid}/comment/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ content: content })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 새 댓글 추가
+                    const commentsList = document.getElementById('comments-list');
+                    const noComments = document.getElementById('no-comments');
+                    if (noComments) noComments.remove();
+
+                    const newComment = createCommentElement(data.comment);
+                    commentsList.insertBefore(newComment, commentsList.firstChild);
+                    commentInput.value = '';
+                } else {
+                    alert(data.error || '댓글 작성에 실패했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('댓글 작성 중 오류가 발생했습니다.');
+            });
+        });
+    }
+
+    // 댓글 삭제
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-btn')) {
+            const commentId = e.target.dataset.commentId;
+            if (confirm('댓글을 삭제하시겠습니까?')) {
+                fetch(`/character/api/story/comment/${commentId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const commentItem = e.target.closest('.comment-item, .reply-item');
+                        if (commentItem) commentItem.remove();
+                    } else {
+                        alert(data.error || '삭제에 실패했습니다.');
+                    }
+                });
+            }
+        }
+    });
+
+    function createCommentElement(comment) {
+        const div = document.createElement('div');
+        div.className = 'comment-item';
+        div.dataset.commentId = comment.id;
+        div.innerHTML = `
+            <div class="comment-avatar">
+                ${comment.username.charAt(0).toUpperCase()}
+            </div>
+            <div class="comment-body">
+                <div class="comment-header">
+                    <span class="comment-author">${comment.username}</span>
+                    <span class="comment-date">${comment.created_at}</span>
+                </div>
+                <div class="comment-content">${comment.content}</div>
+                <div class="comment-actions">
+                    <button class="delete-btn" data-comment-id="${comment.id}">삭제</button>
+                </div>
+            </div>
+        `;
+        return div;
+    }
+});
+
+
+
+async function removeBookmark(bookId) {
+    if (!confirm('북마크를 제거하시겠습니까?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/book/bookmark/${bookId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            alert('북마크가 제거되었습니다');
+            location.reload();
+        } else {
+            throw new Error('북마크 제거 실패');
+        }
+    } catch (error) {
+        console.error('북마크 제거 실패:', error);
+        alert('북마크 제거에 실패했습니다');
+    }
+}
+
+async function removeStoryBookmark(storyUuid) {
+    if (!confirm('AI 스토리 북마크를 제거하시겠습니까?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/character/story/${storyUuid}/bookmark/toggle/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            alert('북마크가 제거되었습니다');
+            location.reload();
+        } else {
+                console.error('Status:', response.status);
+    console.error('Status Text:', response.statusText);
+            throw new Error('북마크 제거 실패');
+        }
+    } catch (error) {
+        console.error('북마크 제거 실패:', error);
+        alert('북마크 제거에 실패했습니다');
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
+async function addStoryBookmark(storyUuid) {
+    if (!confirm('이 스토리를 북마크에 추가하시겠습니까?')) return;
+
+    try {
+        const response = await fetch(`/character/story/${storyUuid}/bookmark/toggle/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            alert('북마크에 추가되었습니다');
+            location.reload();
+        } else {
+            throw new Error('추가 실패');
+        }
+    } catch (error) {
+        console.error('추가 실패:', error);
+        alert('북마크 추가에 실패했습니다');
+    }
+}
+</script>
+{% endblock %}

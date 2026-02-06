@@ -14,7 +14,7 @@
     <ul class="notice-list">
         {% for notice in notices %}
         <li class="notice-item">
-            <a href="{% url 'notice_detail' notice.id %}">{{ notice.title }}</a>
+            <a href="{% url 'notice_detail' notice.public_uuid %}">{{ notice.title }}</a>
             <span class="notice-date">{{ notice.created_at|date:"Y.m.d" }}</span>
         </li>
         {% endfor %}

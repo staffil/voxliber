@@ -22,9 +22,9 @@
         <div class="myvoice-card">
             <!-- 카드 헤더 (이미지 + 즐겨찾기) -->
             <div class="card-header">
-                <form method="POST" action="{% url 'mypage:toggle_myvoice_favorite' item.id %}">
+                <form method="POST" action="{% url 'mypage:toggle_myvoice_favorite' item.public_uuid %}">
                     {% csrf_token %}
-                    <button class="favorite-btn" type="submit">
+                    <button class="favorite-btn" type="submit" data-login-required>
                         {% if item.is_favorite %}⭐{% else %}☆{% endif %}
                     </button>
                 </form>
@@ -54,12 +54,12 @@
             <!-- 책 선택 -->
             <div class="book-select-wrapper">
                 <label class="book-select-label">📚 적용할 작품</label>
-                <form method="POST" action="{% url 'mypage:select_book' item.id %}">
+                <form method="POST" action="{% url 'mypage:select_book' item.public_uuid %}">
                     {% csrf_token %}
-                    <select name="book_id" onchange="this.form.submit()" class="book-select">
+                    <select name="book_id" onchange="this.form.submit()" class="book-select" data-login-required>
                         <option value="">전체 작품</option>
                         {% for book in books %}
-                        <option value="{{ book.id }}" {% if item.book and book.id == item.book.id %}selected{% endif %}>
+                        <option value="{{ book.public_uuid }}" {% if item.book and book.public_uuid == item.book.public_uuid %}selected{% endif %}>
                             {{ book.name }}
                         </option>
                         {% endfor %}
@@ -70,7 +70,7 @@
             <!-- 오디오 플레이어 -->
             {% if item.voice.sample_audio %}
             <div class="audio-player">
-                <button onclick="togglePlay(this)">
+                <button onclick="togglePlay(this)" data-login-required>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M8 5v14l11-7z"/>
                     </svg>
@@ -84,9 +84,9 @@
             {% endif %}
 
             <!-- 삭제 버튼 -->
-            <form method="POST" action="{% url 'mypage:delete_my_voice' item.id %}">
+            <form method="POST" action="{% url 'mypage:delete_my_voice' item.public_uuid %}">
                 {% csrf_token %}
-                <button type="submit" class="delete-btn" onclick="return confirm('정말로 삭제하시겠습니까?')">🗑️ 삭제하기</button>
+                <button type="submit" class="delete-btn" onclick="return confirm('정말로 삭제하시겠습니까?')" data-login-required>🗑️ 삭제하기</button>
             </form>
         </div>
         {% endfor %}
@@ -98,7 +98,7 @@
             <div class="no-myvoice-icon">🎙️</div>
             <h2 class="no-myvoice-title">저장된 보이스가 없습니다</h2>
             <p class="no-myvoice-text">보이스 라이브러리에서 마음에 드는 목소리를 선택해보세요</p>
-            <a href="{% url 'voice:voice_list' %}" class="add-voice-btn">
+            <a href="{% url 'voice:voice_list' %}" class="add-voice-btn" data-login-required>
                 ➕ 보이스 추가하기
             </a>
         </div>

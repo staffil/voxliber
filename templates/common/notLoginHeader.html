@@ -1,5 +1,6 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/common/notLoginHeader.css' %}">
+<link rel="stylesheet" href="{% static 'css/common/loginHeader.css' %}">
 
 <div class="nav-container">
     <!-- Logo -->
@@ -15,9 +16,19 @@
 
     <!-- CTA Buttons -->
     <div class="cta-group">
-        <a href="/search/" class="theme-toggle" style="text-decoration: none;">🔍</a>
+            <!-- <a href="/search/" class="search-theme">
+                <img src="{% static 'img/search.png' %}" alt="검색" class="search-icon">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    placeholder="검색하기..." 
+                    readonly 
+                    onclick="window.location.href='/search/'"
+                >
+            </a>       -->
+            
             <button class="theme-toggle" id="themeToggle" onclick="themeToggle()">🌙</button>
-        <button class="btn btn-outline desktop-only" onclick="openLogin()">로그인</button>
+        <button class="btn btn-outline desktop-only" onclick="openLogin()" >로그인</button>
 
         <!-- Mobile Menu Toggle -->
         <button class="mobile-menu-toggle" id="mobileMenuToggleGuest" onclick="toggleMobileMenu('Guest')">

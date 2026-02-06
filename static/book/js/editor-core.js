@@ -1396,7 +1396,7 @@ async function saveEpisode() {
             if (data.redirect_url) {
                 window.location.href = data.redirect_url;
             } else {
-                window.location.href = `{% url 'book:book_profile' %}?book_id=${bookId}`;
+                window.location.href = `/book/book/profile/?public_uuid=${bookId}`;
             }
         } else {
             alert(data.error || '에피소드 발행에 실패했습니다.');

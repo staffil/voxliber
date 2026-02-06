@@ -17,7 +17,7 @@
 {% endif %}
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{% url 'book:book_detail' book.id %}">
+<meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{% url 'book:book_detail' book.public_uuid %}">
 <meta property="og:type" content="book">
 <meta property="og:site_name" content="VoxLiber">
 
@@ -33,37 +33,92 @@
 {% endblock %}
 
 {% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/blur.css' %}">
+    <link rel="stylesheet" href="{% static 'css/common/appWarning.css' %}">
+
 <link rel="stylesheet" href="{% static 'css/book/book_detail.css' %}">
 <style>
-.share-btn {
+/* 전체 통계 뷰 */
+#bookView {
+    margin-top: 40px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
+
+/* 차트 그리드 */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    
+}
+
+/* 개별 차트 박스 */
+.chart-container {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    height: 360px;
+
     display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 16px;
-    background: rgba(99, 102, 241, 0.1);
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    border-radius: 12px;
-    color: #818cf8;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.3s;
-    white-space: nowrap;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-.share-btn:hover {
-    background: rgba(99, 102, 241, 0.2);
-    transform: translateY(-2px);
+/* 차트 제목 */
+.chart-title {
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 12px;
+    color: #e5e7eb;
 }
 
-.share-btn svg {
-    flex-shrink: 0;
+/* canvas 크기 고정 (중요) */
+.chart-container canvas {
+    width: 100% !important;
+    height: 260px !important;
 }
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+    #bookView {
+        padding: 16px;
+    }
+
+    .chart-container {
+        height: 320px;
+    }
+
+    .chart-container canvas {
+        height: 220px !important;
+    }
+}
+
 </style>
 
 {% endblock %}
 
 {% block content %}
+
+<!-- 성인 콘텐츠 블러 오버레이 -->
+  {% if show_blur %}
+  <div class="adult-blur-overlay">
+    <div class="blur-message-box">
+      <div class="blur-icon">🔞</div>
+      <h2 class="blur-title">성인 콘텐츠입니다</h2>
+      <p class="blur-subtitle">이 콘텐츠는 19세 이상만 이용 가능합니다.</p>
+
+
+
+      <a href="/" class="blur-btn secondary">홈으로 돌아가기</a>
+    </div>
+  </div>
+  {% endif %}
+
 <div class="book-detail-wrapper">
     <div class="book-header">
         <!-- 3D 책 커버 -->
@@ -80,14 +135,14 @@
                 <h1 class="book-title">{{ book.name }}</h1>
                 <div class="book-action-buttons">
                     {% if user.is_authenticated %}
-                    <button id="bookmarkBtn" class="bookmark-btn" title="나중에 보기" data-book-id="{{ book.id }}" data-bookmarked="false">
+                    <button id="bookmarkBtn" class="bookmark-btn" title="나중에 보기" data-book-id="{{ book.public_uuid }}" data-bookmarked="false" data-login-required>
                         <svg id="bookmarkIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                         </svg>
                         <span id="bookmarkText">북마크</span>
                     </button>
                     {% endif %}
-                    <button onclick="shareBook()" class="share-btn" title="공유하기">
+                    <button onclick="shareBook()" class="share-btn" title="공유하기" >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="18" cy="5" r="3"/>
                             <circle cx="6" cy="12" r="3"/>
@@ -105,7 +160,9 @@
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                 </svg>
-                <span>{{ book.user.nickname }}</span>
+                <a href="{% url 'main:user_info' book.user.public_uuid %}" style="color: inherit; text-decoration: none; transition: color 0.2s;">
+                    <span style="cursor: pointer;">{{ book.user.nickname }}</span>
+                </a>
             </div>
 
             <div class="book-genres">
@@ -161,7 +218,6 @@
     </div>
 
         <!-- 소개 오디오 업로드 -->
-        {% with first_episode=book.contents.first %}
         {% if first_episode %}
             <div class="intro-audio-wrapper">
                 <div class="intro-audio-title">
@@ -206,7 +262,7 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- <a href="{% url 'book:content_detail' first_episode.id %}" class="listen-full-btn">
+                        <!-- <a href="{% url 'book:content_detail' first_episode.public_uuid %}" class="listen-full-btn">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M8 5v14l11-7z"/>
                             </svg>
@@ -221,7 +277,6 @@
 
             </div>
         {% endif %}
-        {% endwith %}
 <br>
 
     <div class="content-section book-description">
@@ -246,25 +301,25 @@
         <!-- 공지사항 작성 폼 (작가만) -->
         {% if request.user == book.user %}
         <div id="announcementForm" style="display: none; margin-bottom: 24px; padding: 20px; background: var(--bg-primary); border-radius: 12px; border: 1px solid var(--border-color);">
-            <form method="post" action="{% url 'book:create_announcement' book.id %}">
+            <form method="post" action="{% url 'book:create_announcement' book.public_uuid %}">
                 {% csrf_token %}
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">제목</label>
-                    <input type="text" name="title" placeholder="공지사항 제목" required style="width: 100%; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                    <input type="text" name="title" placeholder="공지사항 제목" required style="width: 100%; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;" data-login-required>
                 </div>
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">내용</label>
-                    <textarea name="content" placeholder="공지사항 내용을 입력하세요..." required style="width: 100%; min-height: 120px; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; resize: vertical;"></textarea>
+                    <textarea name="content" placeholder="공지사항 내용을 입력하세요..." required style="width: 100%; min-height: 120px; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; resize: vertical;" data-login-required></textarea>
                 </div>
                 <div style="margin-bottom: 16px;">
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_pinned" style="width: 18px; height: 18px;">
+                        <input type="checkbox" name="is_pinned" style="width: 18px; height: 18px;" data-login-required>
                         <span style="color: var(--text-primary); font-size: 14px;">📌 상단에 고정</span>
                     </label>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button type="submit" style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">작성 완료</button>
-                    <button type="button" onclick="toggleAnnouncementForm()" style="padding: 12px 24px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">취소</button>
+                    <button type="submit" style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;" data-login-required>작성 완료</button>
+                    <button type="button" onclick="toggleAnnouncementForm()" style="padding: 12px 24px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;" data-login-required>취소</button>
                 </div>
             </form>
         </div>
@@ -308,7 +363,7 @@
         {% if contents %}
             <div class="episodes-grid" id="episodesGrid">
             {% for content in contents %}
-                <div class="episode-wrapper" data-content-id="{{ content.id }}" {% if request.user == book.user %}draggable="true"{% endif %} style="display: flex; align-items: stretch; gap: 12px;">
+                <div class="episode-wrapper" data-content-id="{{ content.public_uuid }}" {% if request.user == book.user %}draggable="true"{% endif %} style="display: flex; align-items: stretch; gap: 12px;">
                     {% if request.user == book.user %}
                     <div class="drag-handle" style="display: flex; align-items: center; cursor: grab; padding: 0 8px; color: rgba(255,255,255,0.3);">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -318,7 +373,8 @@
                         </svg>
                     </div>
                     {% endif %}
-                    <a href="{% url 'book:content_detail' content.id %}" class="episode-card" style="flex: 1; text-decoration: none;">
+                    <!-- {% url 'book:content_detail' content.public_uuid %} -->
+                    <a href=" {% url 'book:content_detail' content.public_uuid %}" class="episode-card" style="flex: 1; text-decoration: none;" data-login-required  onclick="showAppInstallModal()">
                         <div class="episode-number">
                             {% if content.episode_image %}
                             <img src="{{ content.episode_image.url }}" alt="Episode {{ content.number }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" loading="lazy">
@@ -342,9 +398,9 @@
                     </a>
 
                     {% if request.user == book.user %}
-                    <form method="post" action="{% url 'book:delete_content' content.id %}" style="margin: 0; display: flex; align-items: center;" onsubmit="return confirm('정말 이 에피소드를 삭제하시겠습니까?');">
+                    <form method="post" action="{% url 'book:delete_content' content.public_uuid %}" style="margin: 0; display: flex; align-items: center;" onsubmit="return confirm('정말 이 에피소드를 삭제하시겠습니까?');">
                         {% csrf_token %}
-                        <button type="submit" style="padding: 10px 16px; background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.3); color: #ef4444; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; gap: 6px; height: fit-content;" onmouseover="this.style.background='rgba(220, 38, 38, 0.2)'" onmouseout="this.style.background='rgba(220, 38, 38, 0.1)'">
+                        <button type="submit" style="padding: 10px 16px; background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.3); color: #ef4444; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; gap: 6px; height: fit-content;" onmouseover="this.style.background='rgba(220, 38, 38, 0.2)'" onmouseout="this.style.background='rgba(220, 38, 38, 0.1)'" data-login-required>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"/>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -383,13 +439,13 @@
         {% if i == contents.number %}
             <span class="page-btn active">{{ i }}</span>
         {% else %}
-            <a href="?page={{ i }}" class="page-btn">{{ i }}</a>
+            <a href="?page={{ i }}" class="page-btn" data-login-required>{{ i }}</a>
         {% endif %}
     {% endfor %}
 
     {# Next #}
     {% if contents.has_next %}
-        <a href="?page={{ contents.next_page_number }}" class="page-btn">다음</a>
+        <a href="?page={{ contents.next_page_number }}" class="page-btn" data-login-required>다음</a>
     {% else %}
         <span class="page-btn disabled">다음</span>
     {% endif %}
@@ -406,8 +462,8 @@
             <span class="star" data-rating="4">☆</span>
             <span class="star" data-rating="5">☆</span>
         </div>
-        <textarea id="reviewText" class="review-textarea" placeholder="이 작품에 대한 리뷰를 남겨주세요..." data-submit-url="{% url 'book:submit_review' book.id %}">{% if user_review %}{{ user_review.review_text }}{% endif %}</textarea>
-        <button class="submit-review-btn" onclick="submitReview()">{% if user_review %}리뷰 수정하기{% else %}리뷰 등록하기{% endif %}</button>
+        <textarea id="reviewText" class="review-textarea" placeholder="이 작품에 대한 리뷰를 남겨주세요..." data-submit-url="{% url 'book:submit_review' book.public_uuid %}" data-login-required>{% if user_review %}{{ user_review.review_text }}{% endif %}</textarea>
+        <button class="submit-review-btn" onclick="submitReview()" data-login-required>{% if user_review %}리뷰 수정하기{% else %}리뷰 등록하기{% endif %}</button>
     </div>
     {% endif %}
 
@@ -431,12 +487,36 @@
     </div>
     {% endif %}
 
+
+{% if book_stats %}
+<!-- 책 통계 뷰 -->
+<div id="bookView">
+    <div class="charts-grid">
+        <div class="chart-container">
+            <div class="chart-title">성별 분포</div>
+            <canvas id="genderChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">연령대 분포</div>
+            <canvas id="ageChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- JSON 데이터 -->
+<script id="book-stats-data" type="application/json">
+    {{ book_stats_json|safe }}
+</script>
+{% endif %}
+
+
     <div class="content-section comments-section">
         <h2 class="section-title">댓글 ({{ comments.count }})</h2>
         {% if request.user.is_authenticated %}
         <div style="margin-bottom: 32px;">
-            <textarea id="commentInput" class="comment-input" placeholder="댓글을 남겨주세요..." data-submit-url="{% url 'book:submit_book_comment' book.id %}"></textarea>
-            <button class="submit-comment-btn" onclick="submitComment()">댓글 작성</button>
+            <textarea id="commentInput" class="comment-input" placeholder="댓글을 남겨주세요..." data-submit-url="{% url 'book:submit_book_comment' book.public_uuid %}" data-login-required></textarea>
+            <button class="submit-comment-btn" onclick="submitComment()" data-login-required>댓글 작성</button>
         </div>
         {% endif %}
         <div id="commentsList">
@@ -447,12 +527,12 @@
                     <span class="comment-date">{{ comment.created_at|date:"Y.m.d H:i" }}</span>
                 </div>
                 <div class="comment-text">{{ comment.comment }}</div>
-                {% if request.user.is_authenticated %}
-                    <button class="reply-btn" onclick="toggleReplyForm({{ comment.id }})">답글</button>
-                {% endif %}
-                <div class="reply-form" id="replyForm{{ comment.id }}">
-                    <textarea class="comment-input" id="replyInput{{ comment.id }}" placeholder="답글을 입력하세요..." style="min-height: 100px; margin-top: 12px;"></textarea>
-                    <button class="submit-comment-btn" onclick="submitReply({{ comment.id }})" style="margin-top: 12px;">답글 작성</button>
+                <!-- {% if request.user.is_authenticated %}
+                    <button class="reply-btn" onclick="toggleReplyForm('{{ comment.public_uuid }}')" data-login-required>답글</button>
+                {% endif %} -->
+                <div class="reply-form" id="replyForm{{ comment.public_uuid }}">
+                    <!-- <textarea class="comment-input" id="replyInput{{ comment.public_uuid }}" placeholder="답글을 입력하세요..." style="min-height: 100px; margin-top: 12px;" data-login-required></textarea> -->
+                    <!-- <button class="submit-comment-btn" onclick="submitReply('{{ comment.public_uuid }}')" style="margin-top: 12px;" data-login-required>답글 작성</button> -->
                 </div>
                 {% for reply in comment.replies.all %}
                 <div class="comment-reply">
@@ -476,11 +556,128 @@
         
     </div>
 
+ 
+
 
 </div>
+
+    <script id="book-stats-data" type="application/json">
+        {{ book_stats_json|safe }}
+    </script>
+
 {% endblock %}
 
 {% block extra_js %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- <script src="{% static 'js/common/appWarning.js' %}"></script> -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const bookTab = document.getElementById("bookTab");
+    const aiTab = document.getElementById("aiTab");
+    const bookView = document.getElementById("bookView");
+    const aiView = document.getElementById("aiView");
+
+    const dataEl = document.getElementById("book-stats-data");
+    if (!dataEl) {
+        console.warn("📊 통계 데이터 없음");
+        return;
+    }
+
+    const stats = JSON.parse(dataEl.textContent);
+    if (!stats.length) return;
+
+    let chartRendered = false;
+    let genderChartInstance = null;
+    let ageChartInstance = null;
+
+    function renderCharts() {
+        if (chartRendered) return;
+        chartRendered = true;
+
+        const genderCanvas = document.getElementById("genderChart");
+        const ageCanvas = document.getElementById("ageChart");
+
+        if (!genderCanvas || !ageCanvas) {
+            console.warn("📉 canvas 없음");
+            return;
+        }
+
+        const stat = stats[0]; // 책 1개 기준
+
+        /* 성별 차트 */
+        genderChartInstance = new Chart(genderCanvas, {
+            type: "doughnut",
+            data: {
+                labels: ["남성", "여성", "기타"],
+                datasets: [{
+                    data: [
+                        stat.gender_data.M || 0,
+                        stat.gender_data.F || 0,
+                        stat.gender_data.O || 0
+                    ],
+                    backgroundColor: ["#3b82f6", "#ec4899", "#8b5cf6"],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { position: "bottom" }
+                }
+            }
+        });
+
+        /* 연령대 차트 */
+        ageChartInstance = new Chart(ageCanvas, {
+            type: "bar",
+            data: {
+                labels: ["어린이", "10대", "20대", "30대", "40대", "50대+"],
+                datasets: [{
+                    data: [
+                        stat.age_data["어린이"] || 0,
+                        stat.age_data["10대"] || 0,
+                        stat.age_data["20대"] || 0,
+                        stat.age_data["30대"] || 0,
+                        stat.age_data["40대"] || 0,
+                        stat.age_data["50대 이상"] || 0
+                    ],
+                    backgroundColor: "rgba(99, 102, 241, 0.8)",
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    /* 최초 로딩 → 책 탭이 보이므로 바로 렌더 */
+    renderCharts();
+
+    /* 탭 전환 */
+    bookTab.addEventListener("click", () => {
+        bookTab.classList.add("active");
+        aiTab.classList.remove("active");
+
+        bookView.style.display = "block";
+        aiView.style.display = "none";
+
+        renderCharts();
+    });
+
+    aiTab.addEventListener("click", () => {
+        aiTab.classList.add("active");
+        bookTab.classList.remove("active");
+
+        bookView.style.display = "none";
+        aiView.style.display = "block";
+    });
+});
+</script>
+
 <script src="{% static 'js/book/book_detail.js' %}"></script>
 <script>
 // CSRF 토큰 가져오기
@@ -699,5 +896,7 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+
 </script>
 {% endblock %}

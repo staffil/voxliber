@@ -27,7 +27,7 @@
             <div class="book-title-small">{{ book.name }}</div>
             <div class="episode-info">
                 <input type="text" id="episodeTitle" placeholder="에피소드 제목"
-                       style="width: 100%; padding: 8px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); margin-top: 10px;">
+                       style="width: 100%; padding: 8px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); margin-top: 10px;" data-login-required>
             </div>
             <div id="draftStatus" style="margin-top: 8px; font-size: 12px; color: var(--text-secondary); text-align: center; display: none;">
                 💾 임시저장됨
@@ -35,16 +35,16 @@
         </div>
 
         <div style="padding: 0 15px; display: flex; flex-direction: column; gap: 10px; margin: 15px 0;">
-            <button type="button" class="add-page-btn" onclick="addPage()">
+            <button type="button" class="add-page-btn" onclick="addPage()" data-login-required>
                 + 새 대사 추가
             </button>
-            <button type="button" class="add-page-btn" onclick="openSoundEffectModal()" style="background: #8b5cf6;">
+            <button type="button" class="add-page-btn" onclick="openSoundEffectModal()" style="background: #8b5cf6;" data-login-required>
                 🎵 사운드 이팩트 넣기
             </button>
-            <button type="button" class="add-page-btn" onclick="openBackgroundMusicModal()" style="background: #ec4899;">
+            <button type="button" class="add-page-btn" onclick="openBackgroundMusicModal()" style="background: #ec4899;" data-login-required>
                 🎼 배경음 넣기
             </button>
-            <button type="button" class="add-page-btn" onclick="loadDraft()" id="loadDraftBtn" style="background: #059669; display: none;">
+            <button type="button" class="add-page-btn" onclick="loadDraft()" id="loadDraftBtn" style="background: #059669; display: none;" data-login-required>
                 📂 임시저장 불러오기
             </button>
         </div>
@@ -85,7 +85,7 @@
             <div class="header-actions">
 
                 <!-- 전체 삭제 - 강렬한 빨강 -->
-                <button type="button" class="btn btn-delete-all" onclick="destroyPage()">
+                <button type="button" class="btn btn-delete-all" onclick="destroyPage()" data-login-required>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 6h18" />
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
@@ -97,7 +97,7 @@
                 </button>
 
                 <!-- 개별 삭제 - 기본 빨강 -->
-                <button type="button" class="btn btn-delete" onclick="deletePage()">
+                <button type="button" class="btn btn-delete" onclick="deletePage()" data-login-required>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"/>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -106,7 +106,7 @@
                 </button>
 
                 <!-- 소설 작성 - 초록 (창작/긍정) -->
-                <button type="button" class="btn btn-create" onclick="showNovel()">
+                <button type="button" class="btn btn-create" onclick="showNovel()" data-login-required>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 3v18M3 12h18"/>
                     </svg>
@@ -114,7 +114,7 @@
                 </button>
 
                 <!-- 오디오북 가이드 - 보라 (정보/가이드) -->
-                <button type="button" class="btn btn-guide" onclick="audioBookGuide()">
+                <button type="button" class="btn btn-guide" onclick="audioBookGuide()" data-login-required>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
                         <path d="M12 16v-4"/>
@@ -124,7 +124,7 @@
                 </button>
 
                 <!-- 감정 리스트 - 보라 (창의적) -->
-                <button type="button" class="btn btn-emotion" onclick="emotionFunc()">
+                <button type="button" class="btn btn-emotion" onclick="emotionFunc()" data-login-required>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
                         <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
@@ -134,7 +134,7 @@
                 </button>
 
                 <!-- 임시저장 - 파랑 (안전) -->
-                <button type="button" class="btn btn-save" onclick="saveDraft()">
+                <button type="button" class="btn btn-save" onclick="saveDraft()" data-login-required>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                         <polyline points="17 21 17 13 7 13 7 21"/>
@@ -144,7 +144,7 @@
                 </button>
 
                 <!-- 뒤로가기 - 밝은 회색 (보조) -->
-                <a href="{% url 'book:book_profile' %}?book_id={{ book.id }}" class="btn btn-back">
+                <a href="{% url 'book:book_profile' %}?public_uuid={{ book.public_uuid }}" class="btn btn-back" data-login-required>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M19 12H5M12 5l-7 7 7 7"/>
                     </svg>
@@ -152,7 +152,7 @@
                 </a>
 
                 <!-- 미리듣기 - 보라 (재생/창의) -->
-                <button type="button" class="btn btn-preview" onclick="goToPreview()">
+                <button type="button" class="btn btn-preview" onclick="goToPreview()" data-login-required>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="5 3 19 12 5 21 5 3"/>
                     </svg>
@@ -195,13 +195,13 @@
 
         <div class="voice-list">
  {% for voice in voice_list %}
-    <div class="voice-item active" data-voice-id="{{ voice.voice.voice_id }}" onclick="selectVoice(this)">
+    <div class="voice-item active" data-voice-id="{{ voice.voice.voice_id }}" onclick="selectVoice(this)" data-login-required>
         <div class="voice-item-content">
             <div class="voice-name">{{ voice.alias_name }}</div>
         </div>
 
         {% if voice.voice.sample_audio %}
-        <button class="voice-play-btn" onclick="toggleVoicePlay(event, '{{ voice.voice.sample_audio.url }}')" title="샘플 듣기">
+        <button class="voice-play-btn" onclick="toggleVoicePlay(event, '{{ voice.voice.sample_audio.url }}')" title="샘플 듣기" data-login-required>
             ...
         </button>
         {% endif %}
@@ -221,7 +221,7 @@
             만들기 전 Header 밑에 있는 '오디오북 가이드' 버튼을 꼭 누르세요.
             <br>
             <br>
-<a href="/voice/voice_list/" class="voice-list-btn">
+<a href="/voice/voice/list/" class="voice-list-btn">
     나레이션 리스트
 </a>
         </div>
@@ -246,7 +246,7 @@
 
             <div class="setting-item">
                 <label>언어 선택</label>
-                <select id="languageSelect" onchange="updateLanguage(this.value)">
+                <select id="languageSelect" onchange="updateLanguage(this.value)" data-login-required>
                     <option value="ko">한국어 (Korean)</option>
                     <option value="en">영어 (English)</option>
                     <option value="ja">일본어 (Japanese)</option>
@@ -259,24 +259,24 @@
 
             <div class="setting-item">
                 <label>속도 <small style="color: #888;">(0.5x ~ 2.0x)</small></label>
-                <input type="range" id="speedSlider" min="0" max="100" value="33" oninput="updateSpeed(this.value)">
+                <input type="range" id="speedSlider" min="0" max="100" value="33" oninput="updateSpeed(this.value)" data-login-required>
                 <span id="speedValue" style="min-width: 40px; display: inline-block;">1.0x</span>
             </div>
 
             <div class="setting-item">
                 <label>유사성 <small style="color: #888;">(0.5 ~ 2.0)</small></label>
-                <input type="range" id="similaritySlider" min="0" max="100" value="33" oninput="updateSimilarity(this.value)">
+                <input type="range" id="similaritySlider" min="0" max="100" value="33" oninput="updateSimilarity(this.value)" data-login-required>
                 <span id="similarityValue" style="min-width: 40px; display: inline-block;">1.0</span>
             </div>
 
             <div class="setting-item">
                 <label>스타일 <small style="color: #888;">(0.0 ~ 1.0)</small></label>
-                <input type="range" id="styleSlider" min="0" max="100" value="50" oninput="updateStyle(this.value)">
+                <input type="range" id="styleSlider" min="0" max="100" value="50" oninput="updateStyle(this.value)" data-login-required>
                 <span id="styleValue" style="min-width: 40px; display: inline-block;">0.5</span>
             </div>
 
         </div>
-<a href="/voice/voice_list/" class="voice-list-btn" style="padding-left: 90px;">
+<a href="/voice/voice/list/" class="voice-list-btn" style="padding-left: 90px;">
     나레이션 리스트
 </a>
     </div>
@@ -289,14 +289,14 @@
     <div style="background: var(--bg-secondary); padding: 30px; border-radius: 16px; max-width: 900px; width: 90%; box-shadow: 0 10px 40px var(--shadow-color); margin: 20px auto; max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3 style="color: var(--text-primary); margin: 0;">🎵 사운드 이팩트</h3>
-            <button onclick="closeSoundEffectModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+            <button onclick="closeSoundEffectModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px;" data-login-required>&times;</button>
         </div>
 
         <!-- 탭 -->
         <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color);">
-            <button id="effectNewTab" onclick="showEffectTab('new')" style="padding: 10px 20px; background: none; border: none; color: var(--secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid var(--secondary);">새로 생성</button>
-            <button id="effectLibraryTab" onclick="showEffectTab('library')" style="padding: 10px 20px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;">라이브러리</button>
-            <button id="uploadLibraryTab" onclick="showEffectTab('upload')" style="padding: 10px 20px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;">오디오 올리기</button>
+            <button id="effectNewTab" onclick="showEffectTab('new')" style="padding: 10px 20px; background: none; border: none; color: var(--secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid var(--secondary);" data-login-required>새로 생성</button>
+            <button id="effectLibraryTab" onclick="showEffectTab('library')" style="padding: 10px 20px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;" data-login-required>라이브러리</button>
+            <button id="uploadLibraryTab" onclick="showEffectTab('upload')" style="padding: 10px 20px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;" data-login-required>오디오 올리기</button>
             
         </div>
 
@@ -304,23 +304,23 @@
         <div id="effectNewContent">
             <div style="margin-bottom: 20px;">
                 <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">이팩트 이름</label>
-                <input type="text" id="effectName" placeholder="예: 폭발음" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                <input type="text" id="effectName" placeholder="예: 폭발음" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;" data-login-required>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">이팩트 설명</label>
-                <textarea id="effectDescription" placeholder="예: door knok sound ,해당 사운드 이펙트는 영어로 작성해 주세요." style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+                <textarea id="effectDescription" placeholder="예: door knok sound ,해당 사운드 이펙트는 영어로 작성해 주세요." style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; min-height: 80px; resize: vertical;" data-login-required></textarea>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">길이 (초)</label>
-                <input type="number" id="effectDuration" value="5" min="1" max="22" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                <input type="number" id="effectDuration" value="5" min="1" max="22" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;" data-login-required>
                 <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 5px;">💡 사운드 이팩트는 1-22초 사이로 설정할 수 있습니다</div>
             </div>
 
             <div style="display: flex; gap: 10px;">
-                <button onclick="closeSoundEffectModal()" class="btn btn-secondary" style="flex: 1;">취소</button>
-                <button onclick="generateSoundEffect()" class="btn btn-primary" style="flex: 1;">생성하기</button>
+                <button onclick="closeSoundEffectModal()" class="btn btn-secondary" style="flex: 1;" data-login-required>취소</button>
+                <button onclick="generateSoundEffect()" class="btn btn-primary" style="flex: 1;" data-login-required>생성하기</button>
             </div>
         </div>
 
@@ -359,22 +359,22 @@
         <div id="musicNewContent">
             <div style="margin-bottom: 20px;">
                 <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">배경음 이름</label>
-                <input type="text" id="musicName" placeholder="예: 긴장감 있는 배경음" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                <input type="text" id="musicName" placeholder="예: 긴장감 있는 배경음" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;" data-login-required>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">배경음 설명</label>
-                <textarea id="musicDescription" placeholder="예: 서스펜스 장면을 위한 긴장감 있는 오케스트라 배경음" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+                <textarea id="musicDescription" placeholder="예: 서스펜스 장면을 위한 긴장감 있는 오케스트라 배경음" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; min-height: 80px; resize: vertical;" data-login-required></textarea>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 14px;">길이 (초)</label>
-                <input type="number" id="musicDuration" value="30" min="10" max="120" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                <input type="number" id="musicDuration" value="30" min="10" max="120" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;" data-login-required>
             </div>
 
             <div style="display: flex; gap: 10px;">
-                <button onclick="closeBackgroundMusicModal()" class="btn btn-secondary" style="flex: 1;">취소</button>
-                <button onclick="generateBackgroundMusic()" class="btn btn-primary" style="flex: 1;">생성하기</button>
+                <button onclick="closeBackgroundMusicModal()" class="btn btn-secondary" style="flex: 1;" data-login-required>취소</button>
+                <button onclick="generateBackgroundMusic()" class="btn btn-primary" style="flex: 1;" data-login-required>생성하기</button>
             </div>
         </div>
 
@@ -406,7 +406,7 @@
 <script src="{% static 'js/book/webaudio-effects.js' %}"></script>
 
 <script>
-const bookId = {{ book.id }};
+const bookId = "{{ book.public_uuid }}";
 let pages = []; // 대사와 사운드 이팩트만 포함
 let backgroundTracks = []; // 배경음 별도 관리 [{startPage: 0, endPage: 3, audioFile, audioUrl, musicName}]
 let currentPageIndex = 0;
@@ -1248,7 +1248,7 @@ async function saveEpisode() {
     try {
         // FormData로 오디오 파일들과 함께 전송
         const formData = new FormData();
-        formData.append('book_id', bookId);
+        formData.append('public_uuid', bookId);
         formData.append('content_number', contentNumber);
         formData.append('content_title', episodeTitle);
         formData.append('content_text', fullContent);
@@ -1305,7 +1305,7 @@ async function saveEpisode() {
             if (data.redirect_url) {
                 window.location.href = data.redirect_url;
             } else {
-                window.location.href = `{% url 'book:book_profile' %}?book_id=${bookId}`;
+                window.location.href = `{% url 'book:book_profile' %}?public_uuid=${bookId}`;
             }
         } else {
             alert(data.error || '에피소드 발행에 실패했습니다.');

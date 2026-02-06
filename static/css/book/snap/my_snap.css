@@ -85,6 +85,7 @@
         position: relative;
         display: flex;
         flex-direction: column;
+        height: 500px;
     }
 
     .snap-card::before {
@@ -113,7 +114,7 @@
 
     .snap-thumb {
         width: 100%;
-        aspect-ratio: 9 / 16;
+        aspect-ratio: 9 / 10;
         object-fit: cover;
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         transition: transform 0.4s ease;
@@ -267,3 +268,117 @@
     .btn-primary-glow:active {
         transform: translateY(0);
     }
+
+
+/* ============================= */
+/* 🌞 LIGHT MODE (Snap List) */
+/* ============================= */
+
+body.light-mode .snap-list-container {
+    animation: fadeInUp 0.6s ease;
+}
+
+/* 헤더 */
+body.light-mode .snap-header {
+    border-bottom: 2px solid #e5e7eb;
+}
+
+body.light-mode .snap-title {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* 뒤로가기 버튼 */
+body.light-mode .back-btn {
+    color: #6b7280;
+}
+
+body.light-mode .back-btn:hover {
+    color: #6366f1;
+}
+
+/* 카드 */
+body.light-mode .snap-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    backdrop-filter: none;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .snap-card:hover {
+    box-shadow: 0 14px 32px rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* 카드 오버레이 효과 */
+body.light-mode .snap-card::before {
+    background: linear-gradient(
+        135deg,
+        rgba(99, 102, 241, 0.08) 0%,
+        rgba(139, 92, 246, 0.05) 100%
+    );
+}
+
+/* 썸네일 */
+body.light-mode .snap-thumb {
+    background: #f3f4f6;
+}
+
+/* 카드 정보 영역 */
+body.light-mode .snap-info {
+    background: #ffffff;
+}
+
+/* 제목 */
+body.light-mode .snap-title-text {
+    color: #111827;
+}
+
+/* 스탯 */
+body.light-mode .snap-stats {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+body.light-mode .snap-stats span {
+    background: rgba(99, 102, 241, 0.1);
+    color: #4f46e5;
+}
+
+body.light-mode .snap-stats span:hover {
+    background: rgba(99, 102, 241, 0.18);
+}
+
+/* 액션 버튼 */
+body.light-mode .btn-mini {
+    background: #f9fafb;
+    color: #111827;
+    border: 1px solid #e5e7eb;
+}
+
+body.light-mode .btn-mini::before {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+body.light-mode .btn-mini:hover {
+    background: #eef2ff;
+    border-color: #6366f1;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+/* 빈 상태 */
+body.light-mode .empty-box {
+    background: #ffffff;
+    border: 2px dashed #d1d5db;
+    color: #6b7280;
+}
+
+/* 메인 버튼 */
+body.light-mode .btn-primary-glow {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+}
+
+body.light-mode .btn-primary-glow:hover {
+    box-shadow: 0 14px 30px rgba(99, 102, 241, 0.45);
+}
