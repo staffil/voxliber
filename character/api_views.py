@@ -387,7 +387,7 @@ def public_shared_llm_conversations(request):
     ).prefetch_related(
         Prefetch(
             'messages',
-            queryset=ConversationMessage.objects.order_by('created_at'),
+            queryset=Conversation.objects.order_by('created_at'),
             to_attr='all_messages'
         )
     ).order_by('-shared_at', '-created_at')  # 최신 공유/생성 순
@@ -575,7 +575,7 @@ def api_novel_result(request, conv_id):
     # -------------------------
     # 메시지
     # -------------------------
-    messages = ConversationMessage.objects.filter(
+    messages = Conversation.objects.filter(
         conversation=conversation
     ).order_by("created_at")
 
@@ -763,9 +763,9 @@ def api_chat_send(request, llm_uuid):
         # ConversationState에서 현재 HP 가져오기
         conv_state, _ = ConversationState.objects.get_or_create(
             conversation=conversation,
-            defaults={'character_stats': {'hp': 100, 'max_hp': 100}}
+            defaults={'character_stats': {'hp': 0, 'max_hp': 100}}
         )
-        current_hp = conv_state.character_stats.get('hp', 100)
+        current_hp = conv_state.character_stats.get('hp', 0)
         max_hp = conv_state.character_stats.get('max_hp', 100)
 
         # 응답 생성
@@ -855,7 +855,7 @@ def api_chat_reset(request, llm_uuid):
     # 초기 HP 상태 생성
     ConversationState.objects.create(
         conversation=conversation,
-        character_stats={'hp': 100, 'max_hp': 100}
+        character_stats={'hp': 0, 'max_hp': 100}
     )
 
     return JsonResponse({
