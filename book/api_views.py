@@ -1422,119 +1422,237 @@ from book.models import Books, Tags
 
 def api_search(request):
     """
-    통합 검색 API - 작품, 스토리, LLM(AI캐릭터), 유저 검색
+    통합 검색 API - 작품, 스토리, LLM(AI캐릭터), 유저, 태그 검색
+
+    - 유저 검색 시: 해당 유저의 책/스토리/LLM도 함께 반환
+    - 태그 검색 시: 해당 태그가 붙은 모든 책/스토리 반환
 
     Query Parameters:
         - q: 검색어 (필수)
         - filter: 검색 필터 - 'all', 'book', 'story', 'llm', 'user' (기본: 'all')
     """
+    from character.models import Story, LLM
+
     query = request.GET.get('q', '').strip()
     filter_type = request.GET.get('filter', 'all')
 
     if not query:
-        return JsonResponse({'success': True, 'results': []})
+        return JsonResponse({'success': True, 'results': [], 'counts': {}})
 
     results = []
+    counts = {'book': 0, 'story': 0, 'llm': 0, 'user': 0}
 
-    # 작품 검색
+    # 이미 추가된 ID 추적 (중복 방지)
+    added_book_ids = set()
+    added_story_ids = set()
+    added_llm_ids = set()
+    added_user_ids = set()
+
+    # ========== 유저 검색 (유저 + 유저의 콘텐츠) ==========
+    if filter_type in ['all', 'user']:
+        matched_users = Users.objects.filter(
+            Q(nickname__icontains=query) |
+            Q(username__icontains=query)
+        ).distinct()[:20]
+
+        for user in matched_users:
+            if user.public_uuid and str(user.public_uuid) not in added_user_ids:
+                added_user_ids.add(str(user.public_uuid))
+                book_count = Books.objects.filter(user=user).count()
+                story_count = Story.objects.filter(user=user).count()
+                llm_count = LLM.objects.filter(user=user).count()
+
+                results.append({
+                    'type': 'user',
+                    'id': str(user.public_uuid),
+                    'nickname': user.nickname or user.username,
+                    'username': user.username,
+                    'profile_image': request.build_absolute_uri(user.user_img.url) if user.user_img else None,
+                    'book_count': book_count,
+                    'story_count': story_count,
+                    'llm_count': llm_count
+                })
+                counts['user'] += 1
+
+            # 유저의 책들도 검색 결과에 추가 (all 또는 user 필터일 때)
+            if filter_type in ['all', 'user']:
+                user_books = Books.objects.filter(user=user).select_related('user').prefetch_related('genres')[:10]
+                for book in user_books:
+                    if str(book.public_uuid) not in added_book_ids:
+                        added_book_ids.add(str(book.public_uuid))
+                        genre_names = ', '.join([g.name for g in book.genres.all()[:2]])
+                        results.append({
+                            'type': 'book',
+                            'id': str(book.public_uuid),
+                            'title': book.name,
+                            'description': book.description[:100] if book.description else '',
+                            'author': book.user.nickname if book.user else '알 수 없음',
+                            'author_id': str(book.user.public_uuid) if book.user else None,
+                            'cover_image': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
+                            'genre': genre_names if genre_names else '기타',
+                            'book_score': float(book.book_score) if book.book_score else 0
+                        })
+                        counts['book'] += 1
+
+                # 유저의 스토리도 추가
+                user_stories = Story.objects.filter(user=user, is_public=True).select_related('user').prefetch_related('genres', 'characters')[:10]
+                for story in user_stories:
+                    if str(story.public_uuid) not in added_story_ids:
+                        added_story_ids.add(str(story.public_uuid))
+                        genre_names = ', '.join([g.name for g in story.genres.all()[:2]])
+                        # 스토리 이미지 URL 안전하게 처리
+                        story_image = None
+                        try:
+                            if story.cover_image:
+                                story_image = request.build_absolute_uri(story.cover_image.url)
+                        except:
+                            story_image = None
+                        results.append({
+                            'type': 'story',
+                            'id': str(story.public_uuid),
+                            'title': story.title,
+                            'description': story.description[:100] if story.description else '',
+                            'author': story.user.nickname if story.user else '알 수 없음',
+                            'author_id': str(story.user.public_uuid) if story.user else None,
+                            'cover_image': story_image,
+                            'genre': genre_names if genre_names else 'AI 스토리',
+                            'character_count': story.characters.count()
+                        })
+                        counts['story'] += 1
+
+                # 유저의 LLM도 추가
+                user_llms = LLM.objects.filter(user=user, is_public=True).select_related('user', 'story')[:10]
+                for llm in user_llms:
+                    if str(llm.public_uuid) not in added_llm_ids:
+                        added_llm_ids.add(str(llm.public_uuid))
+                        llm_image = None
+                        try:
+                            if llm.llm_image:
+                                llm_image = request.build_absolute_uri(llm.llm_image.url)
+                        except:
+                            llm_image = None
+                        results.append({
+                            'type': 'llm',
+                            'id': str(llm.public_uuid),
+                            'name': llm.name,
+                            'title': llm.title or '',
+                            'description': llm.description[:100] if llm.description else '',
+                            'author': llm.user.nickname if llm.user else '알 수 없음',
+                            'author_id': str(llm.user.public_uuid) if llm.user else None,
+                            'llm_image': llm_image,
+                            'story_title': llm.story.title if llm.story else None,
+                            'story_id': str(llm.story.public_uuid) if llm.story else None,
+                            'like_count': llm.llm_like_count or 0
+                        })
+                        counts['llm'] += 1
+
+    # ========== 작품 검색 (제목, 설명, 작가, 태그) ==========
     if filter_type in ['all', 'book']:
         books = Books.objects.filter(
             Q(name__icontains=query) |
             Q(description__icontains=query) |
             Q(user__nickname__icontains=query) |
-            Q(tags__name__icontains=query)
+            Q(tags__name__icontains=query) |
+            Q(genres__name__icontains=query)
         ).select_related('user').prefetch_related('genres', 'tags').distinct()[:30]
 
         for book in books:
-            genre_names = ', '.join([g.name for g in book.genres.all()[:2]])
-            results.append({
-                'type': 'book',
-                'id': str(book.public_uuid),
-                'title': book.name,
-                'description': book.description[:100] if book.description else '',
-                'author': book.user.nickname if book.user else '알 수 없음',
-                'author_id': str(book.user.public_uuid) if book.user else None,
-                'cover_image': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
-                'genre': genre_names if genre_names else '기타',
-                'book_score': float(book.book_score) if book.book_score else 0
-            })
+            if str(book.public_uuid) not in added_book_ids:
+                added_book_ids.add(str(book.public_uuid))
+                genre_names = ', '.join([g.name for g in book.genres.all()[:2]])
+                results.append({
+                    'type': 'book',
+                    'id': str(book.public_uuid),
+                    'title': book.name,
+                    'description': book.description[:100] if book.description else '',
+                    'author': book.user.nickname if book.user else '알 수 없음',
+                    'author_id': str(book.user.public_uuid) if book.user else None,
+                    'cover_image': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
+                    'genre': genre_names if genre_names else '기타',
+                    'book_score': float(book.book_score) if book.book_score else 0
+                })
+                counts['book'] += 1
 
-    # AI 스토리 검색
+    # ========== AI 스토리 검색 (제목, 설명, 장르, 태그, 작가) ==========
     if filter_type in ['all', 'story']:
-        from character.models import Story
         stories = Story.objects.filter(
             Q(title__icontains=query) |
             Q(description__icontains=query) |
             Q(genres__name__icontains=query) |
-            Q(tags__name__icontains=query),
+            Q(tags__name__icontains=query) |
+            Q(user__nickname__icontains=query),
             is_public=True
         ).select_related('user').prefetch_related('genres', 'characters').distinct()[:30]
 
         for story in stories:
-            genre_names = ', '.join([g.name for g in story.genres.all()[:2]])
-            results.append({
-                'type': 'story',
-                'id': str(story.public_uuid),
-                'title': story.title,
-                'description': story.description[:100] if story.description else '',
-                'author': story.user.nickname if story.user else '알 수 없음',
-                'author_id': str(story.user.public_uuid) if story.user else None,
-                'cover_image': request.build_absolute_uri(story.cover_image.url) if story.cover_image else None,
-                'genre': genre_names if genre_names else 'AI 스토리',
-                'character_count': story.characters.count()
-            })
+            if str(story.public_uuid) not in added_story_ids:
+                added_story_ids.add(str(story.public_uuid))
+                genre_names = ', '.join([g.name for g in story.genres.all()[:2]])
+                # 스토리 이미지 URL 안전하게 처리
+                story_image = None
+                try:
+                    if story.cover_image:
+                        story_image = request.build_absolute_uri(story.cover_image.url)
+                except:
+                    story_image = None
+                results.append({
+                    'type': 'story',
+                    'id': str(story.public_uuid),
+                    'title': story.title,
+                    'description': story.description[:100] if story.description else '',
+                    'author': story.user.nickname if story.user else '알 수 없음',
+                    'author_id': str(story.user.public_uuid) if story.user else None,
+                    'cover_image': story_image,
+                    'genre': genre_names if genre_names else 'AI 스토리',
+                    'character_count': story.characters.count()
+                })
+                counts['story'] += 1
 
-    # LLM (AI 캐릭터) 검색
+    # ========== LLM (AI 캐릭터) 검색 (이름, 타이틀, 설명, 스토리 제목, 작가) ==========
     if filter_type in ['all', 'llm']:
-        from character.models import LLM
         llms = LLM.objects.filter(
             Q(name__icontains=query) |
             Q(title__icontains=query) |
-            Q(description__icontains=query),
-            is_public=True
+            Q(description__icontains=query) |
+            Q(story__title__icontains=query) |
+            Q(user__nickname__icontains=query)
         ).select_related('user', 'story').distinct()[:30]
 
-        for llm in llms:
-            results.append({
-                'type': 'llm',
-                'id': str(llm.public_uuid),
-                'name': llm.name,
-                'title': llm.title or '',
-                'description': llm.description[:100] if llm.description else '',
-                'author': llm.user.nickname if llm.user else '알 수 없음',
-                'author_id': str(llm.user.public_uuid) if llm.user else None,
-                'llm_image': request.build_absolute_uri(llm.llm_image.url) if llm.llm_image else None,
-                'story_title': llm.story.title if llm.story else None,
-                'story_id': str(llm.story.public_uuid) if llm.story else None,
-                'like_count': llm.llm_like_count or 0
-            })
+        # is_public=True 인 것 우선, 아닌 것도 포함 (디버깅용)
+        llms_public = [l for l in llms if l.is_public]
+        llms_private = [l for l in llms if not l.is_public]
+        all_llms = llms_public + llms_private[:10]  # 비공개는 최대 10개만
 
-    # 유저 검색
-    if filter_type in ['all', 'user']:
-        from register.models import Users
-        users = Users.objects.filter(
-            Q(nickname__icontains=query) |
-            Q(username__icontains=query)
-        ).distinct()[:30]
+        for llm in all_llms:
+            if str(llm.public_uuid) not in added_llm_ids:
+                added_llm_ids.add(str(llm.public_uuid))
+                llm_image = None
+                try:
+                    if llm.llm_image:
+                        llm_image = request.build_absolute_uri(llm.llm_image.url)
+                except:
+                    llm_image = None
+                results.append({
+                    'type': 'llm',
+                    'id': str(llm.public_uuid),
+                    'name': llm.name,
+                    'title': llm.title or '',
+                    'description': llm.description[:100] if llm.description else '',
+                    'author': llm.user.nickname if llm.user else '알 수 없음',
+                    'author_id': str(llm.user.public_uuid) if llm.user else None,
+                    'llm_image': llm_image,
+                    'story_title': llm.story.title if llm.story else None,
+                    'story_id': str(llm.story.public_uuid) if llm.story else None,
+                    'like_count': llm.llm_like_count or 0,
+                    'is_public': llm.is_public
+                })
+                counts['llm'] += 1
 
-        for user in users:
-            # 작품 수 계산
-            book_count = Books.objects.filter(user=user).count()
-            # AI 스토리 수 계산
-            from character.models import Story
-            story_count = Story.objects.filter(user=user).count()
-
-            results.append({
-                'type': 'user',
-                'id': str(user.public_uuid),
-                'nickname': user.nickname or user.username,
-                'username': user.username,
-                'profile_image': request.build_absolute_uri(user.user_img.url) if user.user_img else None,
-                'book_count': book_count,
-                'story_count': story_count
-            })
-
-    return JsonResponse({'success': True, 'results': results})
+    return JsonResponse({
+        'success': True,
+        'results': results,
+        'counts': counts
+    })
 
 
 
