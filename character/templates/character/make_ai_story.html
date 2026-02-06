@@ -355,29 +355,31 @@ const mediaUploadArea = document.getElementById('media-upload-area');
     const addTagBtn = document.getElementById('add-tag-btn');
 
     // 선택된 태그 업데이트 함수
-    function updateSelectedTags() {
-        const checkboxes = document.querySelectorAll('.tag-checkbox:checked');
-        selectedTagsContainer.innerHTML = '';
+function updateSelectedTags() {
+    const checkboxes = document.querySelectorAll('.tag-checkbox:checked');
+    const selectedTagsContainer = document.getElementById('selected-tags');
+    selectedTagsContainer.innerHTML = ''; // 기존 삭제
 
-        checkboxes.forEach(checkbox => {
-            const tagName = checkbox.parentElement.querySelector('.tag-box').textContent;
-            const tagId = checkbox.value;
+    checkboxes.forEach(checkbox => {
+        const tagName = checkbox.parentElement.querySelector('.tag-box').textContent;
+        const tagId = checkbox.value;
 
-            // hidden input 추가
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'tags';
-            input.value = tagId;
-            selectedTagsContainer.appendChild(input);
+        // hidden input 생성
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'tags';
+        input.value = tagId;
+        selectedTagsContainer.appendChild(input);
 
-            // 선택된 태그 표시
-            const span = document.createElement('span');
-            span.className = 'selected-tag';
-            span.dataset.tagId = tagId;
-            span.innerHTML = `${tagName} <button type="button" class="remove-tag-btn">&times;</button>`;
-            selectedTagsContainer.appendChild(span);
-        });
-    }
+        // 화면 표시
+        const span = document.createElement('span');
+        span.className = 'selected-tag';
+        span.dataset.tagId = tagId;
+        span.innerHTML = `${tagName} <button type="button" class="remove-tag-btn">&times;</button>`;
+        selectedTagsContainer.appendChild(span);
+    });
+}
+
 
     // 태그 제거 버튼 클릭 이벤트
     selectedTagsContainer?.addEventListener('click', function(e) {
