@@ -34,7 +34,7 @@ def api_user_info(request):
     # 🔹 조회
     if request.method == 'GET':
         return Response({
-            "id": user.user_id,
+            "id": str(user.public_uuid),
             "username": user.username,
             "email": user.email,
             "nickname": user.nickname,
