@@ -705,6 +705,7 @@ def api_chat_view(request, llm_uuid):
                 'role': msg.role,
                 'content': msg.content,
                 'audio_url': request.build_absolute_uri(msg.audio.url) if msg.audio else None,
+                'created_at': msg.created_at.isoformat(),
             } for msg in messages
         ],
         'sub_images': sub_images_data,
