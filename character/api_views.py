@@ -575,7 +575,7 @@ def api_novel_result(request, conv_id):
     # -------------------------
     # 메시지
     # -------------------------
-    messages = Conversation.objects.filter(
+    messages = ConversationMessage.objects.filter(
         conversation=conversation
     ).order_by("created_at")
 
@@ -634,37 +634,24 @@ def api_novel_result(request, conv_id):
 
 
 
-@api_view(['GET'])
 def api_chat_view(request, llm_uuid):
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
-
-    # conversation_id 파라미터로 기존 대화 가져오기
     conversation_id = request.GET.get('conversation_id')
-
-    if conversation_id:
-        # conversation_id가 있으면 해당 대화 가져오기
-        try:
-            conversation = Conversation.objects.get(id=conversation_id, llm=llm)
-        except Conversation.DoesNotExist:
-            # 없으면 새로 생성
-            conversation = Conversation.objects.create(
-                user=request.user if request.user.is_authenticated else None,
-                llm=llm,
-                created_at=timezone.now()
-            )
-    elif request.user.is_authenticated:
-        # 로그인 사용자는 기존 대화 가져오기
-        conversation, _ = Conversation.objects.get_or_create(
-            user=request.user,
-            llm=llm,
-        )
+    
+    if request.user.is_authenticated:
+        # 로그인 사용자는 기존 대화 가져오기 또는 새 대화 생성
+        if conversation_id:
+            conversation = get_object_or_404(Conversation, id=conversation_id, llm=llm, user=request.user)
+        else:
+            conversation, _ = Conversation.objects.get_or_create(user=request.user, llm=llm)
     else:
-        # 비로그인 + conversation_id 없으면 새 대화 생성
-        conversation = Conversation.objects.create(
-            user=None,
-            llm=llm,
-            created_at=timezone.now()
-        )
+        # 비로그인 사용자는 conversation_id 없으면 접근 금지
+        if not conversation_id:
+            return JsonResponse({'success': False, 'error': '비로그인 사용자는 conversation_id가 필요합니다.'}, status=403)
+        try:
+            conversation = Conversation.objects.get(id=conversation_id, llm=llm, user=None)
+        except Conversation.DoesNotExist:
+            return JsonResponse({'success': False, 'error': '유효하지 않은 conversation_id입니다.'}, status=404)
 
     # 나머지 로직 그대로...
     conv_state, _ = ConversationState.objects.get_or_create(
