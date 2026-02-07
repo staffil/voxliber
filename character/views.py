@@ -1109,3 +1109,31 @@ def delete_story_comment(request, comment_id):
 
     comment.delete()
     return JsonResponse({'success': True})
+
+
+
+
+@login_required
+@require_POST
+def delete_story(request, story_uuid):
+    story = get_object_or_404(Story, public_uuid=story_uuid)
+    if story.user != request.user:
+        return JsonResponse({'error': '권한이 없습니다.'}, status=403)
+
+    story.delete()
+
+    return redirect('mypage:ai_list')
+
+
+@login_required
+@require_POST
+def delete_llm(request, llm_uuid):
+    llm = get_object_or_404(LLM, public_uuid=llm_uuid)
+    story = llm.story  
+    if llm.user != request.user:
+        return JsonResponse({'error': '권한이 없습니다.'}, status=403)
+
+    llm.delete()
+
+    return redirect('character:story_detail', story_uuid = story.public_uuid)
+

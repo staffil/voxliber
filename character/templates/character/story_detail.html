@@ -57,11 +57,26 @@
                 {% endif %}
             </div>
 
-            {% for s in story_list %}
-            <a href="{% url 'character:edit_ai_story' s.public_uuid %}" class="btn-edit-story" data-login-required>
-                <span>✏️</span> 스토리 편집
-            </a>
-            {% endfor %}
+    <div class="story-buttons">
+        {% for s in story_list %}
+        <a href="{% url 'character:edit_ai_story' s.public_uuid %}" class="btn-edit-story" data-login-required>
+            ✏️ 스토리 편집
+        </a>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<form method="POST" action="{% url 'character:delete_story' story.public_uuid %}" class="delete-form">
+    {% csrf_token %}
+    <button type="button" class="delete-btn" onclick="confirmDelete(this.form)">
+        🗑️ 삭제
+    </button>
+</form>
+
+                {% endfor %}
+
+    </div>
+
+
         </div>
     </div>
 
@@ -102,7 +117,13 @@
                     <a href="{% url 'character:make_ai_update' char.public_uuid %}" class="btn-edit" data-login-required>
                         <span>✏️</span> 편집
                     </a>
-                </div>
+    <form method="POST" action="{% url 'character:delete_llm' char.public_uuid %}" class="delete-form">
+        {% csrf_token %}
+        <button type="button" class="delete-btn" onclick="confirmDelete(this.form)">
+            🗑️ 삭제
+        </button>
+    </form>
+</div>
             </div>
             {% empty %}
             <div class="empty-state">
@@ -151,4 +172,40 @@
 
 {% block extra_js %}
 <script src="{% static 'js/character/story_detail.js' %}"></script>
+<script>
+    function confirmDelete(form) {
+    Swal.fire({
+        title: '정말 삭제하시겠습니까?',
+        text: "삭제하면 복구할 수 없습니다.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: '삭제',
+        cancelButtonText: '취소'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            form.submit();
+        }
+    });
+}
+
+
+function confirmDelete(form) {
+    Swal.fire({
+        title: '정말 삭제하시겠습니까?',
+        text: "삭제하면 복구할 수 없습니다.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: '삭제',
+        cancelButtonText: '취소'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            form.submit();
+        }
+    });
+}
+</script>
 {% endblock %}

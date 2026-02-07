@@ -39,6 +39,8 @@ urlpatterns = [
     path("api/story/<uuid:story_uuid>/like/", views.toggle_story_like, name='toggle_story_like'),
     path("api/story/<uuid:story_uuid>/comment/", views.add_story_comment, name='add_story_comment'),
     path("api/story/comment/<int:comment_id>/delete/", views.delete_story_comment, name='delete_story_comment'),
+    path("story/delete/<uuid:story_uuid>/", views.delete_story, name='delete_story'),
+    path("llm/delete/<uuid:llm_uuid>/", views.delete_llm, name='delete_llm'),
     path("story/<uuid:story_uuid>/bookmark/toggle/", views.toggle_story_bookmark, name='toggle_story_bookmark'),
 
 
