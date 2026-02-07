@@ -1106,7 +1106,7 @@ def api_snaps_list(request):
     page = int(request.GET.get('page', 1))
     per_page = int(request.GET.get('per_page', 20))
 
-    snaps = BookSnap.objects.select_related('user').prefetch_related(
+    snaps = BookSnap.objects.select_related('user', 'book', 'story').prefetch_related(
         'booksnap_like', 'comments'
     ).order_by('?')
 
@@ -1128,9 +1128,13 @@ def api_snaps_list(request):
             'shares': snap.shares,
             'comments_count': snap.comments.count(),
             'allow_comments': snap.allow_comments,
-            # 책 관련 ID는 숫자 PK -> UUID로 변경
+            # 책/스토리 관련 UUID
             'book_id': str(snap.book.public_uuid) if snap.book else None,
+            'book_public_uuid': str(snap.book.public_uuid) if snap.book else None,
+            'story_id': str(snap.story.public_uuid) if snap.story else None,
+            'linked_type': 'story' if snap.story_id else ('book' if snap.book_id else None),
             'book_link': snap.book_link,
+            'story_link': snap.story_link,
             'book_comment': snap.book_comment,
             'duration': snap.duration,
             'created_at': snap.created_at.isoformat(),
@@ -1164,7 +1168,7 @@ def api_snap_detail(request, snap_uuid):
 
     # Snap 조회 (UUID)
     snap = get_object_or_404(
-        BookSnap.objects.select_related('user', 'book').prefetch_related(
+        BookSnap.objects.select_related('user', 'book', 'story').prefetch_related(
             'booksnap_like', 'comments__user'
         ),
         public_uuid=snap_uuid
@@ -1196,8 +1200,12 @@ def api_snap_detail(request, snap_uuid):
         'shares': snap.shares,
         'comments_count': snap.comments.count(),
         'allow_comments': snap.allow_comments,
-        'book_id': str(snap.book.public_uuid) if snap.book else None,  # 책 UUID
+        'book_id': str(snap.book.public_uuid) if snap.book else None,
+        'book_public_uuid': str(snap.book.public_uuid) if snap.book else None,
+        'story_id': str(snap.story.public_uuid) if snap.story else None,
+        'linked_type': 'story' if snap.story_id else ('book' if snap.book_id else None),
         'book_link': snap.book_link,
+        'story_link': snap.story_link,
         'book_comment': snap.book_comment,
         'duration': snap.duration,
         'created_at': snap.created_at.isoformat(),
