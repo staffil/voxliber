@@ -11,6 +11,7 @@ from django.conf import settings
 from character.models import Story, LLM, LLMSubImage, LoreEntry, Conversation, StoryBookmark, ConversationMessage, ConversationState, HPImageMapping
 import re 
 from register.decorator import login_required_to_main
+from register.models import Users
 
 @login_required
 @login_required_to_main
@@ -35,6 +36,14 @@ def my_profile(request):
             messages.error(request, "닉네임을 입력해주세요.")
             context = {"books_count": books_count}
             return render(request, "mypage/my_profile.html", context)
+        
+        
+        if Users.objects.filter(nickname=nickname).exclude(pk=user.pk).exists():
+            messages.error(request, "현재 있는 닉네임입니다. 다른걸 선택해 주세요")
+            context = {"books_count": books_count, "books": books}
+            return render(request, "mypage/my_profile.html", context)
+        user.nickname = nickname
+
 
         # 사용자명 업데이트
         if username:

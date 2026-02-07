@@ -11,7 +11,7 @@ from book.api_utils import require_api_key, paginate, api_response, require_api_
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from character.models import Story, Conversation, ConversationMessage
+from character.models import Story, Conversation, ConversationMessage, LLM, StoryBookmark
 from register.models import Users
 from book.models import Books, BookSnap, Follow
 
@@ -250,3 +250,95 @@ def toggle_follow_api(request, user_uuid):
         'is_following': is_following,
         'follower_count': follower_count,
     })
+
+
+@csrf_exempt
+@require_api_key_secure
+def api_my_ai_novels(request):
+    """내 AI 소설 서재 — 내가 대화 중인 LLM + 스토리 정보"""
+    user = getattr(request, 'api_user', None)
+    if not user:
+        return api_response(error='로그인이 필요합니다.', status=401)
+
+    # 사용자의 모든 대화 (LLM별 최근 1개씩)
+    conversations = (
+        Conversation.objects.filter(user=user)
+        .select_related('llm', 'llm__story')
+        .order_by('llm_id', '-created_at')
+    )
+
+    # LLM별 최신 대화만 추출
+    seen_llm = set()
+    unique_convs = []
+    for conv in conversations:
+        if conv.llm_id not in seen_llm:
+            seen_llm.add(conv.llm_id)
+            unique_convs.append(conv)
+
+    novels = []
+    for conv in unique_convs:
+        llm = conv.llm
+        story = llm.story
+        msg_count = ConversationMessage.objects.filter(conversation=conv).count()
+        last_msg = ConversationMessage.objects.filter(conversation=conv).order_by('-created_at').first()
+
+        novels.append({
+            'conversation_id': conv.id,
+            'last_chat_at': (last_msg.created_at.isoformat() if last_msg else conv.created_at.isoformat()),
+            'message_count': msg_count,
+            'llm': {
+                'id': str(llm.public_uuid),
+                'name': llm.name,
+                'image': request.build_absolute_uri(llm.llm_image.url) if llm.llm_image else None,
+            },
+            'story': {
+                'id': str(story.public_uuid),
+                'title': story.title,
+                'cover_image': request.build_absolute_uri(story.cover_image.url) if story and story.cover_image else None,
+            } if story else None,
+        })
+
+    return api_response({'novels': novels})
+
+
+@csrf_exempt
+@require_api_key_secure
+def api_my_story_bookmarks(request):
+    """내 AI 소설 북마크 목록"""
+    user = getattr(request, 'api_user', None)
+    if not user:
+        return api_response(error='로그인이 필요합니다.', status=401)
+
+    bookmarks = (
+        StoryBookmark.objects.filter(user=user)
+        .select_related('story')
+        .order_by('-created_at')
+    )
+
+    data = []
+    for sb in bookmarks:
+        story = sb.story
+        # 스토리에 속한 LLM 캐릭터들
+        llm_chars = LLM.objects.filter(story=story).only('public_uuid', 'name', 'llm_image')[:5]
+
+        data.append({
+            'bookmark_id': sb.id,
+            'bookmarked_at': sb.created_at.isoformat(),
+            'story': {
+                'id': str(story.public_uuid),
+                'title': story.title,
+                'description': story.description or '',
+                'cover_image': request.build_absolute_uri(story.cover_image.url) if story.cover_image else None,
+                'created_at': story.created_at.isoformat(),
+            },
+            'characters': [
+                {
+                    'id': str(c.public_uuid),
+                    'name': c.name,
+                    'image': request.build_absolute_uri(c.llm_image.url) if c.llm_image else None,
+                }
+                for c in llm_chars
+            ],
+        })
+
+    return api_response({'bookmarks': data})

@@ -28,5 +28,7 @@ urlpatterns = [
     path("api/user_info/", api_views.api_user_info, name="api_user_info"),
     path("api/user/intro/<uuid:user_uuid>/", api_views.public_user_profile, name="public_user_profile"),
     path("api/user/<uuid:user_uuid>/follow/toggle/", api_views.toggle_follow_api, name="toggle_follow_api"),
+    path("api/my/ai-novels/", api_views.api_my_ai_novels, name="api_my_ai_novels"),
+    path("api/my/story-bookmarks/", api_views.api_my_story_bookmarks, name="api_my_story_bookmarks"),
 
 ]
