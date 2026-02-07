@@ -649,7 +649,11 @@ def api_chat_view(request, llm_uuid):
     if user:
         # 로그인 사용자는 기존 대화 가져오기 또는 새 대화 생성
         if conversation_id:
-            conversation = get_object_or_404(Conversation, id=conversation_id, llm=llm, user=user)
+            try:
+                conversation = Conversation.objects.get(id=conversation_id, llm=llm, user=user)
+            except Conversation.DoesNotExist:
+                # conversation_id가 유저 소유가 아님 (이전 익명 대화 등) → 유저의 대화로 fallback
+                conversation, _ = Conversation.objects.get_or_create(user=user, llm=llm)
         else:
             conversation, _ = Conversation.objects.get_or_create(user=user, llm=llm)
     else:
