@@ -400,7 +400,7 @@ def public_shared_llm_conversations(request):
     ).prefetch_related(
         Prefetch(
             'messages',
-            queryset=Conversation.objects.order_by('created_at'),
+            queryset=ConversationMessage.objects.order_by('created_at'),
             to_attr='all_messages'
         )
     ).order_by('-shared_at', '-created_at')  # 최신 공유/생성 순
