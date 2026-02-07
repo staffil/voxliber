@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from book.models import APIKey
-
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 from django.db.models import Prefetch
@@ -56,6 +56,10 @@ def api_user_info(request):
         user.nickname = data.get('nickname', user.nickname)
         user.gender = data.get('gender', user.gender)
         user.birthdate = data.get('birthdate', user.birthdate)
+
+        
+        if Users.objects.filter(nickname=user.nickname).exists():
+            return JsonResponse({"error": "이미 존재하는 닉네임입니다."}, status=400)
         if 'user_img' in request.FILES:
             user.user_img = request.FILES['user_img']
         user.save()

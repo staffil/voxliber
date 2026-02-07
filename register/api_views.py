@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from datetime import datetime, date
 from book.api_utils import require_api_key, require_api_key_secure, paginate, api_response
 from voxliber.security import validate_image_file
-
+from register.models import Users
 
 
 
@@ -60,6 +60,10 @@ def api_signup(request):
         birthdate = request.POST.get("birthdate")
         gender = request.POST.get("gender")
         user_img = request.FILES.get("user-image")
+
+
+        if Users.objects.filter(nickname=nickname).exists():
+            return JsonResponse({"error": "이미 존재하는 닉네임입니다."}, status=400)
 
         log_to_file(f"   Nickname: {nickname}")
         log_to_file(f"   Birthdate: {birthdate}")
