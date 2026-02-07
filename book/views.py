@@ -1512,85 +1512,9 @@ def create_book_snap(request):
 
     user = request.user
 
-    if request.method == "POST":
-        snap_title       = request.POST.get("title", "").strip()
-        snap_description = request.POST.get("description", "").strip()
-        is_adult         = request.POST.get("adult_choice") == "on"
-        thumbnail_image  = request.FILES.get("image")
-        snap_video       = request.FILES.get("video")
-
-        # 파일 검증
-        try:
-            if thumbnail_image:
-                validate_image_file(thumbnail_image)
-            if snap_video:
-                validate_video_file(snap_video)
-        except ValidationError as e:
-            return JsonResponse({"error": str(e)}, status=400)
-
-        # ── 선택지 준비 (GET/POST 공통으로 사용 가능하도록) ──
-        my_book_options = [
-            (f"/book/detail/{book.public_uuid}/", book.name)
-            for book in Books.objects.filter(user=user)
-        ]
-
-        my_story_options = [
-            (f"/character/story/intro/{story.public_uuid}/", story.title)
-            for story in Story.objects.filter(user=user)
-        ]
-
-        # ── 폼에서 넘어온 값들 ──
-        selected_book_url  = request.POST.get("selected_book_url", "").strip()
-        selected_story_url = request.POST.get("selected_story_url", "").strip()
-        custom_url         = request.POST.get("custom_url", "").strip()
-
-        # 우선순위: 책 선택 → 스토리 선택 → 직접 입력
-        final_content_url = selected_book_url or selected_story_url or custom_url
-
-        # 연결할 Book 객체 찾기 (책인 경우에만)
-        connected_book = None
-        if final_content_url:
-            match = re.search(r'/book/detail/([a-f0-9\-]+)/?$', final_content_url)
-            if match:
-                uuid_str = match.group(1)
-                try:
-                    connected_book = Books.objects.get(public_uuid=uuid_str)
-                except Books.DoesNotExist:
-                    pass
-
-        story_match = re.search(r'/character/story/intro/([a-f0-9\-]+)/?$', final_content_url)
-        if story_match:
-            uuid_str = story_match.group(1)
-            try:
-                connected_story = Story.objects.get(public_uuid=uuid_str)
-            except Story.DoesNotExist:
-                pass
-
-        # 필수값 체크
-        if not snap_title or not snap_description or not thumbnail_image:
-            context = {
-                "error": "제목, 설명, 썸네일 이미지는 필수입니다.",
-                "my_book_options": my_book_options,
-                "my_story_options": my_story_options,
-            }
-            return render(request, "book/snap/create_snap.html", context)
-
-        # 스냅 생성
-        snap = BookSnap.objects.create(
-            user=user,
-            snap_title=snap_title,
-            book_comment=snap_description,
-            thumbnail=thumbnail_image,
-            snap_video=snap_video,
-            book=connected_book,           # 연결된 Books 객체 (있을 때만)
-            book_link=final_content_url,   # 실제 사용된 최종 URL
-            adult_choice=is_adult,
-            story_link = selected_story_url
-        )
-
-        return redirect("book:my_book_snap_list")
-
-    # GET 요청일 때 선택지 준비
+    # ─────────────────────────────
+    # 선택지 (GET/POST 공통)
+    # ─────────────────────────────
     my_book_options = [
         (f"/book/detail/{book.public_uuid}/", book.name)
         for book in Books.objects.filter(user=user)
@@ -1601,11 +1525,87 @@ def create_book_snap(request):
         for story in Story.objects.filter(user=user)
     ]
 
-    context = {
+    if request.method == "POST":
+        snap_title       = request.POST.get("title", "").strip()
+        snap_description = request.POST.get("description", "").strip()
+        is_adult         = request.POST.get("adult_choice") == "on"
+        thumbnail_image  = request.FILES.get("image")
+        snap_video       = request.FILES.get("video")
+
+        selected_book_url  = request.POST.get("selected_book_url", "").strip()
+        selected_story_url = request.POST.get("selected_story_url", "").strip()
+        custom_url         = request.POST.get("custom_url", "").strip()
+
+        # 우선순위
+        final_url = selected_book_url or selected_story_url or custom_url
+
+        # ─────────────────────────────
+        # 파일 검증
+        # ─────────────────────────────
+        try:
+            if thumbnail_image:
+                validate_image_file(thumbnail_image)
+            if snap_video:
+                validate_video_file(snap_video)
+        except ValidationError as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+        if not snap_title or not snap_description or not thumbnail_image:
+            return render(request, "book/snap/create_snap.html", {
+                "error": "제목, 설명, 썸네일은 필수입니다.",
+                "my_book_options": my_book_options,
+                "my_story_options": my_story_options,
+            })
+
+        # ─────────────────────────────
+        # 🔥 핵심: 연결 대상 판별
+        # ─────────────────────────────
+        connected_book = None
+        connected_story = None
+        book_link = None
+        story_link = None
+
+        if final_url:
+            book_match = re.search(r'/book/detail/([a-f0-9\-]+)/?$', final_url)
+            story_match = re.search(r'/character/story/intro/([a-f0-9\-]+)/?$', final_url)
+
+            if book_match:
+                try:
+                    connected_book = Books.objects.get(public_uuid=book_match.group(1))
+                    book_link = final_url
+                except Books.DoesNotExist:
+                    pass
+
+            elif story_match:
+                try:
+                    connected_story = Story.objects.get(public_uuid=story_match.group(1))
+                    story_link = final_url
+                except Story.DoesNotExist:
+                    pass
+
+        # ─────────────────────────────
+        # 생성
+        # ─────────────────────────────
+        BookSnap.objects.create(
+            user=user,
+            snap_title=snap_title,
+            book_comment=snap_description,
+            thumbnail=thumbnail_image,
+            snap_video=snap_video,
+            book=connected_book,
+            story=connected_story,
+            book_link=book_link,
+            story_link=story_link,
+            adult_choice=is_adult,
+        )
+
+        return redirect("book:my_book_snap_list")
+
+    # GET
+    return render(request, "book/snap/create_snap.html", {
         "my_book_options": my_book_options,
         "my_story_options": my_story_options,
-    }
-    return render(request, "book/snap/create_snap.html", context)
+    })
 
 
 
@@ -1620,7 +1620,6 @@ def edit_snap(request, snap_uuid):
 
     user = request.user
 
-    # 선택지 준비 (항상 최신 상태로)
     my_book_options = [
         (f"/book/detail/{book.public_uuid}/", book.name)
         for book in Books.objects.filter(user=user)
@@ -1637,63 +1636,58 @@ def edit_snap(request, snap_uuid):
         is_adult         = request.POST.get("adult_choice") == "on"
         thumbnail_new    = request.FILES.get("image")
         video_new        = request.FILES.get("video")
-        thumbnail_image  = request.FILES.get("image")
-
-        # 파일 검증 (create와 동일)
-        try:
-            if thumbnail_new:
-                validate_image_file(thumbnail_new)
-            if video_new:
-                validate_video_file(video_new)
-        except ValidationError as e:
-            context = {
-                "error": str(e),
-                "snap": snap,
-                "my_book_options": my_book_options,
-                "my_story_options": my_story_options,
-            }
-            return render(request, "book/snap/edit_snap.html", context)
 
         selected_book_url  = request.POST.get("selected_book_url", "").strip()
         selected_story_url = request.POST.get("selected_story_url", "").strip()
         custom_url         = request.POST.get("custom_url", "").strip()
 
-        final_content_url = selected_book_url or selected_story_url or custom_url
-
-        # Book 객체 연결 (책 URL 패턴일 때만)
-        connected_book = None
-        if final_content_url:
-            match = re.search(r'/book/detail/([a-f0-9\-]+)/?$', final_content_url)
-            if match:
-                uuid_str = match.group(1)
-                try:
-                    connected_book = Books.objects.get(public_uuid=uuid_str)
-                except Books.DoesNotExist:
-                    pass
-
-        if not snap_title or not snap_description or not thumbnail_image:
-            context = {
-                "error": "제목, 설명, 썸네일 이미지는 필수입니다.",
-                "my_book_options": my_book_options,
-                "my_story_options": my_story_options,
-            }
-            return render(request, "book/snap/create_snap.html", context)
+        final_url = selected_book_url or selected_story_url or custom_url
 
         if not snap_title or not snap_description:
-            context = {
+            return render(request, "book/snap/edit_snap.html", {
                 "error": "제목과 설명은 필수입니다.",
                 "snap": snap,
                 "my_book_options": my_book_options,
                 "my_story_options": my_story_options,
-            }
-            return render(request, "book/snap/edit_snap.html", context)
+            })
 
+        # ─────────────────────────────
+        # 연결 재설정 (중요)
+        # ─────────────────────────────
+        connected_book = None
+        connected_story = None
+        book_link = None
+        story_link = None
+
+        if final_url:
+            book_match = re.search(r'/book/detail/([a-f0-9\-]+)/?$', final_url)
+            story_match = re.search(r'/character/story/intro/([a-f0-9\-]+)/?$', final_url)
+
+            if book_match:
+                try:
+                    connected_book = Books.objects.get(public_uuid=book_match.group(1))
+                    book_link = final_url
+                except Books.DoesNotExist:
+                    pass
+
+            elif story_match:
+                try:
+                    connected_story = Story.objects.get(public_uuid=story_match.group(1))
+                    story_link = final_url
+                except Story.DoesNotExist:
+                    pass
+
+        # ─────────────────────────────
         # 업데이트
-        snap.snap_title     = snap_title
-        snap.book_comment   = snap_description
-        snap.adult_choice   = is_adult
-        snap.book_link      = final_content_url
-        snap.book           = connected_book
+        # ─────────────────────────────
+        snap.snap_title   = snap_title
+        snap.book_comment = snap_description
+        snap.adult_choice = is_adult
+
+        snap.book  = connected_book
+        snap.story = connected_story
+        snap.book_link  = book_link
+        snap.story_link = story_link
 
         if thumbnail_new:
             snap.thumbnail = thumbnail_new
@@ -1704,13 +1698,11 @@ def edit_snap(request, snap_uuid):
 
         return redirect("book:my_book_snap_list")
 
-    # GET
-    context = {
+    return render(request, "book/snap/edit_snap.html", {
         "snap": snap,
         "my_book_options": my_book_options,
         "my_story_options": my_story_options,
-    }
-    return render(request, "book/snap/edit_snap.html", context)
+    })
 
 
 # 북 스냅 삭제
