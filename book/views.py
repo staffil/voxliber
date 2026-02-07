@@ -1637,6 +1637,7 @@ def edit_snap(request, snap_uuid):
         is_adult         = request.POST.get("adult_choice") == "on"
         thumbnail_new    = request.FILES.get("image")
         video_new        = request.FILES.get("video")
+        thumbnail_image  = request.FILES.get("image")
 
         # 파일 검증 (create와 동일)
         try:
