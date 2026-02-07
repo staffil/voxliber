@@ -216,9 +216,13 @@ def public_llm_detail(request, llm_uuid):
         for other in other_llms
     ]
 
-    # 최신 공개 대화(conversation) 가져오기
-    latest_shared = Conversation.objects.filter(llm=llm, is_public=False).order_by('-shared_at').first()
-    conv_id = latest_shared.id if latest_shared else None
+    # 현재 유저의 대화 가져오기 (본인 대화 우선)
+    conv_id = None
+    request_user = _get_request_user(request)
+    if request_user:
+        user_conv = Conversation.objects.filter(llm=llm, user=request_user).order_by('-created_at').first()
+        if user_conv:
+            conv_id = user_conv.id
 
     # 메인 LLM 데이터
     data = {
