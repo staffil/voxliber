@@ -154,7 +154,7 @@ def _oauth_callback(request, provider, profile_json, uid_key, email_key):
     if flutter_redirect_uri:
         request.session.pop('oauth_redirect_uri', None)
         user_data = {
-            "id": user.user_id,
+            "id": str(user.public_uuid),
             "username": user.username,
             "nickname": getattr(user, "nickname", ""),
             "email": user.email,
