@@ -23,6 +23,21 @@ import traceback
 from register.decorator import login_required_to_main
 from register.models import Users
 
+
+def _get_auth_user(request):
+    """API key 또는 세션에서 유저를 가져옴 (앱/웹 공통)"""
+    api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
+    if api_key:
+        try:
+            from book.models import APIKey
+            return APIKey.objects.select_related('user').get(key=api_key, is_active=True).user
+        except Exception:
+            pass
+    if hasattr(request, 'user') and request.user.is_authenticated:
+        return request.user
+    return None
+
+
 @login_required_to_main
 def character_terms(request):
     return render(request, "character/termsAI.html")
@@ -958,11 +973,14 @@ def story_intro(request, story_uuid=None):
 
 
 # LLM 좋아요 토글
-@login_required
+@csrf_exempt
 @require_POST
 def toggle_llm_like(request, llm_uuid):
+    user = _get_auth_user(request)
+    if not user:
+        return JsonResponse({'error': '로그인이 필요합니다.'}, status=401)
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
-    like, created = LLMLike.objects.get_or_create(user=request.user, llm=llm)
+    like, created = LLMLike.objects.get_or_create(user=user, llm=llm)
 
     if not created:
         like.delete()
@@ -975,9 +993,12 @@ def toggle_llm_like(request, llm_uuid):
 
 
 # LLM 댓글 작성
-@login_required
+@csrf_exempt
 @require_POST
 def add_llm_comment(request, llm_uuid):
+    user = _get_auth_user(request)
+    if not user:
+        return JsonResponse({'error': '로그인이 필요합니다.'}, status=401)
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
 
     try:
@@ -993,7 +1014,7 @@ def add_llm_comment(request, llm_uuid):
             parent_comment = Comment.objects.filter(id=parent_id, llm=llm).first()
 
         comment = Comment.objects.create(
-            user=request.user,
+            user=user,
             llm=llm,
             content=content,
             parent_comment=parent_comment
@@ -1004,7 +1025,7 @@ def add_llm_comment(request, llm_uuid):
             'comment': {
                 'id': comment.id,
                 'content': comment.content,
-                'username': request.user.nickname or request.user.username,
+                'username': user.nickname or user.username,
                 'created_at': comment.created_at.strftime('%Y.%m.%d %H:%M'),
                 'is_reply': parent_comment is not None,
             }
@@ -1014,12 +1035,15 @@ def add_llm_comment(request, llm_uuid):
 
 
 # LLM 댓글 삭제
-@login_required
+@csrf_exempt
 @require_POST
 def delete_llm_comment(request, comment_id):
+    user = _get_auth_user(request)
+    if not user:
+        return JsonResponse({'error': '로그인이 필요합니다.'}, status=401)
     comment = get_object_or_404(Comment, id=comment_id)
 
-    if comment.user != request.user:
+    if comment.user != user:
         return JsonResponse({'error': '권한이 없습니다.'}, status=403)
 
     comment.delete()
@@ -1027,11 +1051,14 @@ def delete_llm_comment(request, comment_id):
 
 
 # Story 좋아요 토글
-@login_required
+@csrf_exempt
 @require_POST
 def toggle_story_like(request, story_uuid):
+    user = _get_auth_user(request)
+    if not user:
+        return JsonResponse({'error': '로그인이 필요합니다.'}, status=401)
     story = get_object_or_404(Story, public_uuid=story_uuid)
-    like, created = StoryLike.objects.get_or_create(user=request.user, story=story)
+    like, created = StoryLike.objects.get_or_create(user=user, story=story)
 
     if not created:
         like.delete()
@@ -1044,11 +1071,14 @@ def toggle_story_like(request, story_uuid):
 
 
 # Story 북마크 토글
-@login_required
+@csrf_exempt
 @require_POST
 def toggle_story_bookmark(request, story_uuid):
+    user = _get_auth_user(request)
+    if not user:
+        return JsonResponse({'error': '로그인이 필요합니다.'}, status=401)
     story = get_object_or_404(Story, public_uuid=story_uuid)
-    bookmark, created = StoryBookmark.objects.get_or_create(user=request.user, story=story)
+    bookmark, created = StoryBookmark.objects.get_or_create(user=user, story=story)
 
     if not created:
         bookmark.delete()
@@ -1060,9 +1090,12 @@ def toggle_story_bookmark(request, story_uuid):
 
 
 # Story 댓글 작성
-@login_required
+@csrf_exempt
 @require_POST
 def add_story_comment(request, story_uuid):
+    user = _get_auth_user(request)
+    if not user:
+        return JsonResponse({'error': '로그인이 필요합니다.'}, status=401)
     story = get_object_or_404(Story, public_uuid=story_uuid)
 
     try:
@@ -1078,7 +1111,7 @@ def add_story_comment(request, story_uuid):
             parent_comment = StoryComment.objects.filter(id=parent_id, story=story).first()
 
         comment = StoryComment.objects.create(
-            user=request.user,
+            user=user,
             story=story,
             content=content,
             parent_comment=parent_comment
@@ -1089,7 +1122,7 @@ def add_story_comment(request, story_uuid):
             'comment': {
                 'id': comment.id,
                 'content': comment.content,
-                'username': request.user.nickname or request.user.username,
+                'username': user.nickname or user.username,
                 'created_at': comment.created_at.strftime('%Y.%m.%d %H:%M'),
                 'is_reply': parent_comment is not None,
             }
@@ -1099,12 +1132,15 @@ def add_story_comment(request, story_uuid):
 
 
 # Story 댓글 삭제
-@login_required
+@csrf_exempt
 @require_POST
 def delete_story_comment(request, comment_id):
+    user = _get_auth_user(request)
+    if not user:
+        return JsonResponse({'error': '로그인이 필요합니다.'}, status=401)
     comment = get_object_or_404(StoryComment, id=comment_id)
 
-    if comment.user != request.user:
+    if comment.user != user:
         return JsonResponse({'error': '권한이 없습니다.'}, status=403)
 
     comment.delete()

@@ -93,15 +93,18 @@ def public_user_profile(request, user_uuid):
     follower_count = Follow.objects.filter(following=target_user).count()
     following_count = Follow.objects.filter(follower=target_user).count()
 
-    # 로그인 유저 기준 정보
+    # 로그인 유저 기준 정보 (API key 또는 세션 인증)
     is_following = False
     is_own_profile = False
-    if request.user.is_authenticated:
+    current_user = getattr(request, 'api_user', None)
+    if current_user is None and hasattr(request, 'user') and request.user.is_authenticated:
+        current_user = request.user
+    if current_user:
         is_following = Follow.objects.filter(
-            follower=request.user,
+            follower=current_user,
             following=target_user
         ).exists()
-        is_own_profile = request.user == target_user
+        is_own_profile = current_user.pk == target_user.pk
 
     # ---------------------------
     # 응답 데이터 구성
@@ -119,6 +122,9 @@ def public_user_profile(request, user_uuid):
         'counts': {
             'followers': follower_count,
             'following': following_count,
+            'books': book_list.count(),
+            'stories': story_list.count(),
+            'snaps': snap_list.count(),
         },
 
         'relation': {
@@ -149,7 +155,9 @@ def public_user_profile(request, user_uuid):
                 'title': story.title,
                 'created_at': story.created_at.isoformat(),
                 'cover_image': request.build_absolute_uri(story.cover_image.url) if story.cover_image else None,
-
+                'story_desc_img': request.build_absolute_uri(story.story_desc_img.url) if story.story_desc_img else None,
+                'story_desc_video': request.build_absolute_uri(story.story_desc_video.url) if story.story_desc_video else None,
+                'characters_count': story.characters.count(),
             }
             for story in story_list
         ],
@@ -201,3 +209,38 @@ def public_user_profile(request, user_uuid):
     }
 
     return api_response(data)
+
+
+@csrf_exempt
+@require_api_key_secure
+def toggle_follow_api(request, user_uuid):
+    """앱용 팔로우/언팔로우 토글 API (UUID 기반)"""
+    if request.method != 'POST':
+        return api_response(error='POST 요청만 가능합니다.', status=405)
+
+    current_user = getattr(request, 'api_user', None)
+    if not current_user:
+        return api_response(error='로그인이 필요합니다.', status=401)
+
+    target_user = get_object_or_404(Users, public_uuid=user_uuid)
+
+    if current_user.pk == target_user.pk:
+        return api_response(error='자기 자신을 팔로우할 수 없습니다.', status=400)
+
+    follow, created = Follow.objects.get_or_create(
+        follower=current_user,
+        following=target_user
+    )
+
+    if not created:
+        follow.delete()
+        is_following = False
+    else:
+        is_following = True
+
+    follower_count = Follow.objects.filter(following=target_user).count()
+
+    return api_response({
+        'is_following': is_following,
+        'follower_count': follower_count,
+    })
