@@ -1028,7 +1028,7 @@ def api_genres_list(request):
 
     genres = Genres.objects.all()
     genres_data = [
-        {'id': g.id, 'name': g.name, 'description': ''}
+        {'id': g.id, 'name': g.name, 'description': '', "color": g.genres_color}
         for g in genres
     ]
     return api_response(genres_data)
