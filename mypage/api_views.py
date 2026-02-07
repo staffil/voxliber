@@ -73,7 +73,7 @@ def public_user_profile(request, user_uuid):
     # 책 / 스토리 / 스냅
     book_list = Books.objects.filter(user=target_user)
     story_list = Story.objects.filter(user=target_user)
-    snap_list = BookSnap.objects.filter(user=target_user).order_by('-created_at')
+    snap_list = BookSnap.objects.filter(user=target_user).select_related('book', 'story').order_by('-created_at')
 
     # 공개된 대화 (최근 20개)
     user_share_list = Conversation.objects.filter(
@@ -171,6 +171,8 @@ def public_user_profile(request, user_uuid):
                 'image': request.build_absolute_uri(snap.thumbnail.url) if snap.thumbnail else None,
                 'content': snap.snap_title,
                 'created_at': snap.created_at.isoformat(),
+                'linked_type': 'story' if snap.story_id else ('book' if snap.book_id else None),
+                'linked_id': str(snap.story.public_uuid) if snap.story_id else (str(snap.book.public_uuid) if snap.book_id else None),
             }
             for snap in snap_list
         ],
