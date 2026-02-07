@@ -1670,6 +1670,14 @@ def edit_snap(request, snap_uuid):
                 except Books.DoesNotExist:
                     pass
 
+        if not snap_title or not snap_description or not thumbnail_image:
+            context = {
+                "error": "제목, 설명, 썸네일 이미지는 필수입니다.",
+                "my_book_options": my_book_options,
+                "my_story_options": my_story_options,
+            }
+            return render(request, "book/snap/create_snap.html", context)
+
         if not snap_title or not snap_description:
             context = {
                 "error": "제목과 설명은 필수입니다.",
