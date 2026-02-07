@@ -32,7 +32,113 @@
 .content-avatar-img:hover {
     transform: scale(1.05); /* 살짝 확대 효과 */
 }
+/* --- 세밀한 반응형 에피소드 히어로 섹션 --- */
 
+.episode-hero {
+    position: relative;
+    width: 100%;
+    /* 기본 데스크톱 높이: 화면 높이의 50%를 넘지 않도록 설정 */
+    height: 500px;
+    max-height: 60vh; 
+    margin: 100px auto 50px;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    /* 부드러운 전환 효과 */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-image, .hero-image-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #1e293b;
+    /* 고해상도 이미지 대비 선명도 유지 */
+    image-rendering: auto;
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    /* 그라데이션을 세 단계로 나누어 텍스트 가독성 극대화 */
+    background: linear-gradient(
+        to top, 
+        rgba(15, 23, 42, 0.98) 0%, 
+        rgba(15, 23, 42, 0.6) 40%, 
+        rgba(15, 23, 42, 0) 80%
+    );
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 60px; /* 데스크톱에서는 넉넉하게 */
+    box-sizing: border-box;
+}
+
+/* --- 세부 반응형 브레이크포인트 --- */
+
+/* 1. 노트북 및 작은 모니터 (1024px 이하) */
+@media (max-width: 1024px) {
+    .episode-hero {
+        height: 420px;
+        margin-top: 80px;
+        border-radius: 24px;
+    }
+    .hero-overlay {
+        padding: 40px;
+    }
+}
+
+/* 2. 태블릿 (768px 이하) */
+@media (max-width: 768px) {
+    .episode-hero {
+        height: 380px;
+        margin-top: 60px;
+        /* 모바일 스타일 전환: 화면 끝까지 채우기 */
+        border-radius: 0; 
+        margin-left: -20px;  /* 부모 컨테이너 패딩이 20px일 경우 */
+        margin-right: -20px;
+        width: calc(100% + 40px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .hero-overlay {
+        padding: 30px 20px;
+        /* 태블릿 이하에서는 그라데이션을 조금 더 높게 올려 텍스트 가독성 보호 */
+        background: linear-gradient(
+            to top, 
+            rgba(15, 23, 42, 0.95) 0%, 
+            rgba(15, 23, 42, 0.7) 60%, 
+            rgba(15, 23, 42, 0.2) 100%
+        );
+    }
+}
+
+/* 3. 일반 스마트폰 (480px 이하) */
+@media (max-width: 480px) {
+    .episode-hero {
+        height: 320px;
+        margin-bottom: 30px;
+    }
+    .hero-overlay {
+        padding: 20px;
+    }
+}
+
+/* 4. 초소형 스마트폰 (320px 이하) */
+@media (max-width: 320px) {
+    .episode-hero {
+        height: 260px;
+    }
+    .hero-overlay {
+        padding: 15px;
+    }
+}
+
+/* 가로 모드(Landscape) 대응: 모바일에서 화면을 눕혔을 때 이미지가 너무 커지지 않게 */
+@media (max-height: 450px) and (orientation: landscape) {
+    .episode-hero {
+        height: 200px;
+    }
+}
 /* 기본 placeholder */
 .message-avatar-placeholder {
     font-size: 28px;

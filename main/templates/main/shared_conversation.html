@@ -9,6 +9,8 @@
 {% endblock %}
 
 {% block content %}
+<br><br><br>
+
 <div class="novel-container">
 
     <!-- 제목 -->
@@ -30,29 +32,26 @@
     {% for chapter in novel.chapters %}
     <section class="chapter">
 
-        <!-- 챕터별 이미지 -->
+        <!-- 챕터 이미지 및 텍스트 오버레이 -->
         {% if chapter.image and chapter.image.image %}
-        <div class="chapter-image">
-            <img
-                src="{{ chapter.image.image.url }}"
-                alt="{{ chapter.image.title|default:'챕터 이미지' }}"
-                loading="lazy"
-                onerror="this.parentElement.style.display='none';">
-            {% if chapter.image.title %}
-            <div class="chapter-image-title">{{ chapter.image.title }}</div>
-            {% endif %}
+        <div class="episode-image-wrapper">
+            <img src="{{ chapter.image.image.url }}" alt="{{ chapter.image.title|default:'챕터 이미지' }}" class="episode-image">
+            
+            <div class="episode-text-overlay">
+                <h2 class="chapter-title">
+                    {{ chapter.title }}
+                    {% if chapter.hp_range %}
+                    <span class="hp-range">
+                        HP {{ chapter.hp_range.0 }}{% if chapter.hp_range.1 %} ~ {{ chapter.hp_range.1 }}{% endif %}
+                    </span>
+                    {% endif %}
+                </h2>
+                {% if chapter.image.title %}
+                <p class="chapter-image-title">{{ chapter.image.title }}</p>
+                {% endif %}
+            </div>
         </div>
         {% endif %}
-
-        <!-- 챕터 제목 -->
-        <h2 class="chapter-title">
-            {{ chapter.title }}
-            {% if chapter.hp_range %}
-            <span class="hp-range">
-                HP {{ chapter.hp_range.0 }}{% if chapter.hp_range.1 %} ~ {{ chapter.hp_range.1 }}{% endif %}
-            </span>
-            {% endif %}
-        </h2>
 
         <!-- 대화 내용 -->
         <div class="chapter-content">

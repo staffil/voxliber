@@ -15,21 +15,25 @@
 {{ content.audio_timestamps|json_script:"audio-timestamps-data" }}
 <div class="content-detail-wrapper">
     <!-- 헤더 -->
-    <div class="content-header">
-        <div class="bread-crumb">
-            <a href="{% url 'main:main' %}">홈</a>
-            <span>›</span>
-            <a href="{% url 'book:book_detail' book.public_uuid %}">{{ book.name }}</a>
-            <span>›</span>
-            <span>{{ content.number }}화</span>
-        </div>
-
-        <h1 class="content-title">{{ content.number }}화. {{ content.title }}</h1>
-
-        <div class="content-meta">
-            <span>{{ book.user.nickname }}</span>
-            <span>•</span>
-            <span>{{ content.created_at|date:"Y년 m월 d일" }}</span>
+<div class="episode-hero">
+        {% if content.episode_image %}
+            <img src="{{ content.episode_image.url }}" alt="{{ content.title }}" class="hero-image">
+        {% else %}
+            <div class="hero-image-placeholder"></div>
+        {% endif %}
+        
+        <div class="hero-overlay">
+            <nav class="bread-crumb">
+                <a href="{% url 'main:main' %}">홈</a>
+                <span class="sep">/</span>
+                <a href="{% url 'book:book_detail' book.public_uuid %}">{{ book.name }}</a>
+            </nav>
+            <h1 class="content-title">{{ content.number }}화. {{ content.title }}</h1>
+            <div class="content-meta">
+                <span><i class="fas fa-user"></i> {{ book.user.nickname }}</span>
+                <span class="meta-sep">|</span>
+                <span><i class="fas fa-calendar-alt"></i> {{ content.created_at|date:"Y.m.d" }}</span>
+            </div>
         </div>
     </div>
 
@@ -145,11 +149,7 @@
 
     <!-- 본문 -->
 <div class="content-text-section" id="contentText">
-{% if content.episode_image %}
-    <div class="message-avatar">
-        <img class="content-avatar-img" src="{{ content.episode_image.url }}" alt="{{ content.name }}">
-    </div>
-{% endif %}
+
     {{ content.text|remove_brackets|linebreaks }}
 </div>
     <!-- 이전/다음 -->
