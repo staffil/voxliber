@@ -7,12 +7,25 @@ from book.api_utils import require_api_key, paginate, api_response, require_api_
 from rest_framework.decorators import api_view
 import json
 from django.utils import timezone
-from django.conf import settings
-
 from django.db.models import Prefetch
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from .models import Story
+
+
+def _get_request_user(request):
+    """API key 또는 세션에서 유저를 가져옴 (앱/웹 공통)"""
+    api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
+    if api_key:
+        try:
+            from book.models import APIKey
+            api_key_obj = APIKey.objects.select_related('user').get(key=api_key, is_active=True)
+            return api_key_obj.user
+        except Exception:
+            pass
+    if hasattr(request, 'user') and request.user.is_authenticated:
+        return request.user
+    return None
 
 @csrf_exempt
 @require_api_key_secure
@@ -472,14 +485,10 @@ def api_novel_result(request, conv_id):
     if request.method == "POST":
 
         authorized = False
+        request_user = _get_request_user(request)
 
-        # 1️⃣ 웹 로그인 사용자 (본인)
-        if request.user.is_authenticated and request.user == owner:
-            authorized = True
-
-        # 2️⃣ 앱 요청 (API KEY)
-        api_key = request.GET.get("api_key") or request.headers.get("X-API-Key")
-        if api_key == settings.API_KEY:
+        # 웹 또는 앱 사용자 (본인 확인)
+        if request_user and request_user == owner:
             authorized = True
 
         if not authorized:
@@ -507,20 +516,16 @@ def api_novel_result(request, conv_id):
     # GET : 대화 조회
     # =====================================================
 
-    # 비공개 대화 접근 제한 (API 키 또는 본인만 접근 가능)
+    # 비공개 대화 접근 제한 (본인만 접근 가능)
     if not conversation.is_public:
         authorized = False
+        request_user = _get_request_user(request)
 
-        # 1️⃣ 웹 로그인 사용자 (본인)
-        if request.user.is_authenticated and request.user == owner:
+        # 웹 또는 앱 사용자 (본인 확인)
+        if request_user and request_user == owner:
             authorized = True
 
-        # 2️⃣ 앱 요청 (API KEY)
-        api_key = request.GET.get("api_key") or request.headers.get("X-API-Key")
-        if api_key == settings.API_KEY:
-            authorized = True
-
-        # 3️⃣ owner가 None인 경우 (익명 대화) - 누구나 접근 가능
+        # owner가 None인 경우 (익명 대화) - 누구나 접근 가능
         if owner is None:
             authorized = True
 
@@ -637,13 +642,16 @@ def api_novel_result(request, conv_id):
 def api_chat_view(request, llm_uuid):
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
     conversation_id = request.GET.get('conversation_id')
-    
-    if request.user.is_authenticated:
+
+    # API key 또는 세션에서 유저 식별
+    user = _get_request_user(request)
+
+    if user:
         # 로그인 사용자는 기존 대화 가져오기 또는 새 대화 생성
         if conversation_id:
-            conversation = get_object_or_404(Conversation, id=conversation_id, llm=llm, user=request.user)
+            conversation = get_object_or_404(Conversation, id=conversation_id, llm=llm, user=user)
         else:
-            conversation, _ = Conversation.objects.get_or_create(user=request.user, llm=llm)
+            conversation, _ = Conversation.objects.get_or_create(user=user, llm=llm)
     else:
         # 비로그인 사용자는 conversation_id 없으면 접근 금지
         if not conversation_id:
@@ -716,6 +724,9 @@ def api_chat_send(request, llm_uuid):
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
     print("🔥 api_chat_send HIT")
 
+    # API key 또는 세션에서 유저 식별
+    user = _get_request_user(request)
+
     try:
         data = json.loads(request.body)
         user_text = data.get('message', '').strip()
@@ -731,17 +742,25 @@ def api_chat_send(request, llm_uuid):
             except Conversation.DoesNotExist:
                 # conversation_id가 유효하지 않으면 새로 생성
                 conversation = Conversation.objects.create(
-                    user=None,
+                    user=user,
                     llm=llm,
                     created_at=timezone.now()
                 )
         else:
-            # 새 대화 생성
-            conversation = Conversation.objects.create(
-                user=None,
-                llm=llm,
-                created_at=timezone.now()
-            )
+            if user:
+                # 로그인 유저: 기존 대화 가져오기 또는 새로 생성
+                conversation, _ = Conversation.objects.get_or_create(
+                    user=user,
+                    llm=llm,
+                    defaults={'created_at': timezone.now()}
+                )
+            else:
+                # 비로그인: 새 대화 생성
+                conversation = Conversation.objects.create(
+                    user=None,
+                    llm=llm,
+                    created_at=timezone.now()
+                )
 
         # 대화 기록 가져오기 (최근 10개)
         chat_history = list(conversation.messages.order_by('-created_at')[:10].values('role', 'content'))
@@ -832,9 +851,12 @@ def api_chat_reset(request, llm_uuid):
     """
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
 
+    # API key 또는 세션에서 유저 식별
+    user = _get_request_user(request)
+
     # 새 대화 생성
     conversation = Conversation.objects.create(
-        user=None,
+        user=user,
         llm=llm,
         created_at=timezone.now()
     )
