@@ -528,8 +528,8 @@ async function sendTextMessage() {
 // ====================================
 async function generateTTS(btn, msgId) {
     const msgDiv = btn.closest('.message');
-    const textEl = msgDiv.querySelector('.message-bubble p');
-    const text = textEl ? textEl.innerText : '';
+    const bubble = msgDiv.querySelector('.message-bubble');
+    const text = bubble ? bubble.innerText.trim() : '';
 
     if (!text) return;
 

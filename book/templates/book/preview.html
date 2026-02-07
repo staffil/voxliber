@@ -364,15 +364,15 @@ async function publishEpisode() {
         document.querySelector('.loading-text').textContent = '에피소드 발행 중...';
         document.querySelector('.loading-subtext').textContent = '잠시만 기다려주세요.';
 
-        const draftKey = `draft_${bookId}`;
         const transaction = db.transaction(['drafts'], 'readonly');
         const store = transaction.objectStore('drafts');
-        const request = store.get(draftKey);
+        const request = store.get(bookId);
 
         request.onsuccess = async () => {
             let draftData = request.result || { episodeTitle:'제목 없음', pages:[], mergedAudioBlob:null, backgroundTracks:[], selectedVoiceId:'', selectedLanguage:'ko', episodeImageBlob:null, episodeImageName:'' };
             const formData = new FormData();
 
+            formData.append('public_uuid', bookId);
             formData.append('book_id', bookId);
             formData.append('content_number', {{ latest_episode_number|default:0 }} + 1);
             formData.append('content_title', draftData.episodeTitle);
@@ -405,12 +405,12 @@ async function publishEpisode() {
                 } else formData.append('background_tracks_count',0);
             }
 
-            const response = await fetch('/book/book_serialization/', { method:'POST', headers:{'X-CSRFToken':getCookie('csrftoken')}, body:formData });
+            const response = await fetch('/book/book/serialization/', { method:'POST', headers:{'X-CSRFToken':getCookie('csrftoken')}, body:formData });
             const data = await response.json();
 
             if (data.success) {
                 const deleteTx = db.transaction(['drafts'],'readwrite');
-                deleteTx.objectStore('drafts').delete(draftKey);
+                deleteTx.objectStore('drafts').delete(bookId);
                 alert('✅ 에피소드 발행 성공!');
                 window.location.href = data.redirect_url || `/book/detail/${bookId}/`;
             } else {
