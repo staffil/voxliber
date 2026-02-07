@@ -217,7 +217,7 @@ def public_llm_detail(request, llm_uuid):
     ]
 
     # 최신 공개 대화(conversation) 가져오기
-    latest_shared = Conversation.objects.filter(llm=llm, is_public=True).order_by('-shared_at').first()
+    latest_shared = ConversationMessage.objects.filter(llm=llm, is_public=True).order_by('-shared_at').first()
     conv_id = latest_shared.id if latest_shared else None
 
     # 메인 LLM 데이터
