@@ -360,7 +360,7 @@ def native_oauth_callback(request, provider):
 
         # 응답 데이터 구성
         user_data = {
-            "id": user.user_id,
+            "id":str(user.public_uuid),
             "username": user.username,
             "nickname": getattr(user, "nickname", ""),
             "email": user.email,
