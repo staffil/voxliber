@@ -1585,8 +1585,7 @@ def create_book_snap(request):
             book=connected_book,           # 연결된 Books 객체 (있을 때만)
             book_link=final_content_url,   # 실제 사용된 최종 URL
             adult_choice=is_adult,
-            # story_link 필드가 모델에 있다면 아래처럼 추가 가능
-            # story_link = selected_story_url or custom_url if not connected_book else ""
+            story_link = selected_story_url
         )
 
         return redirect("book:my_book_snap_list")
