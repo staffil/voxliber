@@ -1558,6 +1558,14 @@ def create_book_snap(request):
                 except Books.DoesNotExist:
                     pass
 
+        story_match = re.search(r'/character/story/intro/([a-f0-9\-]+)/?$', final_content_url)
+        if story_match:
+            uuid_str = story_match.group(1)
+            try:
+                connected_story = Story.objects.get(public_uuid=uuid_str)
+            except Story.DoesNotExist:
+                pass
+
         # 필수값 체크
         if not snap_title or not snap_description or not thumbnail_image:
             context = {
