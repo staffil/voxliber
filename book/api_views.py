@@ -1118,6 +1118,14 @@ def api_snaps_list(request):
 
     snaps_data = []
     for snap in snaps_page:
+        # book_id 추출: DB에 없으면 book_link에서 UUID 추출
+        if snap.book:
+            book_id = str(snap.book.public_uuid)
+        elif snap.book_link:
+            book_id = snap.book_link.rstrip('/').split('/')[-1]
+        else:
+            book_id = None
+
         snaps_data.append({
             'id': str(snap.public_uuid),
             'snap_title': snap.snap_title,
@@ -1128,18 +1136,17 @@ def api_snaps_list(request):
             'shares': snap.shares,
             'comments_count': snap.comments.count(),
             'allow_comments': snap.allow_comments,
-            # 책/스토리 관련 UUID
-            'book_id': str(snap.book.public_uuid) if snap.book else None,
-            'book_public_uuid': str(snap.book.public_uuid) if snap.book else None,
+            'book_id': book_id,
+            'book_public_uuid': book_id,
             'story_id': str(snap.story.public_uuid) if snap.story else None,
-            'linked_type': 'story' if snap.story_id else ('book' if snap.book_id else None),
+            'linked_type': 'story' if snap.story else ('book' if book_id else None),
             'book_link': snap.book_link,
             'story_link': snap.story_link,
             'book_comment': snap.book_comment,
             'duration': snap.duration,
             'created_at': snap.created_at.isoformat(),
             'user': {
-                'id': str(snap.user.public_uuid) if snap.user else None,  # 유저 UUID
+                'id': str(snap.user.public_uuid) if snap.user else None,
                 'nickname': snap.user.nickname if snap.user else 'Unknown',
                 'profile_img': request.build_absolute_uri(snap.user.user_img.url) if snap.user and snap.user.user_img else None,
             } if snap.user else None,
