@@ -382,14 +382,6 @@ body.light-mode .hero-subtitle {
    Menu Grid - 이미지 사용 버전 (원래 80px 기준, 더 작게 반응형)
    ======================================== */
 
-/* 공통 메뉴 그리드 */
-.menu-grid {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 36px;                    /* 데스크탑 기본 간격 */
-  padding: 48px 0;
-}
 
 /* 메뉴 아이콘 (Circle) - img 사용에 최적화 */
 .menu-circle {
@@ -464,10 +456,10 @@ body.light-mode .hero-subtitle {
   }
 }
 
-@media (max-width: 992px) {
+@media (max-width: 1000px) {
   .menu-grid {
-    gap: 26px;
-    padding: 40px 0;
+    display: none;
+
   }
   .menu-circle a {
     width: 68px;
