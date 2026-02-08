@@ -1549,14 +1549,24 @@ def api_search(request):
                                 thumbnail = request.build_absolute_uri(snap.thumbnail.url)
                         except:
                             thumbnail = None
+
                         results.append({
                             'type': 'snap',
                             'id': str(snap.public_uuid),
-                            'name': snap.snap_title,
+                            'name': snap.snap_title,                         # snap_title → name
                             'description': snap.book_comment[:100] if snap.book_comment else '',
                             'author': snap.user.nickname if snap.user else '알 수 없음',
                             'author_id': str(snap.user.public_uuid) if snap.user else None,
-                            'llm_image': thumbnail,
+                            'llm_image': thumbnail,                          # thumbnail → llm_image
+                            'book_title': snap.book.name if snap.book else None,
+                            'book_id': str(snap.book.public_uuid) if snap.book else None,
+                            'story_title': snap.story.title if snap.story else None,
+                            'story_id': str(snap.story.public_uuid) if snap.story else None,
+                            'views': snap.views,
+                            'shares': snap.shares,
+                            'allow_comments': snap.allow_comments,
+                            'adult_choice': snap.adult_choice,
+                            'created_at': snap.created_at.isoformat(),
                         })
                         counts['snap'] += 1
 
@@ -1624,7 +1634,6 @@ def api_search(request):
                 counts['story'] += 1
 
     # ========== Snap 검색 (기존 LLM 자리) ==========
-    if filter_type in ['all', 'llm']:
         snaps = BookSnap.objects.filter(
             Q(snap_title__icontains=query) |
             Q(book_comment__icontains=query) |
@@ -1641,14 +1650,15 @@ def api_search(request):
                         thumbnail = request.build_absolute_uri(snap.thumbnail.url)
                 except:
                     thumbnail = None
+
                 results.append({
                     'type': 'snap',
                     'id': str(snap.public_uuid),
-                    'name': snap.snap_title,
+                    'name': snap.snap_title,                         # 이름 통일
                     'description': snap.book_comment[:100] if snap.book_comment else '',
                     'author': snap.user.nickname if snap.user else '알 수 없음',
                     'author_id': str(snap.user.public_uuid) if snap.user else None,
-                    'llm_image': thumbnail,
+                    'llm_image': thumbnail,                          # 이름 통일
                     'book_title': snap.book.name if snap.book else None,
                     'book_id': str(snap.book.public_uuid) if snap.book else None,
                     'story_title': snap.story.title if snap.story else None,
