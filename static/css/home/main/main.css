@@ -291,6 +291,7 @@ body.light-mode .hero-subtitle {
   inset: 0;
   z-index: 2;
 }
+
 .grid-preview,
 .genre-preview {
   position: absolute;
@@ -370,6 +371,7 @@ body.light-mode .hero-subtitle {
   .genre-book-card {
     min-width: 90px;
   }
+
   .book-cover-wrapper,
   .genre-book-cover {
     width: 90px;
@@ -494,8 +496,8 @@ body.light-mode .hero-subtitle {
 
 @media (max-width: 480px) {
   .menu-grid {
-    gap: 18px;
-    padding: 32px 0;
+    display: none;
+
   }
   .menu-circle a {
     width: 56px;                 /* 더 작게 – 이미지 80px → 56px */
@@ -509,14 +511,8 @@ body.light-mode .hero-subtitle {
 
 @media (max-width: 360px) {
   .menu-grid {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 14px;
-    padding: 0;                /* 🔥 padding 제거 */
-    height: 100px;
-    width: 280px;
-    overflow-x: auto;
-    overflow-y: hidden;
+    display: none;
+
   }
 
 
