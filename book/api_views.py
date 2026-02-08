@@ -808,7 +808,7 @@ def _serialize_book(book, request):
         'created_at': book.created_at.isoformat() if book.created_at else None,
         'author': author_data,
         'genres': [
-            {'id': g.id, 'name': g.name, 'description': ''}
+            {'id': g.id, 'name': g.name, 'description': '', 'color': getattr(g, 'genres_color', None)}
             for g in book.genres.all()
         ],
         'tags': [

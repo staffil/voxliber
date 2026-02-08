@@ -53,7 +53,7 @@ def public_story_list(request):
             'cover_image': request.build_absolute_uri(story.cover_image.url) if story.cover_image else None,
             'story_desc_video': request.build_absolute_uri(story.story_desc_video.url) if story.story_desc_video else None,
             'story_desc_img': request.build_absolute_uri(story.story_desc_img.url) if story.story_desc_img else None,
-            'genres': [g.name for g in story.genres.all()],
+            'genres': [{'name': g.name, 'color': getattr(g, 'genres_color', None)} for g in story.genres.all()],
             'tags': [t.name for t in story.tags.all()],
             'user_id': str(story.user.public_uuid),  # 작성자 정보
             'username': story.user.username,         # 작성자 정보
@@ -178,7 +178,7 @@ def public_story_detail(request, story_uuid):
         'story_desc_video': request.build_absolute_uri(story.story_desc_video.url) if story.story_desc_video else None,
         'story_desc_img': request.build_absolute_uri(story.story_desc_img.url) if story.story_desc_img else None,
         'created_at': story.created_at.isoformat(),
-        'genres': [g.name for g in story.genres.all()],
+        'genres': [{'name': g.name, 'color': getattr(g, 'genres_color', None)} for g in story.genres.all()],
         'tags': [t.name for t in story.tags.all()],
         'adult_choice': story.adult_choice,
         'username': story.user.nickname,
