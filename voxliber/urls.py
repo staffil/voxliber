@@ -81,6 +81,10 @@ urlpatterns = [
     path("api/v1/upload-episode-image/", voxliber_api.api_upload_episode_image, name="api_upload_episode_image"),
     path("api/v1/upload-image-url/", voxliber_api.api_upload_image_from_url, name="api_upload_image_url"),
 
+    # 태그 & 메타데이터
+    path("api/v1/tags/", voxliber_api.api_tag_list, name="api_tag_list"),
+    path("api/v1/update-book-metadata/", voxliber_api.api_update_book_metadata, name="api_update_book_metadata"),
+
     # Deep Link Verification Files
     path('.well-known/apple-app-site-association',
          lambda request: serve_well_known(request, 'apple-app-site-association')),

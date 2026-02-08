@@ -1153,3 +1153,100 @@ def api_upload_image_from_url(request):
         print(f"❌ [API] 이미지 URL 업로드 오류: {e}")
         traceback.print_exc()
         return api_response(error=f"이미지 업로드 중 오류: {str(e)}", status=500)
+
+
+# ==================== 18. 태그 목록 조회 API ====================
+
+@require_api_key_secure
+@require_http_methods(["GET"])
+def api_tag_list(request):
+    """
+    태그 목록 조회
+
+    GET /api/v1/tags/
+    Headers: X-API-Key: <your_api_key>
+    """
+    tags = Tags.objects.all().order_by('name')
+    tag_data = [{"id": t.id, "name": t.name, "slug": t.slug} for t in tags]
+
+    return api_response(data={
+        "tags": tag_data,
+        "total": len(tag_data),
+    })
+
+
+# ==================== 19. 책 장르/태그 업데이트 API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_update_book_metadata(request):
+    """
+    책의 장르/태그를 업데이트하는 API (여러 개 선택 가능)
+
+    POST /api/v1/update-book-metadata/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "book_uuid": "xxxx-xxxx-xxxx",
+        "genre_ids": [1, 3, 5],
+        "tag_ids": [2, 7, 12],
+        "mode": "set"  // "set"(교체) 또는 "add"(추가). 기본값: "set"
+    }
+
+    Returns:
+    {
+        "success": true,
+        "data": {
+            "book_uuid": "xxxx",
+            "genres": [{"id": 1, "name": "판타지"}, ...],
+            "tags": [{"id": 2, "name": "이세계"}, ...],
+            "message": "장르/태그가 업데이트되었습니다."
+        }
+    }
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    book_uuid = data.get("book_uuid", "").strip()
+    genre_ids = data.get("genre_ids")
+    tag_ids = data.get("tag_ids")
+    mode = data.get("mode", "set")
+
+    if not book_uuid:
+        return api_response(error="book_uuid는 필수입니다.", status=400)
+
+    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user).first()
+    if not book:
+        return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
+
+    # 장르 업데이트
+    if genre_ids is not None:
+        genres = Genres.objects.filter(id__in=genre_ids)
+        if mode == "add":
+            book.genres.add(*genres)
+        else:
+            book.genres.set(genres)
+
+    # 태그 업데이트
+    if tag_ids is not None:
+        tags = Tags.objects.filter(id__in=tag_ids)
+        if mode == "add":
+            book.tags.add(*tags)
+        else:
+            book.tags.set(tags)
+
+    # 현재 설정된 장르/태그 반환
+    current_genres = [{"id": g.id, "name": g.name} for g in book.genres.all()]
+    current_tags = [{"id": t.id, "name": t.name} for t in book.tags.all()]
+
+    print(f"📝 [API] 책 메타데이터 업데이트: {book.name} - 장르 {len(current_genres)}개, 태그 {len(current_tags)}개")
+
+    return api_response(data={
+        "book_uuid": str(book.public_uuid),
+        "title": book.name,
+        "genres": current_genres,
+        "tags": current_tags,
+        "message": "장르/태그가 업데이트되었습니다."
+    })
