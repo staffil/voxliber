@@ -262,6 +262,9 @@ def public_llm_detail(request, llm_uuid):
         # 핵심: 최신 공개 대화 ID
         'conv_id': conv_id,
 
+        # 성인 콘텐츠 여부
+        'adult_choice': llm.story.adult_choice if llm.story else False,
+
         # 같은 스토리의 다른 LLM 목록
         'other_llms': other_llms_data,
     }

@@ -160,6 +160,8 @@ def _oauth_callback(request, provider, profile_json, uid_key, email_key):
             "email": user.email,
             "profile_img": user.user_img.url if user.user_img else None,
             "is_profile_completed": user.is_profile_completed,
+            "birthdate": str(user.birthdate) if user.birthdate else None,
+            "is_adult": user.is_adult(),
         }
         user_json = quote(json.dumps(user_data))
         state = "signup_required" if not user.is_profile_completed else "signup_complete"
@@ -366,6 +368,8 @@ def native_oauth_callback(request, provider):
             "email": user.email,
             "profile_img": user.user_img.url if user.user_img else None,
             "is_profile_completed": user.is_profile_completed,
+            "birthdate": str(user.birthdate) if user.birthdate else None,
+            "is_adult": user.is_adult(),
         }
 
         state = "signup_required" if not user.is_profile_completed else "signup_complete"

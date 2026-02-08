@@ -83,7 +83,8 @@ def api_books_list(request):
             'tags': [
                 {'id': str(t.id), 'name': t.name}
                 for t in book.tags.all()
-            ]
+            ],
+            'adult_choice': book.adult_choice,
         })
 
     return api_response({
@@ -130,6 +131,7 @@ def api_book_detail(request, book_uuid):
         'total_duration': book.get_total_duration_formatted(),
         'total_duration_seconds': book.get_total_duration_seconds(),
         'episode_interval_weeks': book.episode_interval_weeks,
+        'adult_choice': book.adult_choice,
         'created_at': book.created_at.isoformat(),
         'author': {
             'id': str(book.user.public_uuid),  # UUID
@@ -569,7 +571,9 @@ def api_login(request):
                 'nickname': user.nickname,
                 'first_name': user.first_name if hasattr(user, 'first_name') else None,
                 'last_name': user.last_name if hasattr(user, 'last_name') else None,
-                'profile_img': profile_image_url
+                'profile_img': profile_image_url,
+                'birthdate': str(user.birthdate) if user.birthdate else None,
+                'is_adult': user.is_adult(),
             },
             'api_key': api_key_obj.key  # api_key 필드 (선택)
         })
@@ -1584,7 +1588,8 @@ def api_search(request):
                     'author_id': str(book.user.public_uuid) if book.user else None,
                     'cover_image': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
                     'genre': genre_names if genre_names else '기타',
-                    'book_score': float(book.book_score) if book.book_score else 0
+                    'book_score': float(book.book_score) if book.book_score else 0,
+                    'adult_choice': book.adult_choice,
                 })
                 counts['book'] += 1
 
@@ -1619,7 +1624,8 @@ def api_search(request):
                     'author_id': str(story.user.public_uuid) if story.user else None,
                     'cover_image': story_image,
                     'genre': genre_names if genre_names else 'AI 스토리',
-                    'character_count': story.characters.count()
+                    'character_count': story.characters.count(),
+                    'adult_choice': story.adult_choice,
                 })
                 counts['story'] += 1
 

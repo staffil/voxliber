@@ -46,6 +46,7 @@ def api_user_info(request):
             "follow_count": user.follow_count,
             "status": user.status,
             "oauth_provider": user.oauth_provider,
+            "is_adult": user.is_adult(),
             "created_at": user.created_at.isoformat(),
         })
 
@@ -145,6 +146,7 @@ def public_user_profile(request, user_uuid):
                 'title': book.name,
                 'description': book.description,
                 'cover_image': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
+                'adult_choice': book.adult_choice,
                 'created_at': book.created_at.isoformat(),
             }
             for book in book_list
@@ -162,6 +164,7 @@ def public_user_profile(request, user_uuid):
                 'story_desc_img': request.build_absolute_uri(story.story_desc_img.url) if story.story_desc_img else None,
                 'story_desc_video': request.build_absolute_uri(story.story_desc_video.url) if story.story_desc_video else None,
                 'characters_count': story.characters.count(),
+                'adult_choice': story.adult_choice,
             }
             for story in story_list
         ],
