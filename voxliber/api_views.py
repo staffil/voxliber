@@ -15,7 +15,7 @@ from django.core.files.base import ContentFile
 
 from book.models import (
     Books, Content, Genres, Tags, VoiceList, VoiceType,
-    SoundEffectLibrary, BackgroundMusicLibrary,
+    SoundEffectLibrary, BackgroundMusicLibrary, BookSnap,
 )
 from book.api_utils import require_api_key_secure, api_response
 from book.utils import generate_tts, merge_audio_files, sound_effect, background_music, mix_audio_with_background
@@ -1249,4 +1249,66 @@ def api_update_book_metadata(request):
         "genres": current_genres,
         "tags": current_tags,
         "message": "장르/태그가 업데이트되었습니다."
+    })
+
+
+# ==================== 20. 스냅 생성 API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_create_snap(request):
+    """
+    스냅(짧은 영상) 생성 API
+    - snap_title: 제목 (필수)
+    - snap_video: 동영상 파일 (필수)
+    - thumbnail: 썸네일 이미지 (선택)
+    - book_uuid: 연결할 책 UUID (선택)
+    - book_comment: 설명 (선택)
+    """
+    snap_title = request.POST.get("snap_title", "").strip()
+    book_uuid = request.POST.get("book_uuid", "").strip()
+    book_comment = request.POST.get("book_comment", "").strip()
+    snap_video = request.FILES.get("snap_video")
+    thumbnail = request.FILES.get("thumbnail")
+
+    if not snap_title:
+        return api_response(error="snap_title은 필수입니다.", status=400)
+
+    if not snap_video and not thumbnail:
+        return api_response(error="snap_video 또는 thumbnail 파일이 필요합니다.", status=400)
+
+    # 책 연결
+    connected_book = None
+    book_link = ""
+    if book_uuid:
+        try:
+            connected_book = Books.objects.get(public_uuid=book_uuid)
+            book_link = f"/book/detail/{connected_book.public_uuid}/"
+        except Books.DoesNotExist:
+            return api_response(error="해당 UUID의 책을 찾을 수 없습니다.", status=404)
+
+    snap = BookSnap(
+        snap_title=snap_title,
+        book=connected_book,
+        book_link=book_link,
+        book_comment=book_comment,
+        allow_comments=True,
+    )
+
+    if snap_video:
+        snap.snap_video = snap_video
+    if thumbnail:
+        snap.thumbnail = thumbnail
+
+    snap.save()
+
+    print(f"📸 [API] 스냅 생성: {snap_title} (UUID: {snap.public_uuid})")
+
+    return api_response(data={
+        "snap_uuid": str(snap.public_uuid),
+        "snap_title": snap.snap_title,
+        "snap_video": snap.snap_video.url if snap.snap_video else None,
+        "thumbnail": snap.thumbnail.url if snap.thumbnail else None,
+        "book_uuid": str(connected_book.public_uuid) if connected_book else None,
+        "message": "스냅이 생성되었습니다."
     })

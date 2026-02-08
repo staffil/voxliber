@@ -85,6 +85,9 @@ urlpatterns = [
     path("api/v1/tags/", voxliber_api.api_tag_list, name="api_tag_list"),
     path("api/v1/update-book-metadata/", voxliber_api.api_update_book_metadata, name="api_update_book_metadata"),
 
+    # 스냅
+    path("api/v1/create-snap/", voxliber_api.api_create_snap, name="api_create_snap"),
+
     # Deep Link Verification Files
     path('.well-known/apple-app-site-association',
          lambda request: serve_well_known(request, 'apple-app-site-association')),
