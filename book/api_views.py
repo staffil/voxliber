@@ -1464,7 +1464,7 @@ def api_search(request):
     # 이미 추가된 ID 추적 (중복 방지)
     added_book_ids = set()
     added_story_ids = set()
-    added_llm_ids = set()
+    added_snap_ids = set()
     added_user_ids = set()
 
     # ========== 유저 검색 (유저 + 유저의 콘텐츠) ==========
@@ -1539,31 +1539,28 @@ def api_search(request):
                         })
                         counts['story'] += 1
 
-                # 유저의 LLM도 추가
-                user_llms = LLM.objects.filter(user=user, is_public=True).select_related('user', 'story')[:10]
-                for llm in user_llms:
-                    if str(llm.public_uuid) not in added_llm_ids:
-                        added_llm_ids.add(str(llm.public_uuid))
-                        llm_image = None
+                # 유저의 snap도 추가
+                user_snap = BookSnap.objects.filter(user=user).select_related('user', 'story', 'book')[:10]
+                for snap in user_snap:
+                    if str(snap.public_uuid) not in added_snap_ids:
+                        added_snap_ids.add(str(snap.public_uuid))
+                        thumbnail = None
                         try:
-                            if llm.llm_image:
-                                llm_image = request.build_absolute_uri(llm.llm_image.url)
+                            if snap.thumbnail:
+                                thumbnail = request.build_absolute_uri(snap.thumbnail.url)
                         except:
-                            llm_image = None
+                            thumbnail = None
                         results.append({
-                            'type': 'llm',
-                            'id': str(llm.public_uuid),
-                            'name': llm.name,
-                            'title': llm.title or '',
-                            'description': llm.description[:100] if llm.description else '',
-                            'author': llm.user.nickname if llm.user else '알 수 없음',
-                            'author_id': str(llm.user.public_uuid) if llm.user else None,
-                            'llm_image': llm_image,
-                            'story_title': llm.story.title if llm.story else None,
-                            'story_id': str(llm.story.public_uuid) if llm.story else None,
-                            'like_count': llm.llm_like_count or 0
+                            'type': 'snap',
+                            'id': str(snap.public_uuid),
+                            'name': snap.snap_title,
+                            'title': snap.title or '',
+                            'description': snap.book_comment[:100] if snap.book_comment else '',
+                            'author': snap.user.nickname if llm.user else '알 수 없음',
+                            'author_id': str(snap.user.public_uuid) if snap.user else None,
+                            'llm_image': thumbnail,
                         })
-                        counts['llm'] += 1
+                        counts['snap'] += 1
 
     # ========== 작품 검색 (제목, 설명, 작가, 태그) ==========
     if filter_type in ['all', 'book']:
