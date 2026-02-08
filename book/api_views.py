@@ -1430,28 +1430,22 @@ def api_book_snippet_main(request):
             }
         })
     return JsonResponse({"snippet":snippet_list })
-
-
 # ==================== 🔍 통합 검색 API (웹용 + 앱용) ====================
 
-from django.db.models import Q, Count
+from django.db.models import Q
 from django.http import JsonResponse
 from register.models import Users
-from book.models import Books, Tags, BookSnap
+from book.models import Books, BookSnap
+from character.models import Story  # Snap 대체 LLM
 
 def api_search(request):
     """
     통합 검색 API - 작품, 스토리, Snap, 유저, 태그 검색
 
-    - 유저 검색 시: 해당 유저의 책/스토리/Snap도 함께 반환
-    - 태그 검색 시: 해당 태그가 붙은 모든 책/스토리 반환
-
     Query Parameters:
         - q: 검색어 (필수)
-        - filter: 검색 필터 - 'all', 'book', 'story', 'llm' (Snap), 'user' (기본: 'all')
+        - filter: 검색 필터 - 'all', 'book', 'story', 'snap', 'user' (기본: 'all')
     """
-    from character.models import Story  # 기존 LLM은 Snap으로 대체
-
     query = request.GET.get('q', '').strip()
     filter_type = request.GET.get('filter', 'all')
 
@@ -1461,13 +1455,12 @@ def api_search(request):
     results = []
     counts = {'book': 0, 'story': 0, 'snap': 0, 'user': 0}
 
-    # 이미 추가된 ID 추적 (중복 방지)
     added_book_ids = set()
     added_story_ids = set()
     added_snap_ids = set()
     added_user_ids = set()
 
-    # ========== 유저 검색 (유저 + 유저의 콘텐츠) ==========
+    # ========== 유저 검색 ========== 
     if filter_type in ['all', 'user']:
         matched_users = Users.objects.filter(
             Q(nickname__icontains=query) |
@@ -1493,13 +1486,13 @@ def api_search(request):
                 })
                 counts['user'] += 1
 
-            # 유저의 책
+            # 유저 콘텐츠 추가
             if filter_type in ['all', 'user']:
-                user_books = Books.objects.filter(user=user).select_related('user').prefetch_related('genres')[:10]
-                for book in user_books:
+                # 유저 책
+                for book in Books.objects.filter(user=user).select_related('user').prefetch_related('genres')[:10]:
                     if str(book.public_uuid) not in added_book_ids:
                         added_book_ids.add(str(book.public_uuid))
-                        genre_names = ', '.join([g.name for g in book.genres.all()[:2]])
+                        genres = ', '.join([g.name for g in book.genres.all()[:2]]) or '기타'
                         results.append({
                             'type': 'book',
                             'id': str(book.public_uuid),
@@ -1508,23 +1501,17 @@ def api_search(request):
                             'author': book.user.nickname if book.user else '알 수 없음',
                             'author_id': str(book.user.public_uuid) if book.user else None,
                             'cover_image': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
-                            'genre': genre_names if genre_names else '기타',
+                            'genre': genres,
                             'book_score': float(book.book_score) if book.book_score else 0
                         })
                         counts['book'] += 1
 
-                # 유저의 스토리
-                user_stories = Story.objects.filter(user=user, is_public=True).select_related('user').prefetch_related('genres', 'characters')[:10]
-                for story in user_stories:
+                # 유저 스토리
+                for story in Story.objects.filter(user=user, is_public=True).select_related('user').prefetch_related('genres', 'characters')[:10]:
                     if str(story.public_uuid) not in added_story_ids:
                         added_story_ids.add(str(story.public_uuid))
-                        genre_names = ', '.join([g.name for g in story.genres.all()[:2]])
-                        story_image = None
-                        try:
-                            if story.cover_image:
-                                story_image = request.build_absolute_uri(story.cover_image.url)
-                        except:
-                            story_image = None
+                        genres = ', '.join([g.name for g in story.genres.all()[:2]]) or 'AI 스토리'
+                        image = request.build_absolute_uri(story.cover_image.url) if getattr(story, 'cover_image', None) else None
                         results.append({
                             'type': 'story',
                             'id': str(story.public_uuid),
@@ -1532,65 +1519,55 @@ def api_search(request):
                             'description': story.description[:100] if story.description else '',
                             'author': story.user.nickname if story.user else '알 수 없음',
                             'author_id': str(story.user.public_uuid) if story.user else None,
-                            'cover_image': story_image,
-                            'genre': genre_names if genre_names else 'AI 스토리',
+                            'cover_image': image,
+                            'genre': genres,
                             'character_count': story.characters.count()
                         })
                         counts['story'] += 1
 
-                # 유저의 Snap
-                user_snaps = BookSnap.objects.filter(user=user).select_related('user', 'story', 'book')[:10]
-                for snap in user_snaps:
+                # 유저 Snap
+                for snap in BookSnap.objects.filter(user=user).select_related('user', 'story', 'book')[:10]:
                     if str(snap.public_uuid) not in added_snap_ids:
                         added_snap_ids.add(str(snap.public_uuid))
-                        thumbnail = None
-                        try:
-                            if snap.thumbnail:
-                                thumbnail = request.build_absolute_uri(snap.thumbnail.url)
-                        except:
-                            thumbnail = None
-
+                        thumb = request.build_absolute_uri(snap.thumbnail.url) if getattr(snap, 'thumbnail', None) else None
+                        comments_count = snap.comments.count() if hasattr(snap, 'comments') else 0
                         results.append({
                             'type': 'snap',
                             'id': str(snap.public_uuid),
-                            'snap_title': snap.snap_title or snap.name,        # Flutter 모델 그대로
+                            'snapTitle': snap.snap_title or snap.name,
                             'snap_video': request.build_absolute_uri(snap.snap_video.url) if snap.snap_video else None,
-                            'thumbnail': thumbnail,                            # llm_image → thumbnail
-                            'likes_count': snap.likes_count if hasattr(snap, 'likes_count') else 0,
+                            'thumbnail': thumb,
+                            'likesCount': getattr(snap, 'likes_count', 0),
                             'views': snap.views,
                             'shares': snap.shares,
-                            'comments_count': snap.comments.count() if hasattr(snap, 'comments') else 0,
-                            'allow_comments': snap.allow_comments,
-                            'book_id': str(snap.book.public_uuid) if snap.book else None,
-                            'story_id': str(snap.story.public_uuid) if snap.story else None,
-                            'linked_type': 'book' if snap.book else 'story' if snap.story else None,
-                            'book_link': str(snap.book.public_uuid) if snap.book else None,
-                            'story_link': str(snap.story.public_uuid) if snap.story else None,
-                            'book_comment': snap.book_comment,
+                            'commentsCount': comments_count,
+                            'allowComments': snap.allow_comments,
+                            'bookId': str(snap.book.public_uuid) if snap.book else None,
+                            'storyId': str(snap.story.public_uuid) if snap.story else None,
+                            'linkedType': 'book' if snap.book else 'story' if snap.story else None,
+                            'bookComment': snap.book_comment,
                             'duration': snap.duration,
-                            'created_at': snap.created_at.isoformat(),
+                            'createdAt': snap.created_at.isoformat(),
                             'user': {
                                 'id': str(snap.user.public_uuid),
                                 'nickname': snap.user.nickname,
-                                'profile_img': request.build_absolute_uri(snap.user.user_img.url) if snap.user.user_img else None
-                            } if snap.user else None,
+                                'profileImg': request.build_absolute_uri(snap.user.user_img.url) if snap.user.user_img else None
+                            } if snap.user else None
                         })
                         counts['snap'] += 1
 
-    # ========== 작품 검색 (제목, 설명, 작가, 태그) ==========
+    # ========== 책 검색 ========== 
     if filter_type in ['all', 'book']:
-        books = Books.objects.filter(
+        for book in Books.objects.filter(
             Q(name__icontains=query) |
             Q(description__icontains=query) |
             Q(user__nickname__icontains=query) |
             Q(tags__name__icontains=query) |
             Q(genres__name__icontains=query)
-        ).select_related('user').prefetch_related('genres', 'tags').distinct()[:30]
-
-        for book in books:
+        ).select_related('user').prefetch_related('genres', 'tags').distinct()[:30]:
             if str(book.public_uuid) not in added_book_ids:
                 added_book_ids.add(str(book.public_uuid))
-                genre_names = ', '.join([g.name for g in book.genres.all()[:2]])
+                genres = ', '.join([g.name for g in book.genres.all()[:2]]) or '기타'
                 results.append({
                     'type': 'book',
                     'id': str(book.public_uuid),
@@ -1599,33 +1576,26 @@ def api_search(request):
                     'author': book.user.nickname if book.user else '알 수 없음',
                     'author_id': str(book.user.public_uuid) if book.user else None,
                     'cover_image': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
-                    'genre': genre_names if genre_names else '기타',
+                    'genre': genres,
                     'book_score': float(book.book_score) if book.book_score else 0,
-                    'adult_choice': book.adult_choice,
+                    'adult_choice': getattr(book, 'adult_choice', False),
                 })
                 counts['book'] += 1
 
-    # ========== AI 스토리 검색 (제목, 설명, 장르, 태그, 작가) ==========
+    # ========== 스토리 검색 ========== 
     if filter_type in ['all', 'story']:
-        stories = Story.objects.filter(
+        for story in Story.objects.filter(
             Q(title__icontains=query) |
             Q(description__icontains=query) |
             Q(genres__name__icontains=query) |
             Q(tags__name__icontains=query) |
             Q(user__nickname__icontains=query),
             is_public=True
-        ).select_related('user').prefetch_related('genres', 'characters').distinct()[:30]
-
-        for story in stories:
+        ).select_related('user').prefetch_related('genres', 'characters').distinct()[:30]:
             if str(story.public_uuid) not in added_story_ids:
                 added_story_ids.add(str(story.public_uuid))
-                genre_names = ', '.join([g.name for g in story.genres.all()[:2]])
-                story_image = None
-                try:
-                    if story.cover_image:
-                        story_image = request.build_absolute_uri(story.cover_image.url)
-                except:
-                    story_image = None
+                genres = ', '.join([g.name for g in story.genres.all()[:2]]) or 'AI 스토리'
+                image = request.build_absolute_uri(story.cover_image.url) if getattr(story, 'cover_image', None) else None
                 results.append({
                     'type': 'story',
                     'id': str(story.public_uuid),
@@ -1633,44 +1603,32 @@ def api_search(request):
                     'description': story.description[:100] if story.description else '',
                     'author': story.user.nickname if story.user else '알 수 없음',
                     'author_id': str(story.user.public_uuid) if story.user else None,
-                    'cover_image': story_image,
-                    'genre': genre_names if genre_names else 'AI 스토리',
+                    'cover_image': image,
+                    'genre': genres,
                     'character_count': story.characters.count(),
-                    'adult_choice': story.adult_choice,
+                    'adult_choice': getattr(story, 'adult_choice', False),
                 })
                 counts['story'] += 1
 
-    # ========== Snap 검색 (기존 LLM 자리) ==========
+    # ========== Snap 검색 ========== 
     if filter_type in ['all', 'snap']:
-        snaps = BookSnap.objects.filter(
+        for snap in BookSnap.objects.filter(
             Q(snap_title__icontains=query) |
             Q(book_comment__icontains=query) |
             Q(book__name__icontains=query) |
             Q(user__nickname__icontains=query)
-        ).select_related('user', 'story', 'book').distinct()[:30]
-
-        for snap in snaps:
+        ).select_related('user', 'story', 'book').distinct()[:30]:
             if str(snap.public_uuid) not in added_snap_ids:
                 added_snap_ids.add(str(snap.public_uuid))
-
-                # 썸네일 처리
-                thumbnail = None
-                try:
-                    if snap.thumbnail:
-                        thumbnail = request.build_absolute_uri(snap.thumbnail.url)
-                except:
-                    thumbnail = None
-
-                # 댓글 수 처리
+                thumb = request.build_absolute_uri(snap.thumbnail.url) if getattr(snap, 'thumbnail', None) else None
                 comments_count = snap.comments.count() if hasattr(snap, 'comments') else 0
-
                 results.append({
                     'type': 'snap',
                     'id': str(snap.public_uuid),
-                    'snapTitle': snap.snap_title,  # Flutter 모델과 일치
+                    'snapTitle': snap.snap_title,
                     'snap_video': request.build_absolute_uri(snap.snap_video.url) if snap.snap_video else None,
-                    'thumbnail': thumbnail,        # llm_image → thumbnail
-                    'likesCount': snap.likes_count if hasattr(snap, 'likes_count') else 0,
+                    'thumbnail': thumb,
+                    'likesCount': getattr(snap, 'likes_count', 0),
                     'views': snap.views,
                     'shares': snap.shares,
                     'commentsCount': comments_count,
@@ -1678,8 +1636,6 @@ def api_search(request):
                     'bookId': str(snap.book.public_uuid) if snap.book else None,
                     'storyId': str(snap.story.public_uuid) if snap.story else None,
                     'linkedType': 'book' if snap.book else 'story' if snap.story else None,
-                    'bookLink': str(snap.book.public_uuid) if snap.book else None,
-                    'storyLink': str(snap.story.public_uuid) if snap.story else None,
                     'bookComment': snap.book_comment,
                     'duration': snap.duration,
                     'createdAt': snap.created_at.isoformat(),
@@ -1688,15 +1644,16 @@ def api_search(request):
                         'nickname': snap.user.nickname,
                         'profileImg': request.build_absolute_uri(snap.user.user_img.url) if snap.user.user_img else None
                     } if snap.user else None,
-                    'adultChoice': snap.adult_choice,
+                    'adultChoice': getattr(snap, 'adult_choice', False),
                 })
                 counts['snap'] += 1
 
-        return JsonResponse({
-            'success': True,
-            'results': results,
-            'counts': counts
-        })
+    return JsonResponse({
+        'success': True,
+        'results': results,
+        'counts': counts
+    })
+
 
 # ==================== 💬 Book Comments API ====================
 
