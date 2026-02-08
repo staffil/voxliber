@@ -1437,20 +1437,20 @@ def api_book_snippet_main(request):
 from django.db.models import Q, Count
 from django.http import JsonResponse
 from register.models import Users
-from book.models import Books, Tags
+from book.models import Books, Tags, BookSnap
 
 def api_search(request):
     """
-    통합 검색 API - 작품, 스토리, LLM(AI캐릭터), 유저, 태그 검색
+    통합 검색 API - 작품, 스토리, Snap, 유저, 태그 검색
 
-    - 유저 검색 시: 해당 유저의 책/스토리/LLM도 함께 반환
+    - 유저 검색 시: 해당 유저의 책/스토리/Snap도 함께 반환
     - 태그 검색 시: 해당 태그가 붙은 모든 책/스토리 반환
 
     Query Parameters:
         - q: 검색어 (필수)
-        - filter: 검색 필터 - 'all', 'book', 'story', 'llm', 'user' (기본: 'all')
+        - filter: 검색 필터 - 'all', 'book', 'story', 'llm' (Snap), 'user' (기본: 'all')
     """
-    from character.models import Story, LLM
+    from character.models import Story  # 기존 LLM은 Snap으로 대체
 
     query = request.GET.get('q', '').strip()
     filter_type = request.GET.get('filter', 'all')
@@ -1459,7 +1459,7 @@ def api_search(request):
         return JsonResponse({'success': True, 'results': [], 'counts': {}})
 
     results = []
-    counts = {'book': 0, 'story': 0, 'llm': 0, 'user': 0}
+    counts = {'book': 0, 'story': 0, 'snap': 0, 'user': 0}
 
     # 이미 추가된 ID 추적 (중복 방지)
     added_book_ids = set()
@@ -1479,7 +1479,7 @@ def api_search(request):
                 added_user_ids.add(str(user.public_uuid))
                 book_count = Books.objects.filter(user=user).count()
                 story_count = Story.objects.filter(user=user).count()
-                llm_count = LLM.objects.filter(user=user).count()
+                snap_count = BookSnap.objects.filter(user=user).count()
 
                 results.append({
                     'type': 'user',
@@ -1489,11 +1489,11 @@ def api_search(request):
                     'profile_image': request.build_absolute_uri(user.user_img.url) if user.user_img else None,
                     'book_count': book_count,
                     'story_count': story_count,
-                    'llm_count': llm_count
+                    'snap_count': snap_count
                 })
                 counts['user'] += 1
 
-            # 유저의 책들도 검색 결과에 추가 (all 또는 user 필터일 때)
+            # 유저의 책
             if filter_type in ['all', 'user']:
                 user_books = Books.objects.filter(user=user).select_related('user').prefetch_related('genres')[:10]
                 for book in user_books:
@@ -1513,13 +1513,12 @@ def api_search(request):
                         })
                         counts['book'] += 1
 
-                # 유저의 스토리도 추가
+                # 유저의 스토리
                 user_stories = Story.objects.filter(user=user, is_public=True).select_related('user').prefetch_related('genres', 'characters')[:10]
                 for story in user_stories:
                     if str(story.public_uuid) not in added_story_ids:
                         added_story_ids.add(str(story.public_uuid))
                         genre_names = ', '.join([g.name for g in story.genres.all()[:2]])
-                        # 스토리 이미지 URL 안전하게 처리
                         story_image = None
                         try:
                             if story.cover_image:
@@ -1539,9 +1538,9 @@ def api_search(request):
                         })
                         counts['story'] += 1
 
-                # 유저의 snap도 추가
-                user_snap = BookSnap.objects.filter(user=user).select_related('user', 'story', 'book')[:10]
-                for snap in user_snap:
+                # 유저의 Snap
+                user_snaps = BookSnap.objects.filter(user=user).select_related('user', 'story', 'book')[:10]
+                for snap in user_snaps:
                     if str(snap.public_uuid) not in added_snap_ids:
                         added_snap_ids.add(str(snap.public_uuid))
                         thumbnail = None
@@ -1556,7 +1555,7 @@ def api_search(request):
                             'name': snap.snap_title,
                             'title': snap.title or '',
                             'description': snap.book_comment[:100] if snap.book_comment else '',
-                            'author': snap.user.nickname if llm.user else '알 수 없음',
+                            'author': snap.user.nickname if snap.user else '알 수 없음',
                             'author_id': str(snap.user.public_uuid) if snap.user else None,
                             'llm_image': thumbnail,
                         })
@@ -1605,7 +1604,6 @@ def api_search(request):
             if str(story.public_uuid) not in added_story_ids:
                 added_story_ids.add(str(story.public_uuid))
                 genre_names = ', '.join([g.name for g in story.genres.all()[:2]])
-                # 스토리 이미지 URL 안전하게 처리
                 story_image = None
                 try:
                     if story.cover_image:
@@ -1626,52 +1624,50 @@ def api_search(request):
                 })
                 counts['story'] += 1
 
-    # ========== LLM (AI 캐릭터) 검색 (이름, 타이틀, 설명, 스토리 제목, 작가) ==========
+    # ========== Snap 검색 (기존 LLM 자리) ==========
     if filter_type in ['all', 'llm']:
-        llms = LLM.objects.filter(
-            Q(name__icontains=query) |
-            Q(title__icontains=query) |
-            Q(description__icontains=query) |
-            Q(story__title__icontains=query) |
+        snaps = BookSnap.objects.filter(
+            Q(snap_title__icontains=query) |
+            Q(book_comment__icontains=query) |
+            Q(book__name__icontains=query) |
             Q(user__nickname__icontains=query)
-        ).select_related('user', 'story').distinct()[:30]
+        ).select_related('user', 'story', 'book').distinct()[:30]
 
-        # is_public=True 인 것 우선, 아닌 것도 포함 (디버깅용)
-        llms_public = [l for l in llms if l.is_public]
-        llms_private = [l for l in llms if not l.is_public]
-        all_llms = llms_public + llms_private[:10]  # 비공개는 최대 10개만
-
-        for llm in all_llms:
-            if str(llm.public_uuid) not in added_llm_ids:
-                added_llm_ids.add(str(llm.public_uuid))
-                llm_image = None
+        for snap in snaps:
+            if str(snap.public_uuid) not in added_snap_ids:
+                added_snap_ids.add(str(snap.public_uuid))
+                thumbnail = None
                 try:
-                    if llm.llm_image:
-                        llm_image = request.build_absolute_uri(llm.llm_image.url)
+                    if snap.thumbnail:
+                        thumbnail = request.build_absolute_uri(snap.thumbnail.url)
                 except:
-                    llm_image = None
+                    thumbnail = None
                 results.append({
-                    'type': 'llm',
-                    'id': str(llm.public_uuid),
-                    'name': llm.name,
-                    'title': llm.title or '',
-                    'description': llm.description[:100] if llm.description else '',
-                    'author': llm.user.nickname if llm.user else '알 수 없음',
-                    'author_id': str(llm.user.public_uuid) if llm.user else None,
-                    'llm_image': llm_image,
-                    'story_title': llm.story.title if llm.story else None,
-                    'story_id': str(llm.story.public_uuid) if llm.story else None,
-                    'like_count': llm.llm_like_count or 0,
-                    'is_public': llm.is_public
+                    'type': 'snap',
+                    'id': str(snap.public_uuid),
+                    'name': snap.snap_title,
+                    'title': snap.title or '',
+                    'description': snap.book_comment[:100] if snap.book_comment else '',
+                    'author': snap.user.nickname if snap.user else '알 수 없음',
+                    'author_id': str(snap.user.public_uuid) if snap.user else None,
+                    'llm_image': thumbnail,
+                    'book_title': snap.book.name if snap.book else None,
+                    'book_id': str(snap.book.public_uuid) if snap.book else None,
+                    'story_title': snap.story.title if snap.story else None,
+                    'story_id': str(snap.story.public_uuid) if snap.story else None,
+                    'views': snap.views,
+                    'shares': snap.shares,
+                    'allow_comments': snap.allow_comments,
+                    'adult_choice': snap.adult_choice,
+                    'created_at': snap.created_at.isoformat(),
                 })
-                counts['llm'] += 1
+                counts['snap'] += 1
 
     return JsonResponse({
         'success': True,
         'results': results,
         'counts': counts
     })
-
 
 
 # ==================== 💬 Book Comments API ====================
