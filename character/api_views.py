@@ -149,6 +149,27 @@ def public_story_detail(request, story_uuid):
             # 필요하면 더 추가 (prompt는 보안상 노출 안 하는 게 좋음)
         })
 
+    # 현재 유저 확인 (좋아요/북마크 상태)
+    request_user = _get_request_user(request)
+    is_liked = False
+    is_bookmarked = False
+    if request_user:
+        is_liked = StoryLike.objects.filter(user=request_user, story=story).exists()
+        is_bookmarked = StoryBookmark.objects.filter(user=request_user, story=story).exists()
+
+    # 댓글 가져오기
+    comments_qs = StoryComment.objects.filter(story=story).select_related('user').order_by('-created_at')[:50]
+    comments_data = []
+    for c in comments_qs:
+        comments_data.append({
+            'id': c.id,
+            'content': c.content,
+            'user_name': c.user.nickname or c.user.username,
+            'user_profile_image': request.build_absolute_uri(c.user.user_img.url) if c.user.user_img else None,
+            'created_at': c.created_at.isoformat(),
+            'parent_id': c.parent_comment_id,
+        })
+
     data = {
         'id': str(story.public_uuid),
         'title': story.title,
@@ -160,8 +181,12 @@ def public_story_detail(request, story_uuid):
         'genres': [g.name for g in story.genres.all()],
         'tags': [t.name for t in story.tags.all()],
         'adult_choice': story.adult_choice,
-        'username': story.user.nickname,          # 추가 추천
-        'llms': llms_data,                        # ← 여기! LLM 배열 추가
+        'username': story.user.nickname,
+        'llms': llms_data,
+        'is_liked': is_liked,
+        'is_bookmarked': is_bookmarked,
+        'like_count': StoryLike.objects.filter(story=story).count(),
+        'comments': comments_data,
     }
 
     return api_response(data)
@@ -219,10 +244,25 @@ def public_llm_detail(request, llm_uuid):
     # 현재 유저의 대화 가져오기 (본인 대화 우선)
     conv_id = None
     request_user = _get_request_user(request)
+    is_liked = False
     if request_user:
         user_conv = Conversation.objects.filter(llm=llm, user=request_user).order_by('-created_at').first()
         if user_conv:
             conv_id = user_conv.id
+        is_liked = LLMLike.objects.filter(user=request_user, llm=llm).exists()
+
+    # 댓글 가져오기
+    comments_qs = Comment.objects.filter(llm=llm).select_related('user').order_by('-created_at')[:50]
+    comments_data = []
+    for c in comments_qs:
+        comments_data.append({
+            'id': c.id,
+            'content': c.content,
+            'user_name': c.user.nickname or c.user.username,
+            'user_profile_image': request.build_absolute_uri(c.user.user_img.url) if c.user.user_img else None,
+            'created_at': c.created_at.isoformat(),
+            'parent_id': c.parent_comment_id,
+        })
 
     # 메인 LLM 데이터
     data = {
@@ -267,6 +307,10 @@ def public_llm_detail(request, llm_uuid):
 
         # 같은 스토리의 다른 LLM 목록
         'other_llms': other_llms_data,
+
+        # 유저 상호작용 상태
+        'is_liked': is_liked,
+        'comments': comments_data,
     }
 
     return api_response(data)
