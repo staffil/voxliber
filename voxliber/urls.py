@@ -56,11 +56,30 @@ urlpatterns = [
     path('naver68afd1621fdbfa5d1c2dc3728aa152e8.html', TemplateView.as_view(template_name='naver68afd1621fdbfa5d1c2dc3728aa152e8.html')),
 
     # ==================== 자동 오디오북 생성 API ====================
+    # 기본 CRUD
     path("api/v1/create-book/", voxliber_api.api_create_book, name="api_create_book"),
     path("api/v1/create-episode/", voxliber_api.api_create_episode, name="api_create_episode"),
+    path("api/v1/delete-episode/", voxliber_api.api_delete_episode, name="api_delete_episode"),
+    path("api/v1/regenerate-episode/", voxliber_api.api_regenerate_episode, name="api_regenerate_episode"),
+    path("api/v1/my-books/", voxliber_api.api_my_books, name="api_my_books"),
+
+    # 조회 API
     path("api/v1/voices/", voxliber_api.api_voice_list, name="api_voice_list"),
     path("api/v1/genres/", voxliber_api.api_genre_list, name="api_genre_list"),
-    path("api/v1/my-books/", voxliber_api.api_my_books, name="api_my_books"),
+    path("api/v1/voice-effects/", voxliber_api.api_voice_effect_presets, name="api_voice_effects"),
+    path("api/v1/emotion-tags/", voxliber_api.api_emotion_tags, name="api_emotion_tags"),
+
+    # 사운드 이펙트 & 배경음
+    path("api/v1/sound-effect/create/", voxliber_api.api_create_sound_effect, name="api_create_sound_effect"),
+    path("api/v1/sound-effects/", voxliber_api.api_sound_effect_library, name="api_sound_effect_library"),
+    path("api/v1/background-music/create/", voxliber_api.api_create_background_music, name="api_create_background_music"),
+    path("api/v1/background-music/", voxliber_api.api_background_music_library, name="api_background_music_library"),
+    path("api/v1/mix-background/", voxliber_api.api_mix_background_music, name="api_mix_background"),
+
+    # 이미지 업로드
+    path("api/v1/upload-book-cover/", voxliber_api.api_upload_book_cover, name="api_upload_book_cover"),
+    path("api/v1/upload-episode-image/", voxliber_api.api_upload_episode_image, name="api_upload_episode_image"),
+    path("api/v1/upload-image-url/", voxliber_api.api_upload_image_from_url, name="api_upload_image_url"),
 
     # Deep Link Verification Files
     path('.well-known/apple-app-site-association',
