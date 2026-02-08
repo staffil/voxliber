@@ -952,14 +952,15 @@
 }
 
 /* ===========================================
-   반응형 디자인
+   반응형 디자인 - 데스크탑 레이아웃 유지, 비례 축소
    =========================================== */
 
 /* 태블릿 */
 @media (max-width: 1024px) {
   .book-header {
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 240px 1fr;
     gap: 2rem;
+    padding: 1.5rem;
   }
 
   .book-title {
@@ -982,39 +983,53 @@
   }
 }
 
-/* 모바일 */
+/* 모바일 - 같은 레이아웃 유지, 크기만 축소 */
 @media (max-width: 768px) {
   .book-detail-wrapper {
-    padding: 1.5rem 1rem;
+    padding: 1rem 0.75rem;
+    margin-top: 60px;
   }
 
   .book-header {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
-    padding: 1.5rem;
+    gap: 1.25rem;
+    padding: 1.25rem;
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
   }
 
   .book-cover-wrapper {
-    width: 200px;
+    width: 180px;
     margin: 0 auto;
   }
 
   .book-title {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
     text-align: center;
   }
 
   .book-author {
     justify-content: center;
+    font-size: 0.9rem;
   }
 
   .book-genres {
     justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .genre-tag {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.78rem;
   }
 
   .book-stats-row {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
   }
 
   .rating-display {
@@ -1023,21 +1038,63 @@
     text-align: center;
   }
 
+  .rating-number {
+    font-size: 1.8rem;
+  }
+
+  .rating-stars .star {
+    font-size: 1rem;
+  }
+
   .stat-item {
     align-items: center;
     text-align: center;
   }
 
+  .stat-value {
+    font-size: 1.1rem;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+  }
+
   .content-section {
-    padding: 1.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-radius: 16px;
   }
 
   .section-title {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .book-description {
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .intro-audio-wrapper {
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-radius: 16px;
+  }
+
+  .intro-audio-title {
+    font-size: 1.05rem;
+    margin-bottom: 1rem;
   }
 
   .audio-controls-row {
     flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .audio-play-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
   }
 
   .audio-volume-control {
@@ -1047,28 +1104,36 @@
 
   .audio-volume-slider {
     flex: 1;
-    max-width: 200px;
+    max-width: 180px;
   }
 
   .episode-card {
-    grid-template-columns: 60px 1fr auto;
-    gap: 1rem;
-    padding: 1rem;
+    grid-template-columns: 52px 1fr auto;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    border-radius: 12px;
   }
 
   .episode-number {
-    width: 60px;
-    height: 60px;
-    font-size: 1.3rem;
+    width: 52px;
+    height: 52px;
+    font-size: 1.1rem;
+    border-radius: 10px;
   }
 
   .episode-title {
-    font-size: 1rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .episode-meta {
+    font-size: 0.78rem;
   }
 
   .episode-play-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
   }
 
   .drag-handle {
@@ -1076,64 +1141,257 @@
   }
 
   .comment-reply {
-    margin-left: 1rem;
+    margin-left: 0.75rem;
   }
 
   .star-rating-input {
-    font-size: 2rem;
+    font-size: 1.8rem;
     justify-content: center;
+  }
+
+  .review-textarea {
+    min-height: 120px;
+    font-size: 0.9rem;
+  }
+
+  .comment-input {
+    min-height: 100px;
+    font-size: 0.9rem;
+  }
+
+  .review-item,
+  .comment-item {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .reviewer-name,
+  .comment-author {
+    font-size: 0.9rem;
+  }
+
+  .review-text,
+  .comment-text {
+    font-size: 0.88rem;
+  }
+
+  .review-date,
+  .comment-date {
+    font-size: 0.75rem;
+  }
+
+  .status-badge {
+    font-size: 0.8rem;
+    padding: 0.4rem 1rem;
+  }
+
+  .page-btn {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.85rem;
+    border-radius: 6px;
+  }
+
+  .announcements-section {
+    margin: 1.5rem 0;
+    padding: 1.25rem;
+    border-radius: 16px;
   }
 }
 
 /* 초소형 모바일 */
 @media (max-width: 480px) {
   .book-detail-wrapper {
-    padding: 1rem 0.75rem;
+    padding: 0.75rem 0.5rem;
+    margin-top: 55px;
+  }
+
+  .book-header {
+    padding: 1rem;
+    gap: 1rem;
+    border-radius: 14px;
+    margin-bottom: 1rem;
+  }
+
+  .book-cover-wrapper {
+    width: 150px;
   }
 
   .book-title {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
+    line-height: 1.3;
+  }
+
+  .book-author {
+    font-size: 0.85rem;
+  }
+
+  .genre-tag {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.72rem;
   }
 
   .book-stats-row {
-    padding: 1rem;
+    padding: 0.85rem;
+    gap: 0.75rem;
+    border-radius: 10px;
   }
 
   .rating-number {
-    font-size: 2rem;
+    font-size: 1.5rem;
+  }
+
+  .rating-stars .star {
+    font-size: 0.85rem;
   }
 
   .stat-value {
-    font-size: 1.2rem;
+    font-size: 1rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  .content-section {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 14px;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.85rem;
+    gap: 0.5rem;
+  }
+
+  .book-description {
+    font-size: 0.85rem;
+    line-height: 1.65;
+  }
+
+  .intro-audio-wrapper {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 14px;
+  }
+
+  .intro-audio-title {
+    font-size: 0.95rem;
+    margin-bottom: 0.85rem;
+    gap: 0.5rem;
+  }
+
+  .audio-play-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 1rem;
+  }
+
+  .audio-time-info {
+    font-size: 0.8rem;
   }
 
   .episode-card {
-    grid-template-columns: 50px 1fr;
-    gap: 0.75rem;
+    grid-template-columns: 44px 1fr;
+    gap: 0.65rem;
+    padding: 0.75rem;
+    border-radius: 10px;
   }
 
   .episode-number {
-    width: 50px;
-    height: 50px;
-    font-size: 1.1rem;
+    width: 44px;
+    height: 44px;
+    font-size: 0.95rem;
+    border-radius: 8px;
+  }
+
+  .episode-title {
+    font-size: 0.85rem;
+  }
+
+  .episode-meta {
+    font-size: 0.72rem;
   }
 
   .episode-play-icon {
     display: none;
   }
 
-  .section-title {
-    font-size: 1.3rem;
+  .star-rating-input {
+    font-size: 1.6rem;
   }
 
-  .audio-play-btn {
-    width: 48px;
-    height: 48px;
+  .review-textarea,
+  .comment-input {
+    min-height: 100px;
+    padding: 1rem;
+    font-size: 0.85rem;
+  }
+
+  .submit-review-btn,
+  .submit-comment-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    border-radius: 10px;
   }
 
   .page-btn {
-    padding: 0.6rem 1rem;
-    font-size: 0.9rem;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .share-btn,
+  .bookmark-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    border-radius: 10px;
+  }
+
+  .announcements-section {
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 14px;
+  }
+
+  .no-audio-message {
+    font-size: 0.88rem;
+    padding: 1.5rem;
+  }
+}
+
+/* 초소형 360px */
+@media (max-width: 360px) {
+  .book-detail-wrapper {
+    padding: 0.5rem;
+    margin-top: 50px;
+  }
+
+  .book-cover-wrapper {
+    width: 130px;
+  }
+
+  .book-title {
+    font-size: 1.05rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
+  }
+
+  .episode-card {
+    grid-template-columns: 38px 1fr;
+    gap: 0.5rem;
+    padding: 0.6rem;
+  }
+
+  .episode-number {
+    width: 38px;
+    height: 38px;
+    font-size: 0.85rem;
+  }
+
+  .episode-title {
+    font-size: 0.8rem;
   }
 }
 /* ===========================================

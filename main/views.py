@@ -165,6 +165,10 @@ def main(request):
 
     ai_advertismemt_img = ScreenAI.objects.all()
 
+    # AI 소설 탭 - 공유된 대화 목록
+    user_share_list = Conversation.objects.filter(
+        is_public=True
+    ).select_related('llm', 'user').order_by('-shared_at')[:30]
 
     context = {
         "news_list": news_list,
@@ -186,7 +190,8 @@ def main(request):
         "poem_list":poem_list,
         "snippet_list":snippet_list,
         "ai_stories":story_list,
-        "ai_advertismemt_img":ai_advertismemt_img
+        "ai_advertismemt_img":ai_advertismemt_img,
+        "user_share_list":user_share_list,
     }
     return render(request, "main/main.html", context)
 

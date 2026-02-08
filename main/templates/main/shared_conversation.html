@@ -34,8 +34,8 @@
 
         <!-- 챕터 이미지 및 텍스트 오버레이 -->
         {% if chapter.image and chapter.image.image %}
-        <div class="episode-image-wrapper">
-            <img src="{{ chapter.image.image.url }}" alt="{{ chapter.image.title|default:'챕터 이미지' }}" class="episode-image">
+        <div class="chapter-image">
+            <img src="{{ chapter.image.image.url }}" alt="{{ chapter.image.title|default:'챕터 이미지' }}" >
             
             <div class="episode-text-overlay">
                 <h2 class="chapter-title">
