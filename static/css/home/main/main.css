@@ -481,8 +481,8 @@ body.light-mode .hero-subtitle {
 
 @media (max-width: 768px) {
   .menu-grid {
-    gap: 22px;
-    padding: 36px 0;
+    display: none;
+
   }
   .menu-circle a {
     width: 62px;
