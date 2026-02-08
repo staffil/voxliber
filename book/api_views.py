@@ -1645,7 +1645,6 @@ def api_search(request):
                     'type': 'snap',
                     'id': str(snap.public_uuid),
                     'name': snap.snap_title,
-                    'title': snap.title or '',
                     'description': snap.book_comment[:100] if snap.book_comment else '',
                     'author': snap.user.nickname if snap.user else '알 수 없음',
                     'author_id': str(snap.user.public_uuid) if snap.user else None,
