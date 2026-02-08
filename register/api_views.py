@@ -99,7 +99,19 @@ def api_signup(request):
         user.save()
         log_to_file(f"✅ [API Signup] 사용자 저장 완료")
 
-        return JsonResponse({"success": True, "message": "회원가입 완료"})
+        return JsonResponse({
+            "success": True,
+            "message": "회원가입 완료",
+            "user": {
+                "id": str(user.public_uuid),
+                "nickname": user.nickname,
+                "email": user.email,
+                "profile_img": user.user_img.url if user.user_img else None,
+                "birthdate": str(user.birthdate) if user.birthdate else None,
+                "is_adult": user.is_adult(),
+                "is_profile_completed": user.is_profile_completed,
+            },
+        })
 
     except Exception as e:
         log_to_file(f"❌ [API Signup] 예외 발생: {e}")
