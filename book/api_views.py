@@ -1554,7 +1554,7 @@ def api_search(request):
                             'type': 'snap',
                             'id': str(snap.public_uuid),
                             'snap_title': snap.snap_title or snap.name,        # Flutter 모델 그대로
-                            'snap_video': None,                                # 필요하면 추가
+                            'snap_video': request.build_absolute_uri(snap.snap_video.url) if snap.snap_video else None,
                             'thumbnail': thumbnail,                            # llm_image → thumbnail
                             'likes_count': snap.likes_count if hasattr(snap, 'likes_count') else 0,
                             'views': snap.views,
