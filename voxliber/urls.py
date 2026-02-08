@@ -23,6 +23,7 @@ from django.views.generic import TemplateView
 from django.contrib.sitemaps.views import sitemap
 from book.sitemaps import BookSitemap, StaticViewSitemap
 from django.http import FileResponse
+from voxliber import api_views as voxliber_api
 import os
 
 # Sitemap 설정
@@ -53,6 +54,13 @@ urlpatterns = [
     )),
     path("sitemap.xml", sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
     path('naver68afd1621fdbfa5d1c2dc3728aa152e8.html', TemplateView.as_view(template_name='naver68afd1621fdbfa5d1c2dc3728aa152e8.html')),
+
+    # ==================== 자동 오디오북 생성 API ====================
+    path("api/v1/create-book/", voxliber_api.api_create_book, name="api_create_book"),
+    path("api/v1/create-episode/", voxliber_api.api_create_episode, name="api_create_episode"),
+    path("api/v1/voices/", voxliber_api.api_voice_list, name="api_voice_list"),
+    path("api/v1/genres/", voxliber_api.api_genre_list, name="api_genre_list"),
+    path("api/v1/my-books/", voxliber_api.api_my_books, name="api_my_books"),
 
     # Deep Link Verification Files
     path('.well-known/apple-app-site-association',
