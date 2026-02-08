@@ -1553,20 +1553,27 @@ def api_search(request):
                         results.append({
                             'type': 'snap',
                             'id': str(snap.public_uuid),
-                            'name': snap.snap_title,                         # snap_title → name
-                            'description': snap.book_comment[:100] if snap.book_comment else '',
-                            'author': snap.user.nickname if snap.user else '알 수 없음',
-                            'author_id': str(snap.user.public_uuid) if snap.user else None,
-                            'llm_image': thumbnail,                          # thumbnail → llm_image
-                            'book_title': snap.book.name if snap.book else None,
-                            'book_id': str(snap.book.public_uuid) if snap.book else None,
-                            'story_title': snap.story.title if snap.story else None,
-                            'story_id': str(snap.story.public_uuid) if snap.story else None,
+                            'snap_title': snap.snap_title or snap.name,        # Flutter 모델 그대로
+                            'snap_video': None,                                # 필요하면 추가
+                            'thumbnail': thumbnail,                            # llm_image → thumbnail
+                            'likes_count': snap.likes_count if hasattr(snap, 'likes_count') else 0,
                             'views': snap.views,
                             'shares': snap.shares,
+                            'comments_count': snap.comments.count() if hasattr(snap, 'comments') else 0,
                             'allow_comments': snap.allow_comments,
-                            'adult_choice': snap.adult_choice,
+                            'book_id': str(snap.book.public_uuid) if snap.book else None,
+                            'story_id': str(snap.story.public_uuid) if snap.story else None,
+                            'linked_type': 'book' if snap.book else 'story' if snap.story else None,
+                            'book_link': str(snap.book.public_uuid) if snap.book else None,
+                            'story_link': str(snap.story.public_uuid) if snap.story else None,
+                            'book_comment': snap.book_comment,
+                            'duration': snap.duration,
                             'created_at': snap.created_at.isoformat(),
+                            'user': {
+                                'id': str(snap.user.public_uuid),
+                                'nickname': snap.user.nickname,
+                                'profile_img': request.build_absolute_uri(snap.user.user_img.url) if snap.user.user_img else None
+                            } if snap.user else None,
                         })
                         counts['snap'] += 1
 
@@ -1634,49 +1641,62 @@ def api_search(request):
                 counts['story'] += 1
 
     # ========== Snap 검색 (기존 LLM 자리) ==========
-        snaps = BookSnap.objects.filter(
-            Q(snap_title__icontains=query) |
-            Q(book_comment__icontains=query) |
-            Q(book__name__icontains=query) |
-            Q(user__nickname__icontains=query)
-        ).select_related('user', 'story', 'book').distinct()[:30]
+        if filter_type in ['all', 'snap']:
+            snaps = BookSnap.objects.filter(
+                Q(snap_title__icontains=query) |
+                Q(book_comment__icontains=query) |
+                Q(book__name__icontains=query) |
+                Q(user__nickname__icontains=query)
+            ).select_related('user', 'story', 'book').distinct()[:30]
 
-        for snap in snaps:
-            if str(snap.public_uuid) not in added_snap_ids:
-                added_snap_ids.add(str(snap.public_uuid))
-                thumbnail = None
-                try:
-                    if snap.thumbnail:
-                        thumbnail = request.build_absolute_uri(snap.thumbnail.url)
-                except:
+            for snap in snaps:
+                if str(snap.public_uuid) not in added_snap_ids:
+                    added_snap_ids.add(str(snap.public_uuid))
+
+                    # 썸네일 처리
                     thumbnail = None
+                    try:
+                        if snap.thumbnail:
+                            thumbnail = request.build_absolute_uri(snap.thumbnail.url)
+                    except:
+                        thumbnail = None
 
-                results.append({
-                    'type': 'snap',
-                    'id': str(snap.public_uuid),
-                    'name': snap.snap_title,                         # 이름 통일
-                    'description': snap.book_comment[:100] if snap.book_comment else '',
-                    'author': snap.user.nickname if snap.user else '알 수 없음',
-                    'author_id': str(snap.user.public_uuid) if snap.user else None,
-                    'llm_image': thumbnail,                          # 이름 통일
-                    'book_title': snap.book.name if snap.book else None,
-                    'book_id': str(snap.book.public_uuid) if snap.book else None,
-                    'story_title': snap.story.title if snap.story else None,
-                    'story_id': str(snap.story.public_uuid) if snap.story else None,
-                    'views': snap.views,
-                    'shares': snap.shares,
-                    'allow_comments': snap.allow_comments,
-                    'adult_choice': snap.adult_choice,
-                    'created_at': snap.created_at.isoformat(),
-                })
-                counts['snap'] += 1
+                    # 댓글 수 처리
+                    comments_count = snap.comments.count() if hasattr(snap, 'comments') else 0
 
-    return JsonResponse({
-        'success': True,
-        'results': results,
-        'counts': counts
-    })
+                    results.append({
+                        'type': 'snap',
+                        'id': str(snap.public_uuid),
+                        'snapTitle': snap.snap_title,  # Flutter 모델과 일치
+                        'snapVideo': None,  # 필요 시 채움
+                        'thumbnail': thumbnail,        # llm_image → thumbnail
+                        'likesCount': snap.likes_count if hasattr(snap, 'likes_count') else 0,
+                        'views': snap.views,
+                        'shares': snap.shares,
+                        'commentsCount': comments_count,
+                        'allowComments': snap.allow_comments,
+                        'bookId': str(snap.book.public_uuid) if snap.book else None,
+                        'storyId': str(snap.story.public_uuid) if snap.story else None,
+                        'linkedType': 'book' if snap.book else 'story' if snap.story else None,
+                        'bookLink': str(snap.book.public_uuid) if snap.book else None,
+                        'storyLink': str(snap.story.public_uuid) if snap.story else None,
+                        'bookComment': snap.book_comment,
+                        'duration': snap.duration,
+                        'createdAt': snap.created_at.isoformat(),
+                        'user': {
+                            'id': str(snap.user.public_uuid),
+                            'nickname': snap.user.nickname,
+                            'profileImg': request.build_absolute_uri(snap.user.user_img.url) if snap.user.user_img else None
+                        } if snap.user else None,
+                        'adultChoice': snap.adult_choice,
+                    })
+                    counts['snap'] += 1
 
+        return JsonResponse({
+            'success': True,
+            'results': results,
+            'counts': counts
+        })
 
 # ==================== 💬 Book Comments API ====================
 
