@@ -1474,3 +1474,65 @@
     flex: 0 1 auto;
   }
 }
+
+
+
+/* 전체 통계 뷰 */
+#bookView {
+    margin-top: 40px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
+
+/* 차트 그리드 */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    
+}
+
+/* 개별 차트 박스 */
+.chart-container {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    height: 360px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* 차트 제목 */
+.chart-title {
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 12px;
+    color: #e5e7eb;
+}
+
+/* canvas 크기 고정 (중요) */
+.chart-container canvas {
+    width: 100% !important;
+    height: 260px !important;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+    #bookView {
+        padding: 16px;
+    }
+
+    .chart-container {
+        height: 320px;
+    }
+
+    .chart-container canvas {
+        height: 220px !important;
+    }
+}

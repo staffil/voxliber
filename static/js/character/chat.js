@@ -317,3 +317,125 @@ function attachAudioControls() {
         attachSingleAudioControl(msg);
     });
 }
+
+
+
+
+
+
+// ====================================
+// 메시지 전송
+// ====================================
+async function sendTextMessage() {
+    const input = document.getElementById('text-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage(message, false);
+    input.value = '';
+
+    showTypingIndicator();
+
+    try {
+        const response = await fetch(chatUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({ message: message })
+        });
+
+        hideTypingIndicator();
+        const data = await response.json();
+
+        if (data.success) {
+            addMessage(data.text, true, data.message_id);
+
+            if (data.hp !== undefined) {
+                updateHp(data.hp);
+            }
+        } else {
+            addMessage('오류: ' + (data.error || '알 수 없는 오류'), true);
+        }
+    } catch (error) {
+        hideTypingIndicator();
+        console.error('채팅 오류:', error);
+        addMessage('연결 오류가 발생했습니다.', true);
+    }
+}
+
+// ====================================
+// TTS 생성 (버튼 클릭 시만)
+// ====================================
+async function generateTTS(btn, msgId) {
+    const msgDiv = btn.closest('.message');
+    const bubble = msgDiv.querySelector('.message-bubble');
+    const text = bubble ? bubble.innerText.trim() : '';
+
+    if (!text) return;
+
+    // 버튼 상태 변경
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.innerHTML = `
+        <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+        <span>생성 중...</span>
+    `;
+
+    try {
+        const response = await fetch(ttsUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({ text: text, message_id: msgId })
+        });
+
+        const data = await response.json();
+
+        if (data.success && (data.audio || data.audio_url)) {
+            const audioUrl = data.audio_url || data.audio;
+
+            // TTS 버튼을 오디오 버튼으로 교체
+            btn.classList.remove('loading', 'tts-btn');
+            btn.classList.add('audio-btn', 'has-audio');
+            btn.disabled = false;
+            btn.dataset.audioUrl = audioUrl;
+            btn.innerHTML = `
+                <svg class="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                <svg class="icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                    <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                </svg>
+            `;
+
+            // 자동 재생
+            playAudio(audioUrl, btn);
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            btn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                </svg>
+                <span>재시도</span>
+            `;
+        }
+    } catch (error) {
+        console.error('TTS 오류:', error);
+        btn.disabled = false;
+        btn.classList.remove('loading');
+        btn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+            </svg>
+            <span>실패</span>
+        `;
+    }
+}
