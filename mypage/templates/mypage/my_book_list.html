@@ -161,6 +161,45 @@
 
 {% block extra_js %}
 <script>
+// 아바타 이미지 미리보기
+document.getElementById('avatarInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert('파일 크기는 5MB 이하여야 합니다.');
+            this.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('avatarPreview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        document.getElementById('removeAvatarInput').value = 'false';
+    }
+});
+
+// 닉네임 글자수 카운터
+document.getElementById('nickname').addEventListener('input', function() {
+    const count = this.value.length;
+    document.getElementById('nicknameCount').textContent = count;
+    if (count > 20) {
+        this.value = this.value.substring(0, 20);
+        document.getElementById('nicknameCount').textContent = 20;
+    }
+});
+
+// 폼 제출 전 유효성 검사
+document.getElementById('profileForm').addEventListener('submit', function(e) {
+    const nickname = document.getElementById('nickname').value.trim();
+    if (!nickname) {
+        e.preventDefault();
+        alert('닉네임을 입력해주세요.');
+        document.getElementById('nickname').focus();
+        return false;
+    }
+});
+
 // 작품 삭제 기능
 const deleteModal = document.getElementById('deleteModal');
 const deleteBookName = document.getElementById('deleteBookName');
@@ -239,5 +278,61 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+// 알림 표시 함수
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        padding: 16px 24px;
+        background: ${type === 'success' ? 'rgba(16, 185, 129, 0.9)' : type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(99, 102, 241, 0.9)'};
+        color: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+        font-size: 14px;
+        font-weight: 500;
+    `;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 3000);
+}
+
+// CSS 애니메이션 추가
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}
