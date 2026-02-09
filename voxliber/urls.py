@@ -94,6 +94,9 @@ urlpatterns = [
     path('.well-known/assetlinks.json',
          lambda request: serve_well_known(request, 'assetlinks.json')),
 
+
+    
+
 ]
 
 # 개발 환경에서 미디어 파일 서빙
