@@ -892,6 +892,8 @@ def my_books(request):
 @login_required_to_main
 def delete_book(request, book_uuid):
     book = get_object_or_404(Books, public_uuid=book_uuid, user=request.user)
+    if book.user != request.user:
+        return JsonResponse({"success": False, "error": "권한 없음"}, status=403)
     book.delete()
     return JsonResponse({"success": True})
 

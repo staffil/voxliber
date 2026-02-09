@@ -157,49 +157,33 @@
     </div>
 </div>
 
+<!-- 삭제 확인 모달 -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <h3>작품 삭제</h3>
+        </div>
+        <div class="modal-body">
+            <p>정말 <strong id="deleteBookName"></strong>을(를) 삭제하시겠습니까?</p>
+            <p class="warning-text">이 작업은 되돌릴 수 없으며, 모든 에피소드가 함께 삭제됩니다.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-cancel" id="cancelDelete">취소</button>
+            <button type="button" class="btn btn-danger" id="confirmDelete">삭제하기</button>
+        </div>
+    </div>
+    
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// 아바타 이미지 미리보기
-document.getElementById('avatarInput').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        if (file.size > 5 * 1024 * 1024) {
-            alert('파일 크기는 5MB 이하여야 합니다.');
-            this.value = '';
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('avatarPreview').src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-        document.getElementById('removeAvatarInput').value = 'false';
-    }
-});
-
-// 닉네임 글자수 카운터
-document.getElementById('nickname').addEventListener('input', function() {
-    const count = this.value.length;
-    document.getElementById('nicknameCount').textContent = count;
-    if (count > 20) {
-        this.value = this.value.substring(0, 20);
-        document.getElementById('nicknameCount').textContent = 20;
-    }
-});
-
-// 폼 제출 전 유효성 검사
-document.getElementById('profileForm').addEventListener('submit', function(e) {
-    const nickname = document.getElementById('nickname').value.trim();
-    if (!nickname) {
-        e.preventDefault();
-        alert('닉네임을 입력해주세요.');
-        document.getElementById('nickname').focus();
-        return false;
-    }
-});
-
 // 작품 삭제 기능
 const deleteModal = document.getElementById('deleteModal');
 const deleteBookName = document.getElementById('deleteBookName');
@@ -215,6 +199,7 @@ deleteBtns.forEach(btn => {
         bookIdToDelete = this.dataset.bookId;
         const bookName = this.dataset.bookName;
 
+        console.log('삭제할 bookId:', bookIdToDelete); // UUID 확인용
         deleteBookName.textContent = bookName;
         deleteModal.classList.add('active');
     });
@@ -247,7 +232,14 @@ confirmDeleteBtn.addEventListener('click', async function() {
         });
 
         if (response.ok) {
+            // 삭제 성공
             showNotification('작품이 삭제되었습니다', 'success');
+
+            // modal 닫기 & bookId 초기화
+            deleteModal.classList.remove('active');
+            bookIdToDelete = null;
+
+            // 1초 후 새로고침
             setTimeout(() => {
                 window.location.reload();
             }, 1000);
@@ -258,9 +250,6 @@ confirmDeleteBtn.addEventListener('click', async function() {
         console.error('Delete error:', error);
         showNotification('삭제 중 오류가 발생했습니다', 'error');
     }
-
-    deleteModal.classList.remove('active');
-    bookIdToDelete = null;
 });
 
 // CSRF 토큰 가져오기
