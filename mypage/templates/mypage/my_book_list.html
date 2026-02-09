@@ -156,4 +156,88 @@
 
     </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 작품 삭제 기능
+const deleteModal = document.getElementById('deleteModal');
+const deleteBookName = document.getElementById('deleteBookName');
+const confirmDeleteBtn = document.getElementById('confirmDelete');
+const cancelDeleteBtn = document.getElementById('cancelDelete');
+const deleteBtns = document.querySelectorAll('.btn-delete');
+
+let bookIdToDelete = null;
+
+// 삭제 버튼 클릭
+deleteBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+        bookIdToDelete = this.dataset.bookId;
+        const bookName = this.dataset.bookName;
+
+        deleteBookName.textContent = bookName;
+        deleteModal.classList.add('active');
+    });
+});
+
+// 취소 버튼
+cancelDeleteBtn.addEventListener('click', function() {
+    deleteModal.classList.remove('active');
+    bookIdToDelete = null;
+});
+
+// 모달 배경 클릭
+deleteModal.addEventListener('click', function(e) {
+    if (e.target === deleteModal) {
+        deleteModal.classList.remove('active');
+        bookIdToDelete = null;
+    }
+});
+
+// 삭제 확인 버튼
+confirmDeleteBtn.addEventListener('click', async function() {
+    if (!bookIdToDelete) return;
+
+    try {
+        const response = await fetch(`/book/delete/${bookIdToDelete}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+
+        if (response.ok) {
+            showNotification('작품이 삭제되었습니다', 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showNotification('삭제 중 오류가 발생했습니다', 'error');
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        showNotification('삭제 중 오류가 발생했습니다', 'error');
+    }
+
+    deleteModal.classList.remove('active');
+    bookIdToDelete = null;
+});
+
+// CSRF 토큰 가져오기
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
 {% endblock %}
