@@ -612,7 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="sub-image-title">
                             <label>제목/메모</label>
-                            <input type="text" name="sub_image_title[]" placeholder="예: 상처 입은 모습" class="form-input">
+                                            <textarea type="text" name="sub_image_title[]" placeholder="현재 상황에 맞는 스토리를 적어주세요.(400자)" maxlength="400" class="form-input" value="{{ item.sub_image.title|default:'' }}"  style="max-width: 500px; max-height: 300px;" data-login-required></textarea>
                         </div>
                     </div>
                 </div>

@@ -115,7 +115,7 @@
             💬 AI 캐릭터 생성하기
         </button>
         {% else %}
-        <a href="{% url 'character:chat-view' llm.public_uuid %}" class="intro-play-btn" data-login-required>
+        <a href="{% url 'character:chat-view' llm.public_uuid %}" class="intro-play-btn" data-login-required  onclick="showAppInstallModal(event)">
             💬 대화 시작하기
         </a>
         {% endif %}
@@ -242,6 +242,8 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/common/appWarning.js' %}"></script>
+
 <script>
 
     function renderAvatar(user) {

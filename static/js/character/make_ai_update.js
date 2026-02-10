@@ -52,7 +52,7 @@ const container = document.getElementById('sub-images-container');
 
       <div style="margin-top: 0.8rem;">
         <label>이미지 제목/메모 (선택)</label>
-        <input type="text" name="sub_image_title[]" placeholder="예: 상처 입은 모습">
+                                            <textarea type="text" name="sub_image_title[]" placeholder="현재 상황에 맞는 스토리를 적어주세요.(400자)" maxlength="400" class="form-input" value="{{ item.sub_image.title|default:'' }}"  style="max-width: 500px; max-height: 300px;" data-login-required></textarea>
       </div>
 
       <button type="button" class="remove-sub-image" style="margin-top: 0.5rem; color: #e74c3c; background: none; border: none; cursor: pointer;">

@@ -571,11 +571,30 @@ def chat_logic(request, llm_uuid):
             current_hp = conv_state.character_stats.get('hp', 100)
             max_hp = conv_state.character_stats.get('max_hp', 100)
 
+            story_title = ""  # 기본값: 빈 문자열
+
+            # HPImageMapping에서 current_hp가 속한 구간 찾기
+            hp_mapping = HPImageMapping.objects.filter(
+                llm=llm,                    # 현재 LLM
+                min_hp__lte=current_hp,     # min_hp <= current_hp
+                max_hp__gte=current_hp      # max_hp >= current_hp
+            ).select_related('sub_image').first()  # 가장 먼저 매칭되는 하나만 가져옴
+
+            if hp_mapping and hp_mapping.sub_image:
+                # title이 있으면 title 사용, 없으면 description 사용 (또는 둘 다)
+                story_title = hp_mapping.sub_image.title.strip() if hp_mapping.sub_image.title else ""
+                
+                # 만약 description도 함께 쓰고 싶다면:
+                # story_description = hp_mapping.sub_image.description.strip() if hp_mapping.sub_image.description else ""
+                # story_title = f"{story_title} | {story_description}".strip(" | ")
+
+            # 디버깅용 로그 (필요할 때만)
+            print(f"[DEBUG] Current HP: {current_hp}, Found mapping: {hp_mapping}, story_title: '{story_title}'")
             # 3. 응답 생성 (HP 정보 포함)
             if "grok" in llm.model.lower():
-                raw_response = generate_response_grok(llm, chat_history, user_text, current_hp, max_hp)
+                raw_response = generate_response_grok(llm, chat_history, user_text, current_hp, max_hp, story_hint=story_title)
             else:
-                raw_response = generate_response_gpt(llm, chat_history, user_text, current_hp, max_hp)
+                raw_response = generate_response_gpt(llm, chat_history, user_text, current_hp, max_hp, story_hint=story_title)
 
             # 4. HP 변경 파싱 및 처리
             clean_response, hp_change = parse_hp_from_response(raw_response)

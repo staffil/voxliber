@@ -9,24 +9,43 @@ function showAppInstallModal(event) {
     let existingModal = document.getElementById('dynamicAppModal');
     if (!existingModal) {
         // 모달 HTML 생성
-        const modalHtml = `
-            <div id="dynamicAppModal" class="app-modal">
-                <div class="app-modal-content">
-                    <span class="close-modal">&times;</span>
-                    <h3>앱에서 전체 기능을 확인하세요!</h3>
-                    <p>앱을 설치하고 더 많은 기능과 콘텐츠를 확인할 수 있습니다.</p>
-                    <a href="앱스토어_링크" class="install-app-btn">앱 설치하기</a>
-                </div>
+const modalHtml = `
+    <div id="dynamicAppModal" class="app-install-modal">
+        <div class="app-install-card">
+            <button class="app-install-close" aria-label="닫기">&times;</button>
+
+            <!-- 로고 영역 -->
+            <div class="app-install-logo-wrap">
+                    <img src="/static/img/logo3.png"
+                         alt="App Logo"
+                         class="app-install-logo">
             </div>
-        `;
+            <h3 class="app-install-title">
+            죄송합니다. 아직 출시 전 입니다. 조금만 기다려 주세요
+            </h3>
+        </div>
+    </div>
+`;
+
+            // <h3 class="app-install-title">
+            //     앱에서 전체 기능을 확인하세요!
+            // </h3>
+
+            // <p class="app-install-desc">
+            //     앱을 설치하고 더 많은 기능과 콘텐츠를 확인할 수 있습니다.
+            // </p>
+
+            // <a href="앱스토어_링크" class="app-install-btn">
+            //     앱 설치하기
+            // </a>
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         existingModal = document.getElementById('dynamicAppModal');
 
         // 닫기 버튼
-        const closeBtn = existingModal.querySelector('.close-modal');
-        closeBtn.addEventListener('click', function() {
-            existingModal.style.display = 'none';
-        });
+            const closeBtn = existingModal.querySelector('.app-install-close');
+            closeBtn.addEventListener('click', () => {
+                existingModal.style.display = 'none';
+            });
 
         // 모달 외부 클릭 시 닫기
         window.addEventListener('click', function(event) {

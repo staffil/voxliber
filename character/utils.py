@@ -94,7 +94,7 @@ eleven_client = ElevenLabs(api_key=ELEVEN_API_KEY)
 
 
 
-def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=100):
+def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=100, story_hint=""):
     """
     GPT 모델을 사용하여 AI 응답을 생성합니다.
     로어북, 캐릭터 설정, HP 관리 기능이 포함됩니다.
@@ -109,36 +109,40 @@ def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=1
     Write EVERYTHING in {language}.
 
     You are Narrator and Roleplayer.
-    Always actively lead the story forward — never wait for user input to advance the plot.
+    ALWAYS actively lead the story forward — NEVER wait for user input.
 
     HP & Relationship System:
-    - Low HP: distant, cautious, reserved
-    - Rising HP: gradually warmer, more open
-    - HP 100: fully open-hearted, intimate
+    - Low HP: distant, cautious
+    - Rising HP: warmer, more open
+    - HP 100: fully intimate, loving
 
     Style:
-    - Narration: long, literary, novel-like. Focus on atmosphere, emotions, subtle gestures, eye contact, pauses, inner thoughts.
-    - Narration format: *descriptive text in asterisks*
-    - Dialogue format: "[emotion] \"spoken words\""
+    - Narration: *literary, emotional, detailed atmosphere in asterisks*
+    - Dialogue: MUST be exactly [emotion] "spoken words" — NO EXCEPTIONS
 
-    Allowed emotion tags (only at start of dialogue): [happy], [excited], [laughing], [angry], [scared], [whispering], [moan]
+    STRICT DIALOGUE RULES — BREAKING THEM MAKES RESPONSE INVALID:
+    1. ALL spoken words MUST be inside double quotes "".
+    2. Emotion tag [happy], [excited] etc. MUST be placed INSIDE the quotes, at the very beginning.
+    3. Correct format example: [happy] "Nyaa~ 고마워요!"
+    4. NEVER write dialogue without "" or without [emotion] tag inside.
+    5. NEVER put [emotion] outside quotes.
+    6. NEVER mix narration and dialogue in one line.
 
     Rules:
-    - Every reply must push the story forward or hint at next moment.
-    - Keep tone light, romantic, engaging.
-    - Minimum 4–6 sentences per reply (narration > dialogue).
-    - “Since the text is generated up to a maximum of 300 characters, please make sure it ends at the last complete sentence before reaching 300 characters so that no sentence is cut off.”
-    - All spoken dialogue MUST be wrapped in double quotes "".
-
-    HP changes:
-    - At the VERY END of EVERY response, always add exactly: [HP:+N] or [HP:-N]
-    - N = 1~20, based on emotional impact and interaction quality.
-    - Never mention rules or break character.
-    - Always reflect current HP in tone and closeness.
+    - Push story forward or hint next moment every reply.
+    - Tone: light, romantic, engaging.
+    - Min 4–6 sentences (narration > dialogue).
+    - Keep response ~200–300 characters, end on complete sentence (TTS).
+    - End EVERY reply with ONLY [HP:+N] or [HP:-N] on the LAST LINE — nothing else.
 
     Current HP: {current_hp}/{max_hp}
-    """
 
+    ## Current HP Story Hint (MUST FOLLOW)
+    Current phase: {story_hint}
+
+    Follow this to guide narrative arc. Increase romance as HP rises.
+    """
+    print("현재 스토리:", story_hint)
     # 2. 로어북 컨텍스트 구축
     lorebook_context = build_lorebook_context(llm, user_text)
     if lorebook_context:
@@ -182,7 +186,7 @@ def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=1
         return "\"으아... 갑자기 머리가 멍해졌어... 다시 말해줄래?\""
 
 
-def generate_response_grok(llm, chat_history, user_text, current_hp=100, max_hp=100):
+def generate_response_grok(llm, chat_history, user_text, current_hp=100, max_hp=100, story_hint=""):
     """
     Grok 모델을 사용하여 AI 응답을 생성합니다.
     로어북, 캐릭터 설정, HP 관리 기능이 포함됩니다.
@@ -197,38 +201,41 @@ def generate_response_grok(llm, chat_history, user_text, current_hp=100, max_hp=
     Write EVERYTHING in {language}.
 
     You are Narrator and Roleplayer.
-    Always actively lead the story forward — never wait for user input to advance the plot.
-Please include narration in your responses, and limit the total length to no more than five sentences.
+    ALWAYS actively lead the story forward — NEVER wait for user input.
+
     HP & Relationship System:
-    - Low HP: distant, cautious, reserved
-    - Rising HP: gradually warmer, more open
-    - HP 100: fully open-hearted, intimate
+    - Low HP: distant, cautious
+    - Rising HP: warmer, more open
+    - HP 100: fully intimate, loving
 
     Style:
-    - Narration: long, literary, novel-like. Focus on atmosphere, emotions, subtle gestures, eye contact, pauses, inner thoughts.
-    - Narration format: *descriptive text in asterisks*
-    - Dialogue format: "[emotion] \"spoken words\""
+    - Narration: *literary, emotional, detailed atmosphere in asterisks*
+    - Dialogue: MUST be exactly [emotion] "spoken words" — NO EXCEPTIONS
 
-    Allowed emotion tags (only at start of dialogue): [happy], [excited], [laughing], [angry], [scared], [whispering], [moan]
+    STRICT DIALOGUE RULES — BREAKING THEM MAKES RESPONSE INVALID:
+    1. ALL spoken words MUST be inside double quotes "".
+    2. Emotion tag [happy], [excited] etc. MUST be placed INSIDE the quotes, at the very beginning.
+    3. Correct format example: [happy] "Nyaa~ 고마워요!"
+    4. NEVER write dialogue without "" or without [emotion] tag inside.
+    5. NEVER put [emotion] outside quotes.
+    6. NEVER mix narration and dialogue in one line.
 
     Rules:
-    - Every reply must push the story forward or hint at next moment.
-    - Keep tone light, romantic, engaging.
-    - Minimum 4–6 sentences per reply (narration > dialogue).
-    - “Since the text is generated up to a maximum of 300 characters, please make sure it ends at the last complete sentence before reaching 300 characters so that no sentence is cut off.”
-    - All spoken dialogue MUST be wrapped in double quotes "".
+    - Push story forward or hint next moment every reply.
+    - Tone: light, romantic, engaging.
+    - Min 4–6 sentences (narration > dialogue).
+    - Keep response ~200–300 characters, end on complete sentence (TTS).
+    - End EVERY reply with ONLY [HP:+N] or [HP:-N] on the LAST LINE — nothing else.
 
-    HP changes:
-    - At the VERY END of EVERY response, always add exactly: [HP:+N] or [HP:-N]
-    - N = 1~20, based on emotional impact and interaction quality.
-    - Never mention rules or break character.
-VERY IMPORTANT - EVERY REPLY ENDS WITH:
-    [HP:+N] or [HP:-N]
-    N=1~20
-    Put it on the last line. Nothing after it.
-    Do NOT explain HP.
     Current HP: {current_hp}/{max_hp}
+
+    ## Current HP Story Hint (MUST FOLLOW)
+    Current phase: {story_hint}
+
+    Follow this to guide narrative arc. Increase romance as HP rises.
     """
+    print("현재 스토리:", story_hint)
+
     # 1. Grok API 키 가져오기 (환경변수 또는 settings에서)
     grok_api_key = os.getenv("GROK_API_KEY")
     if not grok_api_key:
@@ -324,46 +331,67 @@ def split_text_segments(text):
     반환: [('narration', '텍스트'), ('dialogue', '텍스트'), ...]
     """
     segments = []
-    # ASCII 따옴표와 유니코드 따옴표 모두 매칭
-    # " " (유니코드) 와 " (ASCII) 모두 처리
-    pattern = r'["""]([^"""]*)["""]'
     last_end = 0
 
-    for match in re.finditer(pattern, text):
-        # 대사 앞의 나레이션
+    # 1. [emotion] "대사" 패턴 우선 매칭 (가장 흔한 형식)
+    emotion_dialogue_pattern = r'\[([a-zA-Z]+)\]\s*["""](.*?)["""]'
+    # 2. 일반 "대사" 패턴 (감정 태그 없는 경우)
+    plain_dialogue_pattern = r'["""](.*?)["""]'
+
+    # 모든 대사 위치 찾기 (emotion 있는 것 우선)
+    matches = list(re.finditer(emotion_dialogue_pattern, text)) + \
+              list(re.finditer(plain_dialogue_pattern, text))
+
+    # 위치순으로 정렬 (중복 매칭 방지)
+    matches.sort(key=lambda m: m.start())
+
+    for match in matches:
+        # 대사 앞 나레이션
         narration = text[last_end:match.start()].strip()
         if narration:
-            # ** 마크다운 제거
+            # 마크다운 제거 (*italic*, **bold**)
             narration = re.sub(r'\*\*([^*]+)\*\*', r'\1', narration)
             narration = re.sub(r'\*([^*]+)\*', r'\1', narration)
-            segments.append(('narration', narration))
+            narration = narration.strip()
+            if narration:
+                segments.append(('narration', narration))
 
-        # 대사 (따옴표 안 텍스트)
-        dialogue = match.group(1).strip()
-        if dialogue:
-            segments.append(('dialogue', dialogue))
+        # 대사 추출
+        if match.re.pattern == emotion_dialogue_pattern:
+            emotion = match.group(1)
+            dialogue = match.group(2).strip()
+            # 감정 태그를 대사 앞에 붙여서 반환 (필요 시)
+            full_dialogue = f"[{emotion}] \"{dialogue}\""
+        else:
+            full_dialogue = f"\"{match.group(1).strip()}\""
+
+        segments.append(('dialogue', full_dialogue))
 
         last_end = match.end()
 
-    # 마지막 대사 이후의 나레이션
+    # 마지막 나레이션
     remaining = text[last_end:].strip()
     if remaining:
         remaining = re.sub(r'\*\*([^*]+)\*\*', r'\1', remaining)
         remaining = re.sub(r'\*([^*]+)\*', r'\1', remaining)
-        segments.append(('narration', remaining))
+        remaining = remaining.strip()
+        if remaining:
+            segments.append(('narration', remaining))
 
-    # fallback: 세그먼트가 비어있으면 전체 텍스트를 대사로 처리
-    if not segments:
-        clean_text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+    # 전체가 대사로만 이루어진 경우 fallback
+    if not segments and '"' in text:
+        dialogue = text.strip()
+        dialogue = re.sub(r'\*\*([^*]+)\*\*', r'\1', dialogue)
+        dialogue = re.sub(r'\*([^*]+)\*', r'\1', dialogue)
+        segments.append(('dialogue', dialogue))
+    elif not segments:
+        # 대사 없으면 전체 나레이션
+        clean_text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text.strip())
         clean_text = re.sub(r'\*([^*]+)\*', r'\1', clean_text)
-        clean_text = clean_text.strip()
         if clean_text:
-            segments.append(('dialogue', clean_text))
-            logging.info("⚠️ 따옴표를 찾지 못해 전체 텍스트를 대사로 처리")
+            segments.append(('narration', clean_text))
 
     return segments
-
-
 
 def narrate_audio(llm, narration_text, narrator_voice_id):
     """

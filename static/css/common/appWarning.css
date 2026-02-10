@@ -1,67 +1,117 @@
-/* 모달 전체 배경 */
-.app-modal {
-    display: none; /* 기본 숨김 */
+/* ===== 앱 설치 모달 전용 ===== */
+
+/* 배경 */
+.app-install-modal {
     position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5); /* 반투명 검은 배경 */
-    overflow: auto;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: none;
 }
 
-/* 모달 내부 콘텐츠 */
-.app-modal-content {
-    background-color: #fff;
-    margin: 10% auto; /* 화면 중앙 정렬 */
-    padding: 20px;
-    border-radius: 10px;
+/* 카드 */
+.app-install-card {
+    position: relative;
     width: 90%;
-    max-width: 400px;
+    max-width: 380px;
+    margin: 12vh auto;
+    background: #fff;
+    border-radius: 18px;
+    padding: 28px 22px 24px;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+    animation: appInstallFadeUp 0.25s ease-out;
 }
 
-/* 닫기 버튼 */
-.close-modal {
-    float: right;
-    font-size: 24px;
-    font-weight: bold;
+/* 닫기 */
+.app-install-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    border: none;
+    background: none;
+    font-size: 22px;
     cursor: pointer;
-    color: #333;
+    color: #9ca3af;
 }
 
-.close-modal:hover {
-    color: #007bff;
+.app-install-close:hover {
+    color: #4f46e5;
 }
 
-/* 앱 설치 버튼 */
-.install-app-btn {
-    display: inline-block;
-    margin-top: 16px;
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border-radius: 6px;
+/* 로고 래퍼 */
+.app-install-logo-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+/* 로고 배경 (앱 아이콘 감성) */
+.app-install-logo-bg {
+    width: 96px;
+    height: 96px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 12px 28px rgba(79,70,229,0.35),
+        inset 0 0 0 1px rgba(255,255,255,0.3);
+}
+
+/* 로고 */
+.app-install-logo {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25));
+}
+
+/* 타이틀 */
+.app-install-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 10px 0 8px;
+    color: #111827;
+}
+
+/* 설명 */
+.app-install-desc {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin-bottom: 18px;
+}
+
+/* 설치 버튼 */
+.app-install-btn {
+    display: block;
+    width: 100%;
+    padding: 12px 0;
+    background: #4f46e5;
+    color: #fff;
+    border-radius: 14px;
     text-decoration: none;
     font-weight: 600;
-    transition: background-color 0.3s;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s;
 }
 
-.install-app-btn:hover {
-    background-color: #0056b3;
+.app-install-btn:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(79,70,229,0.35);
 }
 
-/* 모달 내용 텍스트 스타일 */
-.app-modal-content h3 {
-    font-size: 18px;
-    margin-bottom: 12px;
-    color: #111;
-}
-
-.app-modal-content p {
-    font-size: 14px;
-    color: #555;
-    line-height: 1.5;
+/* 애니메이션 */
+@keyframes appInstallFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
