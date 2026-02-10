@@ -82,7 +82,7 @@ class LLM(models.Model):
 class LLMSubImage(models.Model):
     llm = models.ForeignKey('character.LLM', on_delete=models.CASCADE, related_name='sub_images', null=True)
     image = models.ImageField(upload_to='uploads/llm_sub_images/', max_length=500, null=True)
-    title = models.CharField(max_length=100, blank=True, null=True)
+    title = models.CharField(max_length=400, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True, null=True )
