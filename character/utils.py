@@ -127,6 +127,7 @@ def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=1
     - Every reply must push the story forward or hint at next moment.
     - Keep tone light, romantic, engaging.
     - Minimum 4–6 sentences per reply (narration > dialogue).
+    - “Since the text is generated up to a maximum of 300 characters, please make sure it ends at the last complete sentence before reaching 300 characters so that no sentence is cut off.”
     - All spoken dialogue MUST be wrapped in double quotes "".
 
     HP changes:
@@ -214,6 +215,7 @@ Please include narration in your responses, and limit the total length to no mor
     - Every reply must push the story forward or hint at next moment.
     - Keep tone light, romantic, engaging.
     - Minimum 4–6 sentences per reply (narration > dialogue).
+    - “Since the text is generated up to a maximum of 300 characters, please make sure it ends at the last complete sentence before reaching 300 characters so that no sentence is cut off.”
     - All spoken dialogue MUST be wrapped in double quotes "".
 
     HP changes:
