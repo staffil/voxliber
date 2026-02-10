@@ -153,7 +153,7 @@
 
                 <!-- 태그 검색/추가 입력 -->
                 <div class="tag-input-wrapper">
-                    <input type="text" id="tag-search" class="tag-search-input" placeholder="태그 검색 또는 추가..." data-login-required>
+                    <input type="text" id="tag-search" class="tag-search-input" placeholder="태그 검색 또는 추가..." data-login-required name="tags">
                     <button type="button" id="add-tag-btn" class="add-tag-btn" data-login-required>추가</button>
                 </div>
 
@@ -241,6 +241,7 @@ const mediaUploadArea = document.getElementById('media-upload-area');
     const previewImage = document.getElementById('media-preview-image');
     const previewVideo = document.getElementById('media-preview-video');
     const placeholder = document.getElementById('media-placeholder');
+    const uploadArea  = document.getElementById('')
 
     if (mediaUploadArea && mediaFileInput) {
         mediaUploadArea.addEventListener('click', () => mediaFileInput.click());
@@ -297,42 +298,6 @@ const mediaUploadArea = document.getElementById('media-upload-area');
         });
     }
 
-    if (uploadArea && fileInput) {
-        uploadArea.addEventListener('click', () => fileInput.click());
-
-        fileInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                    if (placeholder) placeholder.style.display = 'none';
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // 드래그 앤 드롭
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                fileInput.files = e.dataTransfer.files;
-                fileInput.dispatchEvent(new Event('change'));
-            }
-        });
-    }
 
     // 장르 선택 시각적 피드백
     document.querySelectorAll('.genre-option input').forEach(checkbox => {
@@ -517,51 +482,6 @@ function updateSelectedTags() {
     updateSelectedTags();
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    const uploadArea = document.getElementById('desc-upload-area');
-    const fileInput = document.getElementById('desc-image-input');
-    const preview = document.getElementById('desc-preview');
-    const placeholder = document.getElementById('desc-placeholder');
-
-    // 클릭 시 파일 선택창 열기
-    if (uploadArea && fileInput) {
-        uploadArea.addEventListener('click', () => fileInput.click());
-
-        // 파일 선택 시 미리보기 업데이트
-        fileInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                    if (placeholder) placeholder.style.display = 'none';
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // 드래그 앤 드롭 지원 (옵션, 편의성 ↑)
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover'); // CSS로 hover 효과 주기
-        });
-
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                fileInput.files = e.dataTransfer.files;
-                fileInput.dispatchEvent(new Event('change'));
-            }
-        });
-    }
-});
 
 </script>
 {% endblock %}
