@@ -567,7 +567,7 @@ def chat_logic(request, llm_uuid):
             # 2. ConversationState에서 현재 HP 가져오기
             conv_state, _ = ConversationState.objects.get_or_create(
                 conversation=conversation,
-                defaults={'character_stats': {'hp': 100, 'max_hp': 100}}
+                defaults={'character_stats': {'hp': 0, 'max_hp': 100}}
             )
             current_hp = conv_state.character_stats.get('hp', 100)
             max_hp = conv_state.character_stats.get('max_hp', 100)
