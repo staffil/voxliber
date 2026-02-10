@@ -551,7 +551,7 @@ def api_novel_result(request, conv_id):
         except Exception:
             body = {}
 
-        share_choice = bool(body.get("share_choice"))
+        share_choice = body.get("share_choice") is True
 
         conversation.is_public = share_choice
         conversation.shared_at = timezone.now() if share_choice else None
