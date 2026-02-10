@@ -150,7 +150,7 @@
 <!-- 페이지 컨텐츠 -->
 {% block content %}{% endblock %}
 <script src="{% static 'js/common/login_btn.js' %}"></script>
-<script src="{% static 'js/common/appWarning.js' %}"></script>
+<!-- <script src="{% static 'js/common/appWarning.js' %}"></script> -->
 <script>
   window.IS_AUTHENTICATED = {{ request.user.is_authenticated|yesno:"true,false" }};
 </script>

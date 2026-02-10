@@ -231,9 +231,9 @@
                             </div>
                             <div class="voice-card-info">
                                 <span class="voice-name">{{ voice.voice_name }}</span>
-                                {% if voice.voice_description %}
+                                <!-- {% if voice.voice_description %}
                                     <span class="voice-desc">{{ voice.voice_description|truncatewords:5 }}</span>
-                                {% endif %}
+                                {% endif %} -->
                             </div>
                             {% if voice.sample_audio %}
                             <button type="button" class="btn-play-sample" data-audio="{{ voice.sample_audio.url }}">
