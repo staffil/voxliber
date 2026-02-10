@@ -122,7 +122,7 @@ def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=1
 
     STRICT DIALOGUE RULES — BREAKING THEM MAKES RESPONSE INVALID:
     1. ALL spoken words MUST be inside double quotes "".
-    2. Emotion tag [happy], [excited] etc. MUST be placed INSIDE the quotes, at the very beginning.
+    2. Emotion tag [happy], [excited] etc. MUST be placed INSIDE the quotes, at the very beginning. emotion ward must write english
     3. Correct format example: [happy] "Nyaa~ 고마워요!"
     4. NEVER write dialogue without "" or without [emotion] tag inside.
     5. NEVER put [emotion] outside quotes.
