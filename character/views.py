@@ -86,11 +86,13 @@ def make_ai_story(request, story_uuid=None):
         # 생성 vs 편집
         if story is None:
             story = Story.objects.create(user=request.user, title=title, description=description, adult_choice = is_adult)
-            llm = LLM.objects.create(user=request.user)
+            llm = LLM.objects.create(user=request.user, story=story)
         else:
             story.title = title
             story.description = description
             story.adult_choice = is_adult
+
+
 
 
         # Cover Image
@@ -111,12 +113,11 @@ def make_ai_story(request, story_uuid=None):
             story.tags.set(Tags.objects.filter(id__in=tag_ids))
 
         # 나레이터 Voice 업데이트
-        if voice_id:
+        if voice_id and llm:
             narrator_voice = VoiceList.objects.filter(voice_id=voice_id).first()
             if narrator_voice:
                 llm.narrator_voice = narrator_voice
-            llm.save()
-
+                llm.save()
 
         if desc_img:
             try:
