@@ -888,9 +888,11 @@ def ai_intro(request, llm_uuid):
 
 
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 
 
 @csrf_exempt
+@api_view(['POST'])
 def delete_conversation(request, conv_id):
     conversation = get_object_or_404(
         Conversation,
