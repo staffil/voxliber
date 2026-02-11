@@ -892,7 +892,7 @@ from rest_framework.decorators import api_view
 
 
 @csrf_exempt
-@api_view(['POST'])
+@api_view(['DELETE'])
 def delete_conversation(request, conv_id):
     conversation = get_object_or_404(
         Conversation,
