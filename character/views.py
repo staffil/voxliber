@@ -887,12 +887,9 @@ def ai_intro(request, llm_uuid):
     return render(request, "character/ai_intro.html", context)
 
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Conversation
 
-@api_view(['DELETE'])
+@csrf_protect
+@require_http_methods(["DELETE"])
 def delete_conversation(request, conv_id):
     conversation = get_object_or_404(
         Conversation,

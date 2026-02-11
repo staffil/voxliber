@@ -109,6 +109,37 @@ def public_llm_list(request):
         'pagination': result['pagination']
     })
     
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from character.models import Conversation, ConversationMessage, ConversationState
+
+@api_view(['DELETE'])
+def api_delete_conversation(request, conv_id):
+
+    conversation = get_object_or_404(
+        Conversation,
+        id=conv_id
+    )
+
+    # 1️⃣ 메시지 삭제
+    ConversationMessage.objects.filter(
+        conversation=conversation
+    ).delete()
+
+    # 2️⃣ 상태 삭제
+    ConversationState.objects.filter(
+        conversation=conversation
+    ).delete()
+
+    # 3️⃣ 대화 삭제
+    conversation.delete()
+
+    return Response(
+        {"success": True},
+        status=status.HTTP_204_NO_CONTENT
+    )
 
 
 @csrf_exempt
