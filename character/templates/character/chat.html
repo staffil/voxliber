@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/character/chat.css' %}?v=3">
+
 {% endblock %}
 
 {% block content %}
@@ -27,7 +28,37 @@
 <div class="chat-container" id="chat-container">
     <!-- 사이드 프로필 패널 -->
     <aside class="profile-panel">
-        <div class="profile-image-wrapper">
+
+
+        
+        <!-- ✅ 해금된 서브 이미지 갤러리 -->
+        <div class="unlocked-gallery">
+            <div class="gallery-header">
+                <span class="gallery-title">해금된 장면</span>
+                <span class="gallery-count" id="gallery-count">0 / 0</span>
+            </div>
+
+            <div class="gallery-viewer" id="gallery-viewer">
+                <img src="" alt="" class="gallery-viewer-img" id="gallery-viewer-img">
+
+                <div class="gallery-locked-msg" id="gallery-locked-msg" style="display:none;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.5" opacity="0.5">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <span>아직 해금된 장면이 없어요</span>
+                </div>
+
+                <div class="gallery-caption" id="gallery-caption"></div>
+
+                <button class="gallery-nav prev" id="gallery-prev">&#8249;</button>
+                <button class="gallery-nav next" id="gallery-next">&#8250;</button>
+            </div>
+
+            <div class="gallery-dots" id="gallery-dots"></div>
+        </div>
+        <!-- <div class="profile-image-wrapper">
             {% if llm.llm_image %}
             <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}" class="profile-image" id="profile-image">
             {% else %}
@@ -36,7 +67,7 @@
             </div>
             {% endif %}
             <div class="profile-gradient-overlay"></div>
-        </div>
+        </div> -->
 
         <div class="profile-info">
             <h2 class="profile-name">{{ llm.name }}</h2>
@@ -57,6 +88,7 @@
             </div>
         </div>
 
+
         <!-- 배경 보기 버튼 (데스크탑) -->
         <button class="view-background-btn" id="desktop-toggle-background-btn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -65,24 +97,27 @@
             </svg>
             <span>배경 이미지 보기</span>
         </button>
-<div class="lore-hint-box">
-    <div class="lore-hint-title">
-        💡 반응하는 단어
-    </div>
 
-    <div class="lore-hint-desc">
-        이 단어들을 자연스럽게 사용하면<br>
-        호감도가 더 쉽게 올라갈지도 몰라요.
-    </div>
+        {% if not last_wards.is_public %}
+        <a class="view-background-btn" href="{% url 'character:last_ward' llm.public_uuid %}" style="background-color: rgb(223, 74, 131);">마지막 스토리 보기</a>
+        {% endif %}
 
-    <div class="lore-hint-tags">
-        {% for ward in loarbook_list %}
-            <span class="lore-tag">{{ ward.keys }}</span>
-        {% empty %}
-            <span class="lore-empty">아직 발견된 단서가 없습니다</span>
-        {% endfor %}
-    </div>
-</div>
+        <div class="lore-hint-box">
+            <div class="lore-hint-title">
+                💡 반응하는 단어
+            </div>
+            <div class="lore-hint-desc">
+                이 단어들을 자연스럽게 사용하면<br>
+                호감도가 더 쉽게 올라갈지도 몰라요.
+            </div>
+            <div class="lore-hint-tags">
+                {% for ward in loarbook_list %}
+                    <span class="lore-tag">{{ ward.keys }}</span>
+                {% empty %}
+                    <span class="lore-empty">아직 발견된 단서가 없습니다</span>
+                {% endfor %}
+            </div>
+        </div>
 
         <a href="javascript:history.back()" class="back-btn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -111,7 +146,6 @@
                 </div>
             </div>
             <div class="mobile-header-actions">
-                <!-- 배경 보기 버튼 -->
                 <button class="header-icon-btn" id="toggle-background-btn" title="배경 이미지 보기">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -129,7 +163,6 @@
         <!-- 메시지 영역 -->
         <div class="messages-container" id="message-area">
             {% if not messages %}
-            <!-- 첫 인사 메시지 -->
             <div class="message ai-message">
                 <div class="message-avatar">
                     {% if llm.llm_image %}
@@ -210,28 +243,73 @@
     </main>
 </div>
 
+
 <!-- 숨겨진 오디오 요소 -->
 <audio id="global-audio" style="display:none;"></audio>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/character/chat.js' %}"></script>
+
+<script>
+// HP 100 이상이면 최종 오버레이 표시
+document.addEventListener('DOMContentLoaded', function() {
+    if (currentHp >= 100) {
+        const overlay = document.getElementById('final-overlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.classList.add('show'), 100);
+        }
+    }
+
+    const continueBtn = document.getElementById('continue-story');
+    const restartBtn  = document.getElementById('restart-story');
+    const newBtn      = document.getElementById('new-story');
+    const closeBtn    = document.getElementById('final-close-btn');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            const overlay = document.getElementById('final-overlay');
+            overlay.classList.remove('show');
+            setTimeout(() => overlay.style.display = 'none', 600);
+        });
+    }
+    if (continueBtn) {
+        continueBtn.addEventListener('click', () => {
+            const overlay = document.getElementById('final-overlay');
+            overlay.classList.remove('show');
+            setTimeout(() => overlay.style.display = 'none', 600);
+        });
+    }
+    if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+            if (confirm('정말 처음부터 다시 시작하시겠어요?')) {
+                window.location.reload();
+            }
+        });
+    }
+    if (newBtn) {
+        newBtn.addEventListener('click', () => {
+            window.location.href = '/';
+        });
+    }
+});
+</script>
+
 <script>
 // ====================================
 // 기본 설정
 // ====================================
-const aiImage = '{% if llm.llm_image %}{{ llm.llm_image.url }}{% endif %}';
-const aiName = '{{ llm.name|escapejs }}';
-const llmUuid = '{{ llm.public_uuid }}';
-const ttsUrl = '{% url "character:chat-tts" llm.public_uuid %}';
-const chatUrl = '{% url "character:chat-logic" llm.public_uuid %}';
+const aiImage  = '{% if llm.llm_image %}{{ llm.llm_image.url }}{% endif %}';
+const aiName   = '{{ llm.name|escapejs }}';
+const llmUuid  = '{{ llm.public_uuid }}';
+const ttsUrl   = '{% url "character:chat-tts" llm.public_uuid %}';
+const chatUrl  = '{% url "character:chat-logic" llm.public_uuid %}';
 const csrfToken = '{{ csrf_token }}';
 
-// HP 설정
 let currentHp = {{ current_hp|default:0 }};
-let maxHp = {{ max_hp|default:100 }};
+let maxHp     = {{ max_hp|default:100 }};
 
-// 서브 이미지
 const subImages = [
     {% for sub in sub_images_data %}
     { image: '{{ sub.image_url }}', minHp: {{ sub.min_hp }}, maxHp: {{ sub.max_hp }}, title: '{{ sub.title|escapejs|default:"" }}' }{% if not forloop.last %},{% endif %}
@@ -251,13 +329,12 @@ function stopAllAudio() {
     }
     if (currentPlayingBtn) {
         currentPlayingBtn.classList.remove('playing');
-        const playIcon = currentPlayingBtn.querySelector('.icon-play');
+        const playIcon  = currentPlayingBtn.querySelector('.icon-play');
         const pauseIcon = currentPlayingBtn.querySelector('.icon-pause');
-        if (playIcon) playIcon.style.display = '';
+        if (playIcon)  playIcon.style.display  = '';
         if (pauseIcon) pauseIcon.style.display = 'none';
         currentPlayingBtn = null;
     }
-    // 모든 버튼 활성화
     document.querySelectorAll('.audio-btn').forEach(btn => {
         btn.disabled = false;
         btn.classList.remove('disabled');
@@ -266,15 +343,12 @@ function stopAllAudio() {
 
 function playAudio(audioUrl, btn) {
     if (currentPlayingBtn === btn && !globalAudio.paused) {
-        // 현재 재생 중이면 일시정지
         globalAudio.pause();
         btn.classList.remove('playing');
-        const playIcon = btn.querySelector('.icon-play');
+        const playIcon  = btn.querySelector('.icon-play');
         const pauseIcon = btn.querySelector('.icon-pause');
-        if (playIcon) playIcon.style.display = '';
+        if (playIcon)  playIcon.style.display  = '';
         if (pauseIcon) pauseIcon.style.display = 'none';
-
-        // 다른 버튼들 활성화
         document.querySelectorAll('.audio-btn').forEach(b => {
             b.disabled = false;
             b.classList.remove('disabled');
@@ -282,37 +356,22 @@ function playAudio(audioUrl, btn) {
         currentPlayingBtn = null;
         return;
     }
-
-    // 다른 오디오 중지
     stopAllAudio();
-
-    // 새 오디오 재생
     globalAudio.src = audioUrl;
     globalAudio.play();
     currentPlayingBtn = btn;
     btn.classList.add('playing');
-
-    const playIcon = btn.querySelector('.icon-play');
+    const playIcon  = btn.querySelector('.icon-play');
     const pauseIcon = btn.querySelector('.icon-pause');
-    if (playIcon) playIcon.style.display = 'none';
+    if (playIcon)  playIcon.style.display  = 'none';
     if (pauseIcon) pauseIcon.style.display = '';
-
-    // 다른 버튼들 비활성화
     document.querySelectorAll('.audio-btn').forEach(b => {
-        if (b !== btn) {
-            b.disabled = true;
-            b.classList.add('disabled');
-        }
+        if (b !== btn) { b.disabled = true; b.classList.add('disabled'); }
     });
 }
 
-globalAudio.addEventListener('ended', () => {
-    stopAllAudio();
-});
-
-globalAudio.addEventListener('error', () => {
-    stopAllAudio();
-});
+globalAudio.addEventListener('ended', stopAllAudio);
+globalAudio.addEventListener('error', stopAllAudio);
 
 // ====================================
 // HP 업데이트
@@ -321,38 +380,31 @@ function updateHp(newHp) {
     currentHp = Math.max(0, Math.min(newHp, maxHp));
     const percentage = (currentHp / maxHp) * 100;
 
-    const hpBar = document.getElementById('hp-bar');
+    const hpBar   = document.getElementById('hp-bar');
     const hpValue = document.getElementById('hp-value');
 
     if (hpBar) {
         hpBar.style.width = percentage + '%';
-
-        // HP에 따른 색상
-        if (percentage > 70) {
-            hpBar.className = 'hp-fill hp-high';
-        } else if (percentage > 30) {
-            hpBar.className = 'hp-fill hp-medium';
-        } else {
-            hpBar.className = 'hp-fill hp-low';
-        }
+        if (percentage > 70)      hpBar.className = 'hp-fill hp-high';
+        else if (percentage > 30) hpBar.className = 'hp-fill hp-medium';
+        else                      hpBar.className = 'hp-fill hp-low';
     }
-
     if (hpValue) {
         hpValue.textContent = `${currentHp} / ${maxHp}`;
     }
 
     updateProfileImage(currentHp);
+
+    // 갤러리도 갱신
+    if (typeof renderGallery === 'function') renderGallery();
 }
 
 function updateProfileImage(hp) {
     const profileImg = document.getElementById('profile-image');
     if (!profileImg) return;
-
     const matchingImage = subImages.find(sub => hp >= sub.minHp && hp <= sub.maxHp);
     const nextSrc = (matchingImage && matchingImage.image) ? matchingImage.image : aiImage;
-
     if (!nextSrc || profileImg.src.includes(nextSrc)) return;
-
     profileImg.style.opacity = '0';
     setTimeout(() => {
         profileImg.src = nextSrc;
@@ -365,61 +417,36 @@ function updateProfileImage(hp) {
 // ====================================
 function formatAIText(text) {
     let result = '';
-    let remaining = text;
-
-    // 패턴 1: *나레이션* 형식
-    // 패턴 2: "대사" 형식
-    // 패턴 3: [감정] 형식
-
-    // 정규식으로 파싱
     const parts = [];
     let lastIndex = 0;
-
-    // "대사" 찾기
     const dialogueRegex = /"([^"]+)"/g;
     let match;
 
     while ((match = dialogueRegex.exec(text)) !== null) {
-        // 대사 앞 부분 (나레이션)
         if (match.index > lastIndex) {
             const narration = text.substring(lastIndex, match.index).trim();
-            if (narration) {
-                parts.push({ type: 'narration', text: narration });
-            }
+            if (narration) parts.push({ type: 'narration', text: narration });
         }
-
-        // 대사
         parts.push({ type: 'dialogue', text: match[1] });
         lastIndex = match.index + match[0].length;
     }
-
-    // 남은 부분 (나레이션)
     if (lastIndex < text.length) {
         const remaining = text.substring(lastIndex).trim();
-        if (remaining) {
-            parts.push({ type: 'narration', text: remaining });
-        }
+        if (remaining) parts.push({ type: 'narration', text: remaining });
     }
+    if (parts.length === 0) parts.push({ type: 'dialogue', text: text });
 
-    // 파싱 결과가 없으면 전체를 대사로 처리
-    if (parts.length === 0) {
-        parts.push({ type: 'dialogue', text: text });
-    }
-
-    // HTML 생성
     parts.forEach(part => {
         let content = part.text
             .replace(/\n/g, '<br>')
-            .replace(/\*([^*]+)\*/g, '<em>$1</em>') // *이탤릭*
-            .replace(/\[([^\]]+)\]/g, '<span class="text-emotion">$1</span>'); // [감정]
-
+            .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+            .replace(/\[([^\]]+)\]/g, '<span class="text-emotion">$1</span>');
         if (part.type === 'narration') {
             result += `<span class="text-narration">${content}</span>`;
         } else {
             result += `<span class="text-dialogue">"${content}"</span>`;
         }
     });
-
     return result;
 }
 
@@ -427,12 +454,10 @@ function formatAIText(text) {
 // 메시지 추가
 // ====================================
 function addMessage(text, isAi = true, messageId = null) {
-    const area = document.getElementById('message-area');
+    const area   = document.getElementById('message-area');
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${isAi ? 'ai-message' : 'user-message'}`;
-    if (messageId) {
-        msgDiv.dataset.msgId = messageId;
-    }
+    if (messageId) msgDiv.dataset.msgId = messageId;
 
     if (isAi) {
         const formattedText = formatAIText(text);
@@ -441,9 +466,7 @@ function addMessage(text, isAi = true, messageId = null) {
                 ${aiImage ? `<img src="${aiImage}" alt="${aiName}">` : `<span>${aiName.charAt(0)}</span>`}
             </div>
             <div class="message-body">
-                <div class="message-bubble">
-                    ${formattedText}
-                </div>
+                <div class="message-bubble">${formattedText}</div>
                 <div class="message-actions">
                     <button class="tts-btn" data-msg-id="${messageId || ''}" title="음성 생성">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -453,17 +476,12 @@ function addMessage(text, isAi = true, messageId = null) {
                         <span>음성 생성</span>
                     </button>
                 </div>
-            </div>
-        `;
+            </div>`;
     } else {
-        const formattedText = text.replace(/\n/g, '<br>');
         msgDiv.innerHTML = `
             <div class="message-body">
-                <div class="message-bubble">
-                    <p>${formattedText}</p>
-                </div>
-            </div>
-        `;
+                <div class="message-bubble"><p>${text.replace(/\n/g, '<br>')}</p></div>
+            </div>`;
     }
 
     area.appendChild(msgDiv);
@@ -475,22 +493,19 @@ function addMessage(text, isAi = true, messageId = null) {
 // 타이핑 인디케이터
 // ====================================
 function showTypingIndicator() {
-    const area = document.getElementById('message-area');
+    const area      = document.getElementById('message-area');
     const typingDiv = document.createElement('div');
     typingDiv.className = 'message ai-message typing-indicator';
-    typingDiv.id = 'typing-indicator';
+    typingDiv.id        = 'typing-indicator';
     typingDiv.innerHTML = `
         <div class="message-avatar">
             ${aiImage ? `<img src="${aiImage}" alt="${aiName}">` : `<span>${aiName.charAt(0)}</span>`}
         </div>
         <div class="message-body">
             <div class="message-bubble typing-bubble">
-                <div class="typing-dots">
-                    <span></span><span></span><span></span>
-                </div>
+                <div class="typing-dots"><span></span><span></span><span></span></div>
             </div>
-        </div>
-    `;
+        </div>`;
     area.appendChild(typingDiv);
     area.scrollTop = area.scrollHeight;
 }
@@ -501,28 +516,117 @@ function hideTypingIndicator() {
 }
 
 // ====================================
+// 해금 갤러리
+// ====================================
+let galleryIndex = 0;
+
+function getUnlocked() {
+    return subImages.filter(sub => currentHp >= sub.minHp);
+}
+
+function renderGalleryDots(unlocked) {
+    const dotsEl = document.getElementById('gallery-dots');
+    if (!dotsEl) return;
+    dotsEl.innerHTML = '';
+    subImages.forEach((sub, i) => {
+        const isUnlocked = currentHp >= sub.minHp;
+        const isActive   = isUnlocked && unlocked.indexOf(sub) === galleryIndex;
+        const dot = document.createElement('span');
+        dot.className = 'gallery-dot' +
+            (!isUnlocked ? ' locked' : '') +
+            (isActive    ? ' active'  : '');
+        if (isUnlocked) {
+            const capturedIdx = unlocked.indexOf(sub);
+            if (capturedIdx !== -1) {
+                dot.addEventListener('click', () => {
+                    galleryIndex = capturedIdx;
+                    renderGallery();
+                });
+            }
+        }
+        dotsEl.appendChild(dot);
+    });
+}
+
+function renderGallery() {
+    const viewerImg  = document.getElementById('gallery-viewer-img');
+    const lockedMsg  = document.getElementById('gallery-locked-msg');
+    const caption    = document.getElementById('gallery-caption');
+    const countEl   = document.getElementById('gallery-count');
+    const prevBtn    = document.getElementById('gallery-prev');
+    const nextBtn    = document.getElementById('gallery-next');
+    if (!viewerImg) return;
+
+    const unlocked    = getUnlocked();
+    const unlockCount = unlocked.length;
+    const total       = subImages.length;
+
+    countEl.textContent = `${unlockCount} / ${total}`;
+
+    if (unlockCount === 0) {
+        viewerImg.style.display  = 'none';
+        lockedMsg.style.display  = 'flex';
+        caption.style.display    = 'none';
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        renderGalleryDots([]);
+        return;
+    }
+
+    if (galleryIndex >= unlockCount) galleryIndex = unlockCount - 1;
+
+    const current = unlocked[galleryIndex];
+
+    viewerImg.style.opacity = '0';
+    setTimeout(() => {
+        viewerImg.src           = current.image;
+        viewerImg.alt           = current.title || '';
+        viewerImg.style.display = 'block';
+        viewerImg.style.opacity = '1';
+    }, 180);
+
+    lockedMsg.style.display = 'none';
+
+    if (current.title) {
+        caption.textContent   = current.title;
+        caption.style.display = 'block';
+    } else {
+        caption.style.display = 'none';
+    }
+
+    prevBtn.disabled = (galleryIndex === 0);
+    nextBtn.disabled = (galleryIndex === unlockCount - 1);
+
+    renderGalleryDots(unlocked);
+}
+
+// ====================================
 // 이벤트 리스너
 // ====================================
 document.addEventListener('DOMContentLoaded', function() {
-    // HP 초기화
     updateHp(currentHp);
+
+    // 갤러리 이전/다음 버튼
+    document.getElementById('gallery-prev')?.addEventListener('click', () => {
+        if (galleryIndex > 0) { galleryIndex--; renderGallery(); }
+    });
+    document.getElementById('gallery-next')?.addEventListener('click', () => {
+        const unlocked = getUnlocked();
+        if (galleryIndex < unlocked.length - 1) { galleryIndex++; renderGallery(); }
+    });
 
     // 기존 AI 메시지 포맷팅
     document.querySelectorAll('.ai-message .message-bubble').forEach(bubble => {
         const p = bubble.querySelector('p');
         if (p && !bubble.querySelector('.text-dialogue') && !bubble.querySelector('.text-narration')) {
             const originalText = p.innerText;
-            if (originalText) {
-                bubble.innerHTML = formatAIText(originalText);
-            }
+            if (originalText) bubble.innerHTML = formatAIText(originalText);
         }
     });
 
-    // 스크롤 맨 아래로
     const area = document.getElementById('message-area');
     if (area) area.scrollTop = area.scrollHeight;
 
-    // 입력 필드 엔터 키
     const input = document.getElementById('text-input');
     if (input) {
         input.addEventListener('keydown', function(e) {
@@ -533,36 +637,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 전송 버튼
     const sendBtn = document.getElementById('send-btn');
-    if (sendBtn) {
-        sendBtn.addEventListener('click', sendTextMessage);
-    }
+    if (sendBtn) sendBtn.addEventListener('click', sendTextMessage);
 
     // 모바일 프로필 토글
     const toggleProfileBtn = document.getElementById('toggle-profile-btn');
-    const profilePanel = document.querySelector('.profile-panel');
+    const profilePanel     = document.querySelector('.profile-panel');
     if (toggleProfileBtn && profilePanel) {
-        toggleProfileBtn.addEventListener('click', function() {
-            profilePanel.classList.toggle('show');
-        });
+        toggleProfileBtn.addEventListener('click', () => profilePanel.classList.toggle('show'));
     }
 
     // 배경 이미지 뷰어 토글
-    const backgroundViewer = document.getElementById('background-viewer');
-    const chatContainer = document.getElementById('chat-container');
-    const toggleBgBtn = document.getElementById('toggle-background-btn');
+    const backgroundViewer  = document.getElementById('background-viewer');
+    const chatContainer     = document.getElementById('chat-container');
+    const toggleBgBtn       = document.getElementById('toggle-background-btn');
     const desktopToggleBgBtn = document.getElementById('desktop-toggle-background-btn');
-    const closeViewerBtn = document.getElementById('close-viewer-btn');
-    const bgViewerImage = document.getElementById('background-viewer-image');
+    const closeViewerBtn    = document.getElementById('close-viewer-btn');
+    const bgViewerImage     = document.getElementById('background-viewer-image');
 
     function showBackgroundViewer() {
-        // HP에 따른 배경 이미지 업데이트
         const matchingImage = subImages.find(sub => currentHp >= sub.minHp && currentHp <= sub.maxHp);
         const imgSrc = (matchingImage && matchingImage.image) ? matchingImage.image : aiImage;
-        if (bgViewerImage && imgSrc) {
-            bgViewerImage.src = imgSrc;
-        }
+        if (bgViewerImage && imgSrc) bgViewerImage.src = imgSrc;
         backgroundViewer.classList.add('show');
         chatContainer.classList.add('hidden');
     }
@@ -572,42 +668,26 @@ document.addEventListener('DOMContentLoaded', function() {
         chatContainer.classList.remove('hidden');
     }
 
-    if (toggleBgBtn) {
-        toggleBgBtn.addEventListener('click', showBackgroundViewer);
-    }
-    if (desktopToggleBgBtn) {
-        desktopToggleBgBtn.addEventListener('click', showBackgroundViewer);
-    }
-    if (closeViewerBtn) {
-        closeViewerBtn.addEventListener('click', hideBackgroundViewer);
-    }
+    if (toggleBgBtn)       toggleBgBtn.addEventListener('click', showBackgroundViewer);
+    if (desktopToggleBgBtn) desktopToggleBgBtn.addEventListener('click', showBackgroundViewer);
+    if (closeViewerBtn)    closeViewerBtn.addEventListener('click', hideBackgroundViewer);
 
-    // ESC 키로 배경 뷰어 닫기
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && backgroundViewer.classList.contains('show')) {
-            hideBackgroundViewer();
-        }
+        if (e.key === 'Escape' && backgroundViewer.classList.contains('show')) hideBackgroundViewer();
     });
 });
 
-// 이벤트 위임 - TTS 버튼 및 오디오 버튼
+// 이벤트 위임 - TTS / 오디오 버튼
 document.addEventListener('click', function(e) {
-    // TTS 생성 버튼
     const ttsBtn = e.target.closest('.tts-btn');
     if (ttsBtn && !ttsBtn.disabled) {
-        const msgId = ttsBtn.dataset.msgId;
-        generateTTS(ttsBtn, msgId);
+        generateTTS(ttsBtn, ttsBtn.dataset.msgId);
         return;
     }
-
-    // 오디오 재생 버튼
     const audioBtn = e.target.closest('.audio-btn');
     if (audioBtn && !audioBtn.disabled) {
         const audioUrl = audioBtn.dataset.audioUrl;
-        if (audioUrl) {
-            playAudio(audioUrl, audioBtn);
-        }
-        return;
+        if (audioUrl) playAudio(audioUrl, audioBtn);
     }
 });
 </script>

@@ -13,7 +13,7 @@ from django.conf import settings
 from main.models import SnapBtn, Advertisment, Event
 from book.models import Books,ReadingProgress, BookSnap, Content, Poem_list, BookTag, Tags, BookSnippet, VoiceList, VoiceType, Genres, Tags
 from book.service.recommendation import recommend_books
-from character.models import LLM, LLMPrompt, Prompt, LLMSubImage, Conversation, ConversationState, CharacterMemory, LoreEntry ,HPImageMapping, Story, ConversationMessage, Comment, LLMLike, StoryComment, StoryLike, StoryBookmark
+from character.models import LLM, LLMPrompt, Prompt, LLMSubImage, Conversation, ConversationState, CharacterMemory, LoreEntry ,HPImageMapping, Story, ConversationMessage, Comment, LLMLike, StoryComment, StoryLike, StoryBookmark, LastWard
 from django.core.files.base import ContentFile
 from PIL import Image
 import io
@@ -297,9 +297,24 @@ def make_ai(request, story_uuid):
                         max_hp=int(max_hp) if max_hp and max_hp.strip().isdigit() else None,
                     )
 
+
+                    
+
         llm.save()
 
-        # 성공 시 스토리 상세 페이지로 리다이렉트
+
+        # LastWard 처리
+        last_images = request.FILES.getlist('extra_last_images')
+        last_titles = request.POST.getlist('extra_last_image_title[]') or []
+        for i, img in enumerate(last_images):
+            if img:
+                LastWard.objects.create(
+                    llm=llm,
+                    image=img,
+                    ward=last_titles[i] if i < len(last_titles) else f"마지막 이미지 {i+1}",
+                    order=i
+                )
+
         return redirect('character:story_detail', story_uuid=story.public_uuid)
 
 
@@ -312,15 +327,12 @@ def make_ai(request, story_uuid):
         "story": story,
         "story_uuid": story.public_uuid,
         "is_edit_mode": False,
-    }
+        "extra_last_images": [],
+               }
     return render(request, "character/make_ai.html", context)
-
 
 @login_required_to_main
 def make_ai_update(request, llm_uuid):
-    """
-    AI 캐릭터 편집 뷰 (make_ai.html 템플릿 재사용)
-    """
     llm = get_object_or_404(LLM, public_uuid=llm_uuid, user=request.user)
     voice_list = VoiceList.objects.prefetch_related('types').all()
     voice_types = VoiceType.objects.all()
@@ -328,84 +340,48 @@ def make_ai_update(request, llm_uuid):
     tag_list = Tags.objects.all()
 
     if request.method == "POST":
-        # 폼 데이터 받기
-        ai_name = request.POST.get('ai_name')
-        prompt = request.POST.get('prompt')
-        language = request.POST.get('language', llm.language)
-        voice_id = request.POST.get('voice_id')
-        model = request.POST.get('model', llm.model)
-        first_sentence = request.POST.get('first_sentence', llm.first_sentence)
-        description = request.POST.get('description', llm.description)  # Fixed: distribute → description
-        narrator_voice_id = request.POST.get('narrator_voice_id')
-
-        # 필수값 검증
-        if not ai_name:
-            return JsonResponse({"error": "AI 이름을 입력해주세요."}, status=400)
-        if not prompt:
-            return JsonResponse({"error": "프롬프트를 입력해주세요."}, status=400)
-
-        # LLM 필드 업데이트
-        llm.name = ai_name
-        llm.prompt = prompt
-        llm.language = language
-        llm.model = model
-        llm.first_sentence = first_sentence
-        llm.description = description
+        # 기본 필드 업데이트
+        llm.name = request.POST.get('ai_name', llm.name)
+        llm.prompt = request.POST.get('prompt', llm.prompt)
+        llm.language = request.POST.get('language', llm.language)
+        llm.model = request.POST.get('model', llm.model)
+        llm.first_sentence = request.POST.get('first_sentence', llm.first_sentence)
+        llm.description = request.POST.get('description', llm.description)
 
         # 목소리 업데이트
-        if voice_id and voice_id.strip():
-            voice_obj = VoiceList.objects.filter(voice_id=voice_id.strip()).first()
-            if voice_obj:
-                llm.voice = voice_obj
-        if narrator_voice_id and narrator_voice_id.strip():
-            narrator_obj = VoiceList.objects.filter(voice_id=narrator_voice_id.strip()).first()
-            if narrator_obj:
-                llm.narrator_voice = narrator_obj
+        voice_id = request.POST.get('voice_id')
+        narrator_id = request.POST.get('narrator_voice_id')
+        if voice_id:
+            llm.voice = VoiceList.objects.filter(voice_id=voice_id).first()
+        if narrator_id:
+            llm.narrator_voice = VoiceList.objects.filter(voice_id=narrator_id).first()
 
-        # 프로필 이미지 처리 (llm_image 또는 user_image 둘 중 하나만)
+        # 프로필 이미지
         profile_image = request.FILES.get('llm_image') or request.FILES.get('user_image')
         if profile_image:
             try:
                 img = Image.open(profile_image).convert("RGB")
                 webp_io = io.BytesIO()
                 img.save(webp_io, format='WEBP', quality=85)
-                webp_content = webp_io.getvalue()
-                webp_name = f"{ai_name}_{llm.id}.webp"
-                llm.llm_image.save(webp_name, ContentFile(webp_content))
+                llm.llm_image.save(f"{llm.name}_{llm.id}.webp", ContentFile(webp_io.getvalue()))
             except Exception as e:
-                print("이미지 저장 실패:", e)
+                logging.warning(f"이미지 저장 실패: {e}")
 
-        # 장르 & 태그 업데이트 (LLM에도 저장)
-        genres = request.POST.getlist('genres')
-        tags = request.POST.getlist('tags')
+        # 장르 & 태그 업데이트
+        genre_ids = [int(g) for g in request.POST.getlist('genres') if g.strip().isdigit()]
+        tag_ids = [int(t) for t in request.POST.getlist('tags') if t.strip().isdigit()]
+        if genre_ids:
+            llm.genres.set(Genres.objects.filter(id__in=genre_ids))
+        if tag_ids:
+            llm.tags.set(Tags.objects.filter(id__in=tag_ids))
 
-        if genres:
-            try:
-                genre_ids = [int(g) for g in genres if g.strip().isdigit()]
-                llm.genres.set(Genres.objects.filter(id__in=genre_ids))
-            except ValueError:
-                pass
-
-        if tags:
-            try:
-                tag_ids = [int(t) for t in tags if t.strip().isdigit()]
-                llm.tags.set(Tags.objects.filter(id__in=tag_ids))
-            except ValueError:
-                pass
-
-        # ========================================
-        # 로어북 업데이트 (기존 삭제 후 재생성)
-        # ========================================
+        # 기존 로어북 삭제 후 재생성
+        LoreEntry.objects.filter(llm=llm).delete()
         lore_keys = request.POST.getlist('lore_keys[]')
         lore_contents = request.POST.getlist('lore_content[]')
         lore_priorities = request.POST.getlist('lore_priority[]')
         lore_always = request.POST.getlist('lore_always_active[]')
         lore_categories = request.POST.getlist('lore_category[]')
-
-        # 기존 로어북 삭제
-        LoreEntry.objects.filter(llm=llm).delete()
-
-        # 새로 저장
         for i in range(len(lore_keys)):
             key = lore_keys[i].strip() if i < len(lore_keys) else ''
             content = lore_contents[i].strip() if i < len(lore_contents) else ''
@@ -419,32 +395,22 @@ def make_ai_update(request, llm_uuid):
                     category=lore_categories[i] if i < len(lore_categories) else '',
                 )
 
-        # ========================================
         # 서브 이미지 + HP 매핑 업데이트
-        # ========================================
         sub_images = request.FILES.getlist('sub_images')
         min_hps = request.POST.getlist('min_hp[]')
         max_hps = request.POST.getlist('max_hp[]')
         sub_titles = request.POST.getlist('sub_image_title[]')
-
-        # 새 서브 이미지가 있는지 확인 (실제 파일이 있는 것만 카운트)
-        has_new_images = any(img for img in sub_images if img)
-
-        if has_new_images:
-            # 기존 HP 매핑 삭제
-            HPImageMapping.objects.filter(llm=llm).delete()
-            # 기존 서브 이미지 삭제
+        if any(sub_images):
+            # 기존 서브 이미지/HP 삭제
             LLMSubImage.objects.filter(llm=llm).delete()
-
+            HPImageMapping.objects.filter(llm=llm).delete()
             for i, img in enumerate(sub_images):
                 if img:
                     sub_img = LLMSubImage.objects.create(
                         llm=llm,
                         image=img,
-                        title=sub_titles[i] if i < len(sub_titles) else f"서브 {i+1}",
+                        title=sub_titles[i] if i < len(sub_titles) else f"서브 {i+1}"
                     )
-
-                    # HP 매핑
                     min_hp = min_hps[i] if i < len(min_hps) else None
                     max_hp = max_hps[i] if i < len(max_hps) else None
                     if min_hp or max_hp:
@@ -454,56 +420,37 @@ def make_ai_update(request, llm_uuid):
                             min_hp=int(min_hp) if min_hp and min_hp.strip().isdigit() else None,
                             max_hp=int(max_hp) if max_hp and max_hp.strip().isdigit() else None,
                         )
-        else:
-            # 새 이미지가 없으면 기존 서브 이미지의 HP와 제목만 업데이트
-            existing_subs = list(LLMSubImage.objects.filter(llm=llm).order_by('id'))
-            for i, sub_img in enumerate(existing_subs):
-                # 제목 업데이트
-                if i < len(sub_titles) and sub_titles[i]:
-                    sub_img.title = sub_titles[i]
-                    sub_img.save()
 
-                # HP 매핑 업데이트
-                hp_mapping = HPImageMapping.objects.filter(sub_image=sub_img).first()
-                min_hp = min_hps[i] if i < len(min_hps) else None
-                max_hp = max_hps[i] if i < len(max_hps) else None
+        # LastWard 업데이트
+        last_images = request.FILES.getlist('extra_last_images')
+        last_titles = request.POST.getlist('extra_last_image_title[]') or []
 
-                if min_hp or max_hp:
-                    if hp_mapping:
-                        hp_mapping.min_hp = int(min_hp) if min_hp and min_hp.strip().isdigit() else None
-                        hp_mapping.max_hp = int(max_hp) if max_hp and max_hp.strip().isdigit() else None
-                        hp_mapping.save()
-                    else:
-                        HPImageMapping.objects.create(
-                            llm=llm,
-                            sub_image=sub_img,
-                            min_hp=int(min_hp) if min_hp and min_hp.strip().isdigit() else None,
-                            max_hp=int(max_hp) if max_hp and max_hp.strip().isdigit() else None,
-                        )
+        if last_images:
+            # 기존 삭제
+            LastWard.objects.filter(llm=llm).delete()
+            for i, img in enumerate(last_images):
+                if img:
+                    LastWard.objects.create(
+                        llm=llm,
+                        image=img,
+                        ward=last_titles[i] if i < len(last_titles) else f"마지막 이미지 {i+1}",
+                        order=i
+                    )
 
-        # 최종 저장
         llm.save()
+        return redirect('character:story_detail', story_uuid=llm.story.public_uuid if llm.story else None)
 
-        # 리다이렉트
-        if llm.story:
-            return redirect('character:story_detail', story_uuid=llm.story.public_uuid)
-        else:
-            return redirect('character:ai_preview', llm_uuid=llm.public_uuid)
-
-    # GET 요청: 편집 폼 초기값 채우기
-    # 기존 로어북 항목 가져오기
+    # GET: 편집 폼
     lore_entries = LoreEntry.objects.filter(llm=llm).order_by('priority')
-
-    # 기존 서브 이미지 + HP 매핑 가져오기
-    sub_images = LLMSubImage.objects.filter(llm=llm)
     sub_images_with_hp = []
-    for sub_img in sub_images:
-        hp_mapping = HPImageMapping.objects.filter(sub_image=sub_img).first()
+    for sub in LLMSubImage.objects.filter(llm=llm):
+        hp = HPImageMapping.objects.filter(sub_image=sub).first()
         sub_images_with_hp.append({
-            'sub_image': sub_img,
-            'min_hp': hp_mapping.min_hp if hp_mapping else None,
-            'max_hp': hp_mapping.max_hp if hp_mapping else None,
+            "sub_image": sub,
+            "min_hp": hp.min_hp if hp else None,
+            "max_hp": hp.max_hp if hp else None,
         })
+    last_images = LastWard.objects.filter(llm=llm).order_by('order')
 
     context = {
         "voice_list": voice_list,
@@ -518,8 +465,12 @@ def make_ai_update(request, llm_uuid):
         "is_edit_mode": True,
         "lore_entries": lore_entries,
         "sub_images_with_hp": sub_images_with_hp,
+        "extra_last_images": last_images,  # LastWard 항목
     }
     return render(request, "character/make_ai.html", context)
+
+
+
 
 @login_required_to_main
 def ai_preview(request, llm_uuid):
@@ -664,6 +615,9 @@ def chat_logic(request, llm_uuid):
                 hp_range_max=hp_mapping.max_hp if hp_mapping else None,
             )
 
+
+
+
             # 7. 텍스트와 HP 반환 (conversation_id 포함 - 비로그인 사용자용)
             return JsonResponse({
                 'success': True,
@@ -682,9 +636,13 @@ def chat_logic(request, llm_uuid):
 
 
 
-
+@csrf_exempt
 def chat_view(request, llm_uuid):
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
+
+
+        
+    
 
     if request.method == 'GET':
         # 채팅 페이지 최초 로드
@@ -738,10 +696,53 @@ def chat_view(request, llm_uuid):
 
         loarbook_list = LoreEntry.objects.filter(llm_id = llm)
 
+        lastimage = None
+        lastimage_url = None  # 새로 추가
+        lastward = llm.last_ward or "이야기가 끝났어요... 함께한 시간이 소중했어요."
+
+        if current_hp >= 100:
+            hp_mapping = HPImageMapping.objects.filter(
+                llm=llm,
+                min_hp__lte=current_hp,
+                max_hp__gte=current_hp,
+                sub_image__image__isnull=False
+            ).order_by('-priority').first()
+
+            if hp_mapping and hp_mapping.sub_image:
+                lastimage = hp_mapping.sub_image
+                try:
+                    lastimage_url = lastimage.image.url
+                    print(f"[SUCCESS] lastimage_url 생성 성공: {lastimage_url}")
+                except Exception as e:
+                    print(f"[ERROR] lastimage.image.url 접근 실패: {e}")
+                    lastimage_url = None
+            else:
+                print("[FALLBACK] HP 매핑 실패 → 서브 이미지 검색")
+                fallback = LLMSubImage.objects.filter(
+                    llm=llm,
+                    image__isnull=False
+                ).order_by('-order', '-created_at').first()
+
+                if fallback:
+                    lastimage = fallback
+                    try:
+                        lastimage_url = fallback.image.url
+                        print(f"[FALLBACK SUCCESS] lastimage_url: {lastimage_url}")
+                    except Exception as e:
+                        print(f"[FALLBACK ERROR] url 접근 실패: {e}")
+                else:
+                    print("[ERROR] lastimage 완전히 없음")
+            
+        last_ward_exists = llm.last_ward.filter(is_public=False).exists()
+
+        if current_hp >= 100 and last_ward_exists:
+            return redirect('character:last_ward', llm_uuid=llm_uuid)
+        print(f"[DEBUG] HP 확인: {current_hp}, last_ward 존재: {last_ward_exists}")
 
         print(f"[DEBUG] 최종 sub_images_data: {sub_images_data}")
         print(f"[DEBUG] llm.llm_image: {llm.llm_image.url if llm.llm_image else '없음'}")
         print(f"[DEBUG] current_hp: {current_hp}")
+        last_wards = LastWard.objects.filter(llm=llm).order_by('order', 'created_at')
 
         context = {
             'llm': llm,
@@ -750,9 +751,55 @@ def chat_view(request, llm_uuid):
             'sub_images_data': sub_images_data,
             'current_hp': current_hp,
             'max_hp': max_hp,
-            "loarbook_list" :loarbook_list
+            "loarbook_list" :loarbook_list,
+            "lastward":lastward,
+            "lastimage":lastimage,
+            'lastimage': lastimage,
+            "last_wards":last_wards
+
         }
         return render(request, "character/chat.html", context)
+
+
+@login_required_to_main
+def last_ward(request, llm_uuid):
+    llm = get_object_or_404(LLM, public_uuid=llm_uuid)
+
+    # 사용자가 클릭했을 때만 공개 처리
+    last_ward_to_update = llm.last_ward.filter(is_public=False).first()
+    if last_ward_to_update:
+        last_ward_to_update.is_public = True
+        last_ward_to_update.save()
+
+    try:
+        conversation_has = ConversationMessage.objects.filter(
+            conversation__llm=llm,
+            conversation__user=request.user
+        ).exists()
+        conv = Conversation.objects.get(
+            llm=llm,
+            user=request.user
+        )
+        conv_id = conv.id
+    except Conversation.DoesNotExist:
+        conv = None
+        conv_id = None
+
+    story = llm.story  
+    last_wards = LastWard.objects.filter(llm=llm).order_by('order', 'created_at')
+    last_ward = last_wards.last() 
+    context = {
+        "llm": llm,
+        "last_wards": last_wards,
+        "story": story,
+        "conversation_has": conversation_has,
+        "conv_id": conv_id,
+        "last_ward":last_ward
+    }
+
+    return render(request, "character/last_ward.html", context)
+
+
 
 
 from pydub import AudioSegment
@@ -840,6 +887,11 @@ def chat_tts(request, llm_uuid):
 
 
 
+
+
+
+
+
 def ai_intro(request, llm_uuid):
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
     is_preview = request.GET.get('preview', False)
@@ -903,6 +955,8 @@ def delete_conversation(request, conv_id):
 
     # 2️⃣ 상태(HP 등) 삭제
     ConversationState.objects.filter(conversation=conversation).delete()
+
+    LastWard.objects.filter(llm=llm).update(is_public=False)
 
     # 3️⃣ 대화 자체 삭제
     conversation.delete()

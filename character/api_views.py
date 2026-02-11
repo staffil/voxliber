@@ -113,7 +113,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from character.models import Conversation, ConversationMessage, ConversationState
+from character.models import Conversation, ConversationMessage, ConversationState, LastWard
 
 @api_view(['DELETE'])
 def api_delete_conversation(request, conv_id):
@@ -132,6 +132,9 @@ def api_delete_conversation(request, conv_id):
     ConversationState.objects.filter(
         conversation=conversation
     ).delete()
+
+    LastWard.objects.filter(llm=llm).update(is_public=False)
+
 
     # 3️⃣ 대화 삭제
     conversation.delete()
@@ -729,17 +732,14 @@ def api_chat_view(request, llm_uuid):
     user = _get_request_user(request)
 
     if user:
-        # 로그인 사용자는 기존 대화 가져오기 또는 새 대화 생성
         if conversation_id:
             try:
                 conversation = Conversation.objects.get(id=conversation_id, llm=llm, user=user)
             except Conversation.DoesNotExist:
-                # conversation_id가 유저 소유가 아님 (이전 익명 대화 등) → 유저의 대화로 fallback
                 conversation, _ = Conversation.objects.get_or_create(user=user, llm=llm)
         else:
             conversation, _ = Conversation.objects.get_or_create(user=user, llm=llm)
     else:
-        # 비로그인 사용자는 conversation_id 없으면 접근 금지
         if not conversation_id:
             return JsonResponse({'success': False, 'error': '비로그인 사용자는 conversation_id가 필요합니다.'}, status=403)
         try:
@@ -747,7 +747,6 @@ def api_chat_view(request, llm_uuid):
         except Conversation.DoesNotExist:
             return JsonResponse({'success': False, 'error': '유효하지 않은 conversation_id입니다.'}, status=404)
 
-    # 나머지 로직 그대로...
     conv_state, _ = ConversationState.objects.get_or_create(
         conversation=conversation,
         defaults={'character_stats': {'hp': 0, 'max_hp': 100}}
@@ -766,12 +765,12 @@ def api_chat_view(request, llm_uuid):
         for lore in lore_entries
     ]
 
-
     current_hp = conv_state.character_stats.get('hp', 100)
     max_hp = conv_state.character_stats.get('max_hp', 100)
 
     messages = conversation.messages.order_by('created_at')[:50]
 
+    # 서브 이미지
     sub_images_data = []
     for sub in llm.sub_images.all():
         hp_mapping = HPImageMapping.objects.filter(sub_image=sub).first()
@@ -781,6 +780,21 @@ def api_chat_view(request, llm_uuid):
             'max_hp': hp_mapping.max_hp if hp_mapping and hp_mapping.max_hp is not None else 100,
             'title': sub.title or '',
         })
+
+    # ★ last_wards 추가
+    last_wards_qs = llm.last_ward.all().order_by('order', 'created_at')
+    last_wards_data = [
+        {
+            'id': lw.id,
+            'image_url': request.build_absolute_uri(lw.image.url) if lw.image else None,
+            'ward': lw.ward or '',
+            'description': lw.description or '',
+            'order': lw.order,
+            'created_at': lw.created_at.isoformat() if lw.created_at else None,
+            'is_public': lw.is_public,
+        }
+        for lw in last_wards_qs
+    ]
 
     data = {
         'success': True,
@@ -804,10 +818,54 @@ def api_chat_view(request, llm_uuid):
             } for msg in messages
         ],
         'sub_images': sub_images_data,
-        'lorebook': lorebook_data,   # 👈 여기 추가됨
+        'lorebook': lorebook_data,
+        'last_wards': last_wards_data,   # 👈 추가됨
     }
 
     return JsonResponse(data)
+
+
+
+
+def api_last_ward(request, llm_uuid):
+    llm = get_object_or_404(LLM, public_uuid=llm_uuid)
+
+    # 공개되지 않은 마지막 LastWard 공개 처리
+    last_ward_to_update = llm.last_ward.filter(is_public=False).first()
+    if last_ward_to_update:
+        last_ward_to_update.is_public = True
+        last_ward_to_update.save()
+
+    # 유저의 대화 정보
+    try:
+        conv = Conversation.objects.get(llm=llm, user=request.user)
+        conv_id = conv.id
+    except Conversation.DoesNotExist:
+        conv = None
+        conv_id = None
+
+    # 공개된 LastWard 가져오기 (최신 순)
+    last_wards = llm.last_ward.filter(is_public=True).order_by('-created_at')[:10]
+    last_ward_data = [
+        {
+            'id': ward.id,
+            'image_url': request.build_absolute_uri(ward.image.url) if ward.image else None,
+            'ward': ward.ward or '',
+            'description': ward.description or '',
+            'order': ward.order,
+            'created_at': ward.created_at.isoformat() if ward.created_at else None,
+        }
+        for ward in last_wards
+    ]
+
+    data = {
+        'success': True,
+        'conversation_id': conv_id,
+        'last_wards': last_ward_data,
+    }
+
+    return JsonResponse(data)
+
 
 
 # ==================== 비로그인 채팅 API ====================
@@ -974,4 +1032,6 @@ def api_chat_reset(request, llm_uuid):
         'hp': 100,
         'max_hp': 100,
     })
+
+
 

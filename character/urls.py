@@ -30,6 +30,7 @@ urlpatterns = [
     path('chat/<uuid:llm_uuid>/', views.chat_view, name='chat-view'),
     path('chat/api/<uuid:llm_uuid>/', views.chat_logic, name='chat-logic'),
     path("chat/tts/<uuid:llm_uuid>/", views.chat_tts, name='chat-tts'),
+    path('chat/final/chapter/<uuid:llm_uuid>/', views.last_ward, name= "last_ward"),
 
     # LLM 좋아요/댓글 API
     path("api/llm/<uuid:llm_uuid>/like/", views.toggle_llm_like, name='toggle_llm_like'),
@@ -58,5 +59,6 @@ urlpatterns = [
     path('api/chat/<uuid:llm_uuid>/send/', api_views.api_chat_send, name='api_chat_send'),
     path('api/chat/<uuid:llm_uuid>/reset/', api_views.api_chat_reset, name='api_chat_reset'),
     path('delete/api/ai/conversation/<int:conv_id>/', api_views.api_delete_conversation, name="api_delete_conversation"),
+    path('api/ai/final/chapter/<uuid:llm_uuid>/', api_views.api_last_ward, name="api_last_ward"),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

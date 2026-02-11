@@ -1659,3 +1659,122 @@
         box-shadow: 0 0 15px 5px rgba(239, 68, 68, 0.2);
     }
 }
+
+
+
+/* ------------------------------ */
+/* 마지막 이미지 탭 스타일 (extra-last-image) */
+/* ------------------------------ */
+
+#extra-last-images-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.extra-last-image-entry {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 12px;
+    background-color: #fafafa;
+    position: relative;
+}
+
+.extra-last-image-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.extra-last-image-number {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.remove-extra-last-image {
+    background: #ff4d4f;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.remove-extra-last-image:hover {
+    background: #d9363e;
+}
+
+.extra-last-image-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.extra-last-image-upload input[type="file"] {
+    display: block;
+    padding: 6px;
+    border: 1px dashed #ccc;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 200px;
+}
+
+.extra-last-image-upload .existing-image-preview {
+    margin-top: 6px;
+}
+
+.extra-last-image-upload .existing-image-preview img {
+    max-width: 100px;
+    max-height: 100px;
+    border-radius: 8px;
+    display: block;
+}
+
+.extra-last-image-upload .existing-label {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.extra-last-image-title label {
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.extra-last-image-title textarea {
+    width: 100%;
+    max-width: 500px;
+    min-height: 60px;
+    max-height: 300px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    resize: vertical;
+    font-size: 14px;
+}
+
+#add-extra-last-image-btn {
+    margin-top: 12px;
+    padding: 6px 14px;
+    font-size: 14px;
+    border-radius: 8px;
+    border: 1px solid #007bff;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#add-extra-last-image-btn:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}

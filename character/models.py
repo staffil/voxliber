@@ -94,6 +94,25 @@ class LLMSubImage(models.Model):
 
     def __str__(self):
         return f"{self.llm.name} - {self.title or '이미지'} {self.id}"
+    
+
+
+class LastWard(models.Model):
+    llm = models.ForeignKey('character.LLM', on_delete=models.CASCADE, related_name='last_ward', null=True)
+    image = models.ImageField(upload_to='uploads/llm_sub_images/', max_length=500, null=True)
+    ward = models.CharField(max_length=400, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, null=True )
+    is_public = models.BooleanField(default=False)
+
+
+    class Meta:
+        db_table = 'last_ward'
+        ordering = ['order', 'created_at']
+
+    def __str__(self):
+        return f"{self.llm.name} - {self.title or '이미지'} {self.id}"
 
 
 # 새 테이블: 사용자가 직접 설정하는 HP 조건 → 이미지 매핑

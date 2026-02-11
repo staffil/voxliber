@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ llm.name }} - 엔딩{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/character/chat.css' %}?v=3">
+<style>
+/* -----------------------------
+   엔딩 슬라이드 전체
+----------------------------- */
+.ending-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* 슬라이드 */
+.ending-slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    transition: opacity 1.5s ease;
+    opacity: 0;
+}
+
+.ending-slide.active {
+    display: flex;
+    opacity: 1;
+    z-index: 2;
+}
+
+/* 이미지 */
+.ending-image {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    filter: grayscale(0%) brightness(1);
+}
+
+/* 텍스트 */
+.ending-text {
+    position: absolute;
+    bottom: 22%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: clamp(1.5rem, 5vw, 2.8rem);
+    text-align: center;
+    max-width: 90%;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.9);
+    white-space: pre-wrap;
+    word-break: keep-all;
+}
+
+/* 두 번째 텍스트(description) 위치 조정 */
+.ending-text:nth-of-type(2) {
+    bottom: 13%;
+    font-size: clamp(1rem, 3vw, 1.8rem);
+    opacity: 0.85;
+}
+
+/* 커서 깜빡임 */
+@keyframes blink-cursor {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
+
+.typing-cursor {
+    display: inline-block;
+    width: 3px;
+    height: 1.1em;
+    background: rgba(255, 255, 255, 0.9);
+    margin-left: 3px;
+    vertical-align: middle;
+    animation: blink-cursor 0.75s step-end infinite;
+    border-radius: 1px;
+}
+
+/* 다음 버튼 */
+.ending-next-btn {
+    position: absolute;
+    bottom: 4%;
+    right: 5%;
+    background: rgba(99, 102, 241, 0.35);
+    color: white;
+    border: 1.5px solid rgba(99, 102, 241, 0.6);
+    padding: 0.85rem 2rem;
+    border-radius: 50px;
+    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+    cursor: pointer;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.3s, background 0.3s;
+    pointer-events: none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.ending-next-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.ending-next-btn:hover {
+    background: rgba(99, 102, 241, 0.6);
+    transform: translateY(-3px);
+}
+
+/* 엔딩 버튼 컨테이너 */
+.ending-buttons {
+    position: absolute;
+    bottom: 4%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    z-index: 6;
+    width: 90%;
+    max-width: 700px;
+}
+
+/* 공통 버튼 스타일 */
+.ending-btn,
+.final-btn {
+    padding: 0.85rem 1.8rem;
+    font-size: clamp(0.85rem, 2.5vw, 1.1rem);
+    border-radius: 50px;
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.continue {
+    background: rgba(99, 102, 241, 0.3);
+    color: #fff;
+    border-color: rgba(99, 102, 241, 0.55);
+}
+
+.restart {
+    background: rgba(239, 68, 68, 0.3);
+    color: #fff;
+    border-color: rgba(239, 68, 68, 0.55);
+}
+
+.new {
+    background: rgba(245, 158, 11, 0.3);
+    color: #fff;
+    border-color: rgba(245, 158, 11, 0.55);
+}
+
+.ending-btn:hover,
+.final-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.continue:hover  { background: rgba(99, 102, 241, 0.6); }
+.restart:hover   { background: rgba(239, 68, 68, 0.55); }
+.new:hover       { background: rgba(245, 158, 11, 0.55); }
+
+/* form 안 버튼 마진 제거 */
+.ending-buttons form {
+    margin: 0;
+    padding: 0;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 560px) {
+    .ending-buttons {
+        bottom: 3%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.6rem;
+        width: 80%;
+    }
+
+    .ending-buttons form {
+        width: 100%;
+    }
+
+    .ending-btn,
+    .final-btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .ending-next-btn {
+        bottom: 3%;
+        right: 50%;
+        transform: translateX(50%);
+    }
+
+    .ending-text {
+        bottom: 30%;
+    }
+
+    .ending-text:nth-of-type(2) {
+        bottom: 19%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ending-overlay" id="ending-overlay">
+    {% for ward in last_wards %}
+    <div class="ending-slide" data-index="{{ forloop.counter0 }}">
+        {% if ward.image %}
+        <img src="{{ ward.image.url }}" alt="{{ ward.ward }}" class="ending-image">
+        {% endif %}
+        {% if ward.ward %}
+        <p class="ending-text" data-text="{{ ward.ward }}"></p>
+        {% endif %}
+        {% if ward.description %}
+        <p class="ending-text" data-text="{{ ward.description }}"></p>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <button class="ending-next-btn" id="ending-next-btn">다음 →</button>
+
+    <div class="ending-buttons" id="ending-buttons">
+    {% if not last_ward.is_public %}
+        <button class="ending-btn continue" id="continue-btn">이어서 대화하기</button>
+       {% else %} 
+        <button class="ending-btn continue" onclick="history.back()">이어서 대화하기</button>
+
+    {% endif %}
+        {% if conv_id %}
+        <form method="post" action="{% url 'character:delete_conversation' conv_id %}" style="margin:0;">
+            {% csrf_token %}
+            <button class="ending-btn restart" type="submit">처음부터 하기</button>
+        </form>
+        {% endif %}
+        <a class="final-btn new" id="new-story" href="{% url 'character:story_intro' story.public_uuid %}">다른 스토리 보기</a>
+    </div>
+</div>
+
+<script>
+// -----------------------------
+// 타이핑 유틸리티
+// -----------------------------
+function typeText(el, text, speed, onDone) {
+    el.textContent = '';
+
+    const cursor = document.createElement('span');
+    cursor.className = 'typing-cursor';
+    el.appendChild(cursor);
+
+    let i = 0;
+    function step() {
+        if (i < text.length) {
+            el.insertBefore(document.createTextNode(text[i]), cursor);
+            i++;
+            setTimeout(step, speed);
+        } else {
+            setTimeout(() => {
+                cursor.remove();
+                if (onDone) onDone();
+            }, 600);
+        }
+    }
+    step();
+}
+
+// -----------------------------
+// 슬라이드 전환 로직
+// -----------------------------
+const slides = document.querySelectorAll('.ending-slide');
+const nextBtn = document.getElementById('ending-next-btn');
+const buttonsContainer = document.getElementById('ending-buttons');
+let currentIndex = 0;
+let isTyping = false;
+
+function showCurrentSlide() {
+    slides.forEach((slide, idx) => {
+        slide.classList.toggle('active', idx === currentIndex);
+    });
+
+    nextBtn.classList.remove('visible');
+    buttonsContainer.style.display = 'none';
+
+    const slide = slides[currentIndex];
+    const textEls = Array.from(slide.querySelectorAll('.ending-text[data-text]'));
+
+    if (textEls.length === 0) {
+        onAllTypingDone();
+        return;
+    }
+
+    isTyping = true;
+
+    function typeNext(idx) {
+        if (idx >= textEls.length) {
+            isTyping = false;
+            onAllTypingDone();
+            return;
+        }
+        const el = textEls[idx];
+        const text = el.getAttribute('data-text') || '';
+        const delay = idx === 0 ? 300 : 800;
+
+        setTimeout(() => {
+            typeText(el, text, 55, () => typeNext(idx + 1));
+        }, delay);
+    }
+
+    typeNext(0);
+}
+
+function onAllTypingDone() {
+    const isLast = currentIndex === slides.length - 1;
+    if (isLast) {
+        buttonsContainer.style.display = 'flex';
+    } else {
+        nextBtn.classList.add('visible');
+    }
+}
+
+nextBtn.addEventListener('click', () => {
+    if (isTyping) return;
+    if (currentIndex < slides.length - 1) {
+        currentIndex++;
+        showCurrentSlide();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (slides.length > 0) {
+        showCurrentSlide();
+    }
+});
+
+// 버튼 동작
+document.addEventListener('DOMContentLoaded', function() {
+    const continueBtn = document.getElementById('continue-btn');
+    if (continueBtn) {
+        continueBtn.addEventListener('click', function() {
+            // CSRF 토큰 가져오기
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            fetch("{% url 'character:last_ward' llm_uuid=llm.public_uuid %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ action: 'continue_chat' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 성공하면 채팅 페이지로 돌아가기
+                    window.location.href = "{% url 'character:chat-view' llm_uuid=llm.public_uuid %}";
+                } else {
+                    alert(data.error || '오류가 발생했습니다.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('서버 요청 실패');
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

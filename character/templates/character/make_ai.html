@@ -35,8 +35,13 @@
         </button>
         <button type="button" class="tab-btn" data-tab="tab-image">
             <span class="tab-icon">🖼️</span>
-            <span class="tab-text">이미지</span>
+            <span class="tab-text">서브 이미지</span>
         </button>
+<button type="button" class="tab-btn" data-tab="tab-extra-last-image">
+    <span class="tab-icon">🖌️</span>
+    <span class="tab-text">마지막 이미지 추가</span>
+</button>
+
     </div>
 
     <!-- 진행 표시 바 -->
@@ -92,6 +97,8 @@
                     <input type="text" name="first_sentence" id="first_sentence" class="form-input" placeholder="AI가 대화를 시작할 때 할 말" value="{{ llm.first_sentence|default:'' }}" maxlength="200">
                     <span class="form-hint">사용자와 처음 대화를 시작할 때 AI가 할 인사말</span>
                 </div>
+
+                
 
                 <div class="form-group">
                     <label for="distribute" class="form-label">
@@ -543,8 +550,82 @@
                         {% endif %}
                     </div>
                 </div>
+
+
+
+
+
+
+
             </div>
         </div>
+
+<div class="tab-content" id="tab-extra-last-image">
+    <div class="tab-panel">
+        <div class="panel-header">
+            <h2>마지막 이미지 추가</h2>
+            <p>AI 캐릭터의 마지막 이미지를 여러 장 업로드하고 설정하세요</p>
+        </div>
+
+        <div id="extra-last-images-container">
+            {% if is_edit_mode and extra_last_images %}
+                {% for item in extra_last_images %}
+                <div class="extra-last-image-entry">
+                    <div class="extra-last-image-header">
+                        <span class="extra-last-image-number">{{ forloop.counter }}</span>
+                        <button type="button" class="remove-extra-last-image">
+                            <span>✕</span>
+                        </button>
+                    </div>
+
+                    <div class="extra-last-image-content">
+                        <div class="extra-last-image-upload">
+                            <input type="file" name="extra_last_images" accept="image/*" class="extra-last-image-file">
+                            {% if item.image %}
+                            <div class="existing-image-preview">
+                                <img src="{{ item.image.url }}" alt="마지막 이미지" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
+                                <span class="existing-label">현재 이미지</span>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="extra-last-image-title">
+                            <label>제목/메모</label>
+                            <textarea name="extra_last_image_title[]" placeholder="상황에 맞는 설명을 적어주세요." maxlength="400" class="form-input" style="max-width: 500px; max-height: 300px;"></textarea>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- 기본 첫 번째 항목 -->
+                <div class="extra-last-image-entry">
+                    <div class="extra-last-image-header">
+                        <span class="extra-last-image-number">1</span>
+                        <button type="button" class="remove-extra-last-image">
+                            <span>✕</span>
+                        </button>
+                    </div>
+
+                    <div class="extra-last-image-content">
+                        <div class="extra-last-image-upload">
+                            <input type="file" name="extra_last_images" accept="image/*" class="extra-last-image-file">
+                        </div>
+
+                        <div class="extra-last-image-title">
+                            <label>제목/메모</label>
+                            <textarea name="extra_last_image_title[]" placeholder="상황에 맞는 설명을 적어주세요." maxlength="400" class="form-input" style="max-width: 500px; max-height: 300px;"></textarea>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <button type="button" id="add-extra-last-image-btn" class="add-btn">
+            <span>+</span> 마지막 이미지 추가
+        </button>
+    </div>
+</div>
+
 
         <!-- 네비게이션 버튼 -->
         <div class="form-navigation">
@@ -567,4 +648,41 @@
 {% block extra_js %}
 <script src="{% static 'js/character/make_ai_page.js' %}"></script>
 <script src="{% static 'js/character/make_ai.js' %}"></script>
+<script>
+    document.getElementById('add-extra-last-image-btn').addEventListener('click', function() {
+    const container = document.getElementById('extra-last-images-container');
+    const index = container.children.length + 1;
+
+    const newEntry = document.createElement('div');
+    newEntry.classList.add('extra-last-image-entry');
+    newEntry.innerHTML = `
+        <div class="extra-last-image-header">
+            <span class="extra-last-image-number">${index}</span>
+            <button type="button" class="remove-extra-last-image"><span>✕</span></button>
+        </div>
+        <div class="extra-last-image-content">
+            <div class="extra-last-image-upload">
+                <input type="file" name="extra_last_images" accept="image/*" class="extra-last-image-file">
+            </div>
+            <div class="extra-last-image-title">
+                <label>제목/메모</label>
+                <textarea name="extra_last_image_title[]" placeholder="상황에 맞는 설명을 적어주세요." maxlength="400" class="form-input" style="max-width: 500px; max-height: 300px;"></textarea>
+            </div>
+        </div>
+    `;
+    container.appendChild(newEntry);
+});
+
+// 삭제
+document.addEventListener('click', function(e) {
+    if(e.target.closest('.remove-extra-last-image')){
+        e.target.closest('.extra-last-image-entry').remove();
+        // 번호 다시 매기기
+        document.querySelectorAll('#extra-last-images-container .extra-last-image-entry').forEach((entry, i) => {
+            entry.querySelector('.extra-last-image-number').textContent = i + 1;
+        });
+    }
+});
+
+</script>
 {% endblock %}
