@@ -117,6 +117,11 @@ from character.models import Conversation, ConversationMessage, ConversationStat
 
 @api_view(['DELETE'])
 def api_delete_conversation(request, conv_id):
+    if not request.user.is_authenticated:
+        return Response(
+            {"error": "인증되지 않았습니다. 올바른 api_key를 확인해주세요."},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
 
     conversation = get_object_or_404(
         Conversation,
@@ -124,23 +129,12 @@ def api_delete_conversation(request, conv_id):
         user=request.user
     )
 
-    llm = conversation.llm  # 어떤 캐릭터인지 기억
-
-    # 1️⃣ 메시지 삭제
+    # 나머지 삭제 로직 동일
     ConversationMessage.objects.filter(conversation=conversation).delete()
-
-    # 2️⃣ 상태(HP 등) 삭제
     ConversationState.objects.filter(conversation=conversation).delete()
-
-    # 3️⃣ 대화 자체 삭제
     conversation.delete()
 
-
-    return Response(
-        {"success": True},
-        status=status.HTTP_204_NO_CONTENT
-    )
-
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 @csrf_exempt
 @require_api_key_secure
