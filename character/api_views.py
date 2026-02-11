@@ -722,8 +722,20 @@ def api_chat_view(request, llm_uuid):
         defaults={'character_stats': {'hp': 100, 'max_hp': 100}}
     )
 
-    loarbook_list = LoreEntry.objects.filter(llm_id=llm.id)
-    
+    lore_entries = llm.lore_entries.all().order_by('-priority')
+
+    lorebook_data = [
+        {
+            'id': lore.id,
+            'keys': lore.keys,
+            'category': lore.category,
+            'priority': lore.priority,
+            'always_active': lore.always_active,
+        }
+        for lore in lore_entries
+    ]
+
+
     current_hp = conv_state.character_stats.get('hp', 100)
     max_hp = conv_state.character_stats.get('max_hp', 100)
 
@@ -761,7 +773,7 @@ def api_chat_view(request, llm_uuid):
             } for msg in messages
         ],
         'sub_images': sub_images_data,
-        "loarbook_list":loarbook_list
+        'lorebook': lorebook_data,   # 👈 여기 추가됨
     }
 
     return JsonResponse(data)
