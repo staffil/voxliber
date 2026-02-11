@@ -98,7 +98,7 @@
             <span>배경 이미지 보기</span>
         </button>
 
-        {% if not last_wards.is_public %}
+        {% if last_wards.is_public %}
         <a class="view-background-btn" href="{% url 'character:last_ward' llm.public_uuid %}" style="background-color: rgb(223, 74, 131);">마지막 스토리 보기</a>
         {% endif %}
 
