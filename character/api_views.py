@@ -114,16 +114,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from character.models import Conversation, ConversationMessage, ConversationState
+
 @api_view(['DELETE'])
 def api_delete_conversation(request, conv_id):
-
-    conversation = get_object_or_404(
-        Conversation,
-        id=conv_id,
-        user=request.user
-    )
-
-    llm = conversation.llm  # 어떤 캐릭터인지 기억
+    conversation = get_object_or_404(Conversation, id=conv_id)
 
     # 1️⃣ 메시지 삭제
     ConversationMessage.objects.filter(conversation=conversation).delete()
@@ -131,7 +125,9 @@ def api_delete_conversation(request, conv_id):
     # 2️⃣ 상태 삭제
     ConversationState.objects.filter(conversation=conversation).delete()
 
-    # 3️⃣ 대화 삭제
+    llm = conversation.llm  # 어떤 LLM인지 기억
+
+    # 3️⃣ 대화 자체 삭제
     conversation.delete()
 
     # 4️⃣ 새 Conversation 생성
@@ -142,20 +138,15 @@ def api_delete_conversation(request, conv_id):
         llm_response='',
     )
 
-    # 5️⃣ 새 ConversationState 생성, HP 0 초기화
+    # 5️⃣ 새 ConversationState 생성, HP 0으로 초기화
     ConversationState.objects.create(
         conversation=new_conv,
-        character_stats={'hp': 0}  # 여기서 HP 0으로 초기화
+        character_stats={'hp': 0},
+        relationships={},
+        inventory=[]
     )
 
-    return Response(
-        {
-            "success": True,
-            "conversation_id": new_conv.id
-        },
-        status=status.HTTP_201_CREATED
-    )
-
+    return Response({"success": True}, status=status.HTTP_200_OK)
 
 @csrf_exempt
 @require_api_key_secure
