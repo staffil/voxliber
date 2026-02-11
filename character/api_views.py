@@ -117,36 +117,30 @@ from character.models import Conversation, ConversationMessage, ConversationStat
 
 @api_view(['DELETE'])
 def api_delete_conversation(request, conv_id):
-    conversation = get_object_or_404(Conversation, id=conv_id)
+
+    conversation = get_object_or_404(
+        Conversation,
+        id=conv_id,
+        user=request.user
+    )
+
+    llm = conversation.llm  # 어떤 캐릭터인지 기억
 
     # 1️⃣ 메시지 삭제
     ConversationMessage.objects.filter(conversation=conversation).delete()
 
-    # 2️⃣ 상태 삭제
+    # 2️⃣ 상태(HP 등) 삭제
     ConversationState.objects.filter(conversation=conversation).delete()
-
-    llm = conversation.llm  # 어떤 LLM인지 기억
 
     # 3️⃣ 대화 자체 삭제
     conversation.delete()
 
-    # 4️⃣ 새 Conversation 생성
-    new_conv = Conversation.objects.create(
-        user=request.user,
-        llm=llm,
-        user_message='',
-        llm_response='',
+
+    return Response(
+        {"success": True},
+        status=status.HTTP_204_NO_CONTENT
     )
 
-    # 5️⃣ 새 ConversationState 생성, HP 0으로 초기화
-    ConversationState.objects.create(
-        conversation=new_conv,
-        character_stats={'hp': 0},
-        relationships={},
-        inventory=[]
-    )
-
-    return Response({"success": True}, status=status.HTTP_200_OK)
 
 @csrf_exempt
 @require_api_key_secure
