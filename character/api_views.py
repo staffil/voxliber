@@ -750,7 +750,7 @@ def api_chat_view(request, llm_uuid):
     # 나머지 로직 그대로...
     conv_state, _ = ConversationState.objects.get_or_create(
         conversation=conversation,
-        defaults={'character_stats': {'hp': 100, 'max_hp': 100}}
+        defaults={'character_stats': {'hp': 0, 'max_hp': 100}}
     )
 
     lore_entries = llm.lore_entries.all().order_by('-priority')
