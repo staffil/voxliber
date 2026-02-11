@@ -887,11 +887,11 @@ def ai_intro(request, llm_uuid):
     return render(request, "character/ai_intro.html", context)
 
 
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Conversation
 
-
-@csrf_exempt
 @api_view(['DELETE'])
 def delete_conversation(request, conv_id):
     conversation = get_object_or_404(
