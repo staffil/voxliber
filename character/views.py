@@ -888,8 +888,7 @@ def ai_intro(request, llm_uuid):
 
 
 
-@csrf_protect
-@require_http_methods(["DELETE"])
+
 def delete_conversation(request, conv_id):
     conversation = get_object_or_404(
         Conversation,
