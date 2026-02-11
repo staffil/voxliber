@@ -121,8 +121,8 @@ def api_delete_conversation(request, conv_id):
     conversation = get_object_or_404(
         Conversation,
         id=conv_id,
-                user=request.user
-
+        hp=0
+        
     )
 
     # 1️⃣ 메시지 삭제
