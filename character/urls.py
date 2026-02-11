@@ -18,7 +18,8 @@ urlpatterns = [
     path('make/ai/<uuid:story_uuid>/', views.make_ai, name='make_ai_with_story'),
     path('ai/intro/<uuid:llm_uuid>/', views.ai_intro, name='ai_intro'),
     path('story/intro/<uuid:story_uuid>/', views.story_intro, name='story_intro'),
-
+    path('delete/ai/conversation/<int:conv_id>/', views.delete_conversation, name="delete_conversation"),
+ 
     # AI 미리보기
     path('ai/preview/<uuid:llm_uuid>/', views.ai_preview, name='ai_preview'),
 

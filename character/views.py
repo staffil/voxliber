@@ -584,6 +584,20 @@ def chat_logic(request, llm_uuid):
             if hp_mapping and hp_mapping.sub_image:
                 # title이 있으면 title 사용, 없으면 description 사용 (또는 둘 다)
                 story_title = hp_mapping.sub_image.title.strip() if hp_mapping.sub_image.title else ""
+
+
+            sub_images = list(llm.sub_images.all().order_by('order', 'created_at'))
+
+            # 현재 스토리 인덱스 찾기
+            current_index = 0
+            for i, si in enumerate(sub_images):
+                if si.title.strip() == story_title:
+                    current_index = i
+                    break
+
+            # 다음 스토리
+            story_second = sub_images[current_index + 1].title.strip() if current_index + 1 < len(sub_images) else "next story is none just finish this story"
+
                 
                 # 만약 description도 함께 쓰고 싶다면:
                 # story_description = hp_mapping.sub_image.description.strip() if hp_mapping.sub_image.description else ""
@@ -593,9 +607,9 @@ def chat_logic(request, llm_uuid):
             print(f"[DEBUG] Current HP: {current_hp}, Found mapping: {hp_mapping}, story_title: '{story_title}'")
             # 3. 응답 생성 (HP 정보 포함)
             if "grok" in llm.model.lower():
-                raw_response = generate_response_grok(llm, chat_history, user_text, current_hp, max_hp, story_hint=story_title)
+                raw_response = generate_response_grok(llm, chat_history, user_text, current_hp, max_hp, story_hint=story_title, story_next= story_second)
             else:
-                raw_response = generate_response_gpt(llm, chat_history, user_text, current_hp, max_hp, story_hint=story_title)
+                raw_response = generate_response_gpt(llm, chat_history, user_text, current_hp, max_hp, story_hint=story_title, story_next= story_second)
 
             # 4. HP 변경 파싱 및 처리
             clean_response, hp_change = parse_hp_from_response(raw_response)
@@ -722,6 +736,9 @@ def chat_view(request, llm_uuid):
                 'title': sub.title or '',
             })
 
+        loarbook_list = LoreEntry.objects.filter(llm_id = llm)
+
+
         print(f"[DEBUG] 최종 sub_images_data: {sub_images_data}")
         print(f"[DEBUG] llm.llm_image: {llm.llm_image.url if llm.llm_image else '없음'}")
         print(f"[DEBUG] current_hp: {current_hp}")
@@ -733,6 +750,7 @@ def chat_view(request, llm_uuid):
             'sub_images_data': sub_images_data,
             'current_hp': current_hp,
             'max_hp': max_hp,
+            "loarbook_list" :loarbook_list
         }
         return render(request, "character/chat.html", context)
 
@@ -827,14 +845,28 @@ def ai_intro(request, llm_uuid):
     is_preview = request.GET.get('preview', False)
 
     other_llms = llm.story.characters.exclude(id=llm.id) if llm.story else LLM.objects.none()
-    conversation_has = ConversationMessage.objects.filter(
+
+
+    
+    try:
+        conversation_has = ConversationMessage.objects.filter(
         conversation__llm=llm,
         conversation__user=request.user
     ).exists()
+        conv = Conversation.objects.get(
+            llm=llm,
+            user=request.user
+        )
+        conv_id = conv.id
+    except Conversation.DoesNotExist:
+        conv = None
+        conv_id = None
+    
+    
     # 댓글 목록
     comments = Comment.objects.filter(llm=llm, parent_comment__isnull=True).select_related('user')
-
-    # 좋아요 여부 및 카운트
+    print("conversation_has:", conv)
+   # 좋아요 여부 및 카운트
     user_liked = False
     if request.user.is_authenticated:
         user_liked = LLMLike.objects.filter(user=request.user, llm=llm).exists()
@@ -847,12 +879,36 @@ def ai_intro(request, llm_uuid):
         "comments": comments,
         "user_liked": user_liked,
         "like_count": like_count,
-        "conversation_has":conversation_has
+        "conversation_has":conversation_has,
+        "conv_id":conv_id
 
     }
 
     return render(request, "character/ai_intro.html", context)
 
+
+def delete_conversation(request, conv_id):
+    conversation = get_object_or_404(
+        Conversation,
+        id=conv_id,
+        user=request.user
+    )
+
+    llm = conversation.llm  # 어떤 캐릭터인지 기억
+
+    # 1️⃣ 메시지 삭제
+    ConversationMessage.objects.filter(conversation=conversation).delete()
+
+    # 2️⃣ 상태(HP 등) 삭제
+    ConversationState.objects.filter(conversation=conversation).delete()
+
+    # 3️⃣ 대화 자체 삭제
+    conversation.delete()
+
+    # 4️⃣ 다시 해당 LLM 채팅 페이지로 이동 → 새 conversation 생성됨
+    return redirect('character:chat-view', llm_uuid=llm.public_uuid)
+
+    
 
 
 from django.db.models import Count

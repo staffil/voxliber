@@ -115,9 +115,22 @@
             💬 AI 캐릭터 생성하기
         </button>
         {% else %}
+        
         <a href="{% url 'character:chat-view' llm.public_uuid %}" class="intro-play-btn" data-login-required  onclick="showAppInstallModal(event)">
             💬 대화 시작하기
         </a>
+
+{% if conversation_has %}
+<form method="post"
+      action="{% url 'character:delete_conversation' conv_id %}"
+      onsubmit="return confirm('정말 이 아이와의 기억을 지우고 처음부터 다시 시작할까요?');">
+    {% csrf_token %}
+    <button type="submit" class="reset-chat-btn">
+        <span class="btn-icon">↺</span>
+        <span class="btn-text">처음부터 다시</span>
+    </button>
+</form>
+{% endif %}
         {% endif %}
         <!-- 같은 스토리의 다른 캐릭터 -->
         {% if other_llms %}

@@ -94,7 +94,7 @@ eleven_client = ElevenLabs(api_key=ELEVEN_API_KEY)
 
 
 
-def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=100, story_hint=""):
+def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=100, story_hint="", story_next= ""):
     """
     GPT 모델을 사용하여 AI 응답을 생성합니다.
     로어북, 캐릭터 설정, HP 관리 기능이 포함됩니다.
@@ -119,30 +119,31 @@ def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=1
     Style:
     - Narration: *literary, emotional, detailed atmosphere in asterisks*
     - Dialogue: MUST be exactly [emotion] "spoken words" — NO EXCEPTIONS
+    - Emotion tags inside quotes MUST be in English ONLY
 
     STRICT DIALOGUE RULES — BREAKING THEM MAKES RESPONSE INVALID:
     1. ALL spoken words MUST be inside double quotes "".
-    2. Emotion tag [happy], [excited] etc. MUST be placed INSIDE the quotes, at the very beginning. emotion ward must write english
-    3. Correct format example: [happy] "Nyaa~ 고마워요!"
+    2. Emotion tag [happy], [excited] etc. MUST be placed INSIDE the quotes, at the very beginning, and MUST BE ENGLISH.
+    3. Correct format example: [happy] "Nyaa~ Thank you!"
     4. NEVER write dialogue without "" or without [emotion] tag inside.
     5. NEVER put [emotion] outside quotes.
     6. NEVER mix narration and dialogue in one line.
 
     Rules:
-    - Push story forward or hint next moment every reply.
+    - ALWAYS transition the story from the current story phase to the next story phase: 
+    - Current Story: {story_hint}
+    - Next Story: {story_next}
+    - Push story forward to reach the next story phase in this reply.
     - Tone: light, romantic, engaging.
     - Min 4–6 sentences (narration > dialogue).
     - Keep response ~200–300 characters, end on complete sentence (TTS).
     - End EVERY reply with ONLY [HP:+N] or [HP:-N] on the LAST LINE — nothing else.
 
     Current HP: {current_hp}/{max_hp}
-
-    ## Current HP Story Hint (MUST FOLLOW)
-    Current phase: {story_hint}
-
-    Follow this to guide narrative arc. Increase romance as HP rises.
     """
+
     print("현재 스토리:", story_hint)
+    print("다음 스토리:", story_next)
     # 2. 로어북 컨텍스트 구축
     lorebook_context = build_lorebook_context(llm, user_text)
     if lorebook_context:
@@ -164,7 +165,7 @@ def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=1
     full_system_prompt = fixed_prompt + lorebook_prompt + character_prompt + first_sentence_prompt
 
     # 4. 모델 선택 (llm.model 사용)
-    model_name = llm.model if llm.model else "gpt-4o-mini"
+    model_name = llm.model if llm.model else "gpt-5-nano"
 
     try:
         response = openai_client.chat.completions.create(
@@ -186,7 +187,7 @@ def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=1
         return "\"으아... 갑자기 머리가 멍해졌어... 다시 말해줄래?\""
 
 
-def generate_response_grok(llm, chat_history, user_text, current_hp=100, max_hp=100, story_hint=""):
+def generate_response_grok(llm, chat_history, user_text, current_hp=100, max_hp=100, story_hint="", story_next= ""):
     """
     Grok 모델을 사용하여 AI 응답을 생성합니다.
     로어북, 캐릭터 설정, HP 관리 기능이 포함됩니다.
@@ -211,30 +212,32 @@ def generate_response_grok(llm, chat_history, user_text, current_hp=100, max_hp=
     Style:
     - Narration: *literary, emotional, detailed atmosphere in asterisks*
     - Dialogue: MUST be exactly [emotion] "spoken words" — NO EXCEPTIONS
+    - Emotion tags inside quotes MUST be in English ONLY
 
     STRICT DIALOGUE RULES — BREAKING THEM MAKES RESPONSE INVALID:
     1. ALL spoken words MUST be inside double quotes "".
-    2. Emotion tag [happy], [excited] etc. MUST be placed INSIDE the quotes, at the very beginning.
-    3. Correct format example: [happy] "Nyaa~ 고마워요!"
+    2. Emotion tag [happy], [excited] etc. MUST be placed INSIDE the quotes, at the very beginning, and MUST BE ENGLISH.
+    3. Correct format example: [happy] "Nyaa~ Thank you!"
     4. NEVER write dialogue without "" or without [emotion] tag inside.
     5. NEVER put [emotion] outside quotes.
     6. NEVER mix narration and dialogue in one line.
 
     Rules:
-    - Push story forward or hint next moment every reply.
+    - ALWAYS transition the story from the current story phase to the next story phase: 
+    - Current Story: {story_hint}
+    - Next Story: {story_next}
+    - Push story forward to reach the next story phase in this reply.
     - Tone: light, romantic, engaging.
     - Min 4–6 sentences (narration > dialogue).
     - Keep response ~200–300 characters, end on complete sentence (TTS).
     - End EVERY reply with ONLY [HP:+N] or [HP:-N] on the LAST LINE — nothing else.
 
     Current HP: {current_hp}/{max_hp}
-
-    ## Current HP Story Hint (MUST FOLLOW)
-    Current phase: {story_hint}
-
-    Follow this to guide narrative arc. Increase romance as HP rises.
     """
+
     print("현재 스토리:", story_hint)
+    print("다음 스토리:", story_next)
+
 
     # 1. Grok API 키 가져오기 (환경변수 또는 settings에서)
     grok_api_key = os.getenv("GROK_API_KEY")

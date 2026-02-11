@@ -65,6 +65,24 @@
             </svg>
             <span>배경 이미지 보기</span>
         </button>
+<div class="lore-hint-box">
+    <div class="lore-hint-title">
+        💡 반응하는 단어
+    </div>
+
+    <div class="lore-hint-desc">
+        이 단어들을 자연스럽게 사용하면<br>
+        호감도가 더 쉽게 올라갈지도 몰라요.
+    </div>
+
+    <div class="lore-hint-tags">
+        {% for ward in loarbook_list %}
+            <span class="lore-tag">{{ ward.keys }}</span>
+        {% empty %}
+            <span class="lore-empty">아직 발견된 단서가 없습니다</span>
+        {% endfor %}
+    </div>
+</div>
 
         <a href="javascript:history.back()" class="back-btn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
