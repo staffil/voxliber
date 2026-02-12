@@ -448,42 +448,103 @@ body.light-mode .ai-story-card .card-meta {
     </h2>
   </div>
 
+<div class="continue-listening-section">
   <div class="continue-listening-grid">
     {% for history in recent_listening %}
-    <div class="continue-card">
-      <div class="continue-cover">
+    <div class="continue-item">
+      <!-- 이미지 영역 -->
+      <a href="{% url 'book:content_detail' history.content.public_uuid %}"
+         class="continue-cover"
+         data-position="{{ history.last_position }}" 
+         data-login-required>
         {% if history.book.cover_img %}
           <img src="{{ history.book.cover_img.url }}" alt="{{ history.book.name }}" loading="lazy">
         {% else %}
           <div class="continue-placeholder">🎧</div>
         {% endif %}
+      </a>
 
-        <!-- 이어듣기 버튼 -->
-        <button class="resume-play-btn"
-                data-content-url="{% url 'book:content_detail' history.content.public_uuid %}"
-                data-position="{{ history.last_position }}" data-login-required>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-          <span>이어듣기</span>
-        </button>
-        
-      </div>
+      <!-- 상세 정보 영역 -->
       <div class="continue-info">
-        <h4 class="continue-title">{{ history.book.name }}</h4>
-        <p class="continue-episode">{{ history.content.number }}화. {{ history.content.title }}</p>
-        <div class="continue-progress-info">
-          <span class="resume-time" data-seconds="{{ history.last_position }}">{{ history.last_position|floatformat:0 }}초</span>
-          <span style="color: #666;">·</span>
+        <div class="continue-info-header">
+          <h3 class="continue-book-title">{{ history.book.name }}</h3>
+          
+          <!-- 메뉴 버튼 -->
+          <div class="continue-menu">
+            <button class="continue-menu-btn" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="5" r="2"/>
+                <circle cx="12" cy="12" r="2"/>
+                <circle cx="12" cy="19" r="2"/>
+              </svg>
+            </button>
+            
+            <!-- 드롭다운 메뉴 -->
+            <div class="continue-menu-dropdown">
+              <a href="{% url 'book:content_detail' history.content.public_uuid %}" class="continue-menu-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                상세보기
+              </a>
+              <a class="continue-menu-item continue-delete-btn" href="{% url 'main:delete_listening_history' history.book.public_uuid %}" 
+                      data-history-id="{{ history.id }}" onclick="confirm('청취 기록을 삭제하시겠습니까?')"
+                      type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                </svg>
+                기록 삭제
+              </a>
+            </div>
+          </div>
         </div>
+        
+        <p class="continue-episode">{{ history.content.number }}화 · {{ history.content.title }}</p>
+        <span class="continue-time">{{ history.last_position|floatformat:0 }}초</span>
       </div>
     </div>
     {% endfor %}
   </div>
+</div>
 </section>
 {% endif %}
 
+<script>
+  // 메뉴 토글 JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+  const menuButtons = document.querySelectorAll('.continue-menu-btn');
+  
+  menuButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const menu = this.closest('.continue-menu');
+      const isActive = menu.classList.contains('active');
+      
+      // 다른 메뉴 모두 닫기
+      document.querySelectorAll('.continue-menu.active').forEach(m => {
+        m.classList.remove('active');
+      });
+      
+      // 현재 메뉴 토글
+      if (!isActive) {
+        menu.classList.add('active');
+      }
+    });
+  });
+  
+  // 외부 클릭시 메뉴 닫기
+  document.addEventListener('click', function() {
+    document.querySelectorAll('.continue-menu.active').forEach(menu => {
+      menu.classList.remove('active');
+    });
+  });
+  
 
+});
+</script>
 
 <section class="hero-section">
   <div class="hero-background">

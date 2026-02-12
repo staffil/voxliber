@@ -9,12 +9,14 @@ import os
 from uuid import uuid4
 from django.conf import settings
 from main.models import SnapBtn, Advertisment, Event, ScreenAI
-from book.models import Books,ReadingProgress, BookSnap, Content, Poem_list, BookTag, Tags, BookSnippet
+from book.models import Books,ReadingProgress, BookSnap, Content, Poem_list, BookTag, Tags, BookSnippet, ListeningHistory
 from character.models import Story, CharacterMemory, LLM, LoreEntry, ConversationMessage, Conversation
 from book.service.recommendation import recommend_books
 from django.db.models import Max
 import random
 from register.decorator import login_required_to_main
+from rest_framework.decorators import api_view, permission_classes
+from book.api_utils import require_api_key, paginate, api_response, require_api_key_secure
 
 
 
@@ -194,6 +196,32 @@ def main(request):
         "user_share_list":user_share_list,
     }
     return render(request, "main/main.html", context)
+
+
+def delete_listening_history(request, book_uuid):
+
+    book = get_object_or_404(Books, public_uuid = book_uuid, user=request.user)
+    ListeningHistory.objects.filter(user=request.user, book =book).delete()
+
+    return redirect('main:main')
+
+
+
+from rest_framework import status
+from rest_framework.response import Response
+@require_api_key_secure
+@api_view(['DELETE'])
+def api_delete_listening_history(request, book_uuid):
+
+
+    book = get_object_or_404(Books, public_uuid = book_uuid, user=request.user)
+    ListeningHistory.objects.filter(user=request.user, book =book).delete()
+
+
+    return Response(
+        {"success": True},
+        status=status.HTTP_204_NO_CONTENT
+    )
 
 
 def health_check(request):

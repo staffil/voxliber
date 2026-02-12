@@ -23,6 +23,7 @@ urlpatterns = [
     path('genres_books/<int:genres_id>', views.genres_books, name='genres_books'),
     path('user/intro/<uuid:user_uuid>/', views.user_info, name='user_info'),
     path('shared/novel/<int:conv_id>/', views.shared_novel, name='shared_novel'),
+    path('delete/listening/history/<uuid:book_uuid>/', views.delete_listening_history ,name="delete_listening_history"),
     # others
     path('notice/', views.notice, name='notice'),
     path('contact/', views.contact_list, name='contact'),
@@ -35,6 +36,9 @@ urlpatterns = [
     path('faq/', views.faq, name='faq'),
 
 
+
+    # api
+    path('api/delete/listening/history/<uuid:book_uuid>/', views.api_delete_listening_history, name= "api_delete_listening_history"),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
