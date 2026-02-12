@@ -1000,9 +1000,9 @@ def api_last_ward(request, llm_uuid):
         conv_id = None
     story_id = None
     if llm.story:
-        story_id = llm.story.id
+        story_id = llm.story.public_uuid
     elif hasattr(llm, 'ai_story') and llm.ai_story:  # 만약 관계 이름이 다르다면
-        story_id = llm.ai_story.id
+        story_id = llm.ai_story.public_uuid
     return Response({
         "success": True,
         "conversation_id": conv_id,
