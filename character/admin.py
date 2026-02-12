@@ -177,10 +177,3 @@ class LLMPromptAdmin(admin.ModelAdmin):
     list_display = ('llm', 'prompt', 'order')
 
 
-# -----------------------------
-# HP Mapping
-# -----------------------------
-@admin.register(HPImageMapping)
-class HPImageMappingAdmin(admin.ModelAdmin):
-    list_display = ('llm', 'min_hp', 'max_hp', 'priority', 'sub_image')
-    list_filter = ('llm',)
