@@ -11,7 +11,7 @@
 <div class="faq-wrapper">
     <h1>자주 묻는 질문 (FAQ)</h1>
 
-    {% regroup faqs by category as faq_list_by_category %}
+{% regroup faqs by category_display as category_list %}
 
     {% for category in faq_list_by_category %}
     <div class="faq-category">
