@@ -128,31 +128,62 @@ def api_delete_conversation(request, conv_id):
     """
     사용자 Conversation 삭제 → ArchivedConversation으로 아카이브 후 원본 삭제
     """
-    conversation = get_object_or_404(Conversation, id=conv_id, user=request.user)
+
+    request_user = _get_request_user(request)
+
+    if not request_user:
+        return Response(
+            {"error": "인증 실패"},
+            status=401
+        )
+
+    conversation = get_object_or_404(
+        Conversation,
+        id=conv_id,
+        user=request_user   # ✅ 수정
+    )
+
     llm = conversation.llm
 
     try:
         with transaction.atomic():
+
             # 1️⃣ 아카이브 저장
             archive_conversation(conversation)
 
-            # 2️⃣ Conversation 관련 메시지 삭제
-            ConversationMessage.objects.filter(conversation=conversation).delete()
+            # 2️⃣ 메시지 삭제
+            ConversationMessage.objects.filter(
+                conversation=conversation
+            ).delete()
 
-            # 3️⃣ Conversation 상태 삭제
-            ConversationState.objects.filter(conversation=conversation).delete()
+            # 3️⃣ 상태 삭제
+            ConversationState.objects.filter(
+                conversation=conversation
+            ).delete()
 
-            # 4️⃣ UserLastWard 공개 여부 업데이트
-            UserLastWard.objects.filter(user=request.user, last_ward__llm=llm).update(is_public=False)
+            # 4️⃣ 공개 여부 업데이트
+            UserLastWard.objects.filter(
+                user=request_user,   # ✅ 수정
+                last_ward__llm=llm
+            ).update(is_public=False)
 
             # 5️⃣ Conversation 삭제
             conversation.delete()
 
     except Exception as e:
-        logging.error(f"[API DELETE] Conversation 삭제 실패: {e}", exc_info=True)
-        return Response({'error': '대화 삭제 중 오류가 발생했습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logging.error(
+            f"[API DELETE] Conversation 삭제 실패: {e}",
+            exc_info=True
+        )
+        return Response(
+            {'error': '대화 삭제 중 오류가 발생했습니다.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
-    return Response({"success": True}, status=status.HTTP_204_NO_CONTENT)
+    return Response(
+        {"success": True},
+        status=status.HTTP_204_NO_CONTENT
+    )
 
 
 @csrf_exempt
