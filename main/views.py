@@ -9,8 +9,8 @@ import os
 from uuid import uuid4
 from django.conf import settings
 from main.models import SnapBtn, Advertisment, Event, ScreenAI
-from book.models import Books,ReadingProgress, BookSnap, Content, Poem_list, BookTag, Tags, BookSnippet, ListeningHistory, LastWard, UserLastWard
-from character.models import Story, CharacterMemory, LLM, LoreEntry, ConversationMessage, Conversation
+from book.models import Books,ReadingProgress, BookSnap, Content, Poem_list, BookTag, Tags, BookSnippet, ListeningHistory
+from character.models import Story, CharacterMemory, LLM, LoreEntry, ConversationMessage, Conversation,LastWard, UserLastWard
 from book.service.recommendation import recommend_books
 from django.db.models import Max
 import random
