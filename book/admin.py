@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Genres, Tags, Books, BookTag, Content, BookReview, BookComment, ContentComment, ReadingProgress, VoiceList, SoundEffectLibrary, BackgroundMusicLibrary, BookSnap, AuthorAnnouncement, AudioBookGuide, APIKey, VoiceType, Follow, BookmarkBook
+from .models import Genres, Tags, Books, BookTag, Content, BookReview, BookComment, ContentComment, ReadingProgress, VoiceList, SoundEffectLibrary, BackgroundMusicLibrary, BookSnap, AuthorAnnouncement, AudioBookGuide, APIKey, VoiceType, Follow, BookmarkBook, AbstractBaseUser
 from character.models import HPImageMapping
 
 @admin.register(Genres)
@@ -421,3 +421,32 @@ class BookmarkBookAdmin(admin.ModelAdmin):
         return bool(obj.note)
     has_note.boolean = True
     has_note.short_description = "메모 있음"
+
+
+
+
+
+from django.contrib import admin
+from character.models import ArchivedConversation
+
+@admin.register(ArchivedConversation)
+class ArchivedConversationAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "llm", "original_conversation_id", "archived_at")
+    search_fields = ("user__username", "llm__name", "original_conversation_id")
+    ordering = ("-archived_at",)
+    readonly_fields = ("id", "user", "llm", "original_conversation_id", "user_text", "assistant_text", "messages", "state", "archived_at")
+
+    fieldsets = (
+        ("기본 정보", {
+            "fields": ("id", "user", "llm", "original_conversation_id", "archived_at"),
+        }),
+        ("대화 내용", {
+            "fields": ("user_text", "assistant_text", "messages", "state"),
+            "description": (
+                "사용자가 삭제한 Conversation과 관련된 메시지, 상태를 포함합니다.\n"
+                "messages 필드는 JSON 형태로 모든 메시지 기록을 저장합니다.\n"
+                "state 필드는 ConversationState 정보를 JSON으로 저장합니다.\n"
+                "오디오 URL도 messages 내에 포함되어 있습니다."
+            ),
+        }),
+    )

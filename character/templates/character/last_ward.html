@@ -244,21 +244,23 @@
     <button class="ending-next-btn" id="ending-next-btn">다음 →</button>
 
     <div class="ending-buttons" id="ending-buttons">
-    {% if not last_ward.is_public %}
+  {% if not last_ward_is_public %}
         <button class="ending-btn continue" id="continue-btn">이어서 대화하기</button>
-       {% else %} 
+    {% else %}
         <button class="ending-btn continue" onclick="history.back()">이어서 대화하기</button>
-
     {% endif %}
-        {% if conv_id %}
+
+    {% if conv_id %}
         <form method="post" action="{% url 'character:delete_conversation' conv_id %}" style="margin:0;">
             {% csrf_token %}
-            <button class="ending-btn restart" type="submit">처음부터 하기</button>
+            <button class="ending-btn restart" type="submit" onclick="confirm('처음부터 하면 대화했던 모든 데이터가 삭제 됩니다. 삭제 하시겠습니까?')">처음부터 하기</button>
         </form>
-        {% endif %}
-        <a class="final-btn new" id="new-story" href="{% url 'character:story_intro' story.public_uuid %}">다른 스토리 보기</a>
+    {% endif %}
+    <a class="final-btn new" id="new-story" href="{% url 'character:story_intro' story.public_uuid %}">다른 스토리 보기</a>
+
     </div>
 </div>
+
 
 <script>
 // -----------------------------
@@ -360,9 +362,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const continueBtn = document.getElementById('continue-btn');
     if (continueBtn) {
         continueBtn.addEventListener('click', function() {
-            // CSRF 토큰 가져오기
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            
+
             fetch("{% url 'character:last_ward' llm_uuid=llm.public_uuid %}", {
                 method: 'POST',
                 headers: {
@@ -374,7 +375,6 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // 성공하면 채팅 페이지로 돌아가기
                     window.location.href = "{% url 'character:chat-view' llm_uuid=llm.public_uuid %}";
                 } else {
                     alert(data.error || '오류가 발생했습니다.');
@@ -387,5 +387,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+
 </script>
 {% endblock %}

@@ -83,12 +83,20 @@ function sendTextMessage() {
             if (data.hp !== undefined) {
                 updateHp(data.hp);
             }
+            // === 리다이렉트 체크 (HP 100 도달 시) ===
+            if (data.redirect) {
+                setTimeout(() => {
+                    console.log('[REDIRECT] 엔딩 페이지로 이동:', data.redirect);
+                    window.location.href = data.redirect;
+                }, 1500);  // 1.5초 → 마지막 메시지 + HP 애니메이션 여유
+            }
 
             // 2단계: TTS 별도로 요청 (비동기)
             fetchTTS(data.text, msgElement, data.message_id);
         } else {
             addMessage('오류가 발생했습니다: ' + data.error, true);
         }
+        
     })
     .catch(error => {
         const typing = document.querySelector('.typing-message');
@@ -337,7 +345,7 @@ async function sendTextMessage() {
     showTypingIndicator();
 
     try {
-        const response = await fetch(chatUrl, {
+        const response = await fetch(chatUrl, {  // ← chatUrl 써야 함 (chat-logic URL)
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -350,21 +358,29 @@ async function sendTextMessage() {
         const data = await response.json();
 
         if (data.success) {
-            addMessage(data.text, true, data.message_id);
+            const msgElement = addMessage(data.text, true, data.message_id);
 
             if (data.hp !== undefined) {
                 updateHp(data.hp);
             }
+
+            // 리다이렉트 처리
+            if (data.redirect) {
+                console.log('[REDIRECT] 엔딩 페이지로 이동 시도:', data.redirect);
+                setTimeout(() => {
+                    window.location.href = data.redirect;
+                }, 1800);  // 1.8초로 조금 늘려서 여유 주기
+            }
+
         } else {
             addMessage('오류: ' + (data.error || '알 수 없는 오류'), true);
         }
     } catch (error) {
         hideTypingIndicator();
-        console.error('채팅 오류:', error);
+        console.error('채팅 요청 실패:', error);
         addMessage('연결 오류가 발생했습니다.', true);
     }
 }
-
 // ====================================
 // TTS 생성 (버튼 클릭 시만)
 // ====================================

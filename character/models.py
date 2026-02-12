@@ -73,6 +73,7 @@ class LLM(models.Model):
     invest_count = models.IntegerField(default=0)
     first_sentence = models.TextField(verbose_name="첫 마디", null=True)
 
+
     class Meta:
         db_table = 'LLM'
         verbose_name = 'ai 정보'
@@ -95,7 +96,17 @@ class LLMSubImage(models.Model):
     def __str__(self):
         return f"{self.llm.name} - {self.title or '이미지'} {self.id}"
     
+class UserLastWard(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    last_ward = models.ForeignKey('character.LastWard', on_delete=models.CASCADE)
+    viewed = models.BooleanField(default=False)  # 사용자가 봤는지 여부
+    viewed_at = models.DateTimeField(null=True, blank=True)
+    is_public = models.BooleanField(default=False)
 
+
+    class Meta:
+        db_table = 'user_last_ward'
+        unique_together = ('user', 'last_ward')
 
 class LastWard(models.Model):
     llm = models.ForeignKey('character.LLM', on_delete=models.CASCADE, related_name='last_ward', null=True)
@@ -201,6 +212,9 @@ class Conversation(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     is_public = models.BooleanField(default=False, verbose_name="공개 여부")
     shared_at = models.DateTimeField(null=True, blank=True, verbose_name="공유 시간")
+    is_deleted_by_user = models.BooleanField(default=False)
+
+
 
     class Meta:
         db_table = 'conversation'
@@ -208,6 +222,7 @@ class Conversation(models.Model):
 
     def __str__(self):
         return f"Conversation {self.id} by {self.user}"
+    
 
 
 class ConversationMessage(models.Model):
@@ -220,6 +235,9 @@ class ConversationMessage(models.Model):
     hp_range_min = models.IntegerField(null=True, blank=True)      # 적용된 구간 시작
     hp_range_max = models.IntegerField(null=True, blank=True)
     audio_duration = models.FloatField(null=True, blank=True, verbose_name="오디오 길이(초)")
+    is_deleted = models.BooleanField(default=False, db_index=True)  # ← 추가
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
 
     class Meta:
         db_table= 'conversation_message'
@@ -257,10 +275,42 @@ class CharacterMemory(models.Model):
     relevance_score = models.FloatField(default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
 
     class Meta:
         db_table = 'character_memory'
         verbose_name = '캐릭터 장기 기억'
+
+
+
+# 대화내용 기록
+class ArchivedConversation(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='archived_conversations'
+    )
+    llm = models.ForeignKey('character.LLM', on_delete=models.CASCADE)
+    original_conversation_id = models.IntegerField(null=True, blank=True, verbose_name="원본 Conversation ID")
+    
+    user_text = models.TextField(blank=True, null=True)
+    assistant_text = models.TextField(blank=True, null=True)
+    
+    messages = models.JSONField(default=list, blank=True, verbose_name="대화 메시지 기록")
+    state = models.JSONField(default=dict, blank=True, verbose_name="대화 상태 기록")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    archived_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'archived_conversation'
+        verbose_name = '보존된 대화 기록'
+        ordering = ['-archived_at']
+
+    def __str__(self):
+        return f"ArchivedConversation {self.original_conversation_id} by {self.user}"
 
 
 # 세계관 설정

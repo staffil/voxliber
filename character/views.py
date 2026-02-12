@@ -13,7 +13,7 @@ from django.conf import settings
 from main.models import SnapBtn, Advertisment, Event
 from book.models import Books,ReadingProgress, BookSnap, Content, Poem_list, BookTag, Tags, BookSnippet, VoiceList, VoiceType, Genres, Tags
 from book.service.recommendation import recommend_books
-from character.models import LLM, LLMPrompt, Prompt, LLMSubImage, Conversation, ConversationState, CharacterMemory, LoreEntry ,HPImageMapping, Story, ConversationMessage, Comment, LLMLike, StoryComment, StoryLike, StoryBookmark, LastWard
+from character.models import LLM, LLMPrompt, Prompt, LLMSubImage, Conversation, ConversationState, CharacterMemory, LoreEntry ,HPImageMapping, Story, ConversationMessage, Comment, LLMLike, StoryComment, StoryLike, StoryBookmark, LastWard, UserLastWard, ArchivedConversation
 from django.core.files.base import ContentFile
 from PIL import Image
 import io
@@ -489,6 +489,9 @@ def ai_preview(request, llm_uuid):
     return render(request, "character/ai_intro_preview.html", context)
 
 
+
+
+from django.urls import reverse
 @csrf_exempt
 def chat_logic(request, llm_uuid):
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
@@ -617,6 +620,20 @@ def chat_logic(request, llm_uuid):
 
 
 
+            redirect_url = None
+            if current_hp >= 100:
+                last_ward_exists = UserLastWard.objects.filter(
+                    user=request.user,
+                    last_ward__llm=llm,
+                    is_public=False
+                ).exists()
+                if last_ward_exists:
+                    redirect_url = reverse('character:last_ward', kwargs={'llm_uuid': llm_uuid})
+                    print(f"[REDIRECT] HP 100 도달 → last_ward로 이동 예정: {redirect_url}")
+            
+
+
+
 
             # 7. 텍스트와 HP 반환 (conversation_id 포함 - 비로그인 사용자용)
             return JsonResponse({
@@ -626,6 +643,8 @@ def chat_logic(request, llm_uuid):
                 'conversation_id': conversation.id,
                 'hp': current_hp,
                 'max_hp': max_hp,
+                'redirect': redirect_url,
+                
             })
 
         except Exception as e:
@@ -640,9 +659,6 @@ def chat_logic(request, llm_uuid):
 def chat_view(request, llm_uuid):
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
 
-
-        
-    
 
     if request.method == 'GET':
         # 채팅 페이지 최초 로드
@@ -698,7 +714,6 @@ def chat_view(request, llm_uuid):
 
         lastimage = None
         lastimage_url = None  # 새로 추가
-        lastward = llm.last_ward or "이야기가 끝났어요... 함께한 시간이 소중했어요."
 
         if current_hp >= 100:
             hp_mapping = HPImageMapping.objects.filter(
@@ -733,7 +748,14 @@ def chat_view(request, llm_uuid):
                 else:
                     print("[ERROR] lastimage 완전히 없음")
             
-        last_ward_exists = llm.last_ward.filter(is_public=False).exists()
+        last_ward_exists = UserLastWard.objects.filter(
+            user=request.user,
+            last_ward__llm=llm,
+            is_public=False
+        ).exists()
+
+
+        
 
         if current_hp >= 100 and last_ward_exists:
             return redirect('character:last_ward', llm_uuid=llm_uuid)
@@ -742,7 +764,7 @@ def chat_view(request, llm_uuid):
         print(f"[DEBUG] 최종 sub_images_data: {sub_images_data}")
         print(f"[DEBUG] llm.llm_image: {llm.llm_image.url if llm.llm_image else '없음'}")
         print(f"[DEBUG] current_hp: {current_hp}")
-        last_wards = LastWard.objects.filter(llm=llm).order_by('order', 'created_at')
+        last_wards = UserLastWard.objects.filter(user=request.user)
 
         context = {
             'llm': llm,
@@ -752,10 +774,9 @@ def chat_view(request, llm_uuid):
             'current_hp': current_hp,
             'max_hp': max_hp,
             "loarbook_list" :loarbook_list,
-            "lastward":lastward,
             "lastimage":lastimage,
-            'lastimage': lastimage,
-            "last_wards":last_wards
+            "last_wards":last_wards,
+            "last_ward_exists":last_ward_exists
 
         }
         return render(request, "character/chat.html", context)
@@ -765,39 +786,67 @@ def chat_view(request, llm_uuid):
 def last_ward(request, llm_uuid):
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
 
-    # 사용자가 클릭했을 때만 공개 처리
-    last_ward_to_update = llm.last_ward.filter(is_public=False).first()
-    if last_ward_to_update:
-        last_ward_to_update.is_public = True
-        last_ward_to_update.save()
+    # UserLastWard 가져오기 / 없으면 새로 생성
+    user_last_wards = UserLastWard.objects.filter(
+        user=request.user,
+        last_ward__llm=llm
+    )
+
+    # 없으면 새로 생성
+    if not user_last_wards.exists():
+        last_wards_qs = llm.last_ward.all()
+        for ward in last_wards_qs:
+            UserLastWard.objects.create(
+                user=request.user,
+                last_ward=ward,
+                is_public=False
+            )
+        user_last_wards = UserLastWard.objects.filter(
+            user=request.user,
+            last_ward__llm=llm
+        )
+
+    # POST 요청: 이어서 대화하기 버튼
+    if request.method == 'POST':
+        import json
+        data = json.loads(request.body.decode('utf-8'))
+        if data.get('action') == 'continue_chat':
+            # False였던 UserLastWard 모두 True로
+            user_last_wards.filter(is_public=False).update(is_public=True)
+            return JsonResponse({'success': True})
+
+    # GET 요청 처리
+    last_wards_qs = user_last_wards.select_related('last_ward').order_by('last_ward__order', 'last_ward__created_at')
+
+    conversation_has = ConversationMessage.objects.filter(
+        conversation__llm=llm,
+        conversation__user=request.user
+    ).exists()
 
     try:
-        conversation_has = ConversationMessage.objects.filter(
-            conversation__llm=llm,
-            conversation__user=request.user
-        ).exists()
-        conv = Conversation.objects.get(
-            llm=llm,
-            user=request.user
-        )
+        conv = Conversation.objects.get(llm=llm, user=request.user)
         conv_id = conv.id
     except Conversation.DoesNotExist:
         conv = None
         conv_id = None
 
-    story = llm.story  
-    last_wards = LastWard.objects.filter(llm=llm).order_by('order', 'created_at')
-    last_ward = last_wards.last() 
+    story = llm.story
+
+    # 이어서 대화하기 버튼 조건: False 있는 경우
+    last_ward_is_public = not user_last_wards.filter(is_public=False).exists()
+    last_wards_qs = llm.last_ward.all().order_by('order', 'created_at')
+
     context = {
         "llm": llm,
-        "last_wards": last_wards,
+        "last_wards": last_wards_qs,
         "story": story,
         "conversation_has": conversation_has,
         "conv_id": conv_id,
-        "last_ward":last_ward
+        "last_ward_is_public": last_ward_is_public
     }
-
     return render(request, "character/last_ward.html", context)
+
+
 
 
 
@@ -938,30 +987,68 @@ def ai_intro(request, llm_uuid):
 
     return render(request, "character/ai_intro.html", context)
 
+def archive_conversation(conversation):
+    # 메시지 JSON 변환
+    messages_data = []
+    for msg in conversation.messages.all():
+        messages_data.append({
+            "role": msg.role,
+            "content": msg.content,
+            "audio": msg.audio.url if msg.audio else None,
+            "created_at": msg.created_at.isoformat(),
+            "hp_after_message": msg.hp_after_message,
+            "hp_range": [msg.hp_range_min, msg.hp_range_max],
+            "audio_duration": msg.audio_duration,
+        })
 
+    # 상태 JSON 변환
+    state_data = {}
+    if hasattr(conversation, 'state'):
+        state_data = {
+            "current_location": conversation.state.current_location,
+            "character_stats": conversation.state.character_stats,
+            "relationships": conversation.state.relationships,
+            "inventory": conversation.state.inventory,
+            "updated_at": conversation.state.updated_at.isoformat(),
+        }
 
-
-def delete_conversation(request, conv_id):
-    conversation = get_object_or_404(
-        Conversation,
-        id=conv_id,
-        user=request.user
+    # ArchivedConversation 생성
+    ArchivedConversation.objects.create(
+        user=conversation.user,
+        llm=conversation.llm,
+        original_conversation_id=conversation.id,
+        user_text=conversation.user_message,
+        assistant_text=conversation.llm_response,
+        messages=messages_data,
+        state=state_data
     )
 
-    llm = conversation.llm  # 어떤 캐릭터인지 기억
 
-    # 1️⃣ 메시지 삭제
-    ConversationMessage.objects.filter(conversation=conversation).delete()
 
-    # 2️⃣ 상태(HP 등) 삭제
-    ConversationState.objects.filter(conversation=conversation).delete()
+from django.db import transaction
 
-    LastWard.objects.filter(llm=llm).update(is_public=False)
+def delete_conversation(request, conv_id):
+    conversation = get_object_or_404(Conversation, id=conv_id, user=request.user)
+    llm = conversation.llm
 
-    # 3️⃣ 대화 자체 삭제
-    conversation.delete()
+    try:
+        with transaction.atomic():
+            # 아카이브 저장
+            archive_conversation(conversation)
 
-    # 4️⃣ 다시 해당 LLM 채팅 페이지로 이동 → 새 conversation 생성됨
+            # 메시지/상태 삭제
+            ConversationMessage.objects.filter(conversation=conversation).delete()
+            ConversationState.objects.filter(conversation=conversation).delete()
+
+            # UserLastWard 업데이트
+            UserLastWard.objects.filter(user=request.user, last_ward__llm=llm).update(is_public=False)
+
+            # Conversation 삭제
+            conversation.delete()
+    except Exception as e:
+        logging.error(f"Conversation 삭제 실패: {e}")
+        return JsonResponse({'error': '대화 삭제 중 오류가 발생했습니다.'}, status=500)
+
     return redirect('character:chat-view', llm_uuid=llm.public_uuid)
 
     

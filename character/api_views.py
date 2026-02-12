@@ -2,7 +2,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg, Count, Max, Q
 from django.views.decorators.csrf import csrf_exempt
-from character.models import LLM, Story, CharacterMemory, Conversation, ConversationMessage, ConversationState, HPImageMapping, LLMSubImage, LoreEntry, LLMPrompt, StoryLike, StoryComment, StoryBookmark,  Prompt,  Comment, LLMLike
+from character.models import LLM, Story, CharacterMemory, Conversation, ConversationMessage, ConversationState, HPImageMapping, LLMSubImage, LoreEntry, LLMPrompt, StoryLike, StoryComment, StoryBookmark,  Prompt,  Comment, LLMLike, UserLastWard
 from book.api_utils import require_api_key, paginate, api_response, require_api_key_secure
 from rest_framework.decorators import api_view
 import json
@@ -109,40 +109,50 @@ def public_llm_list(request):
         'pagination': result['pagination']
     })
     
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from character.models import Conversation, ConversationMessage, ConversationState, LastWard
+from django.db import transaction
+import logging
+
+from character.models import (
+    Conversation, ConversationMessage, ConversationState, UserLastWard, ArchivedConversation
+)
+from character.views import archive_conversation
 
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def api_delete_conversation(request, conv_id):
+    """
+    사용자 Conversation 삭제 → ArchivedConversation으로 아카이브 후 원본 삭제
+    """
+    conversation = get_object_or_404(Conversation, id=conv_id, user=request.user)
+    llm = conversation.llm
 
-    conversation = get_object_or_404(
-        Conversation,
-        id=conv_id
-    )
+    try:
+        with transaction.atomic():
+            # 1️⃣ 아카이브 저장
+            archive_conversation(conversation)
 
-    # 1️⃣ 메시지 삭제
-    ConversationMessage.objects.filter(
-        conversation=conversation
-    ).delete()
+            # 2️⃣ Conversation 관련 메시지 삭제
+            ConversationMessage.objects.filter(conversation=conversation).delete()
 
-    # 2️⃣ 상태 삭제
-    ConversationState.objects.filter(
-        conversation=conversation
-    ).delete()
+            # 3️⃣ Conversation 상태 삭제
+            ConversationState.objects.filter(conversation=conversation).delete()
 
-    LastWard.objects.filter(llm=llm).update(is_public=False)
+            # 4️⃣ UserLastWard 공개 여부 업데이트
+            UserLastWard.objects.filter(user=request.user, last_ward__llm=llm).update(is_public=False)
 
+            # 5️⃣ Conversation 삭제
+            conversation.delete()
 
-    # 3️⃣ 대화 삭제
-    conversation.delete()
+    except Exception as e:
+        logging.error(f"[API DELETE] Conversation 삭제 실패: {e}", exc_info=True)
+        return Response({'error': '대화 삭제 중 오류가 발생했습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    return Response(
-        {"success": True},
-        status=status.HTTP_204_NO_CONTENT
-    )
+    return Response({"success": True}, status=status.HTTP_204_NO_CONTENT)
 
 
 @csrf_exempt
@@ -826,26 +836,49 @@ def api_chat_view(request, llm_uuid):
 
 
 
-
+@api_view(['GET', 'POST'])  # ← 이 데코레이터 필수! (DRF 스타일)
 def api_last_ward(request, llm_uuid):
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
 
-    # 공개되지 않은 마지막 LastWard 공개 처리
+    # 공통: UserLastWard 초기화 (없으면 생성)
+    user_last_wards = UserLastWard.objects.filter(
+        user=request.user,
+        last_ward__llm=llm
+    )
+    if not user_last_wards.exists():
+        for ward in llm.last_ward.all():
+            UserLastWard.objects.create(
+                user=request.user,
+                last_ward=ward,
+                is_public=False
+            )
+        user_last_wards = UserLastWard.objects.filter(
+            user=request.user,
+            last_ward__llm=llm
+        )
+
+    if request.method == 'POST':
+        # POST: 이어서 대화하기 액션 (또는 다른 액션)
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            if data.get('action') == 'continue_chat':
+                user_last_wards.filter(is_public=False).update(is_public=True)
+                return Response({'success': True}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    # GET: 마지막 ward 데이터 JSON 반환 (앱용 API)
+    # 공개 처리 (당신 기존 로직)
     last_ward_to_update = llm.last_ward.filter(is_public=False).first()
     if last_ward_to_update:
         last_ward_to_update.is_public = True
         last_ward_to_update.save()
 
-    # 유저의 대화 정보
-    try:
-        conv = Conversation.objects.get(llm=llm, user=request.user)
-        conv_id = conv.id
-    except Conversation.DoesNotExist:
-        conv = None
-        conv_id = None
-
-    # 공개된 LastWard 가져오기 (최신 순)
+    # 공개된 LastWard 가져오기
     last_wards = llm.last_ward.filter(is_public=True).order_by('-created_at')[:10]
+
     last_ward_data = [
         {
             'id': ward.id,
@@ -858,15 +891,19 @@ def api_last_ward(request, llm_uuid):
         for ward in last_wards
     ]
 
-    data = {
+    # 대화 정보
+    conv_id = None
+    try:
+        conv = Conversation.objects.get(llm=llm, user=request.user)
+        conv_id = conv.id
+    except Conversation.DoesNotExist:
+        pass
+
+    return Response({
         'success': True,
         'conversation_id': conv_id,
         'last_wards': last_ward_data,
-    }
-
-    return JsonResponse(data)
-
-
+    })
 
 # ==================== 비로그인 채팅 API ====================
 
