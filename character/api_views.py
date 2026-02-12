@@ -122,8 +122,8 @@ from character.models import (
 )
 from character.views import archive_conversation
 
+@require_api_key_secure
 @api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
 def api_delete_conversation(request, conv_id):
     """
     사용자 Conversation 삭제 → ArchivedConversation으로 아카이브 후 원본 삭제
