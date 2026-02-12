@@ -87,14 +87,6 @@ class ConversationStateAdmin(admin.ModelAdmin):
     list_display = ('conversation', 'updated_at')
 
 
-# -----------------------------
-# ArchivedConversation
-# -----------------------------
-@admin.register(ArchivedConversation)
-class ArchivedConversationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'original_conversation_id', 'user', 'llm', 'archived_at')
-    list_filter = ('archived_at',)
-    search_fields = ('user__email',)
 
 
 # -----------------------------
