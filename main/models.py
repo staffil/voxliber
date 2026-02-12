@@ -85,7 +85,9 @@ class FAQ(models.Model):
         ('general', '일반'),
         ('payment', '결제'),
         ('account', '계정'),
-        ('content', '콘텐츠'),
+        ('content', '오디오북'),
+        ('snap', '스냅'),
+        ('story', 'AI스토리'),
         ('other', '기타'),
     ]
     question = models.CharField(max_length=255)
