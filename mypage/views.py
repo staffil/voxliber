@@ -693,10 +693,24 @@ def novel_result(request, llm_uuid):
                 'audio': msg.audio.url if msg.audio else None,
             })
 
+    last_wards = []
+
+    conv_state = ConversationState.objects.get(conversation=conversation)
+
+    current_hp = conv_state.character_stats.get('hp', 100)
+
+    if current_hp >= 100:
+        last_wards = LastWard.objects.filter(llm= conversation.llm).order_by('order')
+
+
+
+
+
     context = {
         'novel': novel,
         'conversation': conversation,
         'is_public': conversation.is_public,
+        "last_wards": last_wards
     }
     return render(request, 'mypage/novel_result.html', context)
 

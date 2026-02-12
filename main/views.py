@@ -10,7 +10,7 @@ from uuid import uuid4
 from django.conf import settings
 from main.models import SnapBtn, Advertisment, Event, ScreenAI
 from book.models import Books,ReadingProgress, BookSnap, Content, Poem_list, BookTag, Tags, BookSnippet, ListeningHistory
-from character.models import Story, CharacterMemory, LLM, LoreEntry, ConversationMessage, Conversation,LastWard, UserLastWard
+from character.models import Story, CharacterMemory, LLM, LoreEntry, ConversationMessage, Conversation,LastWard, UserLastWard, ConversationState
 from book.service.recommendation import recommend_books
 from django.db.models import Max
 import random
@@ -891,11 +891,23 @@ def shared_novel(request, conv_id):
                 'content': msg.content,
                 'audio': msg.audio.url if msg.audio else None,
             })
+    last_wards = []
+
+    conv_state = ConversationState.objects.get(conversation=conversation)
+
+    current_hp = conv_state.character_stats.get('hp', 100)
+
+    if current_hp >= 100:
+        last_wards = LastWard.objects.filter(llm= conversation.llm).order_by('order')
+
+
+
 
     context = {
         'novel': novel,
         'conversation': conversation,
         'is_shared': True,  # 공유 모드임을 템플릿에 알림
         'llm': llm,
+        "last_wards":last_wards
     }
     return render(request, 'main/shared_conversation.html', context)

@@ -320,6 +320,116 @@ body {
 }
 
 /* ==========================================
+   마지막 말 (HP 100 달성)
+   ========================================== */
+.last-wards-section {
+    margin: 80px 0 60px;
+    padding-top: 60px;
+    border-top: 2px solid var(--novel-primary);
+}
+
+.last-wards-divider {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.divider-text {
+    display: inline-block;
+    padding: 12px 32px;
+    background: var(--novel-primary);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: 'Noto Sans KR', sans-serif;
+    letter-spacing: 3px;
+    border-radius: 30px;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+}
+
+.last-ward-card {
+    margin-bottom: 50px;
+}
+
+.last-ward-card:last-child {
+    margin-bottom: 0;
+}
+
+.last-ward-image {
+    position: relative;
+    margin: 0 -40px 30px;
+    overflow: hidden;
+    border-radius: 0;
+}
+
+.last-ward-image img {
+    width: 100%;
+    height: auto;
+    max-height: 700px;
+    object-fit: cover;
+    display: block;
+}
+
+.last-ward-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.85) 0%,
+        rgba(0, 0, 0, 0.4) 50%,
+        transparent 100%
+    );
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 50px 40px;
+}
+
+.last-ward-quote {
+    position: relative;
+    max-width: 600px;
+    text-align: center;
+}
+
+.quote-mark {
+    font-family: 'Georgia', serif;
+    font-size: 4rem;
+    color: var(--novel-primary);
+    line-height: 1;
+    opacity: 0.6;
+}
+
+.quote-mark.closing {
+    transform: rotate(180deg);
+    display: inline-block;
+}
+
+.ward-text {
+    margin: -20px 0;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: #ffffff;
+    line-height: 1.8;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.last-ward-description {
+    padding: 30px 0;
+    text-align: center;
+}
+
+.last-ward-description p {
+    font-size: 1.05rem;
+    line-height: 2;
+    color: var(--novel-narration);
+    font-style: italic;
+    margin: 0;
+}
+
+/* ==========================================
    에필로그
    ========================================== */
 .novel-epilogue {
@@ -442,6 +552,28 @@ body {
         padding: 16px 20px;
         margin: 20px 0;
     }
+
+    .last-ward-image {
+        margin: 0 -24px 20px;
+    }
+
+    .last-ward-overlay {
+        padding: 30px 24px;
+    }
+
+    .ward-text {
+        font-size: 1.1rem;
+    }
+
+    .quote-mark {
+        font-size: 3rem;
+    }
+
+    .divider-text {
+        font-size: 0.8rem;
+        padding: 10px 24px;
+        letter-spacing: 2px;
+    }
 }
 
 /* ==========================================
@@ -469,6 +601,15 @@ body.light-mode .chapter-image img {
     filter: brightness(1);
 }
 
+body.light-mode .last-ward-overlay {
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.7) 0%,
+        rgba(0, 0, 0, 0.3) 50%,
+        transparent 100%
+    );
+}
+
 /* ==========================================
    애니메이션
    ========================================== */
@@ -482,6 +623,12 @@ body.light-mode .chapter-image img {
 .chapter:nth-child(3) { animation-delay: 0.3s; }
 .chapter:nth-child(4) { animation-delay: 0.4s; }
 .chapter:nth-child(5) { animation-delay: 0.5s; }
+
+.last-ward-card {
+    animation: fadeInUp 0.8s ease forwards;
+    opacity: 0;
+    animation-delay: 0.3s;
+}
 
 @keyframes fadeInUp {
     from {
@@ -506,4 +653,134 @@ body.light-mode .chapter-image img {
 .novel-container::-webkit-scrollbar-thumb {
     background: var(--novel-border);
     border-radius: 3px;
+}
+
+
+/* ==========================================
+   챕터 이미지 텍스트 오버레이
+   ========================================== */
+.episode-text-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 40px;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.9) 0%,
+        rgba(0, 0, 0, 0.6) 50%,
+        transparent 100%
+    );
+}
+
+.episode-text-overlay .chapter-title {
+    margin-bottom: 10px;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.episode-text-overlay .chapter-image-title {
+    padding: 0;
+    background: none;
+    position: static;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ==========================================
+   공유 안내 박스
+   ========================================== */
+.shared-info-box {
+    margin: 60px 0 30px;
+    padding: 30px;
+    background: var(--novel-paper-light);
+    border: 1px solid var(--novel-border);
+    border-radius: 16px;
+    text-align: center;
+}
+
+.shared-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: var(--novel-primary-soft);
+    border-radius: 50%;
+    margin-bottom: 16px;
+}
+
+.shared-icon svg {
+    color: var(--novel-primary);
+}
+
+.shared-text {
+    font-size: 0.95rem;
+    color: var(--novel-text-muted);
+    font-family: 'Noto Sans KR', sans-serif;
+    margin: 0 0 20px 0;
+    line-height: 1.6;
+}
+
+.shared-text strong {
+    color: var(--novel-primary);
+    font-weight: 600;
+}
+
+.shared-start-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 28px;
+    background: var(--novel-primary);
+    color: #fff;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 25px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.shared-start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    background: var(--novel-accent);
+}
+
+/* ==========================================
+   반응형 추가
+   ========================================== */
+@media (max-width: 768px) {
+    .episode-text-overlay {
+        padding: 24px;
+    }
+
+    .episode-text-overlay .chapter-title {
+        font-size: 1.2rem;
+    }
+
+    .episode-text-overlay .chapter-image-title {
+        font-size: 0.85rem;
+    }
+
+    .shared-info-box {
+        padding: 24px 20px;
+        margin: 40px 0 20px;
+    }
+
+    .shared-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .shared-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .shared-text {
+        font-size: 0.9rem;
+    }
 }

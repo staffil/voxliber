@@ -4,7 +4,7 @@
 {% block title %}{{ novel.title }} - VOXLIBER{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/mypage/novel_result.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/mypage/novel_result.css' %}?v=3">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 {% endblock %}
 
@@ -23,9 +23,11 @@
 
     <!-- AI 캐릭터와 대화하기 링크 -->
     {% if llm %}
-    <a href="{% url 'character:ai_intro' llm.public_uuid %}" class="ai-chat-link">
-        {{ llm.name }}와(과) 대화하기
-    </a>
+    <div style="text-align: center;">
+        <a href="{% url 'character:ai_intro' llm.public_uuid %}" class="ai-chat-link">
+            {{ llm.name }}와(과) 대화하기
+        </a>
+    </div>
     {% endif %}
 
     <!-- 챕터 목록 -->
@@ -35,7 +37,7 @@
         <!-- 챕터 이미지 및 텍스트 오버레이 -->
         {% if chapter.image and chapter.image.image %}
         <div class="chapter-image">
-            <img src="{{ chapter.image.image.url }}" alt="{{ chapter.image.title|default:'챕터 이미지' }}" >
+            <img src="{{ chapter.image.image.url }}" alt="{{ chapter.image.title|default:'챕터 이미지' }}">
             
             <div class="episode-text-overlay">
                 <h2 class="chapter-title">
@@ -84,11 +86,66 @@
     </div>
     {% endfor %}
 
+    <!-- 마지막 말 (HP 100 달성 시) -->
+    {% if last_wards %}
+    <section class="last-wards-section">
+        <div class="last-wards-divider">
+            <span class="divider-text">— HP 100 달성 —</span>
+        </div>
+
+        {% for ward in last_wards %}
+        <div class="last-ward-card">
+            {% if ward.image %}
+            <div class="last-ward-image">
+                <img src="{{ ward.image.url }}" alt="마지막 장면" loading="lazy">
+                <div class="last-ward-overlay">
+                    {% if ward.ward %}
+                    <div class="last-ward-quote">
+                        <div class="quote-mark">"</div>
+                        <p class="ward-text">{{ ward.ward }}</p>
+                        <div class="quote-mark closing">"</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if ward.description %}
+            <div class="last-ward-description">
+                <p>{{ ward.description|safe }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
     <!-- 에필로그 -->
     {% if novel.epilogue %}
     <footer class="novel-epilogue">
         {{ novel.epilogue|safe }}
     </footer>
+    {% endif %}
+
+    <!-- 공유 안내 (공유 모드일 때만) -->
+    {% if is_shared %}
+    <div class="shared-info-box">
+        <div class="shared-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+                <polyline points="16 6 12 2 8 6"/>
+                <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+        </div>
+        <p class="shared-text">
+            이 이야기는 <strong>{{ conversation.user.nickname|default:conversation.user.username }}</strong>님이 공유한 소설입니다.
+        </p>
+        {% if llm %}
+        <a href="{% url 'character:ai_intro' llm.public_uuid %}" class="shared-start-btn">
+            나도 {{ llm.name }}와 대화 시작하기
+        </a>
+        {% endif %}
+    </div>
     {% endif %}
 
 </div>

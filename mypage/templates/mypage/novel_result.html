@@ -4,7 +4,7 @@
 {% block title %}{{ novel.title }} - VOXLIBER{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/mypage/novel_result.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/mypage/novel_result.css' %}?v=3">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 {% endblock %}
 
@@ -78,6 +78,40 @@
         <p>아직 이야기가 없습니다.<br>캐릭터와 대화를 시작해보세요.</p>
     </div>
     {% endfor %}
+
+    <!-- 마지막 말 (HP 100 달성 시) -->
+    {% if last_wards %}
+    <section class="last-wards-section">
+        <div class="last-wards-divider">
+            <span class="divider-text">— HP 100 달성 —</span>
+        </div>
+
+        {% for ward in last_wards %}
+        <div class="last-ward-card">
+            {% if ward.image %}
+            <div class="last-ward-image">
+                <img src="{{ ward.image.url }}" alt="마지막 장면" loading="lazy">
+                <div class="last-ward-overlay">
+                    {% if ward.ward %}
+                    <div class="last-ward-quote">
+                        <div class="quote-mark">"</div>
+                        <p class="ward-text">{{ ward.ward }}</p>
+                        <div class="quote-mark closing">"</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if ward.description %}
+            <div class="last-ward-description">
+                <p>{{ ward.description|safe }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
 
     <!-- 에필로그 -->
     {% if novel.epilogue %}
