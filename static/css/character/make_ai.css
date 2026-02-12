@@ -1662,9 +1662,9 @@
 
 
 
-/* ------------------------------ */
-/* 마지막 이미지 탭 스타일 (extra-last-image) */
-/* ------------------------------ */
+/* =====================================================
+   마지막 이미지 추가 섹션 (Extra Last Image)
+   ===================================================== */
 
 #extra-last-images-container {
     display: flex;
@@ -1674,107 +1674,303 @@
 }
 
 .extra-last-image-entry {
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    padding: 12px;
-    background-color: #fafafa;
-    position: relative;
+    background: var(--bg-input);
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+    transition: var(--transition);
+}
+
+.extra-last-image-entry:hover {
+    border-color: var(--ai-accent);
+    background: var(--bg-hover);
 }
 
 .extra-last-image-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
 }
 
 .extra-last-image-number {
-    font-weight: bold;
-    font-size: 16px;
-}
-
-.remove-extra-last-image {
-    background: #ff4d4f;
-    color: #fff;
-    border: none;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    cursor: pointer;
-    font-size: 16px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s ease;
+    background: linear-gradient(135deg, var(--ai-accent) 0%, var(--ai-secondary) 100%);
+    border-radius: 50%;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: white;
+}
+
+.remove-extra-last-image {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 2px solid var(--ai-danger);
+    border-radius: 50%;
+    color: var(--ai-danger);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 1rem;
 }
 
 .remove-extra-last-image:hover {
-    background: #d9363e;
+    background: var(--ai-danger);
+    color: white;
+    transform: rotate(90deg);
 }
 
 .extra-last-image-content {
     display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.extra-last-image-upload {
+    flex: 1;
+    min-width: 200px;
+}
+
+.extra-last-image-file {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-dark);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.extra-last-image-file:hover {
+    border-color: var(--ai-accent);
+    background: var(--bg-input);
+}
+
+.extra-last-image-file::file-selector-button {
+    padding: 8px 16px;
+    margin-right: 12px;
+    background: linear-gradient(135deg, var(--ai-accent) 0%, var(--ai-secondary) 100%);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.extra-last-image-file::file-selector-button:hover {
+    box-shadow: 0 0 15px rgba(244, 114, 182, 0.4);
+    transform: translateY(-1px);
+}
+
+/* 기존 이미지 미리보기 */
+.extra-last-image-upload .existing-image-preview {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--bg-card);
+    border: 2px solid var(--ai-accent);
+    border-radius: var(--radius-md);
+    display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 8px;
 }
 
-.extra-last-image-upload input[type="file"] {
-    display: block;
-    padding: 6px;
-    border: 1px dashed #ccc;
-    border-radius: 8px;
-    cursor: pointer;
-    width: 200px;
-}
-
-.extra-last-image-upload .existing-image-preview {
-    margin-top: 6px;
-}
-
 .extra-last-image-upload .existing-image-preview img {
-    max-width: 100px;
-    max-height: 100px;
-    border-radius: 8px;
-    display: block;
+    max-width: 120px;
+    max-height: 120px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    border: 2px solid var(--ai-accent);
+    box-shadow: 0 4px 12px rgba(244, 114, 182, 0.2);
 }
 
 .extra-last-image-upload .existing-label {
-    font-size: 12px;
-    color: #666;
-    margin-top: 2px;
+    font-size: 0.75rem;
+    color: var(--ai-accent);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 제목/메모 입력 */
+.extra-last-image-title {
+    flex: 2;
+    min-width: 250px;
 }
 
 .extra-last-image-title label {
-    font-weight: 500;
-    margin-bottom: 4px;
     display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.extra-last-image-title label::before {
+    content: '✏️';
+    font-size: 1rem;
 }
 
 .extra-last-image-title textarea {
     width: 100%;
     max-width: 500px;
-    min-height: 60px;
+    min-height: 100px;
     max-height: 300px;
-    padding: 6px 10px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
+    padding: 14px 18px;
+    background: var(--bg-input);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.6;
     resize: vertical;
-    font-size: 14px;
+    transition: var(--transition);
 }
 
+.extra-last-image-title textarea:focus {
+    outline: none;
+    border-color: var(--ai-accent);
+    box-shadow: 0 0 0 4px rgba(244, 114, 182, 0.15);
+}
+
+.extra-last-image-title textarea::placeholder {
+    color: var(--text-muted);
+}
+
+/* 추가 버튼 */
 #add-extra-last-image-btn {
-    margin-top: 12px;
-    padding: 6px 14px;
-    font-size: 14px;
-    border-radius: 8px;
-    border: 1px solid #007bff;
-    background-color: #007bff;
-    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 16px;
+    background: transparent;
+    border: 2px dashed var(--ai-accent);
+    border-radius: var(--radius-md);
+    color: var(--ai-accent);
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition);
+    margin-top: 16px;
 }
 
-#add-extra-last-image-btn:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
+#add-extra-last-image-btn:hover:not(:disabled) {
+    background: rgba(244, 114, 182, 0.1);
+    box-shadow: 0 0 20px rgba(244, 114, 182, 0.3);
+    transform: translateY(-2px);
+}
+
+#add-extra-last-image-btn:disabled {
+    border-color: var(--border-color);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+#add-extra-last-image-btn span {
+    font-size: 1.3rem;
+}
+
+/* =====================================================
+   반응형 - 마지막 이미지 섹션
+   ===================================================== */
+
+@media (max-width: 900px) {
+    .extra-last-image-content {
+        flex-direction: column;
+    }
+    
+    .extra-last-image-title textarea {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .extra-last-image-entry {
+        padding: 16px;
+    }
+    
+    .extra-last-image-header {
+        margin-bottom: 16px;
+    }
+    
+    .extra-last-image-number {
+        width: 28px;
+        height: 28px;
+        font-size: 0.85rem;
+    }
+    
+    .remove-extra-last-image {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .extra-last-image-content {
+        gap: 16px;
+    }
+    
+    .extra-last-image-title textarea {
+        font-size: 16px; /* iOS 줌 방지 */
+        padding: 12px 14px;
+    }
+    
+    #add-extra-last-image-btn {
+        padding: 14px;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .extra-last-image-entry {
+        padding: 12px;
+    }
+    
+    .extra-last-image-file {
+        font-size: 0.85rem;
+        padding: 10px;
+    }
+    
+    .extra-last-image-file::file-selector-button {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+}
+
+/* 드래그 앤 드롭 효과 */
+.extra-last-image-entry.dragover {
+    border-color: var(--ai-accent);
+    background: rgba(244, 114, 182, 0.05);
+    transform: scale(1.02);
+}
+
+/* 애니메이션 */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.extra-last-image-entry {
+    animation: slideIn 0.3s ease;
 }
