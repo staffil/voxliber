@@ -8,7 +8,7 @@ from django.utils import timezone
 from book.models import Books, ReadingProgress, Content, MyVoiceList, Books
 from book.utils import generate_tts
 from django.conf import settings
-from character.models import Story, LLM, LLMSubImage, LoreEntry, Conversation, StoryBookmark, ConversationMessage, ConversationState, HPImageMapping
+from character.models import Story, LLM, LLMSubImage, LoreEntry, Conversation, StoryBookmark, ConversationMessage, ConversationState, HPImageMapping, LastWard, UserLastWard
 import re 
 from register.decorator import login_required_to_main
 from register.models import Users
