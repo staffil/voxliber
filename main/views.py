@@ -604,7 +604,10 @@ def notice(request):
 
 # 2️⃣ FAQ
 def faq(request):
-    faqs = FAQ.objects.filter(is_active=True).order_by('category', 'id')
+    faqs = FAQ.objects.filter(is_active=True)
+
+    for faq in faqs:
+        faq.category_display = faq.get_category_display()   
     context = {
         'faqs': faqs
     }
