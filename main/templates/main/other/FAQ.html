@@ -11,7 +11,7 @@
 <div class="faq-wrapper">
     <h1>자주 묻는 질문 (FAQ)</h1>
 
-{% regroup faqs by category_display as category_list %}
+    {% regroup faqs by category_display as category_list %}
 
     {% for category in category_list %}
     <div class="faq-category">
@@ -28,6 +28,7 @@
     {% endfor %}
 </div>
 {% endblock %}
+
 
 {% block extra_js %}
 <script>
