@@ -822,7 +822,49 @@ def api_chat_view(request, llm_uuid):
             'title': sub.title or '',
         })
 
-    # ★ last_wards 추가
+    # ✅✅✅ UserLastWard 처리 추가 ✅✅✅
+    last_ward_is_public = False
+    conversation_has = False
+    
+    if user:
+        # UserLastWard 가져오기 (없으면 생성)
+        user_last_wards = UserLastWard.objects.filter(
+            user=user,
+            last_ward__llm=llm
+        )
+        
+        if not user_last_wards.exists():
+            # LastWard가 있으면 UserLastWard 생성
+            for ward in llm.last_ward.all():
+                UserLastWard.objects.create(
+                    user=user,
+                    last_ward=ward,
+                    is_public=False
+                )
+            user_last_wards = UserLastWard.objects.filter(
+                user=user,
+                last_ward__llm=llm
+            )
+        
+        # ✅ HP가 max_hp 이상이면 자동 공개
+        if current_hp >= max_hp and user_last_wards.filter(is_public=False).exists():
+            updated_count = user_last_wards.filter(is_public=False).update(is_public=True)
+            print(f"✅ [api_chat_view] HP {current_hp}/{max_hp} 도달, UserLastWard {updated_count}개 공개 처리")
+        
+        # last_ward_is_public 계산 (모든 UserLastWard가 공개되었는지)
+        last_ward_is_public = not user_last_wards.filter(is_public=False).exists()
+        
+        # conversation_has 계산
+        conversation_has = ConversationMessage.objects.filter(
+            conversation__llm=llm,
+            conversation__user=user
+        ).exists()
+        
+        print(f"🔍 [api_chat_view] last_ward_is_public: {last_ward_is_public}")
+        print(f"🔍 [api_chat_view] conversation_has: {conversation_has}")
+        print(f"🔍 [api_chat_view] current_hp: {current_hp}/{max_hp}")
+
+    # ★ last_wards 데이터 (기존 유지)
     last_wards_qs = llm.last_ward.all().order_by('order', 'created_at')
     last_wards_data = [
         {
@@ -832,7 +874,7 @@ def api_chat_view(request, llm_uuid):
             'description': lw.description or '',
             'order': lw.order,
             'created_at': lw.created_at.isoformat() if lw.created_at else None,
-            'is_public': lw.is_public,
+            'is_public': lw.is_public,  # LastWard 모델의 is_public (참고용)
         }
         for lw in last_wards_qs
     ]
@@ -860,11 +902,13 @@ def api_chat_view(request, llm_uuid):
         ],
         'sub_images': sub_images_data,
         'lorebook': lorebook_data,
-        'last_wards': last_wards_data,   # 👈 추가됨
+        'last_wards': last_wards_data,
+        # ✅✅✅ 추가 필드 ✅✅✅
+        'last_ward_is_public': last_ward_is_public,
+        'conversation_has': conversation_has,
     }
 
     return JsonResponse(data)
-
 
 
 @require_api_key_secure
@@ -1052,6 +1096,18 @@ def api_chat_send(request, llm_uuid):
             conv_state.save()
             current_hp = new_hp
 
+
+
+        if user and current_hp >= max_hp:
+            user_last_wards = UserLastWard.objects.filter(
+                user=user,
+                last_ward__llm=llm,
+                is_public=False
+            )
+            
+            if user_last_wards.exists():
+                updated_count = user_last_wards.update(is_public=True)
+                print(f"✅ [api_chat_send] HP {current_hp}/{max_hp} 도달, UserLastWard {updated_count}개 공개")
         # HP 구간 매핑 찾기
         hp_mapping = None
         for mapping in HPImageMapping.objects.filter(llm=llm).order_by('min_hp'):
