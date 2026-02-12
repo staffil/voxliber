@@ -13,7 +13,7 @@
 
 {% regroup faqs by category_display as category_list %}
 
-    {% for category in faq_list_by_category %}
+    {% for category in category_list %}
     <div class="faq-category">
         <h2>{{ category.grouper }}</h2>
 
