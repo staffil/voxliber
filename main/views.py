@@ -214,8 +214,8 @@ from rest_framework.response import Response
 def api_delete_listening_history(request, book_uuid):
 
 
-    book = get_object_or_404(Books, public_uuid = book_uuid, user=request.user)
-    ListeningHistory.objects.filter(user=request.user, book =book).delete()
+    book = get_object_or_404(Books, public_uuid = book_uuid)
+    ListeningHistory.objects.filter( book =book).delete()
 
 
     return Response(
