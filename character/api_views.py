@@ -867,74 +867,102 @@ def api_chat_view(request, llm_uuid):
 
 
 
-@api_view(['GET', 'POST'])  # ← 이 데코레이터 필수! (DRF 스타일)
+@require_api_key_secure
+@api_view(['GET', 'POST'])
 def api_last_ward(request, llm_uuid):
+
+    request_user = _get_request_user(request)
+    if not request_user:
+        return Response({"error": "인증 실패"}, status=401)
+
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
 
-    # 공통: UserLastWard 초기화 (없으면 생성)
+    # UserLastWard 가져오기
     user_last_wards = UserLastWard.objects.filter(
-        user=request.user,
+        user=request_user,
         last_ward__llm=llm
     )
+
+    # 없으면 생성
     if not user_last_wards.exists():
         for ward in llm.last_ward.all():
             UserLastWard.objects.create(
-                user=request.user,
+                user=request_user,
                 last_ward=ward,
                 is_public=False
             )
         user_last_wards = UserLastWard.objects.filter(
-            user=request.user,
+            user=request_user,
             last_ward__llm=llm
         )
 
+    # ---------------------------
+    # POST: 이어서 대화하기
+    # ---------------------------
     if request.method == 'POST':
-        # POST: 이어서 대화하기 액션 (또는 다른 액션)
         try:
-            data = json.loads(request.body.decode('utf-8'))
+            data = request.data
             if data.get('action') == 'continue_chat':
                 user_last_wards.filter(is_public=False).update(is_public=True)
-                return Response({'success': True}, status=status.HTTP_200_OK)
-            else:
-                return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'success': True}, status=200)
+            return Response({'error': 'Invalid action'}, status=400)
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': str(e)}, status=400)
 
-    # GET: 마지막 ward 데이터 JSON 반환 (앱용 API)
-    # 공개 처리 (당신 기존 로직)
-    last_ward_to_update = llm.last_ward.filter(is_public=False).first()
-    if last_ward_to_update:
-        last_ward_to_update.is_public = True
-        last_ward_to_update.save()
+    # ---------------------------
+    # GET 처리
+    # ---------------------------
 
-    # 공개된 LastWard 가져오기
-    last_wards = llm.last_ward.filter(is_public=True).order_by('-created_at')[:10]
+    # 공개 여부 판단
+    last_ward_is_public = not user_last_wards.filter(is_public=False).exists()
+
+    # 실제 ward 데이터 정렬 (웹과 동일)
+    last_wards_qs = user_last_wards.select_related(
+        'last_ward'
+    ).order_by(
+        'last_ward__order',
+        'last_ward__created_at'
+    )
 
     last_ward_data = [
         {
-            'id': ward.id,
-            'image_url': request.build_absolute_uri(ward.image.url) if ward.image else None,
-            'ward': ward.ward or '',
-            'description': ward.description or '',
-            'order': ward.order,
-            'created_at': ward.created_at.isoformat() if ward.created_at else None,
+            'id': ulw.last_ward.id,
+            'image_url': request.build_absolute_uri(
+                ulw.last_ward.image.url
+            ) if ulw.last_ward.image else None,
+            'ward': ulw.last_ward.ward or '',
+            'description': ulw.last_ward.description or '',
+            'order': ulw.last_ward.order,
+            'created_at': ulw.last_ward.created_at.isoformat()
+            if ulw.last_ward.created_at else None,
+            'is_public': ulw.is_public,
         }
-        for ward in last_wards
+        for ulw in last_wards_qs
     ]
 
-    # 대화 정보
-    conv_id = None
+    # Conversation 존재 여부
+    conversation_has = ConversationMessage.objects.filter(
+        conversation__llm=llm,
+        conversation__user=request_user
+    ).exists()
+
     try:
-        conv = Conversation.objects.get(llm=llm, user=request.user)
+        conv = Conversation.objects.get(
+            llm=llm,
+            user=request_user
+        )
         conv_id = conv.id
     except Conversation.DoesNotExist:
-        pass
+        conv_id = None
 
     return Response({
-        'success': True,
-        'conversation_id': conv_id,
-        'last_wards': last_ward_data,
+        "success": True,
+        "conversation_id": conv_id,
+        "conversation_has": conversation_has,
+        "last_ward_is_public": last_ward_is_public,
+        "last_wards": last_ward_data,
     })
+
 
 # ==================== 비로그인 채팅 API ====================
 
