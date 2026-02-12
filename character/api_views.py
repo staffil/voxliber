@@ -865,7 +865,7 @@ def api_chat_view(request, llm_uuid):
         print(f"🔍 [api_chat_view] current_hp: {current_hp}/{max_hp}")
 
     # ★ last_wards 데이터 (기존 유지)
-    last_wards_qs = llm.last_ward.all().order_by('order', 'created_at')
+    last_wards_qs = llm.last_ward.all()
     last_wards_data = [
         {
             'id': lw.id,
