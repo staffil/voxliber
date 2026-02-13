@@ -1044,13 +1044,28 @@ def update_listening_position_api(request):
         except APIKey.DoesNotExist:
             return JsonResponse({'success': False, 'error': '유효하지 않은 API 키입니다.'}, status=401)
 
-        # Content 확인
-        content = get_object_or_404(Content, id=content_id)
+        # Content 확인 (UUID 또는 정수 ID 모두 지원)
+        try:
+            # UUID로 먼저 시도
+            from uuid import UUID
+            content_uuid = UUID(str(content_id))
+            content = get_object_or_404(Content, public_uuid=content_uuid)
+        except (ValueError, AttributeError):
+            # 정수 ID로 폴백
+            content = get_object_or_404(Content, id=content_id)
+
+        # Book 확인 (UUID 또는 정수 ID 모두 지원)
+        try:
+            from uuid import UUID as UUID2
+            book_uuid = UUID2(str(book_id))
+            book = get_object_or_404(Books, public_uuid=book_uuid)
+        except (ValueError, AttributeError):
+            book = get_object_or_404(Books, id=book_id)
 
         # 청취 기록 생성 또는 업데이트
         listening_history, created = ListeningHistory.objects.get_or_create(
             user=user,
-            book_id=book_id,
+            book=book,
             content=content,
             defaults={
                 'listened_seconds': max(listened_seconds, 0),

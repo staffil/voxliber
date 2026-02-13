@@ -74,7 +74,7 @@ def api_books_list(request):
             'created_at': book.created_at.isoformat(),
             'author': {
                 'id': str(book.user.public_uuid),  # UUID
-                'nickname': book.user.nickname,
+                'nickname': book.author_name or book.user.nickname,
             },
             'genres': [
                 {'id': str(g.id), 'name': g.name, 'color': getattr(g, 'genres_color', None)}
@@ -135,7 +135,7 @@ def api_book_detail(request, book_uuid):
         'created_at': book.created_at.isoformat(),
         'author': {
             'id': str(book.user.public_uuid),  # UUID
-            'nickname': book.user.nickname,
+            'nickname': book.author_name or book.user.nickname,
             'email': book.user.email,
         },
         'genres': [
@@ -271,7 +271,7 @@ def api_content_detail(request, content_uuid):
             'cover_img': request.build_absolute_uri(content.book.cover_img.url) if content.book.cover_img else None,
             'author': {
                 'id': str(content.book.user.public_uuid),  # UUID
-                'nickname': content.book.user.nickname
+                'nickname': content.book.author_name or content.book.user.nickname
             }
         },
         'navigation': {
@@ -424,7 +424,7 @@ def api_my_listening_history(request):
                 'cover_img': request.build_absolute_uri(h.book.cover_img.url) if h.book.cover_img else None,
                 'author': {
                     'id': str(h.book.user.public_uuid) if h.book.user else None,
-                    'nickname': h.book.user.nickname if h.book.user else None,
+                    'nickname': (h.book.author_name or h.book.user.nickname) if h.book.user else None,
                 } if h.book.user else None,
             },
             'content': {
@@ -793,7 +793,7 @@ def _serialize_book(book, request):
         try:
             author_data = {
                 'id': getattr(book.user, 'user_id', getattr(book.user, 'id', None)),
-                'nickname': getattr(book.user, 'nickname', 'Unknown'),
+                'nickname': getattr(book, 'author_name', None) or getattr(book.user, 'nickname', 'Unknown'),
                 'email': getattr(book.user, 'email', '')
             }
         except:
@@ -1382,9 +1382,9 @@ def api_ai_recommend(request, user_id):
             "genres": [g.name for g in book.genres.all()],
             "book_score": book.book_score,
             "author": {
-                "id": book.user.user_id,        # user_id는 그대로
-                "nickname": book.user.nickname,
-                "email": book.user.email,        
+                "id": book.user.user_id,
+                "nickname": book.author_name or book.user.nickname,
+                "email": book.user.email,
             }
         })
     return JsonResponse({"ai_recommended": data}, json_dumps_params={'ensure_ascii': False})
@@ -1534,24 +1534,24 @@ def api_search(request):
                         results.append({
                             'type': 'snap',
                             'id': str(snap.public_uuid),
-                            'snapTitle': snap.snap_title or snap.name,
+                            'snap_title': snap.snap_title or getattr(snap, 'name', ''),
                             'snap_video': request.build_absolute_uri(snap.snap_video.url) if snap.snap_video else None,
                             'thumbnail': thumb,
-                            'likesCount': getattr(snap, 'likes_count', 0),
+                            'likes_count': getattr(snap, 'likes_count', 0),
                             'views': snap.views,
                             'shares': snap.shares,
-                            'commentsCount': comments_count,
-                            'allowComments': snap.allow_comments,
-                            'bookId': str(snap.book.public_uuid) if snap.book else None,
-                            'storyId': str(snap.story.public_uuid) if snap.story else None,
-                            'linkedType': 'book' if snap.book else 'story' if snap.story else None,
-                            'bookComment': snap.book_comment,
+                            'comments_count': comments_count,
+                            'allow_comments': snap.allow_comments,
+                            'book_id': str(snap.book.public_uuid) if snap.book else None,
+                            'story_id': str(snap.story.public_uuid) if snap.story else None,
+                            'linked_type': 'book' if snap.book else 'story' if snap.story else None,
+                            'book_comment': snap.book_comment,
                             'duration': snap.duration,
-                            'createdAt': snap.created_at.isoformat(),
+                            'created_at': snap.created_at.isoformat(),
                             'user': {
                                 'id': str(snap.user.public_uuid),
                                 'nickname': snap.user.nickname,
-                                'profileImg': request.build_absolute_uri(snap.user.user_img.url) if snap.user.user_img else None
+                                'profile_img': request.build_absolute_uri(snap.user.user_img.url) if snap.user.user_img else None
                             } if snap.user else None
                         })
                         counts['snap'] += 1
@@ -1625,26 +1625,26 @@ def api_search(request):
                 results.append({
                     'type': 'snap',
                     'id': str(snap.public_uuid),
-                    'snapTitle': snap.snap_title,
+                    'snap_title': snap.snap_title,
                     'snap_video': request.build_absolute_uri(snap.snap_video.url) if snap.snap_video else None,
                     'thumbnail': thumb,
-                    'likesCount': getattr(snap, 'likes_count', 0),
+                    'likes_count': getattr(snap, 'likes_count', 0),
                     'views': snap.views,
                     'shares': snap.shares,
-                    'commentsCount': comments_count,
-                    'allowComments': snap.allow_comments,
-                    'bookId': str(snap.book.public_uuid) if snap.book else None,
-                    'storyId': str(snap.story.public_uuid) if snap.story else None,
-                    'linkedType': 'book' if snap.book else 'story' if snap.story else None,
-                    'bookComment': snap.book_comment,
+                    'comments_count': comments_count,
+                    'allow_comments': snap.allow_comments,
+                    'book_id': str(snap.book.public_uuid) if snap.book else None,
+                    'story_id': str(snap.story.public_uuid) if snap.story else None,
+                    'linked_type': 'book' if snap.book else 'story' if snap.story else None,
+                    'book_comment': snap.book_comment,
                     'duration': snap.duration,
-                    'createdAt': snap.created_at.isoformat(),
+                    'created_at': snap.created_at.isoformat(),
                     'user': {
                         'id': str(snap.user.public_uuid),
                         'nickname': snap.user.nickname,
-                        'profileImg': request.build_absolute_uri(snap.user.user_img.url) if snap.user.user_img else None
+                        'profile_img': request.build_absolute_uri(snap.user.user_img.url) if snap.user.user_img else None
                     } if snap.user else None,
-                    'adultChoice': getattr(snap, 'adult_choice', False),
+                    'adult_choice': getattr(snap, 'adult_choice', False),
                 })
                 counts['snap'] += 1
 
@@ -2157,7 +2157,7 @@ def api_following_feed(request):
             'created_at': book.created_at.isoformat(),
             'author': {
                 'id': str(book.user.public_uuid),
-                'nickname': book.user.nickname,
+                'nickname': book.author_name or book.user.nickname,
                 'profile_img': request.build_absolute_uri(book.user.user_img.url) if book.user.user_img else None,
             },
             'genres': [
@@ -2379,7 +2379,7 @@ def api_user_bookmarks(request):
                 'created_at': book.created_at.isoformat(),
                 'author': {
                     'id': book.user.user_id,
-                    'nickname': book.user.nickname,
+                    'nickname': book.author_name or book.user.nickname,
                     'profile_img': request.build_absolute_uri(book.user.user_img.url) if book.user.user_img else None,
                 },
                 'genres': [

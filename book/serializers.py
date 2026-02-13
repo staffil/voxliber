@@ -20,7 +20,7 @@ class AuthorSerializer(serializers.ModelSerializer):
 
 class BookSerializer(serializers.ModelSerializer):
     """책 시리얼라이저 (홈 페이지용 - 에피소드 수 포함)"""
-    author = AuthorSerializer(source='user', read_only=True)
+    author = serializers.SerializerMethodField()
     genres = GenreSerializer(many=True, read_only=True)
     cover_img = serializers.SerializerMethodField()
     episode_count = serializers.SerializerMethodField()
@@ -31,6 +31,13 @@ class BookSerializer(serializers.ModelSerializer):
             'id', 'name', 'description', 'cover_img', 'book_score',
             'created_at', 'author', 'genres', 'episode_count'
         ]
+
+    def get_author(self, obj):
+        return {
+            'id': obj.user.id if obj.user else None,
+            'nickname': obj.author_name or (obj.user.nickname if obj.user else 'Unknown'),
+            'email': obj.user.email if obj.user else '',
+        }
 
     def get_cover_img(self, obj):
         """커버 이미지 절대 URL 반환"""

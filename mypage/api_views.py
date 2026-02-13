@@ -174,12 +174,26 @@ def public_user_profile(request, user_uuid):
         # -------------------
         'snaps': [
             {
-                'id': snap.public_uuid,
-                'image': request.build_absolute_uri(snap.thumbnail.url) if snap.thumbnail else None,
-                'content': snap.snap_title,
-                'created_at': snap.created_at.isoformat(),
+                'id': str(snap.public_uuid),
+                'snap_title': snap.snap_title,
+                'snap_video': request.build_absolute_uri(snap.snap_video.url) if snap.snap_video else None,
+                'thumbnail': request.build_absolute_uri(snap.thumbnail.url) if snap.thumbnail else None,
+                'likes_count': snap.booksnap_like.count(),
+                'views': snap.views,
+                'shares': snap.shares,
+                'comments_count': snap.comments.count() if hasattr(snap, 'comments') else 0,
+                'allow_comments': snap.allow_comments,
+                'book_id': str(snap.book.public_uuid) if snap.book else None,
+                'story_id': str(snap.story.public_uuid) if snap.story else None,
                 'linked_type': 'story' if snap.story_id else ('book' if snap.book_id else None),
-                'linked_id': str(snap.story.public_uuid) if snap.story_id else (str(snap.book.public_uuid) if snap.book_id else None),
+                'book_comment': snap.book_comment,
+                'duration': snap.duration,
+                'created_at': snap.created_at.isoformat(),
+                'user': {
+                    'id': str(snap.user.public_uuid) if snap.user else None,
+                    'nickname': snap.user.nickname if snap.user else 'Unknown',
+                    'profile_img': request.build_absolute_uri(snap.user.user_img.url) if snap.user and snap.user.user_img else None,
+                } if snap.user else None,
             }
             for snap in snap_list
         ],

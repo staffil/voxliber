@@ -62,6 +62,7 @@ def api_create_book(request):
     tag_ids = data.get("tag_ids", [])
     status = data.get("status", "ongoing")
     adult_choice = data.get("adult_choice", False)
+    author_name = data.get("author_name", "").strip() or None
 
     if not title:
         return api_response(error="제목(title)은 필수입니다.", status=400)
@@ -78,6 +79,7 @@ def api_create_book(request):
         description=description,
         status=status,
         adult_choice=adult_choice,
+        author_name=author_name,
     )
 
     # 장르 연결

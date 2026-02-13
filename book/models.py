@@ -63,7 +63,7 @@ class Books(models.Model):
         help_text="작품 연재 상태"
     )
     adult_choice = models.BooleanField(default=False)
-
+    author_name = models.CharField(max_length=100, null=True, blank=True, help_text="작가명 (미입력 시 유저 닉네임 사용)")
 
     class Meta:
         db_table = 'book'
