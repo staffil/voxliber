@@ -171,12 +171,18 @@
                     <span>{{ llm.name|slice:":1" }}</span>
                     {% endif %}
                 </div>
+                
                 <div class="message-body">
                     <div class="message-bubble">
                         {% if llm.description %}
                         <p class="narration">{{ llm.description }}</p>
                         {% endif %}
-                        <p class="dialogue">{% if llm.first_sentence %}{{ llm.first_sentence }}{% else %}안녕하세요!{% endif %}</p>
+                        {% if llm.first_sentence %}
+
+                        <p class="text-dialogue">{{ llm.first_sentence }}</p>
+                        {% else %}
+                        <p class="text-dialogue">안녕하세요!</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
