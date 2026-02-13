@@ -312,7 +312,7 @@
                     </div>
                     {% endif %}
                     <!-- {% url 'book:content_detail' content.public_uuid %} -->
-                    <a href="#" class="episode-card" style="flex: 1; text-decoration: none;" data-login-required  onclick="showAppInstallModal()">
+                    <a href="{% url 'book:content_detail' content.public_uuid %}" class="episode-card" style="flex: 1; text-decoration: none;" data-login-required  onclick="showAppInstallModal()">
                         <div class="episode-number">
                             {% if content.episode_image %}
                             <img src="{{ content.episode_image.url }}" alt="Episode {{ content.number }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" loading="lazy">

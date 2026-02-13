@@ -583,6 +583,7 @@ def public_shared_llm_conversations(request):
 
 
 
+from character.models import LastWard
 
 def api_response(data, status=200):
     return JsonResponse({'success': True, 'data': data}, status=status)
@@ -725,6 +726,30 @@ def api_novel_result(request, conv_id):
     ]
 
     # -------------------------
+    # 마지막 말 (Last Ward)
+    # -------------------------
+    last_wards_data = []
+    try:
+        conv_state = ConversationState.objects.get(conversation=conversation)
+        current_hp = conv_state.character_stats.get('hp', 0)
+
+        if current_hp >= 100:
+            last_wards = LastWard.objects.filter(llm=conversation.llm).order_by('order')
+            last_wards_data = [
+                {
+                    "id": ward.id,
+                    "imageUrl": request.build_absolute_uri(ward.image.url) if ward.image else None,
+                    "ward": ward.ward or "",
+                    "description": ward.description or "",
+                    "order": ward.order,
+                    "isPublic": ward.is_public,
+                }
+                for ward in last_wards
+            ]
+    except ConversationState.DoesNotExist:
+        pass
+
+    # -------------------------
     # 최종 응답
     # -------------------------
     data = {
@@ -758,10 +783,10 @@ def api_novel_result(request, conv_id):
         "subImages": sub_images_data,
         "loreEntries": lore_data,
         "hpMappings": hp_data,
+        "lastWards": last_wards_data,  # ← 추가
     }
 
     return api_response(data)
-
 
 
 
