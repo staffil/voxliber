@@ -157,7 +157,8 @@ def api_book_detail(request, book_uuid):
                 'duration_seconds': content.duration_seconds,
                 'duration_formatted': content.get_duration_formatted(),
                 'audio_timestamps': content.audio_timestamps
-            } for content in book.contents.all().order_by('number')
+            }  for content in book.contents.filter(is_deleted=False).order_by('number')
+
         ],
         'recent_reviews': [
             {
