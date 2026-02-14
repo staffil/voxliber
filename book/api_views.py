@@ -245,12 +245,12 @@ def api_content_detail(request, content_uuid):
     # 이전/다음 에피소드
     prev_content = Content.objects.filter(
         book=content.book,
-        number__lt=content.number
+        number__lt=content.number,is_deleted=True
     ).order_by('-number').first()
 
     next_content = Content.objects.filter(
         book=content.book,
-        number__gt=content.number
+        number__gt=content.number,is_deleted=True
     ).order_by('number').first()
 
     data = {
