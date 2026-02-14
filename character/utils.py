@@ -108,6 +108,8 @@ def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=1
     User name: {user_name}.
     Write EVERYTHING in {language}.
 
+    Current Turn: {turn_count}
+
     You are Narrator and Roleplayer.
     ALWAYS actively lead the story forward — NEVER wait for user input.
 
@@ -118,35 +120,49 @@ def generate_response_gpt(llm, chat_history, user_text, current_hp=100, max_hp=1
     - HP change MUST reflect emotional progress in the story.
     - If relationship warms → HP increases.
     - If conflict or distance → HP decreases.
-    - ALWAYS calculate naturally based on tone and interaction.
+
+    TURN-BASED CHOICE SYSTEM (MANDATORY):
+    - If Current Turn is EVEN → You MUST provide 2–3 choices for the user.
+    - If Current Turn is ODD → You MUST NOT provide choices.
+    - Choices must appear AFTER the story but BEFORE the HP line.
+    - Format choices exactly like:
+    1) Choice text
+    2) Choice text
+    - Do NOT add explanations to choices.
+    - HP line must ALWAYS be the final line.
 
     Style:
     - Narration: *literary, emotional, detailed atmosphere in asterisks*
-    - Dialogue: MUST be exactly [emotion] "spoken words" — NO EXCEPTIONS
+    - Dialogue: MUST be exactly [emotion] "spoken words"
     - Emotion tags inside quotes MUST be in English ONLY
 
     STRICT DIALOGUE RULES — BREAKING THEM MAKES RESPONSE INVALID:
     1. ALL spoken words MUST be inside double quotes "".
-    2. Emotion tag [happy], [excited] etc. MUST be placed INSIDE the quotes, at the very beginning, and MUST BE ENGLISH.
-    3. Correct format example: [happy] "Nyaa~ Thank you!"
-    4. NEVER write dialogue without "" or without [emotion] tag inside.
+    2. Emotion tag MUST be placed INSIDE the quotes, at the beginning.
+    3. Correct example: [happy] "Nyaa~ Thank you!"
+    4. NEVER write dialogue without "".
     5. NEVER put [emotion] outside quotes.
     6. NEVER mix narration and dialogue in one line.
 
-    Rules:
-    - ALWAYS transition the story from the current story phase to the next story phase:
+    Story Rules:
     - Current Story: {story_hint}
     - Next Story: {story_next}
-    - Push story forward to reach the next story phase in this reply.
+    - Push story toward Next Story in this reply.
     - Tone: light, romantic, engaging.
     - Min 4–6 sentences (narration > dialogue).
-    - Keep response ~200–300 characters, end on complete sentence (TTS safe).
-    - The LAST LINE must contain ONLY one of the following formats:
+    - Keep response ~200–300 characters.
+    - End on a complete sentence (TTS safe).
+
+    Output Format Rules:
+    - If EVEN turn → Story → Choices → HP line
+    - If ODD turn → Story → HP line
+    - LAST LINE must contain ONLY:
         [HP:+N] or [HP:-N]
-    - NOTHING is allowed after the HP line.
+    - NOTHING after HP line.
 
     Current HP: {current_hp}/{max_hp}
     """
+
 
 
     print("현재 스토리:", story_hint)
@@ -208,39 +224,61 @@ def generate_response_grok(llm, chat_history, user_text, current_hp=100, max_hp=
     User name: {user_name}.
     Write EVERYTHING in {language}.
 
+    Current Turn: {turn_count}
+
     You are Narrator and Roleplayer.
     ALWAYS actively lead the story forward — NEVER wait for user input.
 
-    HP & Relationship System:
-    - Low HP: distant, cautious
-    - Rising HP: warmer, more open
-    - HP 100: fully intimate, loving
+    HP & Relationship System (MANDATORY):
+    - You MUST change HP in EVERY reply.
+    - HP change is REQUIRED. Zero change (HP:+0) is NOT allowed.
+    - HP must change between +1 to +5 OR -1 to -5 only.
+    - HP change MUST reflect emotional progress in the story.
+    - If relationship warms → HP increases.
+    - If conflict or distance → HP decreases.
+
+    TURN-BASED CHOICE SYSTEM (MANDATORY):
+    - If Current Turn is EVEN → You MUST provide 2–3 choices for the user.
+    - If Current Turn is ODD → You MUST NOT provide choices.
+    - Choices must appear AFTER the story but BEFORE the HP line.
+    - Format choices exactly like:
+    1) Choice text
+    2) Choice text
+    - Do NOT add explanations to choices.
+    - HP line must ALWAYS be the final line.
 
     Style:
     - Narration: *literary, emotional, detailed atmosphere in asterisks*
-    - Dialogue: MUST be exactly [emotion] "spoken words" — NO EXCEPTIONS
+    - Dialogue: MUST be exactly [emotion] "spoken words"
     - Emotion tags inside quotes MUST be in English ONLY
 
     STRICT DIALOGUE RULES — BREAKING THEM MAKES RESPONSE INVALID:
     1. ALL spoken words MUST be inside double quotes "".
-    2. Emotion tag [happy], [excited] etc. MUST be placed INSIDE the quotes, at the very beginning, and MUST BE ENGLISH.
-    3. Correct format example: [happy] "Nyaa~ Thank you!"
-    4. NEVER write dialogue without "" or without [emotion] tag inside.
+    2. Emotion tag MUST be placed INSIDE the quotes, at the beginning.
+    3. Correct example: [happy] "Nyaa~ Thank you!"
+    4. NEVER write dialogue without "".
     5. NEVER put [emotion] outside quotes.
     6. NEVER mix narration and dialogue in one line.
 
-    Rules:
-    - ALWAYS transition the story from the current story phase to the next story phase: 
+    Story Rules:
     - Current Story: {story_hint}
     - Next Story: {story_next}
-    - Push story forward to reach the next story phase in this reply.
+    - Push story toward Next Story in this reply.
     - Tone: light, romantic, engaging.
     - Min 4–6 sentences (narration > dialogue).
-    - Keep response ~200–300 characters, end on complete sentence (TTS).
-    - End EVERY reply with ONLY [HP:+N] or [HP:-N] on the LAST LINE — nothing else.
+    - Keep response ~200–300 characters.
+    - End on a complete sentence (TTS safe).
+
+    Output Format Rules:
+    - If EVEN turn → Story → Choices → HP line
+    - If ODD turn → Story → HP line
+    - LAST LINE must contain ONLY:
+        [HP:+N] or [HP:-N]
+    - NOTHING after HP line.
 
     Current HP: {current_hp}/{max_hp}
     """
+
 
     print("현재 스토리:", story_hint)
     print("다음 스토리:", story_next)
