@@ -336,23 +336,16 @@ def split_text_segments(text):
     segments = []
     last_end = 0
 
-    # 1. [emotion] "대사" 패턴 우선 매칭 (가장 흔한 형식)
-    emotion_dialogue_pattern = r'\[([a-zA-Z]+)\]\s*["""](.*?)["""]'
-    # 2. 일반 "대사" 패턴 (감정 태그 없는 경우)
-    plain_dialogue_pattern = r'["""](.*?)["""]'
-
-    # 모든 대사 위치 찾기 (emotion 있는 것 우선)
-    matches = list(re.finditer(emotion_dialogue_pattern, text)) + \
-              list(re.finditer(plain_dialogue_pattern, text))
-
-    # 위치순으로 정렬 (중복 매칭 방지)
-    matches.sort(key=lambda m: m.start())
+    # ✅ 하나의 통합된 패턴 사용 (emotion은 선택적)
+    dialogue_pattern = r'(?:\[([a-zA-Z]+)\]\s*)?["""](.*?)["""]'
+    
+    matches = list(re.finditer(dialogue_pattern, text))
 
     for match in matches:
         # 대사 앞 나레이션
         narration = text[last_end:match.start()].strip()
         if narration:
-            # 마크다운 제거 (*italic*, **bold**)
+            # 마크다운 제거
             narration = re.sub(r'\*\*([^*]+)\*\*', r'\1', narration)
             narration = re.sub(r'\*([^*]+)\*', r'\1', narration)
             narration = narration.strip()
@@ -360,13 +353,13 @@ def split_text_segments(text):
                 segments.append(('narration', narration))
 
         # 대사 추출
-        if match.re.pattern == emotion_dialogue_pattern:
-            emotion = match.group(1)
-            dialogue = match.group(2).strip()
-            # 감정 태그를 대사 앞에 붙여서 반환 (필요 시)
-            full_dialogue = f"[{emotion}] \"{dialogue}\""
+        emotion = match.group(1)  # None일 수 있음
+        dialogue_text = match.group(2).strip()
+        
+        if emotion:
+            full_dialogue = f"[{emotion}] \"{dialogue_text}\""
         else:
-            full_dialogue = f"\"{match.group(1).strip()}\""
+            full_dialogue = f"\"{dialogue_text}\""
 
         segments.append(('dialogue', full_dialogue))
 
@@ -381,14 +374,13 @@ def split_text_segments(text):
         if remaining:
             segments.append(('narration', remaining))
 
-    # 전체가 대사로만 이루어진 경우 fallback
+    # fallback
     if not segments and '"' in text:
         dialogue = text.strip()
         dialogue = re.sub(r'\*\*([^*]+)\*\*', r'\1', dialogue)
         dialogue = re.sub(r'\*([^*]+)\*', r'\1', dialogue)
         segments.append(('dialogue', dialogue))
     elif not segments:
-        # 대사 없으면 전체 나레이션
         clean_text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text.strip())
         clean_text = re.sub(r'\*([^*]+)\*', r'\1', clean_text)
         if clean_text:
