@@ -57,7 +57,7 @@
 
         <div class="input-group">
             <label class="input-label">비디오 업로드 (선택)</label>
-            <input type="file" name="video" accept="video/*" id="video-input" class="input-field" maxlength="200" data-login-required>
+            <input type="file" name="video" accept="video/*" id="video-input" class="input-field"  data-login-required>
             {% if snap.snap_video %}
                 <div style="font-size: 12px; color: #888; margin-top: 5px;">
                     현재 비디오: {{ snap.snap_video.name|slice:":30" }}...
@@ -70,7 +70,7 @@
         <div class="input-group">
 
             <label class="input-label">연결할 오디오북 링크</label>
-            <select name="selected_book_url" id="selected_book_url" class="input-field"  maxlength="200" data-login-required>
+            <select name="selected_book_url" id="selected_book_url" class="input-field"  data-login-required>
                 <option value="">선택 안 함</option>
                     {% for url, name in my_book_options %}
                             <option value="{{ url }}">{{ name }}</option>
@@ -98,12 +98,12 @@
 
         <div class="input-group">
             <label class="input-label">제목</label>
-            <input type="text" name="title" class="input-field" placeholder="스냅 제목 입력" value="{{ snap.snap_title }}" data-login-required>
+            <input type="text" name="title" class="input-field" placeholder="스냅 제목 입력" value="{{ snap.snap_title }}" maxlength="200" data-login-required>
         </div>
 
         <div class="input-group">
             <label class="input-label">설명</label>
-            <textarea name="description" class="input-field" placeholder="설명 입력" data-login-required>{{ snap.book_comment }}</textarea>
+            <textarea name="description" class="input-field" placeholder="설명 입력" maxlength="200" data-login-required>{{ snap.book_comment }}</textarea>
         </div>
 
         <div style="display: flex; gap: 10px;">
