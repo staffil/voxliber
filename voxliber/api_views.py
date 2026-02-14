@@ -888,28 +888,18 @@ def api_mix_background_music(request):
 
         for track in bg_tracks:
             music_id = track.get("music_id")
-            effect_id = track.get("effect_id")
             start_page = track.get("start_page", 0)
             end_page = track.get("end_page", len(timestamps) - 1 if timestamps else 0)
             volume = track.get("volume", 0.3)
 
-            # 배경음 또는 사운드 이펙트 라이브러리에서 조회
-            audio_file = None
-            if effect_id:
-                sfx = SoundEffectLibrary.objects.filter(
-                    id=effect_id, user=request.api_user
-                ).first()
-                if sfx and sfx.audio_file:
-                    audio_file = sfx.audio_file
-            elif music_id:
-                bg_music = BackgroundMusicLibrary.objects.filter(
-                    id=music_id, user=request.api_user
-                ).first()
-                if bg_music and bg_music.audio_file:
-                    audio_file = bg_music.audio_file
+            bg_music = BackgroundMusicLibrary.objects.filter(
+                id=music_id, user=request.api_user
+            ).first()
 
-            if not audio_file:
+            if not bg_music or not bg_music.audio_file:
                 continue
+
+            audio_file = bg_music.audio_file
 
             # 시작/종료 시간 계산 (타임스탬프 기반)
             start_time = 0
