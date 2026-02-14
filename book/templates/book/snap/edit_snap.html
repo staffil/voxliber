@@ -47,7 +47,7 @@
 
         <div class="input-group">
             <label class="input-label">이미지 업로드</label>
-            <input type="file" name="image" accept="image/*" id="image-input" class="input-field" data-login-required>
+            <input type="file" name="image" accept="image/*" id="image-input" class="input-field"  data-login-required>
             {% if snap.thumbnail %}
                 <div style="font-size: 12px; color: #888; margin-top: 5px;">
                     현재 이미지: {{ snap.thumbnail.name|slice:":30" }}...
@@ -57,7 +57,7 @@
 
         <div class="input-group">
             <label class="input-label">비디오 업로드 (선택)</label>
-            <input type="file" name="video" accept="video/*" id="video-input" class="input-field" data-login-required>
+            <input type="file" name="video" accept="video/*" id="video-input" class="input-field" maxlength="200" data-login-required>
             {% if snap.snap_video %}
                 <div style="font-size: 12px; color: #888; margin-top: 5px;">
                     현재 비디오: {{ snap.snap_video.name|slice:":30" }}...
@@ -70,7 +70,7 @@
         <div class="input-group">
 
             <label class="input-label">연결할 오디오북 링크</label>
-            <select name="selected_book_url" id="selected_book_url" class="input-field"  data-login-required>
+            <select name="selected_book_url" id="selected_book_url" class="input-field"  maxlength="200" data-login-required>
                 <option value="">선택 안 함</option>
                     {% for url, name in my_book_options %}
                             <option value="{{ url }}">{{ name }}</option>
