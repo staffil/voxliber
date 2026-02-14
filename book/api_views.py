@@ -199,7 +199,7 @@ def api_contents_list(request, book_uuid):
     per_page = request.GET.get('per_page', 20)
 
     # 에피소드 조회
-    contents = Content.objects.filter(book=book, is_deleted=True).order_by('number')
+    contents = Content.objects.filter(book=book, is_deleted=False).order_by('number')
 
     # 페이지네이션 적용
     result = paginate(contents, page, per_page)
@@ -245,12 +245,12 @@ def api_content_detail(request, content_uuid):
     # 이전/다음 에피소드
     prev_content = Content.objects.filter(
         book=content.book,
-        number__lt=content.number,is_deleted=True
+        number__lt=content.number,is_deleted=False
     ).order_by('-number').first()
 
     next_content = Content.objects.filter(
         book=content.book,
-        number__gt=content.number,is_deleted=True
+        number__gt=content.number,is_deleted=False
     ).order_by('number').first()
 
     data = {
