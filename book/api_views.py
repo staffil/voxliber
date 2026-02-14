@@ -200,7 +200,7 @@ def api_contents_list(request, book_uuid):
     per_page = request.GET.get('per_page', 20)
 
     # 에피소드 조회
-    contents = Content.objects.filter(book=book).order_by('number')
+    contents = Content.objects.filter(book=book, is_deleted=False).order_by('number')
 
     # 페이지네이션 적용
     result = paginate(contents, page, per_page)
