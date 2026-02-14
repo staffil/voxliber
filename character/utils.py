@@ -497,10 +497,13 @@ def generate_sequential_tts(llm, text, narrator_voice_id, character_voice_id):
 
     logging.info(f"📝 세그먼트 분리 결과: {len(segments)}개")
     for i, (seg_type, seg_text) in enumerate(segments):
+        print(f"  [{i+1}] {seg_type}: {seg_text[:50]}...")
+
         logging.info(f"  [{i+1}] {seg_type}: {seg_text[:30]}...")
 
     audio_segments = []
     language = llm.language
+    print(f"📝 [TTS 세그먼트] 총 {len(segments)}개")
 
     for seg_type, seg_text in segments:
         if not seg_text.strip():
