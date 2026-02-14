@@ -37,11 +37,10 @@
             <span class="tab-icon">🖼️</span>
             <span class="tab-text">서브 이미지</span>
         </button>
-<button type="button" class="tab-btn" data-tab="tab-extra-last-image">
-    <span class="tab-icon">🖌️</span>
-    <span class="tab-text">마지막 이미지 추가</span>
-</button>
-
+        <button type="button" class="tab-btn" data-tab="tab-extra-last-image">
+            <span class="tab-icon">🖌️</span>
+            <span class="tab-text">마지막 이미지</span>
+        </button>
     </div>
 
     <!-- 진행 표시 바 -->
@@ -80,7 +79,7 @@
                         class="form-textarea"
                         placeholder="AI의 성격, 말투, 배경 스토리 등을 자세히 작성하세요..."
                         rows="6"
-                        maxlength="500"
+                        maxlength="700"
                         required
                     >{{ llm.prompt|default:'' }}</textarea>
                     <div class="textarea-counter">
@@ -97,8 +96,6 @@
                     <input type="text" name="first_sentence" id="first_sentence" class="form-input" placeholder="AI가 대화를 시작할 때 할 말" value="{{ llm.first_sentence|default:'' }}" maxlength="200">
                     <span class="form-hint">사용자와 처음 대화를 시작할 때 AI가 할 인사말</span>
                 </div>
-
-                
 
                 <div class="form-group">
                     <label for="distribute" class="form-label">
@@ -129,13 +126,13 @@
                                     <span class="upload-mini-icon">📁</span>
                                     <span class="upload-mini-text">이미지 선택</span>
                                 </div>
-                                <img id="preview-image-mini" class="preview-image-mini" src="{{ llm.llm_image.url }}" alt="미리보기" style="display: block;">
+                                <img id="preview-image-mini" class="preview-image-mini" src="{{ llm.llm_image.url }}" alt="미리보기" loading="lazy" style="display: block;">
                             {% else %}
                                 <div class="upload-mini-placeholder" id="upload-mini-placeholder">
                                     <span class="upload-mini-icon">📁</span>
                                     <span class="upload-mini-text">이미지 선택</span>
                                 </div>
-                                <img id="preview-image-mini" class="preview-image-mini" alt="미리보기" style="display: none;">
+                                <img id="preview-image-mini" class="preview-image-mini" alt="미리보기" loading="lazy" style="display: none;">
                             {% endif %}
                         </div>
                         <div class="profile-upload-hint">
@@ -182,7 +179,7 @@
                         <option value="gpt-4o-mini" {% if llm.model == 'gpt-4o-mini' or not llm %}selected{% endif %}>GPT-4o-mini (빠른 응답)</option>
                         <option value="grok-3-mini" {% if llm.model == 'grok-3-mini' %}selected{% endif %}>Grok-3-mini (창의적 대화)</option>
                     </select>
-                    <span class="form-hint">Grok-3-mini는 응답이 느리지만 자극적인 대화를 진행할 수 있습니다..</span>
+                    <span class="form-hint">Grok-3-mini는 응답이 느리지만 자극적인 대화를 진행할 수 있습니다.</span>
                 </div>
 
                 <!-- 숨겨진 voice_id 입력 필드 -->
@@ -211,7 +208,7 @@
                     <!-- 선택된 목소리 표시 -->
                     <div class="selected-voice-display" id="selected-voice-display" style="display: none;">
                         <div class="selected-voice-info">
-                            <img id="selected-voice-img" src="" alt="선택된 목소리">
+                            <img id="selected-voice-img" src="" alt="선택된 목소리" loading="lazy">
                             <div class="selected-voice-text">
                                 <span class="selected-voice-name" id="selected-voice-name"></span>
                                 <button type="button" class="btn-clear-voice" id="clear-voice-btn">✕ 선택 해제</button>
@@ -231,16 +228,13 @@
                              data-sample-audio="{% if voice.sample_audio %}{{ voice.sample_audio.url }}{% endif %}">
                             <div class="voice-card-image">
                                 {% if voice.voice_image %}
-                                    <img src="{{ voice.voice_image.url }}" alt="{{ voice.voice_name }}">
+                                    <img src="{{ voice.voice_image.url }}" alt="{{ voice.voice_name }}" loading="lazy">
                                 {% else %}
                                     <div class="voice-card-placeholder">🎤</div>
                                 {% endif %}
                             </div>
                             <div class="voice-card-info">
                                 <span class="voice-name">{{ voice.voice_name }}</span>
-                                <!-- {% if voice.voice_description %}
-                                    <span class="voice-desc">{{ voice.voice_description|truncatewords:5 }}</span>
-                                {% endif %} -->
                             </div>
                             {% if voice.sample_audio %}
                             <button type="button" class="btn-play-sample" data-audio="{{ voice.sample_audio.url }}">
@@ -254,9 +248,7 @@
                     </div>
 
                     <!-- 오디오 플레이어 (숨김) -->
-                    <audio id="voice-sample-player" style="display: none;"></audio>
-                </div>
-
+                    <audio id="voice-sample-player" style="display: none;" preload="none"></audio>
                 </div>
             </div>
         </div>
@@ -424,14 +416,14 @@
                                 <span class="upload-text">클릭하여 이미지 선택</span>
                                 <span class="upload-hint">또는 이미지를 드래그하세요</span>
                             </div>
-                            <img id="preview-image" class="preview-image" src="{{ llm.llm_image.url }}" alt="미리보기" style="display: block;">
+                            <img id="preview-image" class="preview-image" src="{{ llm.llm_image.url }}" alt="미리보기" loading="lazy" style="display: block;">
                         {% else %}
                             <div class="upload-placeholder" id="upload-placeholder">
                                 <span class="upload-icon">📁</span>
                                 <span class="upload-text">클릭하여 이미지 선택</span>
                                 <span class="upload-hint">또는 이미지를 드래그하세요</span>
                             </div>
-                            <img id="preview-image" class="preview-image" alt="미리보기" style="display: none;">
+                            <img id="preview-image" class="preview-image" alt="미리보기" loading="lazy" style="display: none;">
                         {% endif %}
                     </div>
                 </div>
@@ -461,7 +453,7 @@
                                         <input type="file" name="sub_images" accept="image/*" class="sub-image-file">
                                         {% if item.sub_image.image %}
                                         <div class="existing-image-preview">
-                                            <img src="{{ item.sub_image.image.url }}" alt="서브 이미지" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
+                                            <img src="{{ item.sub_image.image.url }}" alt="서브 이미지" loading="lazy" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
                                             <span class="existing-label">현재 이미지</span>
                                         </div>
                                         {% endif %}
@@ -471,15 +463,15 @@
                                         <div class="hp-range">
                                             <label>HP 범위</label>
                                             <div class="hp-inputs">
-                                                <input type="number" name="min_hp[]" placeholder="최소" min="0" class="form-input-small" value="{{ item.min_hp|default:'' }}" data-login-required>
+                                                <input type="number" name="min_hp[]" placeholder="최소" min="0" max="100" class="form-input-small" value="{{ item.min_hp|default:'0' }}">
                                                 <span class="hp-separator">~</span>
-                                                <input type="number" name="max_hp[]" placeholder="최대" min="0" class="form-input-small" value="{{ item.max_hp|default:'' }}" data-login-required>
+                                                <input type="number" name="max_hp[]" placeholder="최대" min="0" max="100" class="form-input-small" value="{{ item.max_hp|default:'' }}">
                                             </div>
                                         </div>
 
                                         <div class="sub-image-title">
                                             <label>제목/메모</label>
-                                            <textarea type="text" name="sub_image_title[]" placeholder="현재 상황에 맞는 스토리를 적어주세요.(400자)" maxlength="400" class="form-input" value="{{ item.sub_image.title|default:'' }}" style="max-width: 500px; max-height: 300px;" data-login-required></textarea>
+                                            <textarea name="sub_image_title[]" placeholder="현재 상황에 맞는 스토리를 적어주세요.(400자)" maxlength="400" class="form-input" style="max-width: 500px; max-height: 300px;">{{ item.sub_image.title|default:'' }}</textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -490,7 +482,7 @@
                             <div class="sub-image-entry">
                                 <div class="sub-image-header">
                                     <span class="sub-image-number">1</span>
-                                    <button type="button" class="remove-sub-image" data-login-required>
+                                    <button type="button" class="remove-sub-image">
                                         <span>✕</span>
                                     </button>
                                 </div>
@@ -501,37 +493,17 @@
                                     </div>
 
                                     <div class="sub-image-options">
-<div class="hp-range">
-        <label>HP 범위</label>
-        <div class="hp-inputs">
-            <!-- 최소 HP: 0 ~ 100 사이, 기본 0 -->
-            <input type="number" 
-                   name="min_hp[]" 
-                   placeholder="최소" 
-                   min="0" 
-                   max="100" 
-                   class="form-input-small" 
-                   value="0" 
-                   required 
-                   readonly
-                   oninput="this.value = Math.max(0, Math.min(100, this.value || 0)); validateHpRange(this)">
-            
-            <span class="hp-separator">~</span>
-            
-            <!-- 최대 HP: 0 ~ 100 사이, min보다 커야 함 -->
-            <input type="number" 
-                   name="max_hp[]" 
-                   placeholder="최대" 
-                   min="0" 
-                   max="100" 
-                   class="form-input-small" 
-                   required 
-                   oninput="this.value = Math.max(0, Math.min(100, this.value || 0)); validateHpRange(this)">
-        </div>
-    </div>
+                                        <div class="hp-range">
+                                            <label>HP 범위</label>
+                                            <div class="hp-inputs">
+                                                <input type="number" name="min_hp[]" placeholder="최소" min="0" max="100" class="form-input-small" value="0" readonly>
+                                                <span class="hp-separator">~</span>
+                                                <input type="number" name="max_hp[]" placeholder="최대" min="0" max="100" class="form-input-small" required>
+                                            </div>
+                                        </div>
                                         <div class="sub-image-title">
                                             <label>제목/메모</label>
-                                            <textarea type="text" name="sub_image_title[]" placeholder="현재 상황에 맞는 스토리를 적어주세요.(400자)" maxlength="400" class="form-input" value="{{ item.sub_image.title|default:'' }}"  style="max-width: 500px; max-height: 300px;" data-login-required></textarea>
+                                            <textarea name="sub_image_title[]" placeholder="현재 상황에 맞는 스토리를 적어주세요.(400자)" maxlength="400" class="form-input" style="max-width: 500px; max-height: 300px;"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -540,102 +512,95 @@
                     </div>
 
                     <div class="image-action-buttons">
-                        <button type="button" id="add-sub-image-btn" class="add-btn" data-login-required>
+                        <button type="button" id="add-sub-image-btn" class="add-btn">
                             <span>+</span> 서브 이미지 추가
                         </button>
                         {% if is_edit_mode %}
-                        <a href="{% url 'character:ai_preview' llm.public_uuid %}?preview=1" target="_blank" class="preview-btn" data-login-required>
+                        <a href="{% url 'character:ai_preview' llm.public_uuid %}?preview=1" target="_blank" class="preview-btn">
                             <span>👁️</span> 미리보기
                         </a>
                         {% endif %}
                     </div>
                 </div>
-
-
-
-
-
-
-
             </div>
         </div>
 
-<div class="tab-content" id="tab-extra-last-image">
-    <div class="tab-panel">
-        <div class="panel-header">
-            <h2>마지막 이미지 추가</h2>
-            <p>AI 캐릭터의 마지막 이미지를 여러 장 업로드하고 설정하세요</p>
-        </div>
+        <!-- 탭 5: 마지막 이미지 -->
+        <div class="tab-content" id="tab-extra-last-image">
+            <div class="tab-panel">
+                <div class="panel-header">
+                    <h2>마지막 이미지 추가</h2>
+                    <p>AI 캐릭터의 마지막 이미지를 여러 장 업로드하고 설정하세요</p>
+                </div>
 
-        <div id="extra-last-images-container">
-            {% if is_edit_mode and extra_last_images %}
-                {% for item in extra_last_images %}
-                <div class="extra-last-image-entry">
-                    <div class="extra-last-image-header">
-                        <span class="extra-last-image-number">{{ forloop.counter }}</span>
-                        <button type="button" class="remove-extra-last-image">
-                            <span>✕</span>
-                        </button>
-                    </div>
-
-                    <div class="extra-last-image-content">
-                        <div class="extra-last-image-upload">
-                            <input type="file" name="extra_last_images" accept="image/*" class="extra-last-image-file">
-                            {% if item.image %}
-                            <div class="existing-image-preview">
-                                <img src="{{ item.image.url }}" alt="마지막 이미지" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
-                                <span class="existing-label">현재 이미지</span>
+                <div id="extra-last-images-container">
+                    {% if is_edit_mode and extra_last_images %}
+                        {% for item in extra_last_images %}
+                        <div class="extra-last-image-entry">
+                            <div class="extra-last-image-header">
+                                <span class="extra-last-image-number">{{ forloop.counter }}</span>
+                                <button type="button" class="remove-extra-last-image">
+                                    <span>✕</span>
+                                </button>
                             </div>
-                            {% endif %}
-                        </div>
 
-                        <div class="extra-last-image-title">
-                            <label>제목/메모</label>
-                            <textarea name="extra_last_image_title[]" placeholder="상황에 맞는 설명을 적어주세요." maxlength="400" class="form-input" style="max-width: 500px; max-height: 300px;"></textarea>
+                            <div class="extra-last-image-content">
+                                <div class="extra-last-image-upload">
+                                    <input type="file" name="extra_last_images" accept="image/*" class="extra-last-image-file">
+                                    {% if item.image %}
+                                    <div class="existing-image-preview">
+                                        <img src="{{ item.image.url }}" alt="마지막 이미지" loading="lazy" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
+                                        <span class="existing-label">현재 이미지</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="extra-last-image-title">
+                                    <label>제목/메모</label>
+                                    <textarea name="extra_last_image_title[]" placeholder="상황에 맞는 설명을 적어주세요." maxlength="400" class="form-input" style="max-width: 500px; max-height: 300px;">{{ item.description|default:'' }}</textarea>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- 기본 첫 번째 항목 -->
+                        <div class="extra-last-image-entry">
+                            <div class="extra-last-image-header">
+                                <span class="extra-last-image-number">1</span>
+                                <button type="button" class="remove-extra-last-image">
+                                    <span>✕</span>
+                                </button>
+                            </div>
+
+                            <div class="extra-last-image-content">
+                                <div class="extra-last-image-upload">
+                                    <input type="file" name="extra_last_images" accept="image/*" class="extra-last-image-file">
+                                </div>
+
+                                <div class="extra-last-image-title">
+                                    <label>제목/메모</label>
+                                    <textarea name="extra_last_image_title[]" placeholder="상황에 맞는 설명을 적어주세요." maxlength="400" class="form-input" style="max-width: 500px; max-height: 300px;"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
-                {% endfor %}
-            {% else %}
-                <!-- 기본 첫 번째 항목 -->
-                <div class="extra-last-image-entry">
-                    <div class="extra-last-image-header">
-                        <span class="extra-last-image-number">1</span>
-                        <button type="button" class="remove-extra-last-image">
-                            <span>✕</span>
-                        </button>
-                    </div>
 
-                    <div class="extra-last-image-content">
-                        <div class="extra-last-image-upload">
-                            <input type="file" name="extra_last_images" accept="image/*" class="extra-last-image-file">
-                        </div>
-
-                        <div class="extra-last-image-title">
-                            <label>제목/메모</label>
-                            <textarea name="extra_last_image_title[]" placeholder="상황에 맞는 설명을 적어주세요." maxlength="400" class="form-input" style="max-width: 500px; max-height: 300px;"></textarea>
-                        </div>
-                    </div>
-                </div>
-            {% endif %}
+                <button type="button" id="add-extra-last-image-btn" class="add-btn">
+                    <span>+</span> 마지막 이미지 추가
+                </button>
+            </div>
         </div>
-
-        <button type="button" id="add-extra-last-image-btn" class="add-btn">
-            <span>+</span> 마지막 이미지 추가
-        </button>
-    </div>
-</div>
-
 
         <!-- 네비게이션 버튼 -->
         <div class="form-navigation">
-            <button type="button" class="nav-btn nav-prev" id="prev-btn" style="display: none;" data-login-required>
+            <button type="button" class="nav-btn nav-prev" id="prev-btn" style="display: none;">
                 <span>←</span> 이전
             </button>
-            <button type="button" class="nav-btn nav-next" id="next-btn" data-login-required>
+            <button type="button" class="nav-btn nav-next" id="next-btn">
                 다음 <span>→</span>
             </button>
-            <button type="submit" class="nav-btn nav-submit" id="submit-btn" style="display: none;" data-login-required>
+            <button type="submit" class="nav-btn nav-submit" id="submit-btn" style="display: none;">
                 {% if is_edit_mode %}💾 변경사항 저장{% else %}🚀 AI 캐릭터 생성{% endif %}
             </button>
         </div>
@@ -649,7 +614,8 @@
 <script src="{% static 'js/character/make_ai_page.js' %}"></script>
 <script src="{% static 'js/character/make_ai.js' %}"></script>
 <script>
-    document.getElementById('add-extra-last-image-btn').addEventListener('click', function() {
+// 마지막 이미지 추가
+document.getElementById('add-extra-last-image-btn').addEventListener('click', function() {
     const container = document.getElementById('extra-last-images-container');
     const index = container.children.length + 1;
 
@@ -673,16 +639,61 @@
     container.appendChild(newEntry);
 });
 
-// 삭제
+// 마지막 이미지 삭제
 document.addEventListener('click', function(e) {
     if(e.target.closest('.remove-extra-last-image')){
-        e.target.closest('.extra-last-image-entry').remove();
-        // 번호 다시 매기기
-        document.querySelectorAll('#extra-last-images-container .extra-last-image-entry').forEach((entry, i) => {
-            entry.querySelector('.extra-last-image-number').textContent = i + 1;
-        });
+        const entry = e.target.closest('.extra-last-image-entry');
+        const container = document.getElementById('extra-last-images-container');
+        
+        // 최소 1개는 유지
+        if(container.children.length > 1) {
+            entry.remove();
+            // 번호 다시 매기기
+            document.querySelectorAll('#extra-last-images-container .extra-last-image-entry').forEach((entry, i) => {
+                entry.querySelector('.extra-last-image-number').textContent = i + 1;
+            });
+        } else {
+            alert('최소 1개의 마지막 이미지는 필요합니다.');
+        }
     }
 });
 
+// 오디오 플레이어 최적화
+const audioPlayer = document.getElementById('voice-sample-player');
+let currentAudio = null;
+
+document.addEventListener('click', function(e) {
+    const playBtn = e.target.closest('.btn-play-sample');
+    if(playBtn) {
+        e.preventDefault();
+        const audioUrl = playBtn.dataset.audio;
+        
+        // 같은 오디오면 정지/재생 토글
+        if(currentAudio === audioUrl && !audioPlayer.paused) {
+            audioPlayer.pause();
+            playBtn.querySelector('.play-icon').textContent = '▶';
+            return;
+        }
+        
+        // 다른 오디오면 새로 재생
+        audioPlayer.src = audioUrl;
+        audioPlayer.play();
+        currentAudio = audioUrl;
+        
+        // 모든 플레이 버튼 초기화
+        document.querySelectorAll('.btn-play-sample .play-icon').forEach(icon => {
+            icon.textContent = '▶';
+        });
+        playBtn.querySelector('.play-icon').textContent = '⏸';
+    }
+});
+
+// 오디오 종료 시 버튼 초기화
+audioPlayer.addEventListener('ended', function() {
+    document.querySelectorAll('.btn-play-sample .play-icon').forEach(icon => {
+        icon.textContent = '▶';
+    });
+    currentAudio = null;
+});
 </script>
 {% endblock %}
