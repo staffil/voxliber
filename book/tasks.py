@@ -1,0 +1,511 @@
+from celery import shared_task
+from book.utils import generate_tts, merge_audio_files, mix_audio_with_background, apply_webaudio_effect, sound_effect, background_music
+import os
+import json
+import math
+import traceback
+from django.conf import settings
+from django.core.files import File
+
+
+@shared_task(bind=True)
+def generate_tts_task(self, text, voice_id, language_code, speed):
+    audio_path = generate_tts(
+        novel_text=text,
+        voice_id=voice_id,
+        language_code=language_code,
+        speed_value=speed
+    )
+
+    if audio_path and os.path.exists(audio_path):
+        rel_path = os.path.relpath(audio_path, settings.MEDIA_ROOT)
+        audio_url = settings.MEDIA_URL + rel_path.replace("\\", "/")
+    else:
+        audio_url = None
+
+    return {
+        "audio_path": audio_path,
+        "audio_url": audio_url
+    }
+
+
+@shared_task
+def generate_full_audio_pipeline(text_list, voice_id, lang, speed):
+    audio_paths = []
+
+    for text in text_list:
+        path = generate_tts(text, voice_id, lang, speed)
+        audio_paths.append(path)
+
+    merged_path, timestamps = merge_audio_files(audio_paths, text_list)
+
+    return {
+        "audio_path": merged_path,
+        "timestamps": timestamps,
+    }
+
+
+@shared_task(bind=True, time_limit=7200)
+def merge_audio_task(self, audio_files_data, background_tracks_data=None, pages_text=None):
+    """
+    오디오 파일들을 병합하는 Celery 태스크 (기존 book_serialization용)
+    """
+    temp_files_to_cleanup = []
+    try:
+        self.update_state(state='PROGRESS', meta={'status': '오디오 파일 병합 시작...', 'progress': 10})
+        temp_files_to_cleanup.extend(audio_files_data)
+
+        merged_audio_path, dialogue_durations, total_duration = merge_audio_files(audio_files_data, pages_text)
+
+        if not merged_audio_path or not os.path.exists(merged_audio_path):
+            return {'success': False, 'error': '오디오 병합 실패'}
+
+        self.update_state(state='PROGRESS', meta={'status': '오디오 병합 완료, 배경음 처리 중...', 'progress': 60})
+
+        final_audio_path = merged_audio_path
+        if background_tracks_data and dialogue_durations:
+            for track in background_tracks_data:
+                start_page = track.get('startPage', 0)
+                end_page = track.get('endPage', 0)
+                start_time = 0 if start_page == 0 else dialogue_durations[start_page - 1]['endTime']
+                end_time = dialogue_durations[end_page]['endTime'] if end_page < len(dialogue_durations) else dialogue_durations[-1]['endTime']
+                track['startTime'] = start_time
+                track['endTime'] = end_time
+                temp_files_to_cleanup.append(track['audioPath'])
+
+            final_audio_path = mix_audio_with_background(merged_audio_path, background_tracks_data)
+
+            if not final_audio_path:
+                final_audio_path = merged_audio_path
+            elif final_audio_path != merged_audio_path:
+                if os.path.exists(merged_audio_path):
+                    os.remove(merged_audio_path)
+
+        self.update_state(state='PROGRESS', meta={'status': '최종 파일 생성 중...', 'progress': 90})
+
+        rel_path = os.path.relpath(final_audio_path, settings.MEDIA_ROOT)
+        audio_url = settings.MEDIA_URL + rel_path.replace("\\", "/")
+
+        for temp_file in temp_files_to_cleanup:
+            try:
+                if os.path.exists(temp_file):
+                    os.remove(temp_file)
+            except Exception as cleanup_error:
+                print(f"임시 파일 삭제 실패: {temp_file}, {cleanup_error}")
+
+        return {
+            'success': True,
+            'merged_audio_path': final_audio_path,
+            'merged_audio_url': audio_url,
+            'timestamps': dialogue_durations or [],
+            'total_duration': total_duration
+        }
+
+    except Exception as e:
+        error_msg = f"오디오 병합 중 오류 발생: {str(e)}\n{traceback.format_exc()}"
+        print(error_msg)
+        for temp_file in temp_files_to_cleanup:
+            try:
+                if os.path.exists(temp_file):
+                    os.remove(temp_file)
+            except:
+                pass
+        return {'success': False, 'error': error_msg}
+
+
+# ==================== Fast 생성기 전용 배치 태스크 ====================
+@shared_task(bind=True, time_limit=7200, soft_time_limit=6600)
+def process_batch_audiobook(self, data, user_id):
+    """
+    배치 JSON을 Celery에서 비동기 처리:
+    create_bgm → create_sfx → create_episode (TTS + WebAudio) → mix_bgm
+
+    진행률을 실시간으로 업데이트하여 프론트에서 폴링 가능.
+    """
+    from book.models import BackgroundMusicLibrary, SoundEffectLibrary, Content, Books
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    try:
+        user = User.objects.get(user_id=user_id)
+    except User.DoesNotExist:
+        return {'success': False, 'error': '사용자를 찾을 수 없습니다'}
+
+    steps = data.get('steps', [])
+    if not steps:
+        return {'success': False, 'error': 'steps가 비어있습니다'}
+
+    book_uuid = data.get('book_uuid', '')
+    book = None
+    if book_uuid:
+        book = Books.objects.filter(public_uuid=book_uuid, user=user).first()
+        if not book:
+            return {'success': False, 'error': f'책을 찾을 수 없습니다: {book_uuid}'}
+
+    total_steps = len(steps)
+    results = {}
+    bgm_counter = 0
+    sfx_counter = 0
+    created_episode_info = None
+
+    for step_idx, step in enumerate(steps):
+        action = step.get('action', '')
+        progress = int((step_idx / total_steps) * 100)
+
+        try:
+            # ==================== BGM 생성 ====================
+            if action == 'create_bgm':
+                bgm_counter += 1
+                music_name = step.get('music_name', f'BGM_{bgm_counter}')
+                music_desc = step.get('music_description', '')
+                duration = step.get('duration_seconds', 120)
+
+                self.update_state(state='PROGRESS', meta={
+                    'status': f'배경음 생성 중: {music_name}',
+                    'progress': progress,
+                    'current_step': step_idx + 1,
+                    'total_steps': total_steps
+                })
+
+                audio_path = background_music(music_name, music_desc, duration)
+                if not audio_path:
+                    return {'success': False, 'error': f'배경음 생성 실패: {music_name}'}
+                bgm_obj = BackgroundMusicLibrary(
+                    user=user,
+                    music_name=music_name,
+                    music_description=music_desc,
+                    duration_seconds=duration
+                )
+                with open(audio_path, 'rb') as f:
+                    bgm_obj.audio_file.save(os.path.basename(audio_path), File(f), save=True)
+                results[f'$bgm_{bgm_counter}'] = str(bgm_obj.id)
+
+            # ==================== SFX 생성 ====================
+            elif action == 'create_sfx':
+                sfx_counter += 1
+                effect_name = step.get('effect_name', f'SFX_{sfx_counter}')
+                effect_desc = step.get('effect_description', '')
+
+                self.update_state(state='PROGRESS', meta={
+                    'status': f'효과음 생성 중: {effect_name}',
+                    'progress': progress,
+                    'current_step': step_idx + 1,
+                    'total_steps': total_steps
+                })
+
+                duration = step.get('duration_seconds', 5)
+                audio_path = sound_effect(effect_name, effect_desc, duration)
+                if not audio_path:
+                    return {'success': False, 'error': f'효과음 생성 실패: {effect_name}'}
+                sfx_obj = SoundEffectLibrary(
+                    user=user,
+                    effect_name=effect_name,
+                    effect_description=effect_desc,
+                )
+                with open(audio_path, 'rb') as f:
+                    sfx_obj.audio_file.save(os.path.basename(audio_path), File(f), save=True)
+                results[f'$sfx_{sfx_counter}'] = str(sfx_obj.id)
+
+            # ==================== 에피소드 생성 (TTS + WebAudio) ====================
+            elif action == 'create_episode':
+                if not book:
+                    return {'success': False, 'error': 'book_uuid가 필요합니다'}
+
+                ep_number = step.get('episode_number', 1)
+                ep_title = step.get('episode_title', f'에피소드 {ep_number}')
+                pages = step.get('pages', [])
+
+                if not pages:
+                    return {'success': False, 'error': '페이지가 비어있습니다'}
+
+                # 페이지별 TTS 생성
+                audio_files = []
+                for page_idx, page in enumerate(pages):
+                    text = page.get('text', '')
+                    voice_id = page.get('voice_id', '')
+
+                    if not text or not voice_id:
+                        continue
+
+                    self.update_state(state='PROGRESS', meta={
+                        'status': f'TTS 생성 중: {page_idx + 1}/{len(pages)} 페이지',
+                        'progress': progress + int((page_idx / len(pages)) * (100 / total_steps)),
+                        'current_step': step_idx + 1,
+                        'total_steps': total_steps
+                    })
+
+                    try:
+                        tts_file = generate_tts(text, voice_id, 'ko', 1.0, 0.0, 0.75)
+                        
+                        # 🔥 파일 유효성 검사 추가
+                        if not tts_file:
+                            print(f"⚠️ TTS 생성 실패: {page_idx + 1}번 페이지")
+                            continue
+                            
+                        tts_path = tts_file if isinstance(tts_file, str) else tts_file.path
+                        
+                        # 🔥 파일 존재 및 크기 확인
+                        if not os.path.exists(tts_path):
+                            print(f"⚠️ TTS 파일 없음: {tts_path}")
+                            continue
+                            
+                        if os.path.getsize(tts_path) < 1000:  # 1KB 미만이면 손상된 파일
+                            print(f"⚠️ TTS 파일 손상 (너무 작음): {tts_path}")
+                            os.remove(tts_path)
+                            continue
+
+                        # WebAudio 효과 적용
+                        webaudio_effect = page.get('webaudio_effect', 'normal')
+                        if webaudio_effect and webaudio_effect != 'normal':
+                            try:
+                                processed_path = apply_webaudio_effect(tts_path, webaudio_effect)
+                                
+                                # 🔥 처리된 파일 검증
+                                if processed_path and os.path.exists(processed_path):
+                                    if os.path.getsize(processed_path) >= 1000:
+                                        if processed_path != tts_path:
+                                            os.remove(tts_path)  # 원본 삭제
+                                        tts_file = processed_path
+                                    else:
+                                        print(f"⚠️ WebAudio 처리 파일 손상: {processed_path}")
+                                        # 원본 사용
+                                else:
+                                    print(f"⚠️ WebAudio 처리 실패, 원본 사용")
+                            except Exception as e:
+                                print(f"⚠️ WebAudio 효과 적용 오류: {e}")
+                                # 원본 파일 그대로 사용
+
+                        audio_files.append(tts_file)
+                        
+                    except Exception as e:
+                        print(f"❌ TTS 생성 오류 ({page_idx + 1}번 페이지): {e}")
+                        continue
+
+                # 🔥 오디오 파일이 없으면 에러 반환
+                if not audio_files:
+                    return {'success': False, 'error': 'TTS 생성에 실패했습니다'}
+
+                # 오디오 병합
+                self.update_state(state='PROGRESS', meta={
+                    'status': '오디오 병합 중...',
+                    'progress': progress + int(80 / total_steps),
+                    'current_step': step_idx + 1,
+                    'total_steps': total_steps
+                })
+
+                try:
+                    merged_file, timestamps, total_duration = merge_audio_files(audio_files)
+                    
+                    # 🔥 병합 결과 검증
+                    if not merged_file or not os.path.exists(merged_file):
+                        raise Exception('오디오 병합 실패: 파일이 생성되지 않음')
+                        
+                    if os.path.getsize(merged_file) < 1000:
+                        raise Exception('오디오 병합 실패: 파일이 너무 작음')
+                        
+                    if not total_duration or total_duration <= 0:
+                        # 🔥 duration이 없으면 직접 계산
+                        from pydub import AudioSegment
+                        audio = AudioSegment.from_file(merged_file)
+                        total_duration = len(audio) / 1000.0  # ms → 초
+                        print(f"⚠️ duration 자동 계산: {total_duration}초")
+                        
+                except Exception as e:
+                    # 임시 파일 정리
+                    for f in audio_files:
+                        try:
+                            fpath = f if isinstance(f, str) else getattr(f, 'path', None)
+                            if fpath and os.path.exists(fpath):
+                                os.remove(fpath)
+                        except:
+                            pass
+                    return {'success': False, 'error': f'오디오 병합 실패: {str(e)}'}
+
+                # DB 저장
+                try:
+                    content = Content.objects.create(
+                        book=book,
+                        title=ep_title,
+                        number=ep_number,
+                        text="\n".join([p.get('text', '') for p in pages]),
+                        audio_file=merged_file,
+                        audio_timestamps=timestamps,
+                        duration_seconds=int(total_duration)  # 🔥 정수로 변환
+                    )
+                except Exception as e:
+                    # 병합 파일 삭제
+                    if merged_file and os.path.exists(merged_file):
+                        os.remove(merged_file)
+                    # 임시 파일 정리
+                    for f in audio_files:
+                        try:
+                            fpath = f if isinstance(f, str) else getattr(f, 'path', None)
+                            if fpath and os.path.exists(fpath):
+                                os.remove(fpath)
+                        except:
+                            pass
+                    return {'success': False, 'error': f'DB 저장 실패: {str(e)}'}
+
+                created_episode_info = {
+                    'content_uuid': str(content.public_uuid),
+                    'title': ep_title,
+                    'number': ep_number,
+                    'duration': total_duration,
+                    'page_count': len(pages)
+                }
+
+                # 임시 TTS 파일 정리
+                for f in audio_files:
+                    try:
+                        fpath = f if isinstance(f, str) else getattr(f, 'path', None)
+                        if fpath and os.path.exists(fpath):
+                            os.remove(fpath)
+                    except:
+                        pass
+
+            # ==================== BGM 믹싱 ====================
+            elif action == 'mix_bgm':
+                if not book:
+                    return {'success': False, 'error': 'book_uuid가 필요합니다'}
+
+                ep_number = step.get('episode_number', 1)
+                content = Content.objects.filter(book=book, number=ep_number).first()
+                if not content:
+                    continue
+
+                self.update_state(state='PROGRESS', meta={
+                    'status': '배경음 믹싱 중...',
+                    'progress': progress,
+                    'current_step': step_idx + 1,
+                    'total_steps': total_steps
+                })
+
+                bg_tracks = step.get('background_tracks', [])
+
+                # 변수 치환
+                for track in bg_tracks:
+                    music_id = track.get('music_id', '')
+                    if music_id.startswith('$') and music_id in results:
+                        track['music_id'] = results[music_id]
+
+                # 타임스탬프 (각 항목에 pageIndex, endTime(ms)만 있음)
+                timestamps = content.audio_timestamps
+                if isinstance(timestamps, str):
+                    timestamps = json.loads(timestamps)
+
+                def page_start_ms(page_idx):
+                    """페이지 시작 시간(ms): 이전 페이지의 endTime, 첫 페이지는 0"""
+                    if not timestamps or page_idx <= 0:
+                        return 0
+                    prev_idx = min(page_idx - 1, len(timestamps) - 1)
+                    return int(timestamps[prev_idx].get('endTime', 0))
+
+                def page_end_ms(page_idx):
+                    """페이지 끝 시간(ms)"""
+                    if not timestamps:
+                        return 0
+                    idx = min(page_idx, len(timestamps) - 1)
+                    return int(timestamps[idx].get('endTime', 0))
+
+                # bg_tracks → mix_audio_with_background 형식으로 변환
+                converted_tracks = []
+                for track in bg_tracks:
+                    mid = track.get('music_id', '')
+                    bgm_obj = BackgroundMusicLibrary.objects.filter(id=mid).first()
+                    if not bgm_obj or not bgm_obj.audio_file:
+                        continue
+
+                    start_page = track.get('start_page', 0)
+                    end_page = track.get('end_page', len(timestamps) - 1 if timestamps else 0)
+                    volume = track.get('volume', 0.25)
+                    volume_db = 20 * math.log10(max(volume, 0.01))
+
+                    start_time = page_start_ms(start_page)
+                    end_time = page_end_ms(end_page)
+
+                    if content.duration_seconds:
+                        max_ms = int(content.duration_seconds * 1000)
+                        end_time = min(end_time, max_ms)
+
+                    if start_time >= end_time:
+                        print(f"⚠️ 잘못된 시간 범위: {start_time}ms ~ {end_time}ms, 건너뜀")
+                        continue
+
+                    print(f"✅ 배경음 구간: {start_time}ms ~ {end_time}ms ({(end_time - start_time) / 1000:.1f}초)")
+
+                    converted_tracks.append({
+                        'audioPath': bgm_obj.audio_file.path,
+                        'startTime': start_time,
+                        'endTime': end_time,
+                        'volume': volume_db
+                    })
+
+                # SFX 트랙 변환
+                sfx_tracks = step.get('sound_effects', [])
+                for sfx_track in sfx_tracks:
+                    eid = sfx_track.get('effect_id', '')
+                    if eid.startswith('$') and eid in results:
+                        sfx_track['effect_id'] = results[eid]
+
+                    sfx_obj = SoundEffectLibrary.objects.filter(id=sfx_track.get('effect_id', '')).first()
+                    if not sfx_obj or not sfx_obj.audio_file:
+                        continue
+
+                    sfx_page = sfx_track.get('page', 0)
+                    sfx_start = page_start_ms(sfx_page)
+                    sfx_volume = sfx_track.get('volume', 0.7)
+                    sfx_volume_db = 20 * math.log10(max(sfx_volume, 0.01))
+
+                    from pydub import AudioSegment as PydubSegment
+                    sfx_audio = PydubSegment.from_file(sfx_obj.audio_file.path)
+                    sfx_end = sfx_start + len(sfx_audio)
+
+                    print(f"✅ 효과음 위치: {sfx_start}ms ({len(sfx_audio)}ms 길이)")
+
+                    converted_tracks.append({
+                        'audioPath': sfx_obj.audio_file.path,
+                        'startTime': sfx_start,
+                        'endTime': sfx_end,
+                        'volume': sfx_volume_db
+                    })
+
+                if converted_tracks:
+                    try:
+                        mixed_file = mix_audio_with_background(
+                            content.audio_file.path,
+                            converted_tracks
+                        )
+
+                        if mixed_file and os.path.exists(mixed_file):
+                            content.audio_file = mixed_file
+                            content.save()
+                            print(f"✅ 배경음/효과음 믹싱 완료")
+                        else:
+                            print(f"⚠️ 믹싱 실패, 원본 유지")
+
+                    except Exception as e:
+                        print(f"❌ 믹싱 오류: {e}")
+                        # 믹싱 실패해도 원본 오디오는 유지됨
+
+        except Exception as e:
+            error_msg = f'Step {step_idx + 1} ({action}) 실패: {str(e)}'
+            print(f'❌ {error_msg}')
+            traceback.print_exc()
+            return {
+                'success': False,
+                'error': error_msg,
+                'failed_step': step_idx + 1,
+                'failed_action': action
+            }
+
+    # 완료
+    response = {
+        'success': True,
+        'steps_completed': total_steps,
+    }
+
+    if created_episode_info:
+        response['episode'] = created_episode_info
+        response['redirect_url'] = f'/book/detail/{book_uuid}/'
+
+    return response

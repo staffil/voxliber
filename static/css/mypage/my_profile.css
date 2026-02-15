@@ -1037,7 +1037,7 @@ body.light-mode .message.error {
     .book-card-actions .btn-icon[title="+ 오디오북 등록"],
     .book-card-actions .btn-icon[title="수정"],
     .book-card-actions .btn-icon[title="AI 리스트"],
-    .book-card-actions .btn-icon[title="집필"] {
+    .book-card-actions .btn-icon[title="전문가 집필"] {
         display: none !important;
     }
 }

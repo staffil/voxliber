@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}오디오북 생성기 | VoxLiber{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/book/book_serialization_fast.css' %}">
+<style>
+/* 🔥 에피소드 이미지 스타일 */
+.episode-image-upload {
+    margin-top: 15px;
+}
+.image-upload-box {
+    width: 100%;
+    height: 180px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    background: #fafafa;
+    transition: all 0.3s;
+}
+.image-upload-box:hover {
+    border-color: #667eea;
+    background: #f5f7ff;
+}
+.image-placeholder {
+    text-align: center;
+    color: #999;
+}
+.image-placeholder svg {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 8px;
+}
+.preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+.preview-img.show {
+    display: block;
+}
+.delete-img-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    background: rgba(255,255,255,0.9);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.image-upload-box:hover .delete-img-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.delete-img-btn:hover {
+    background: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <!-- 헤더 -->
+    <div class="header-section">
+        <h1>오디오북 생성기</h1>
+        <p>번호로 캐릭터를 지정하고, 소설 텍스트를 붙여넣으세요</p>
+    </div>
+
+    <!-- 모바일 JSON 보기 버튼 -->
+    <button class="mobile-json-toggle" id="mobileJsonToggle" onclick="toggleMobileJSON()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        JSON
+    </button>
+
+    <!-- 메인 그리드 -->
+    <div class="main-grid">
+
+        <!-- 왼쪽: 입력 영역 -->
+        <div class="left-panel">
+
+            <!-- 에피소드 정보 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>에피소드 정보</h3>
+                    <span class="episode-number-badge">EP {{ next_episode_number }}</span>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label>에피소드 제목</label>
+                        <input type="text" id="episodeTitle" class="form-input" placeholder="예: 1화 - 운명의 만남">
+                    </div>
+
+                    <!-- 🔥 에피소드 이미지 업로드 -->
+                    <div class="form-group episode-image-upload">
+                        <label>에피소드 썸네일 (선택)</label>
+                        <input type="file" id="episodeImageInput" accept="image/*" style="display:none" name="episode_image">
+                        <div class="image-upload-box" onclick="document.getElementById('episodeImageInput').click()">
+                            <div class="image-placeholder" id="imagePlaceholder">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
+                                </svg>
+                                <div style="font-size:13px">클릭하여 이미지 업로드</div>
+                            </div>
+                            <img id="imagePreview" class="preview-img">
+                            <button class="delete-img-btn" onclick="deleteImage(event)">✕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 캐릭터 & 목소리 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>캐릭터 & 목소리</h3>
+                    <button class="btn-add-small" onclick="addCharacter()">+ 추가</button>
+                </div>
+                <div class="panel-body">
+                    <p class="form-hint" style="margin-bottom: 12px;">번호 = 소설 텍스트 앞에 쓸 번호. 0은 나레이션 전용.</p>
+                    <div id="characterList" class="character-list">
+                        <!-- 나레이션 (기본) -->
+                        <div class="character-item" data-number="0">
+                            <div class="character-number-badge narrator">0</div>
+                            <div class="character-content">
+                                <input type="text" class="character-name" value="나레이션" readonly>
+                                <select class="voice-select" data-number="0">
+                                    <option value="">목소리 선택</option>
+                                    {% for voice in voice_list %}
+                                    <option value="{{ voice.voice.voice_id }}">{{ voice.alias_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <!-- 캐릭터 1 (기본) -->
+                        <div class="character-item" data-number="1">
+                            <div class="character-number-badge">1</div>
+                            <div class="character-content">
+                                <input type="text" class="character-name" placeholder="캐릭터 이름 (예: 민수)" data-number="1">
+                                <select class="voice-select" data-number="1">
+                                    <option value="">목소리 선택</option>
+                                    {% for voice in voice_list %}
+                                    <option value="{{ voice.voice.voice_id }}">{{ voice.alias_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button class="btn-remove-char" onclick="removeCharacter(1)">삭제</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 소설 텍스트 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>소설 텍스트</h3>
+                    <span class="char-count"><span id="charCount">0</span> 글자</span>
+                </div>
+                <div class="panel-body">
+                    <textarea id="novelText" class="novel-textarea" placeholder="각 줄 앞에 캐릭터 번호를 붙여 입력하세요.
+
+0: 어두운 밤이었다. 민수는 골목길을 걸었다.
+1: &quot;여기가 어디지...&quot;
+0: 그때, 뒤에서 발소리가 들렸다.
+2: &quot;거기 서!&quot;
+0: 민수가 뒤를 돌아보았다.
+1: &quot;누, 누구세요?&quot;
+2: &quot;나야, 지영이. 놀랬지?&quot;
+
+※ 번호 규칙:
+  0 = 나레이션 (서술/묘사)
+  1, 2, 3... = 위에서 등록한 캐릭터 번호
+  같은 번호 연속 → 자동으로 합쳐짐 (300자 이하)"></textarea>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 오른쪽: JSON 편집 & 액션 -->
+        <div class="right-panel" id="rightPanel">
+
+            <!-- 모바일 닫기 버튼 -->
+            <button class="mobile-json-close" onclick="toggleMobileJSON()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+
+            <!-- JSON 편집 영역 -->
+            <div class="panel preview-panel">
+                <div class="panel-header">
+                    <h3>JSON 편집</h3>
+                    <span class="form-hint">직접 수정 가능</span>
+                </div>
+                <div class="panel-body">
+                    <textarea id="jsonEditor" class="json-editor" placeholder="미리보기를 클릭하면 JSON이 생성됩니다.
+생성된 JSON을 직접 수정할 수 있습니다."></textarea>
+                </div>
+            </div>
+
+            <!-- 액션 버튼 -->
+            <div class="action-panel">
+                <button class="btn btn-secondary" onclick="generateJSONPreview()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    미리보기
+                </button>
+
+                <button class="btn btn-warning" onclick="downloadJSON()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    다운로드
+                </button>
+
+                <button class="btn btn-ai" onclick="aiGenerate()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    AI 생성
+                </button>
+
+                <button class="btn btn-primary" onclick="executeJSON()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polygon points="10 8 16 12 10 16 10 8"/>
+                    </svg>
+                    실행
+                </button>
+            </div>
+
+            <div id="statusMessage" class="status-message"></div>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- 모바일 JSON 오버레이 배경 -->
+<div class="mobile-json-overlay" id="mobileJsonOverlay" onclick="toggleMobileJSON()"></div>
+
+<!-- 로딩 오버레이 -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">처리 중...</div>
+        <div class="loading-detail" id="loadingDetail">잠시만 기다려주세요</div>
+    </div>
+</div>
+
+<script src="{% static 'js/csrf.js' %}"></script>
+<script>
+const voiceList = [
+    {% for voice in voice_list %}
+    {
+        id: "{{ voice.voice.voice_id }}",
+        name: "{{ voice.alias_name }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+const bookId = "{{ book.public_uuid }}";
+const nextEpisodeNumber = {{ next_episode_number }};
+
+// 이미지 관련 로직은 book_serialization_fast.js에서 처리
+</script>
+<script src="{% static 'js/book/book_serialization_fast.js' %}"></script>
+
+{% endblock %}

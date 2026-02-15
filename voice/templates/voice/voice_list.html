@@ -36,70 +36,72 @@
     </div>
 </div>
 
-
 <!-- 메인 레이아웃: 왼쪽(내 보이스) + 오른쪽(전체 목록) -->
 <div class="main-layout">
-    <!-- 왼쪽: 내 보이스 -->
+    <!-- 왼쪽: 내 보이스 - 🔥 가로 스크롤 컨테이너 -->
     <div class="my-voices-section"> 
         <div class="section-header">💾 내 보이스 컬렉션</div>
 
-        {% if my_voices %}
-            {% for item in my_voices %}
-            <div class="myvoice-card-small">
-                <div class="myvoice-header">
-                    {% if item.voice.voice_image %}
-                    <img src="{{ item.voice.voice_image.url }}" class="myvoice-img-small" alt="{{ item.alias_name }}" loading="lazy">
-                    {% else %}
-                    <img src="{% static 'default_voice.png' %}" class="myvoice-img-small" alt="{{ item.alias_name }}" loading="lazy">
+        <!-- 🔥 가로 스크롤 래퍼 추가 -->
+        <div class="myvoice-scroll-wrapper">
+            {% if my_voices %}
+                {% for item in my_voices %}
+                <div class="myvoice-card-small">
+                    <div class="myvoice-header">
+                        {% if item.voice.voice_image %}
+                        <img src="{{ item.voice.voice_image.url }}" class="myvoice-img-small" alt="{{ item.alias_name }}" loading="lazy">
+                        {% else %}
+                        <img src="{% static 'default_voice.png' %}" class="myvoice-img-small" alt="{{ item.alias_name }}" loading="lazy">
+                        {% endif %}
+
+                        <div class="myvoice-info-small">
+                            <div class="myvoice-name-small">{{ item.alias_name }}</div>
+                            <div class="myvoice-alias-small">{{ item.voice.voice_name }}</div>
+                        </div>
+
+                        <button class="favorite-btn-small" onclick="toggleFavorite({{ item.id }}, this)" data-favorite="{{ item.is_favorite|lower }}" data-login-required>
+                            {% if item.is_favorite %}⭐{% else %}☆{% endif %}
+                        </button>
+                    </div>
+
+                    <!-- 책 선택 -->
+                    <select name="book_id" onchange="selectBook({{ item.id }}, this.value)" class="book-select-small" data-login-required>
+                        <option value="">📚 전체 작품</option>
+                        {% for book in books %}
+                        <option value="{{ book.id }}" {% if item.book and book.id == item.book.id %}selected{% endif %}>
+                            {{ book.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <!-- 오디오 플레이어 -->
+                    {% if item.voice.sample_audio %}
+                    <div class="audio-player-small">
+                        <button onclick="togglePlaySmall(this)" data-login-required>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </button>
+                        <div class="progress-bar-small">
+                            <div class="progress-small"></div>
+                        </div>
+                        <span class="time-small">0:00 / 0:00</span>
+                        <audio src="{{ item.voice.sample_audio.url }}" preload="metadata" loading="lazy"></audio>
+                    </div>
                     {% endif %}
 
-                    <div class="myvoice-info-small">
-                        <div class="myvoice-name-small">{{ item.alias_name }}</div>
-                        <div class="myvoice-alias-small">{{ item.voice.voice_name }}</div>
-                    </div>
-
-                    <button class="favorite-btn-small" onclick="toggleFavorite({{ item.id }}, this)" data-favorite="{{ item.is_favorite|lower }}" data-login-required>
-                        {% if item.is_favorite %}⭐{% else %}☆{% endif %}
-                    </button>
+                    <!-- 삭제 버튼 -->
+                    <button type="button" class="delete-btn-small" onclick="deleteVoice({{ item.id }}, this)" data-login-required>🗑️ 삭제</button>
                 </div>
-
-                <!-- 책 선택 -->
-                <select name="book_id" onchange="selectBook({{ item.id }}, this.value)" class="book-select-small" data-login-required>
-                    <option value="">📚 전체 작품</option>
-                    {% for book in books %}
-                    <option value="{{ book.id }}" {% if item.book and book.id == item.book.id %}selected{% endif %}>
-                        {{ book.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-
-                <!-- 오디오 플레이어 -->
-                {% if item.voice.sample_audio %}
-                <div class="audio-player-small">
-                    <button onclick="togglePlaySmall(this)" data-login-required>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M8 5v14l11-7z"/>
-                        </svg>
-                    </button>
-                    <div class="progress-bar-small">
-                        <div class="progress-small"></div>
-                    </div>
-                    <span class="time-small">0:00 / 0:00</span>
-                    <audio src="{{ item.voice.sample_audio.url }}" preload="metadata" loading="lazy"></audio>
+                {% endfor %}
+            {% else %}
+                <div class="no-myvoice-small">
+                    <div class="no-myvoice-icon-small">🎙️</div>
+                    <p style="font-size: 14px; margin-bottom: 0;">저장된 보이스가 없습니다</p>
+                    <p style="font-size: 12px; color: var(--text-secondary);">오른쪽에서 목소리를 선택하세요</p>
                 </div>
-                {% endif %}
-
-                <!-- 삭제 버튼 -->
-                <button type="button" class="delete-btn-small" onclick="deleteVoice({{ item.id }}, this)" data-login-required>🗑️ 삭제</button>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="no-myvoice-small">
-                <div class="no-myvoice-icon-small">🎙️</div>
-                <p style="font-size: 14px; margin-bottom: 0;">저장된 보이스가 없습니다</p>
-                <p style="font-size: 12px; color: var(--text-secondary);">오른쪽에서 목소리를 선택하세요</p>
-            </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 
     <!-- 오른쪽: 전체 보이스 목록 -->
@@ -128,8 +130,6 @@
                     </div>
                     {% endif %}
 
-                    <!-- <div class="voice-desc">{{ voice.voice_description|default:"설명이 없습니다." }}</div> -->
-
                     {% if voice.sample_audio %}
                     <div class="voice-audio-player">
                         <button class="play-btn" onclick="toggleVoicePlay(this)" data-login-required>
@@ -152,14 +152,14 @@
                 <div class="no-voices">
                     <div class="no-voices-icon">🎙️</div>
                     <h2 class="no-voices-title">
-{% if selected_type_ids %}
+                        {% if selected_type_ids %}
                         해당 타입의 목소리가 없습니다
                         {% else %}
                         등록된 보이스가 없습니다
                         {% endif %}
                     </h2>
                     <p class="no-voices-text">
-{% if selected_type_ids %}
+                        {% if selected_type_ids %}
                         다른 타입을 선택해보세요
                         {% else %}
                         새로운 보이스가 곧 추가될 예정입니다
@@ -169,6 +169,7 @@
             {% endif %}
         </div>
     </div>
+</div>
 </div>
 
 <div id="voice_name" style="display: none;"></div>

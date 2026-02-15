@@ -11,7 +11,7 @@ import os
 from django.conf import settings
 from register.decorator import login_required_to_main
 from character.models import LLM, Story, Conversation, ConversationMessage
-
+from book.utils import merge_audio_files
 
 COLAB_TTS_URL = os.getenv('COLAB_TTS_URL', 'https://xxxx.ngrok-free.app')
 
@@ -1321,7 +1321,7 @@ def generate_preview_audio_async(request):
 
     try:
         import tempfile
-        from book.task import merge_audio_task
+        from book.tasks import merge_audio_task
 
         # 오디오 파일 수집 및 임시 파일로 저장
         audio_file_paths = []
@@ -2533,3 +2533,342 @@ def toggle_follow(request, user_id):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.db.models import Max
+from book.models import Books, Content, MyVoiceList
+from register.decorator import login_required_to_main
+from voxliber.security import validate_image_file
+from django.core.exceptions import ValidationError
+
+
+@login_required
+@login_required_to_main
+def book_serilazation_fast_view(request, book_uuid):
+    book = get_object_or_404(Books, public_uuid=book_uuid, user=request.user)
+
+    # 🔥 POST: 이미지 저장
+    if request.method == 'POST':
+        episode_image = request.FILES.get('episode_image')
+        episode_number = request.POST.get('episode_number')
+        
+        if episode_image and episode_number:
+            try:
+                # 이미지 검증
+                validate_image_file(episode_image)
+                
+                # 에피소드 찾기
+                content = Content.objects.filter(
+                    book=book, 
+                    number=int(episode_number),
+                    is_deleted=False
+                ).first()
+                
+                if content:
+                    content.episode_image = episode_image
+                    content.save()
+                    return JsonResponse({
+                        'success': True, 
+                        'image_url': content.episode_image.url
+                    })
+                else:
+                    return JsonResponse({
+                        'success': False, 
+                        'error': '에피소드를 찾을 수 없습니다'
+                    }, status=404)
+                    
+            except ValidationError as e:
+                return JsonResponse({
+                    'success': False, 
+                    'error': str(e)
+                }, status=400)
+            except Exception as e:
+                return JsonResponse({
+                    'success': False, 
+                    'error': str(e)
+                }, status=500)
+
+    # GET: 기존 그대로
+    voice_list = MyVoiceList.objects.filter(user=request.user)
+    
+    last_episode = Content.objects.filter(
+        book=book,
+        is_deleted=False  # 🔥 삭제되지 않은 것만
+    ).aggregate(Max('number'))
+    
+    next_episode_number = (last_episode['number__max'] or 0) + 1
+    
+    context = {
+        'book': book,
+        'voice_list': voice_list,
+        'next_episode_number': next_episode_number,
+    }
+    return render(request, 'book/book_serialization_fast.html', context)
+
+
+# ==================== AI 오디오북 분석 (Grok) ====================
+import json as json_module
+from book.utils import grok_client, generate_tts, merge_audio_files, sound_effect, background_music, mix_audio_with_background
+
+@login_required
+@require_POST
+def ai_analyze_audiobook(request):
+    """
+    Grok AI로 텍스트 분석 → 감정태그, BGM, SFX 자동 추가
+    입력: batch JSON (create_episode step with pages)
+    출력: 강화된 batch JSON
+    """
+    try:
+        data = json_module.loads(request.body)
+    except json_module.JSONDecodeError:
+        return JsonResponse({'error': 'JSON 파싱 실패'}, status=400)
+
+    # 에피소드 step 찾기
+    steps = data.get('steps', [])
+    episode_step = None
+    for step in steps:
+        if step.get('action') == 'create_episode':
+            episode_step = step
+            break
+
+    if not episode_step or not episode_step.get('pages'):
+        return JsonResponse({'error': 'create_episode step이 없습니다'}, status=400)
+
+    pages = episode_step['pages']
+
+    # 텍스트 목록 생성
+    text_list = []
+    for i, page in enumerate(pages):
+        text_list.append(f"[{i+1}] {page['text']}")
+    all_text = "\n".join(text_list)
+
+    # Grok API 호출
+    prompt = f"""당신은 한국어 오디오북 제작 AI입니다. 아래 소설 텍스트를 분석해서 JSON으로 응답하세요.
+
+=== 소설 텍스트 (페이지별) ===
+{all_text}
+
+=== 분석 요청 ===
+
+1. **감정 태그 (emotions)**: 각 페이지에 어울리는 감정 태그를 1~3개 선택하세요.
+   사용 가능한 태그: calm, excited, sad, angry, scared, whisper, laughing, crying, thinking, curious, serious, trembling, cold, warm, desperate, confused, confident, shy, romantic, mysterious
+
+2. **배경음악 (bgm)**: 에피소드 전체에 어울리는 배경음악 1~2개를 제안하세요.
+   - name: 한국어 이름
+   - description: 영어로 된 음악 설명 (장르, 분위기, 악기 등)
+   - start_page: 시작 페이지 번호 (1부터)
+   - end_page: 끝 페이지 번호
+
+3. **효과음 (sfx)**: 특정 상황에 맞는 효과음을 제안하세요 (0~5개).
+   - name: 한국어 이름
+   - description: 영어로 된 효과음 설명
+   - page: 적용할 페이지 번호
+
+=== 응답 형식 (JSON만, 설명 없이) ===
+{{
+  "emotions": [["calm"], ["excited", "curious"], ...],
+  "bgm": [
+    {{"name": "긴장감 있는 밤", "description": "Dark ambient with low strings", "start_page": 1, "end_page": 10}}
+  ],
+  "sfx": [
+    {{"name": "문 여는 소리", "description": "wooden door creaking open", "page": 3}}
+  ]
+}}"""
+
+    try:
+        response = grok_client.chat.completions.create(
+            model="grok-3-mini",
+            messages=[
+                {"role": "system", "content": "JSON만 응답하세요. 설명이나 마크다운 코드블록 없이 순수 JSON만 출력하세요."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=4000
+        )
+
+        ai_text = response.choices[0].message.content.strip()
+
+        # 마크다운 코드블록 제거
+        if ai_text.startswith('```'):
+            ai_text = ai_text.split('\n', 1)[1] if '\n' in ai_text else ai_text[3:]
+        if ai_text.endswith('```'):
+            ai_text = ai_text[:-3]
+        ai_text = ai_text.strip()
+
+        ai_result = json_module.loads(ai_text)
+
+    except json_module.JSONDecodeError:
+        return JsonResponse({'error': 'AI 응답 파싱 실패', 'raw': ai_text[:500]}, status=500)
+    except Exception as e:
+        return JsonResponse({'error': f'Grok API 오류: {str(e)}'}, status=500)
+
+    # 강화된 JSON 생성
+    enhanced_steps = []
+
+    # BGM steps
+    bgm_list = ai_result.get('bgm', [])
+    for bgm in bgm_list:
+        enhanced_steps.append({
+            "action": "create_bgm",
+            "music_name": bgm.get('name', 'BGM'),
+            "music_description": bgm.get('description', ''),
+            "duration_seconds": 120
+        })
+
+    # SFX steps
+    sfx_list = ai_result.get('sfx', [])
+    for sfx_item in sfx_list:
+        enhanced_steps.append({
+            "action": "create_sfx",
+            "effect_name": sfx_item.get('name', 'SFX'),
+            "effect_description": sfx_item.get('description', '')
+        })
+
+    # 감정 태그만 적용한 에피소드
+    emotions = ai_result.get('emotions', [])
+
+    enhanced_pages = []
+    for i, page in enumerate(pages):
+        new_page = dict(page)
+
+        # 감정 태그 추가
+        if i < len(emotions) and emotions[i]:
+            tags = ''.join([f'[{e}]' for e in emotions[i]])
+            if not new_page['text'].startswith('['):
+                new_page['text'] = f"{tags} {new_page['text']}"
+
+        enhanced_pages.append(new_page)
+
+    enhanced_steps.append({
+        "action": "create_episode",
+        "book_uuid": data.get('book_uuid', ''),
+        "episode_number": episode_step.get('episode_number', 1),
+        "episode_title": episode_step.get('episode_title', ''),
+        "pages": enhanced_pages
+    })
+
+    # 믹싱 step (BGM/SFX가 있을 때)
+    if bgm_list or sfx_list:
+        mix_step = {
+            "action": "mix_bgm",
+            "book_uuid": data.get('book_uuid', ''),
+            "episode_number": episode_step.get('episode_number', 1),
+            "background_tracks": [],
+            "sound_effects": []
+        }
+
+        for idx, bgm in enumerate(bgm_list):
+            mix_step["background_tracks"].append({
+                "music_id": f"$bgm_{idx + 1}",
+                "start_page": (bgm.get('start_page', 1) - 1),
+                "end_page": min(bgm.get('end_page', len(pages)) - 1, len(pages) - 1),
+                "volume": 0.25,
+                "loop": True
+            })
+
+        for idx, sfx_item in enumerate(sfx_list):
+            mix_step["sound_effects"].append({
+                "effect_id": f"$sfx_{idx + 1}",
+                "page": (sfx_item.get('page', 1) - 1),
+                "volume": 0.7
+            })
+
+        enhanced_steps.append(mix_step)
+
+    enhanced_data = {
+        "action": "batch",
+        "book_uuid": data.get('book_uuid', ''),
+        "steps": enhanced_steps
+    }
+
+    return JsonResponse(enhanced_data)
+
+
+# ==================== 배치 JSON 실행 (Celery 비동기) ====================
+@login_required
+@require_POST
+def process_json_audiobook(request):
+    """
+    배치 JSON을 Celery로 비동기 실행.
+    즉시 task_id를 반환하고, 프론트에서 폴링으로 진행률 확인.
+    """
+    try:
+        data = json_module.loads(request.body)
+    except json_module.JSONDecodeError:
+        return JsonResponse({'error': 'JSON 파싱 실패'}, status=400)
+
+    steps = data.get('steps', [])
+    if not steps:
+        return JsonResponse({'error': 'steps가 비어있습니다'}, status=400)
+
+    book_uuid = data.get('book_uuid', '')
+    if book_uuid:
+        book = Books.objects.filter(public_uuid=book_uuid, user=request.user).first()
+        if not book:
+            return JsonResponse({'error': f'책을 찾을 수 없습니다: {book_uuid}'}, status=404)
+
+    # Celery 태스크 시작
+    from book.tasks import process_batch_audiobook
+    task = process_batch_audiobook.delay(data, request.user.user_id)
+
+    return JsonResponse({
+        'success': True,
+        'task_id': task.id,
+        'message': '오디오북 생성이 시작되었습니다'
+    })
+
+
+# ==================== 태스크 상태 조회 ====================
+@login_required
+def audiobook_task_status(request, task_id):
+    """Celery 태스크 진행률 조회 (프론트 폴링용)"""
+    from celery.result import AsyncResult
+
+    result = AsyncResult(task_id)
+
+    if result.state == 'PENDING':
+        response = {
+            'state': 'PENDING',
+            'status': '대기 중...',
+            'progress': 0
+        }
+    elif result.state == 'PROGRESS':
+        info = result.info or {}
+        response = {
+            'state': 'PROGRESS',
+            'status': info.get('status', '처리 중...'),
+            'progress': info.get('progress', 0),
+            'current_step': info.get('current_step', 0),
+            'total_steps': info.get('total_steps', 0)
+        }
+    elif result.state == 'SUCCESS':
+        info = result.result or {}
+        response = {
+            'state': 'SUCCESS',
+            'success': info.get('success', False),
+            'progress': 100
+        }
+        if info.get('success'):
+            response['redirect_url'] = info.get('redirect_url', '')
+            response['episode'] = info.get('episode', {})
+            response['steps_completed'] = info.get('steps_completed', 0)
+        else:
+            response['error'] = info.get('error', '알 수 없는 오류')
+    elif result.state == 'FAILURE':
+        response = {
+            'state': 'FAILURE',
+            'error': str(result.info) if result.info else '태스크 실패',
+            'progress': 0
+        }
+    else:
+        response = {
+            'state': result.state,
+            'status': '처리 중...',
+            'progress': 0
+        }
+
+    return JsonResponse(response)

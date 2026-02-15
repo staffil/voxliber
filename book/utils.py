@@ -103,7 +103,6 @@ def generate_tts(novel_text, voice_id,language_code,speed_value, style_value, si
         traceback.print_exc()  # 🔹 어디서 오류 났는지 자세히 출력
         return None
 
-
 def merge_audio_files(audio_files, pages_text=None):
     """
     여러 오디오 파일을 하나로 합치는 함수 (타임스탬프 정보 포함)
@@ -120,7 +119,7 @@ def merge_audio_files(audio_files, pages_text=None):
 
         if not audio_files:
             print("⚠️ 합칠 오디오 파일이 없습니다.")
-            return None, None
+            return None, None, None
 
         # 임시 저장 폴더 확인
         temp_dir = os.path.join(settings.MEDIA_ROOT, 'audio')
@@ -148,7 +147,7 @@ def merge_audio_files(audio_files, pages_text=None):
                         print(f"📂 파일 경로 사용: {temp_path}")
                     else:
                         print(f"❌ 파일이 존재하지 않습니다: {audio_file}")
-                        return None, None
+                        return None, None, None
                 else:
                     # 파일 객체인 경우 - 임시 파일로 저장
                     temp_path = os.path.join(temp_dir, f'temp_{uuid4().hex}.mp3')
@@ -165,7 +164,7 @@ def merge_audio_files(audio_files, pages_text=None):
             except Exception as e:
                 print(f"❌ 파일 처리 실패: {e}")
                 traceback.print_exc()
-                return None, None
+                return None, None, None
 
             # AudioSegment 로드
             try:
@@ -205,7 +204,7 @@ def merge_audio_files(audio_files, pages_text=None):
                 # 임시 파일만 삭제 (외부에서 전달받은 파일 경로는 삭제하지 않음)
                 if is_temp_file and temp_path and os.path.exists(temp_path):
                     os.remove(temp_path)
-                return None, None
+                return None, None, None
 
             # 임시 파일만 삭제 (외부에서 전달받은 파일 경로는 삭제하지 않음)
             if is_temp_file and temp_path and os.path.exists(temp_path):
@@ -219,15 +218,18 @@ def merge_audio_files(audio_files, pages_text=None):
         output_filename = f"merged_{uuid4().hex}.mp3"
         output_path = os.path.join(temp_dir, output_filename)
         combined.export(output_path, format="mp3", bitrate="128k")  # 비트레이트 최적화
+        total_duration = len(combined) / 1000
         print(f"🎉 최종 오디오 저장 완료: {output_path}")
         print(f"⏱️ 타임스탬프 정보 {len(timestamps_info)}개 생성 완료")
-
-        return output_path, timestamps_info
+        print("🔥 RETURNING 3 VALUES")
+        return output_path, timestamps_info,total_duration
 
     except Exception as e:
         print(f"❌ 오디오 합치기 최종 에러: {e}")
         traceback.print_exc()
-        return None, None
+        return None, None, None
+
+
 
 
 
@@ -272,12 +274,22 @@ def sound_effect(effect_name, effect_description, duration_seconds):
         print("ai 가 생성한 사운드 이펙트:", effect_prompt)
         audio_stream = eleven_client.text_to_sound_effects.convert(
             text=effect_prompt,
-            duration_seconds=duration_seconds,  # 자동 길이
+            duration_seconds=duration_seconds,
             prompt_influence=1.0
         )
 
-        print("✅ 사운드 이팩트 생성 완료")
-        return audio_stream
+        # 파일로 저장
+        audio_dir = os.path.join(settings.MEDIA_ROOT, 'audio')
+        os.makedirs(audio_dir, exist_ok=True)
+        filename = f"sfx_{uuid4().hex}.mp3"
+        audio_path = os.path.join(audio_dir, filename)
+
+        with open(audio_path, 'wb') as f:
+            for chunk in audio_stream:
+                f.write(chunk)
+
+        print(f"✅ 사운드 이팩트 생성 완료: {audio_path}")
+        return audio_path
 
     except Exception as e:
         print(f"❌ 사운드 이팩트 생성 오류: {e}")
@@ -349,8 +361,18 @@ def background_music(music_name, music_description, duration_seconds=30):
             print("❌ Music API Error:", response.text)
             return None
 
-        print("✅ 배경음 생성 완료")
-        return response.iter_content(chunk_size=1024)
+        # 파일로 저장
+        audio_dir = os.path.join(settings.MEDIA_ROOT, 'audio')
+        os.makedirs(audio_dir, exist_ok=True)
+        filename = f"bgm_{uuid4().hex}.mp3"
+        audio_path = os.path.join(audio_dir, filename)
+
+        with open(audio_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=1024):
+                f.write(chunk)
+
+        print(f"✅ 배경음 생성 완료: {audio_path}")
+        return audio_path
 
     except Exception as e:
         print(f"❌ 배경음 생성 오류: {e}")
@@ -627,6 +649,204 @@ def chat_with_character_debug(agent_id, character_name, voice_id, book_content, 
     return json.dumps(debug_response)
 
 
+# ==================== 서버 사이드 WebAudio 효과 ====================
+import numpy as np
+from scipy.signal import butter, sosfilt
+
+# 31개 프리셋 파라미터 (webaudio-effects.js와 1:1 매칭)
+WEBAUDIO_PRESETS = {
+    "normal": {"filter_type": "allpass", "freq": 1000, "Q": 1, "delay": 0, "feedback": 0, "tremolo_rate": 0, "tremolo_depth": 0},
+    "phone": {"filter_type": "highpass", "freq": 2000, "Q": 8, "delay": 0, "feedback": 0, "tremolo_rate": 0, "tremolo_depth": 0},
+    "cave": {"filter_type": "lowpass", "freq": 600, "Q": 6, "delay": 0.45, "feedback": 0.7, "tremolo_rate": 0, "tremolo_depth": 0},
+    "underwater": {"filter_type": "lowpass", "freq": 400, "Q": 2, "delay": 0.15, "feedback": 0.3, "tremolo_rate": 5, "tremolo_depth": 0.6},
+    "robot": {"filter_type": "highpass", "freq": 1200, "Q": 1, "delay": 0, "feedback": 0, "tremolo_rate": 30, "tremolo_depth": 1.0},
+    "ghost": {"filter_type": "bandpass", "freq": 500, "Q": 9, "delay": 0.5, "feedback": 0.8, "tremolo_rate": 3, "tremolo_depth": 0.7},
+    "child": {"filter_type": "allpass", "freq": 1500, "Q": 2, "delay": 0, "feedback": 0, "tremolo_rate": 15, "tremolo_depth": 0.3},
+    "old": {"filter_type": "lowpass", "freq": 700, "Q": 3, "delay": 0.2, "feedback": 0.5, "tremolo_rate": 2, "tremolo_depth": 0.2},
+    "echo": {"filter_type": "allpass", "freq": 1000, "Q": 1, "delay": 0.6, "feedback": 0.7, "tremolo_rate": 0, "tremolo_depth": 0},
+    "protoss": {"filter_type": "allpass", "freq": 1100, "Q": 6, "delay": 0.09, "feedback": 0.42, "tremolo_rate": 0, "tremolo_depth": 0},
+    "whisper": {"filter_type": "bandpass", "freq": 1800, "Q": 4, "delay": 0.03, "feedback": 0.2, "tremolo_rate": 4, "tremolo_depth": 0.4},
+    "radio": {"filter_type": "bandpass", "freq": 1800, "Q": 2, "delay": 0, "feedback": 0, "tremolo_rate": 6.5, "tremolo_depth": 0.7},
+    "megaphone": {"filter_type": "highpass", "freq": 900, "Q": 5, "delay": 0.05, "feedback": 0.35, "tremolo_rate": 0, "tremolo_depth": 0},
+    "demon": {"filter_type": "lowpass", "freq": 800, "Q": 3, "delay": 0.07, "feedback": 0.6, "tremolo_rate": 120, "tremolo_depth": 0.9},
+    "angel": {"filter_type": "highpass", "freq": 800, "Q": 5, "delay": 0.35, "feedback": 0.65, "tremolo_rate": 1.5, "tremolo_depth": 0.4},
+    "vader": {"filter_type": "bandpass", "freq": 400, "Q": 8, "delay": 0.04, "feedback": 0.4, "tremolo_rate": 80, "tremolo_depth": 0.6},
+    "giant": {"filter_type": "lowpass", "freq": 300, "Q": 4, "delay": 0.6, "feedback": 0.7, "tremolo_rate": 0, "tremolo_depth": 0},
+    "tiny": {"filter_type": "highpass", "freq": 2200, "Q": 6, "delay": 0.02, "feedback": 0.3, "tremolo_rate": 8, "tremolo_depth": 0.4},
+    "possessed": {"filter_type": "bandpass", "freq": 600, "Q": 5, "delay": 0.07, "feedback": 0.7, "tremolo_rate": 100, "tremolo_depth": 0.9},
+    "horror": {"filter_type": "bandpass", "freq": 620, "Q": 14, "delay": 0.38, "feedback": 0.78, "tremolo_rate": 2.8, "tremolo_depth": 0.85},
+    "helium": {"filter_type": "highpass", "freq": 2900, "Q": 7, "delay": 0.015, "feedback": 0.18, "tremolo_rate": 12, "tremolo_depth": 0.5},
+    "timewarp": {"filter_type": "lowpass", "freq": 580, "Q": 9, "delay": 0.42, "feedback": 0.89, "tremolo_rate": 0.25, "tremolo_depth": 0.8},
+    "glitch": {"filter_type": "bandpass", "freq": 1300, "Q": 22, "delay": 0.008, "feedback": 0.35, "tremolo_rate": 280, "tremolo_depth": 0.98},
+    "choir": {"filter_type": "allpass", "freq": 1600, "Q": 5, "delay": 0.28, "feedback": 0.72, "tremolo_rate": 1.1, "tremolo_depth": 0.5},
+    "hyperpop": {"filter_type": "highpass", "freq": 3200, "Q": 14, "delay": 0.018, "feedback": 0.42, "tremolo_rate": 220, "tremolo_depth": 0.9},
+    "vaporwave": {"filter_type": "lowpass", "freq": 3400, "Q": 2, "delay": 0.38, "feedback": 0.78, "tremolo_rate": 0.35, "tremolo_depth": 0.8},
+    "darksynth": {"filter_type": "bandpass", "freq": 950, "Q": 11, "delay": 0.24, "feedback": 0.70, "tremolo_rate": 130, "tremolo_depth": 0.55},
+    "lofi-girl": {"filter_type": "lowpass", "freq": 4200, "Q": 1.8, "delay": 0.45, "feedback": 0.62, "tremolo_rate": 0.12, "tremolo_depth": 0.35},
+    "bitcrush-voice": {"filter_type": "bandpass", "freq": 2200, "Q": 28, "delay": 0.004, "feedback": 0.25, "tremolo_rate": 420, "tremolo_depth": 0.98},
+    "portal": {"filter_type": "allpass", "freq": 750, "Q": 18, "delay": 0.65, "feedback": 0.94, "tremolo_rate": 0.7, "tremolo_depth": 0.9},
+    "neoncity": {"filter_type": "bandpass", "freq": 1150, "Q": 9, "delay": 0.52, "feedback": 0.80, "tremolo_rate": 2.8, "tremolo_depth": 0.45},
+    "ghost-in-machine": {"filter_type": "bandpass", "freq": 780, "Q": 20, "delay": 0.09, "feedback": 0.58, "tremolo_rate": 190, "tremolo_depth": 0.88},
+}
 
 
+def _apply_biquad_filter(samples, sample_rate, filter_type, freq, Q):
+    """scipy butter 필터로 WebAudio BiquadFilter 재현"""
+    nyq = sample_rate / 2.0
+    freq = min(freq, nyq - 1)
+
+    if filter_type == "allpass":
+        return samples  # allpass = 통과
+    elif filter_type == "lowpass":
+        sos = butter(2, freq / nyq, btype='low', output='sos')
+    elif filter_type == "highpass":
+        sos = butter(2, freq / nyq, btype='high', output='sos')
+    elif filter_type == "bandpass":
+        low = max(freq / (Q if Q > 0 else 1), 20) / nyq
+        high = min(freq * (Q if Q > 0 else 1), nyq - 1) / nyq
+        if low >= high:
+            low = max(20 / nyq, 0.001)
+            high = min(0.999, freq * 2 / nyq)
+        sos = butter(2, [low, high], btype='band', output='sos')
+    else:
+        return samples
+
+    return sosfilt(sos, samples).astype(np.float32)
+
+
+def _apply_delay(samples, sample_rate, delay_time, feedback_gain, max_iterations=8):
+    """딜레이 + 피드백 효과"""
+    if delay_time <= 0 and feedback_gain <= 0:
+        return samples
+
+    delay_samples = int(delay_time * sample_rate)
+    if delay_samples <= 0:
+        return samples
+
+    output = samples.copy()
+    delayed = samples.copy()
+
+    for i in range(max_iterations):
+        gain = feedback_gain ** (i + 1)
+        if gain < 0.01:
+            break
+        padded = np.zeros(len(samples), dtype=np.float32)
+        start = delay_samples * (i + 1)
+        if start >= len(samples):
+            break
+        end = min(start + len(delayed), len(samples))
+        padded[start:end] = delayed[:end - start] * gain
+        output += padded
+
+    # 클리핑 방지
+    max_val = np.max(np.abs(output))
+    if max_val > 1.0:
+        output = output / max_val
+    return output
+
+
+def _apply_tremolo(samples, sample_rate, rate, depth):
+    """트레몰로 (AM 변조) 효과"""
+    if rate <= 0 or depth <= 0:
+        return samples
+
+    t = np.arange(len(samples)) / sample_rate
+    # depth 0~1: 0이면 변조 없음, 1이면 최대 변조
+    modulation = 1.0 - depth * 0.5 * (1.0 + np.sin(2 * np.pi * rate * t))
+    return (samples * modulation).astype(np.float32)
+
+
+def apply_webaudio_effect(audio_path, effect_name):
+    """
+    오디오 파일에 WebAudio 프리셋 효과를 적용하여 새 파일로 저장.
+    webaudio-effects.js의 31개 프리셋을 서버 사이드로 재현.
+
+    Args:
+        audio_path: MP3/WAV 오디오 파일 경로
+        effect_name: 프리셋 이름 (e.g. "phone", "cave", "horror")
+
+    Returns:
+        새로운 오디오 파일 경로 (effect가 적용된)
+    """
+    if effect_name == "normal" or effect_name not in WEBAUDIO_PRESETS:
+        return audio_path
+
+    preset = WEBAUDIO_PRESETS[effect_name]
+    print(f"🎛️ WebAudio 효과 적용: {effect_name}")
+
+    try:
+        # 오디오 로드
+        audio = AudioSegment.from_file(audio_path)
+        sample_rate = audio.frame_rate
+        channels = audio.channels
+
+        # numpy 배열로 변환 (float32, -1~1 범위)
+        samples = np.array(audio.get_array_of_samples(), dtype=np.float32)
+        samples = samples / (2 ** 15)  # 16bit → float
+
+        # 스테레오면 모노로 처리 후 다시 스테레오로
+        if channels == 2:
+            left = samples[0::2]
+            right = samples[1::2]
+            # 양 채널에 동일 효과 적용
+            left = _process_channel(left, sample_rate, preset)
+            right = _process_channel(right, sample_rate, preset)
+            # 인터리브
+            samples = np.empty(len(left) + len(right), dtype=np.float32)
+            samples[0::2] = left
+            samples[1::2] = right
+        else:
+            samples = _process_channel(samples, sample_rate, preset)
+
+        # float → 16bit int로 변환
+        samples = np.clip(samples, -1.0, 1.0)
+        samples_int = (samples * (2 ** 15 - 1)).astype(np.int16)
+
+        # AudioSegment로 재조립
+        processed = AudioSegment(
+            data=samples_int.tobytes(),
+            sample_width=2,
+            frame_rate=sample_rate,
+            channels=channels
+        )
+
+        # 새 파일로 저장
+        output_filename = f"fx_{effect_name}_{uuid4().hex}.mp3"
+        output_path = os.path.join(settings.MEDIA_ROOT, 'audio', output_filename)
+        processed.export(output_path, format="mp3", bitrate="192k")
+
+        print(f"✅ WebAudio 효과 적용 완료: {output_path}")
+        return output_path
+
+    except Exception as e:
+        print(f"❌ WebAudio 효과 적용 오류 ({effect_name}): {e}")
+        traceback.print_exc()
+        return audio_path
+
+
+def _process_channel(samples, sample_rate, preset):
+    """단일 채널에 필터 + 딜레이 + 트레몰로 체인 적용"""
+    # 1. 필터 적용
+    filtered = _apply_biquad_filter(
+        samples, sample_rate,
+        preset["filter_type"],
+        preset["freq"],
+        preset["Q"]
+    )
+
+    # 2. 딜레이 적용
+    delayed = _apply_delay(
+        filtered, sample_rate,
+        preset["delay"],
+        preset["feedback"]
+    )
+
+    # 3. 트레몰로 적용
+    result = _apply_tremolo(
+        delayed, sample_rate,
+        preset["tremolo_rate"],
+        preset["tremolo_depth"]
+    )
+
+    return result
 

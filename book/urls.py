@@ -1,7 +1,7 @@
 from django.urls import path
-from book import views
 from book import api_views  # 🔥 API 뷰 추가
 from django.conf import settings
+from book import views
 from django.conf.urls.static import static
 app_name = "book"
 
@@ -84,6 +84,14 @@ urlpatterns=[
     # 북마크 (책 북마크 - 나중에 보기)
     path("bookmark/<uuid:book_uuid>/toggle/", views.toggle_bookmark, name="toggle_bookmark"),
     path("my-bookmarks/", views.my_bookmarks, name="my_bookmarks"),
+
+
+    # book_serilazation_fast
+    path("serialization/fast/<uuid:book_uuid>/", views.book_serilazation_fast_view, name="book_serilazation_fast_view"),
+    path("json/generate/", views.process_json_audiobook, name="process_json_audiobook"),
+    path("json/ai-generate/", views.ai_analyze_audiobook, name="ai_analyze_audiobook"),
+    path("json/task-status/<str:task_id>/", views.audiobook_task_status, name="audiobook_task_status"),
+
 
     # ==================== 📱 API 엔드포인트 (안드로이드 앱용) ====================
     # 🔍 통합 검색 (웹용)
