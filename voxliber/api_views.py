@@ -833,17 +833,16 @@ def api_mix_background_music(request):
         "book_uuid": "xxxx-xxxx-xxxx",
         "episode_number": 1,
         "background_tracks": [
-            {
-                "music_id": 5,
-                "start_page": 0,
-                "end_page": 3,
-                "volume": 0.3
-            }
+            {"music_id": 5, "start_page": 0, "end_page": 3, "volume": 0.3}
+        ],
+        "sound_effects": [
+            {"effect_id": 1, "page": 3, "volume": 0.7}
         ]
     }
 
     volume: 0.0~1.0 (0.3 = 30% 볼륨)
     start_page/end_page: 타임스탬프 기반으로 해당 페이지 구간에 배경음 삽입
+    sound_effects: 특정 페이지 시작 지점에 사운드 이펙트 오버레이
     """
     try:
         data = json.loads(request.body)
@@ -853,12 +852,13 @@ def api_mix_background_music(request):
     book_uuid = data.get("book_uuid", "").strip()
     episode_number = data.get("episode_number")
     bg_tracks = data.get("background_tracks", [])
+    sfx_tracks = data.get("sound_effects", [])
 
     if not book_uuid or not episode_number:
         return api_response(error="book_uuid와 episode_number는 필수입니다.", status=400)
 
-    if not bg_tracks:
-        return api_response(error="background_tracks 배열이 필요합니다.", status=400)
+    if not bg_tracks and not sfx_tracks:
+        return api_response(error="background_tracks 또는 sound_effects 배열이 필요합니다.", status=400)
 
     book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user).first()
     if not book:
@@ -928,11 +928,51 @@ def api_mix_background_music(request):
                 'volume': volume_db,
             })
 
+        # 사운드 이펙트 트랙 처리
+        for sfx in sfx_tracks:
+            effect_id = sfx.get("effect_id")
+            page = sfx.get("page", 1)
+            volume = sfx.get("volume", 0.7)
+
+            sfx_obj = SoundEffectLibrary.objects.filter(
+                id=effect_id, user=request.api_user
+            ).first()
+
+            if not sfx_obj or not sfx_obj.audio_file:
+                print(f"⚠️ [API] SFX {effect_id} 없음, 건너뜀")
+                continue
+
+            # SFX 시작 시간 = 해당 페이지 시작 타임스탬프
+            start_time = 0
+            if timestamps and page > 1 and page - 2 < len(timestamps):
+                start_time = timestamps[page - 2].get("endTime", 0)
+
+            # SFX 오디오 길이로 종료 시간 계산
+            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp:
+                tmp.write(sfx_obj.audio_file.read())
+                temp_sfx_path = tmp.name
+                temp_bg_files.append(temp_sfx_path)
+
+            sfx_audio = AudioSegment.from_file(temp_sfx_path)
+            sfx_duration = len(sfx_audio)
+            end_time = start_time + sfx_duration
+
+            import math
+            volume_db = 20 * math.log10(max(volume, 0.01))
+
+            background_tracks_info.append({
+                'audioPath': temp_sfx_path,
+                'startTime': start_time,
+                'endTime': end_time,
+                'volume': volume_db,
+            })
+            print(f"🔊 [API] SFX '{sfx_obj.effect_name}' → {start_time}ms~{end_time}ms ({volume_db:.1f}dB)")
+
         if not background_tracks_info:
-            return api_response(error="유효한 배경음 트랙이 없습니다.", status=400)
+            return api_response(error="유효한 배경음/사운드 이펙트 트랙이 없습니다.", status=400)
 
         # 믹싱 실행
-        print(f"🎼 [API] 배경음 믹싱: {len(background_tracks_info)}개 트랙")
+        print(f"🎼 [API] 배경음+SFX 믹싱: {len(background_tracks_info)}개 트랙")
         mixed_path = mix_audio_with_background(current_audio_path, background_tracks_info)
 
         # 임시 파일 정리
