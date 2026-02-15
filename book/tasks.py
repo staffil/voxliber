@@ -321,17 +321,18 @@ def process_batch_audiobook(self, data, user_id):
                             pass
                     return {'success': False, 'error': f'오디오 병합 실패: {str(e)}'}
 
-                # DB 저장
+                # DB 저장 (절대 경로 → FileField로 올바르게 저장)
                 try:
-                    content = Content.objects.create(
+                    content = Content(
                         book=book,
                         title=ep_title,
                         number=ep_number,
                         text="\n".join([p.get('text', '') for p in pages]),
-                        audio_file=merged_file,
                         audio_timestamps=timestamps,
-                        duration_seconds=int(total_duration)  # 🔥 정수로 변환
+                        duration_seconds=int(total_duration)
                     )
+                    with open(merged_file, 'rb') as f:
+                        content.audio_file.save(os.path.basename(merged_file), File(f), save=True)
                 except Exception as e:
                     # 병합 파일 삭제
                     if merged_file and os.path.exists(merged_file):
@@ -353,6 +354,10 @@ def process_batch_audiobook(self, data, user_id):
                     'duration': total_duration,
                     'page_count': len(pages)
                 }
+
+                # 임시 병합 파일 정리 (이미 FileField로 복사됨)
+                if merged_file and os.path.exists(merged_file):
+                    os.remove(merged_file)
 
                 # 임시 TTS 파일 정리
                 for f in audio_files:
@@ -477,8 +482,15 @@ def process_batch_audiobook(self, data, user_id):
                         )
 
                         if mixed_file and os.path.exists(mixed_file):
-                            content.audio_file = mixed_file
-                            content.save()
+                            old_path = content.audio_file.path if content.audio_file else None
+                            with open(mixed_file, 'rb') as f:
+                                content.audio_file.save(os.path.basename(mixed_file), File(f), save=True)
+                            # 이전 오디오 파일 삭제
+                            if old_path and os.path.exists(old_path):
+                                os.remove(old_path)
+                            # 임시 믹싱 파일 삭제
+                            if os.path.exists(mixed_file):
+                                os.remove(mixed_file)
                             print(f"✅ 배경음/효과음 믹싱 완료")
                         else:
                             print(f"⚠️ 믹싱 실패, 원본 유지")
