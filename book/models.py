@@ -540,6 +540,7 @@ class AudioBookGuide(models.Model):
             ('voiceSetting', '음성 설정'),
             ('preview', '미리듣기'),
             ('etc', '기타'),
+            ('fast', "초보자 가이드")
         ],
         default='etc'
     )

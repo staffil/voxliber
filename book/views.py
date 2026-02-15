@@ -2602,10 +2602,15 @@ def book_serilazation_fast_view(request, book_uuid):
     
     next_episode_number = (last_episode['number__max'] or 0) + 1
     
+    # 초보자 가이드 (fast 카테고리)
+    from book.models import AudioBookGuide
+    guides = AudioBookGuide.objects.filter(category='fast', is_active=True).order_by('order_num')
+
     context = {
         'book': book,
         'voice_list': voice_list,
         'next_episode_number': next_episode_number,
+        'guides': guides,
     }
     return render(request, 'book/book_serialization_fast.html', context)
 

@@ -75,8 +75,31 @@
 <div class="container">
     <!-- 헤더 -->
     <div class="header-section">
-        <h1>오디오북 생성기</h1>
-        <p>번호로 캐릭터를 지정하고, 소설 텍스트를 붙여넣으세요</p>
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div>
+                <h1>오디오북 생성기</h1>
+                <p>번호로 캐릭터를 지정하고, 소설 텍스트를 붙여넣으세요</p>
+            </div>
+            <div style="display:flex; gap:8px; flex-shrink:0;">
+                <a href="/voice/voice/list/" class="btn-header-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    오디오 목록
+                </a>
+                {% if guides %}
+                <button class="btn-header-guide" onclick="document.getElementById('guideModal').classList.add('active')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    사용 가이드
+                </button>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
     <!-- 모바일 JSON 보기 버튼 -->
@@ -262,6 +285,54 @@
 <!-- 모바일 JSON 오버레이 배경 -->
 <div class="mobile-json-overlay" id="mobileJsonOverlay" onclick="toggleMobileJSON()"></div>
 
+<!-- 사용 가이드 모달 -->
+{% if guides %}
+<div class="modal-overlay" id="guideModal">
+    <div class="modal-content" style="max-width:700px;">
+        <div class="modal-header">
+            <h3>사용 가이드</h3>
+            <button class="modal-close" onclick="document.getElementById('guideModal').classList.remove('active')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="guide-list">
+                {% for guide in guides %}
+                <div class="guide-item" onclick="toggleGuideDetail(this)">
+                    <div class="guide-item-header">
+                        {% if guide.thumbnail %}
+                        <img src="{{ guide.thumbnail.url }}" class="guide-thumb" alt="">
+                        {% endif %}
+                        <div class="guide-item-info">
+                            <h4>{{ guide.title }}</h4>
+                            {% if guide.short_description %}
+                            <p>{{ guide.short_description }}</p>
+                            {% endif %}
+                        </div>
+                        <svg class="guide-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </div>
+                    <div class="guide-detail">
+                        {% if guide.description %}
+                        <div class="guide-description">{{ guide.description|linebreaksbr }}</div>
+                        {% endif %}
+                        {% if guide.guide_video %}
+                        <video class="guide-video" controls preload="none">
+                            <source src="{{ guide.guide_video.url }}" type="video/mp4">
+                        </video>
+                        {% elif guide.video_url %}
+                        <div class="guide-video-wrap">
+                            <iframe src="{{ guide.video_url }}" frameborder="0" allowfullscreen></iframe>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- 로딩 오버레이 -->
 <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-content">
@@ -286,6 +357,11 @@ const bookId = "{{ book.public_uuid }}";
 const nextEpisodeNumber = {{ next_episode_number }};
 
 // 이미지 관련 로직은 book_serialization_fast.js에서 처리
+
+// 가이드 아코디언 토글
+function toggleGuideDetail(el) {
+    el.classList.toggle('open');
+}
 </script>
 <script src="{% static 'js/book/book_serialization_fast.js' %}"></script>
 
