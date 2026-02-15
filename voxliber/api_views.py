@@ -251,7 +251,7 @@ def api_create_episode(request):
         if audio_paths:
             # 3. 오디오 병합 (merge_audio_files)
             print(f"🔀 [API] {len(audio_paths)}개 오디오 병합 중...")
-            merged_path, timestamps_info = merge_audio_files(audio_paths, pages_text)
+            merged_path, timestamps_info, _ = merge_audio_files(audio_paths, pages_text)
 
             if merged_path and os.path.exists(merged_path):
                 # 4. 병합된 오디오 저장
