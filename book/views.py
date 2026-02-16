@@ -2799,6 +2799,99 @@ def ai_analyze_audiobook(request):
     return JsonResponse(enhanced_data)
 
 
+# ==================== AI 화자 자동 분류 (OpenAI GPT) ====================
+@login_required
+@require_POST
+def ai_assign_speakers(request):
+    """
+    자연어 소설 텍스트를 받아서 GPT로 화자 분류 후 N: 텍스트 형식으로 반환.
+
+    POST /book/json/ai-speakers/
+    Body: { "text": "소설 원문...", "characters": { "0": "나레이션", "1": "지우", "2": "도현" } }
+    Response: { "formatted_text": "0: [calm] 비 오는 밤이었다.\n1: [sad] \"넌 항상 늦어.\"\n..." }
+    """
+    try:
+        data = json_module.loads(request.body)
+    except json_module.JSONDecodeError:
+        return JsonResponse({'error': 'JSON 파싱 실패'}, status=400)
+
+    text = data.get('text', '').strip()
+    characters = data.get('characters', {})
+
+    if not text:
+        return JsonResponse({'error': '텍스트가 비어있습니다.'}, status=400)
+    if not characters:
+        return JsonResponse({'error': '캐릭터가 등록되지 않았습니다.'}, status=400)
+
+    # 캐릭터 목록 문자열 생성
+    char_lines = []
+    for num, name in sorted(characters.items(), key=lambda x: int(x[0])):
+        char_lines.append(f"{num}: {name}")
+    char_list_str = "\n".join(char_lines)
+
+    prompt = f"""당신은 한국어 소설/오디오북의 화자 분류 전문가입니다.
+아래 소설 텍스트를 읽고, 각 줄에 적절한 캐릭터 번호를 매겨주세요.
+
+=== 등록된 캐릭터 ===
+{char_list_str}
+
+=== 소설 텍스트 ===
+{text}
+
+=== 핵심 규칙: 줄바꿈 기준 분류 ===
+- 입력 텍스트의 각 줄(줄바꿈으로 구분된 단위)을 하나의 단위로 취급하세요
+- 각 줄을 통째로 하나의 캐릭터 번호에 배정하세요
+- 빈 줄은 무시하세요
+- 절대로 한 줄을 여러 줄로 쪼개지 마세요 (줄 수를 유지!)
+
+=== 화자 판단 규칙 ===
+1. 서술/묘사/나레이션만 있는 줄 → 0번
+2. "대사"가 포함된 줄 → 해당 캐릭터 번호
+3. 나레이션+대사가 섞인 줄 → 대사의 화자 번호로 배정
+4. 대사 앞뒤 문맥(누가 말했는지)으로 화자 판단
+5. 각 줄 앞에 감정 태그 1~2개 추가
+6. 나레이션은 해라체/문어체 유지
+7. 대사는 쌍따옴표로 감싸기
+
+=== 출력 형식 ===
+1: "안녕하세요"
+0: "태아가 와서 말했다. 태아의 반짝이는 눈동자가 나의 마음을 흔들었다. 어떻게 이렇게 이쁠수가 있을까? 정말 가슴이 뛰었다
+2: "아, 안녕하세요"
+0: 내가 말했다.
+3: "오랜만이네요"
+0: 태아가 말했다.
+
+- 원본 텍스트의 위치와 띄어쓰기, 문장을 변경하지 마세요. 오직 앞에 번호만 붙이세요.
+(문장은 여러개이지만 같은 캐릭터일 경우 하나의 번호만 지정하세요. 나레이션이 말할거 같은 택스트는 무조건 0으로 번호를 지정하세요.
+, 입력과 같은 줄 수 유지, 다른 설명 없이 결과만 출력)"""
+
+    try:
+        from book.utils import openai_client
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "소설 텍스트의 화자를 분류하고 번호를 매기는 전문가입니다. 지시된 형식으로만 출력하세요."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=8000
+        )
+
+        result_text = response.choices[0].message.content.strip()
+
+        # 마크다운 코드블록 제거
+        if result_text.startswith('```'):
+            result_text = result_text.split('\n', 1)[1] if '\n' in result_text else result_text[3:]
+        if result_text.endswith('```'):
+            result_text = result_text[:-3]
+        result_text = result_text.strip()
+
+        return JsonResponse({'formatted_text': result_text})
+
+    except Exception as e:
+        return JsonResponse({'error': f'GPT API 오류: {str(e)}'}, status=500)
+
+
 # ==================== 배치 JSON 실행 (Celery 비동기) ====================
 @login_required
 @require_POST

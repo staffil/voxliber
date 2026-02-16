@@ -90,6 +90,7 @@ urlpatterns=[
     path("serialization/fast/<uuid:book_uuid>/", views.book_serilazation_fast_view, name="book_serilazation_fast_view"),
     path("json/generate/", views.process_json_audiobook, name="process_json_audiobook"),
     path("json/ai-generate/", views.ai_analyze_audiobook, name="ai_analyze_audiobook"),
+    path("json/ai-speakers/", views.ai_assign_speakers, name="ai_assign_speakers"),
     path("json/task-status/<str:task_id>/", views.audiobook_task_status, name="audiobook_task_status"),
 
 

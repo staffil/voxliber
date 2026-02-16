@@ -259,6 +259,78 @@ function generateJSONPreview() {
     return jsonData;
 }
 
+// ==================== AI 화자 분류 (자연어 → N: 형식) ====================
+async function aiAssignSpeakers() {
+    const novelText = document.getElementById('novelText');
+    const text = novelText ? novelText.value.trim() : '';
+
+    if (!text) {
+        showStatus('소설 텍스트를 입력하세요', 'error');
+        return;
+    }
+
+    // 이미 N: 형식인지 간단 체크
+    const lines = text.split('\n').filter(l => l.trim());
+    const numberedLines = lines.filter(l => /^\d+\s*:/.test(l.trim()));
+    if (numberedLines.length > lines.length * 0.5) {
+        if (!confirm('이미 번호가 매겨진 텍스트가 포함되어 있습니다.\nAI 화자 분류를 실행하면 텍스트가 덮어쓰기됩니다.\n계속하시겠습니까?')) {
+            return;
+        }
+    }
+
+    // 캐릭터 맵 수집
+    const characters = {};
+    document.querySelectorAll('.character-item').forEach(item => {
+        const num = parseInt(item.dataset.number);
+        const nameInput = item.querySelector('.character-name');
+        const name = nameInput ? nameInput.value.trim() : '';
+        if (name) {
+            characters[num] = name;
+        } else if (num === 0) {
+            characters[0] = '나레이션';
+        }
+    });
+
+    if (Object.keys(characters).length < 2) {
+        showStatus('캐릭터를 최소 1명 이상 등록하세요 (나레이션 + 캐릭터)', 'error');
+        return;
+    }
+
+    showLoading('AI 화자 분류 중...', 'GPT가 텍스트를 분석하고 있습니다');
+
+    try {
+        const response = await fetch('/book/json/ai-speakers/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ text, characters })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'AI 분류 실패');
+        }
+
+        const result = await response.json();
+        hideLoading();
+
+        if (result.formatted_text) {
+            novelText.value = result.formatted_text;
+            updateCharCount();
+            showStatus(`AI 화자 분류 완료 - 결과를 확인하고 필요시 수정하세요`, 'success');
+        } else {
+            showStatus('AI 응답이 비어있습니다', 'error');
+        }
+
+    } catch (error) {
+        hideLoading();
+        showStatus('AI 오류: ' + error.message, 'error');
+        console.error('AI 화자 분류 오류:', error);
+    }
+}
+
 // ==================== AI 생성 (텍스트 분석 → BGM/SFX/효과 자동 추가) ====================
 async function aiGenerate() {
     // 먼저 기본 JSON 생성
