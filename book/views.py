@@ -1502,7 +1502,7 @@ def book_snap_list(request):
     # 첫 번째 스냅으로 리디렉션 (유튜브 쇼츠 스타일)
     first_snap = BookSnap.objects.first()
     if first_snap:
-        return redirect('book:book_snap_detail', snap_id=first_snap.id)
+        return redirect('book:book_snap_detail', snap_uuid=first_snap.public_uuid)
 
     # 스냅이 없으면 빈 페이지
     return render(request, "book/snap/snap_detail.html", {"no_snaps": True})
@@ -1740,6 +1740,7 @@ def delete_snap(request, snap_uuid):
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 import uuid  # 필요 시
+import random
 
 @login_required_to_main
 def book_snap_detail(request, snap_uuid):
@@ -1751,48 +1752,51 @@ def book_snap_detail(request, snap_uuid):
     is_authorized = request.user.is_authenticated and request.user.is_adult()
     show_blur = is_adult_content and not is_authorized
 
-    # 모든 스냅 UUID 리스트 - 최신순으로 변경 추천
+    # 🔥 UUID를 처음부터 문자열로 통일
     all_snap_uuids = list(
         BookSnap.objects
+        .order_by('-created_at')
         .values_list('public_uuid', flat=True)
-        .order_by('-created_at')  # ← 최신이 위로 오게 (또는 '-views' 등)
     )
 
-    # 디버깅 로그 강화
-    print(f"[DEBUG] 전체 스냅 개수: {len(all_snap_uuids)}")
-    if all_snap_uuids:
-        print(f"[DEBUG] 리스트 첫 3개: {all_snap_uuids[:3]}")
-        print(f"[DEBUG] 리스트 마지막 3개: {all_snap_uuids[-3:]}")
+    # UUID → 문자열 변환 (완전 통일)
+    all_snap_uuids = [str(uuid) for uuid in all_snap_uuids]
+    current_str_uuid = str(snap.public_uuid)
 
-    # 문자열로 비교하기 위해 모두 str로 변환
-    all_snap_str_uuids = [str(u) for u in all_snap_uuids]
-    current_str_uuid = str(snap_uuid)  # 요청된 uuid를 문자열로
+    print(f"[DEBUG] 전체 스냅 개수: {len(all_snap_uuids)}")
 
     try:
-        current_index = all_snap_str_uuids.index(current_str_uuid)
-        print(f"[DEBUG] 현재 인덱스: {current_index} (UUID 매칭 성공)")
+        current_index = all_snap_uuids.index(current_str_uuid)
+        print(f"[DEBUG] 현재 인덱스: {current_index}")
     except ValueError:
-        print(f"[ERROR] UUID 매칭 실패! 리스트에 {current_str_uuid} 없음")
+        print(f"[ERROR] UUID 매칭 실패")
         current_index = 0
 
-    prev_snap_uuid = all_snap_uuids[current_index - 1] if current_index > 0 else None
-    next_snap_uuid = all_snap_uuids[current_index + 1] if current_index < len(all_snap_uuids) - 1 else None
-    if next_snap_uuid is None and len(all_snap_uuids) > 1:
-            # 자기 자신 제외한 나머지 중 랜덤 하나 뽑기
-            candidates = [uuid for uuid in all_snap_uuids if uuid != snap.public_uuid]
-            if candidates:
-                next_snap_uuid = random.choice(candidates)
-                print(f"[DEBUG] 랜덤 다음 스냅 선택: {next_snap_uuid}")
+    # 이전 / 다음
+    prev_snap_uuid = (
+        all_snap_uuids[current_index - 1]
+        if current_index > 0 else None
+    )
 
-    # 이전도 필요하면 랜덤으로 (보통은 안 해도 되지만 일관성 위해)
+    next_snap_uuid = (
+        all_snap_uuids[current_index + 1]
+        if current_index < len(all_snap_uuids) - 1 else None
+    )
+
+    # 🔥 끝이면 UUID 기준 랜덤 선택
+    if next_snap_uuid is None and len(all_snap_uuids) > 1:
+        candidates = [uuid for uuid in all_snap_uuids if uuid != current_str_uuid]
+        if candidates:
+            next_snap_uuid = random.choice(candidates)
+
     if prev_snap_uuid is None and len(all_snap_uuids) > 1:
-        candidates = [uuid for uuid in all_snap_uuids if uuid != snap.public_uuid]
+        candidates = [uuid for uuid in all_snap_uuids if uuid != current_str_uuid]
         if candidates:
             prev_snap_uuid = random.choice(candidates)
+
     print(f"[DEBUG] prev_snap_uuid: {prev_snap_uuid}")
     print(f"[DEBUG] next_snap_uuid: {next_snap_uuid}")
 
-    # 댓글 (기존 그대로)
     comments = snap.comments.filter(parent=None).order_by('-created_at')
 
     context = {
@@ -1804,7 +1808,9 @@ def book_snap_detail(request, snap_uuid):
         "current_position": current_index + 1,
         "show_blur": show_blur,
     }
+
     return render(request, "book/snap/snap_detail.html", context)
+
 
 # 좋아요 API
 @require_POST
