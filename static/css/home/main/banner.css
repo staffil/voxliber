@@ -1,5 +1,5 @@
 /* ========================================
-   Promo Banner - Enhanced Slider (반응형 재작업)
+   Promo Banner - Enhanced Slider
    ======================================== */
 .promo-container-wrapper {
   position: relative;
@@ -19,13 +19,13 @@
 }
 
 .promo-banner {
-  flex: 0 0 88%;           /* 양옆 배너 살짝 보이게 → gap 효과 */
+  flex: 0 0 88%;
   width: 88%;
-  aspect-ratio: 16 / 7;    /* Flutter와 동일한 비율 */
+  aspect-ratio: 16 / 5;    /* 16:5 비율 */
   position: relative;
   overflow: hidden;
   border-radius: 12px;
-  margin: 0 6px;           /* 배너 사이 gap */
+  margin: 0 6px;
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.2);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -165,7 +165,7 @@
   height: 18px;
 }
 
-/* 인디케이터 - Flutter WormEffect와 동일하게 */
+/* 인디케이터 */
 .promo-indicators {
   display: flex;
   gap: 6px;
@@ -195,7 +195,6 @@
    반응형
    ======================================== */
 
-/* 1200px 이하 */
 @media (max-width: 1200px) {
   .promo-banner {
     flex: 0 0 90%;
@@ -203,7 +202,6 @@
   }
 }
 
-/* 992px 이하 */
 @media (max-width: 992px) {
   .promo-banner {
     flex: 0 0 92%;
@@ -220,7 +218,6 @@
   }
 }
 
-/* 768px 이하 */
 @media (max-width: 768px) {
   .promo-banner {
     flex: 0 0 94%;
@@ -270,7 +267,6 @@
   }
 }
 
-/* 480px 이하 */
 @media (max-width: 480px) {
   .promo-banner {
     flex: 0 0 95%;
@@ -319,7 +315,6 @@
   }
 }
 
-/* 310px 이하 */
 @media (max-width: 310px) {
   .promo-banner {
     border-radius: 6px;
