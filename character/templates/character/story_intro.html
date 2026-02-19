@@ -136,7 +136,7 @@
             {% if llm_list %}
             <div class="character-grid">
                 {% for character in llm_list %}
-                <a href="{% url 'character:ai_intro' character.public_uuid %}" class="character-card-link">
+                <a href="{% url 'character:ai_intro' character.public_uuid %}" class="character-card-link" data-login-required>
                     <div class="character-card">
                         <div class="card-image-wrapper">
                             {% if character.llm_image %}

@@ -138,7 +138,7 @@
             <div class="intro-description-label">같은 스토리의 다른 캐릭터</div>
             <div class="other-llms-grid">
                 {% for other in other_llms %}
-                <a href="{% url 'character:ai_intro' other.public_uuid %}" class="character-card-link">
+                <a href="{% url 'character:ai_intro' other.public_uuid %}" class="character-card-link" data-login-required>
                     <div class="character-card">
                         <div class="card-image-wrapper">
                             {% if other.llm_image %}

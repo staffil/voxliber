@@ -155,7 +155,7 @@ def make_ai_story(request, story_uuid=None):
     return render(request, "character/make_ai_story.html", context)
 
 
-
+@login_required_to_main
 def story_detail(request, story_uuid):
     story = get_object_or_404(Story, public_uuid=story_uuid, user=request.user)
     characters = story.characters.all().order_by('created_at')
@@ -972,7 +972,7 @@ def photo_view(request, uuid):
     return render(request, "character/photo.html", {'ad': ad, 'next_url': next_url})
 
 
-
+@login_required_to_main
 def ai_intro(request, llm_uuid):
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
     is_preview = request.GET.get('preview', False)
