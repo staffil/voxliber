@@ -28,7 +28,7 @@
 .promo-banner img {
   width: 100%;
   height: 100%;
-  object-fit: contain;        /* cover → contain 으로 변경 */
+  object-fit: cover;        /* cover → contain 으로 변경 */
   object-position: center;
   background-color: #1a1a2e;  /* 이미지 비율 외 빈 영역 배경색 */
   transition: transform 0.6s ease;
