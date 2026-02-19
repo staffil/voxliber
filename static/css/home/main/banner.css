@@ -20,36 +20,34 @@
 .promo-banner {
   flex: 0 0 100%;
   width: 100%;
-  height: 500px;
+  height: auto;           /* 고정 height 제거 */
+  aspect-ratio: 16 / 5;  /* 이미지 비율에 맞게 */
   position: relative;
   overflow: hidden;
   border-radius: 10px;
 }
+
 .promo-banner img {
   width: 100%;
   height: 100%;
-  object-fit: contain; 
-    background-color: #1a1a2e;
-    transition: transform 0.6s ease;
-  image-rendering: -webkit-optimize-contrast; /* Chrome */
-  image-rendering: crisp-edges;               /* Firefox */
-}
-@media (max-width: 1200px) {
-  .promo-banner { height: 300px; }
-}
-@media (max-width: 992px) {
-  .promo-banner { height: 250px; }
-}
-@media (max-width: 768px) {
-  .promo-banner { height: 200px; }
-}
-@media (max-width: 480px) {
-  .promo-banner { height: auto; aspect-ratio: 3 / 1; }
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.6s ease;
 }
 .promo-banner:hover img {
   transform: scale(1.08);
 }
+@media (max-width: 768px) {
+  .promo-banner {
+    aspect-ratio: 3 / 1;
+  }
+}
 
+@media (max-width: 480px) {
+  .promo-banner {
+    aspect-ratio: 2.5 / 1;
+  }
+}
 /* 광고 타이틀 - 왼쪽 하단 */
 .promo-title {
   position: absolute;
