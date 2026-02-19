@@ -40,13 +40,13 @@
   .promo-banner { height: 300px; }
 }
 @media (max-width: 992px) {
-  .promo-banner { height: 250px; }
+  .promo-banner { height: 250px;  object-fit: cover; }
 }
 @media (max-width: 768px) {
-  .promo-banner { height: 200px; }
+  .promo-banner { height: 200px;  object-fit: cover;}
 }
 @media (max-width: 480px) {
-  .promo-banner { height: auto; aspect-ratio: 3 / 1; }
+  .promo-banner { height: auto; aspect-ratio: 3 / 1; object-fit: cover; }
 }
 /* 광고 타이틀 - 왼쪽 하단 */
 .promo-title {
