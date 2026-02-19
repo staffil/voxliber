@@ -489,8 +489,7 @@ def ai_preview(request, llm_uuid):
     return render(request, "character/ai_intro_preview.html", context)
 
 
-
-
+from advertisment.models import Advertisement, AdImpression, UserAdCounter
 from django.urls import reverse
 @csrf_exempt
 def chat_logic(request, llm_uuid):
@@ -564,6 +563,21 @@ def chat_logic(request, llm_uuid):
                 raw_response = generate_response_grok(llm, chat_history, user_text, current_hp, max_hp, story_hint=story_title, story_next= story_second)
             else:
                 raw_response = generate_response_gpt(llm, chat_history, user_text, current_hp, max_hp, story_hint=story_title, story_next= story_second)
+
+            ad_url = None
+            if request.user.is_authenticated:
+                counter, _ = UserAdCounter.objects.get_or_create(user=request.user)
+                counter.chat_message_count += 1
+                counter.save()
+
+                if counter.chat_message_count % 10 == 0:
+                    ad = (
+                        Advertisement.objects
+                        .filter(ad_type='image', placement='chat', is_active=True)
+                        .order_by('?').first()
+                    )
+                    if ad:
+                        ad_url = f"/character/ads/photo/{ad.public_uuid}/?next=/character/chat/{llm_uuid}/"
 
             # 4. HP 변경 파싱 및 처리
             clean_response, hp_change = parse_hp_from_response(raw_response)
@@ -644,6 +658,8 @@ def chat_logic(request, llm_uuid):
                 'hp': current_hp,
                 'max_hp': max_hp,
                 'redirect': redirect_url,
+                'ad_url': ad_url, 
+                
                 
             })
 
@@ -659,10 +675,24 @@ def chat_logic(request, llm_uuid):
 def chat_view(request, llm_uuid):
     llm = get_object_or_404(LLM, public_uuid=llm_uuid)
 
-
     if request.method == 'GET':
-        # 채팅 페이지 최초 로드
-        # 로그인 사용자면 기존 대화 가져오기, 비로그인이면 새로 생성
+
+        # 로그인 유저 → 채팅 카운터 확인 후 광고 분기
+        if request.user.is_authenticated and request.GET.get('skip_ad') != '1':
+            counter, _ = UserAdCounter.objects.get_or_create(user=request.user)
+            if counter.chat_message_count > 0 and counter.chat_message_count % 10 == 0:
+                ad = (
+                    Advertisement.objects
+                    .filter(ad_type='image', placement='chat', is_active=True)
+                    .order_by('?')
+                    .first()
+                )
+                if ad:
+                    # 같은 카운트에서 반복 노출 방지
+                    counter.chat_message_count += 1
+                    counter.save()
+                    return redirect(f"/ads/photo/{ad.public_uuid}/?next=/character/chat/{llm_uuid}/")
+
         if request.user.is_authenticated:
             conversation, _ = Conversation.objects.get_or_create(
                 user=request.user,
@@ -670,50 +700,42 @@ def chat_view(request, llm_uuid):
                 defaults={'created_at': timezone.now()}
             )
         else:
-            # 비로그인 사용자 → 새 대화 생성
             conversation = Conversation.objects.create(
                 user=None,
                 llm=llm,
                 created_at=timezone.now()
             )
 
-        # ConversationState 가져오기 또는 생성 (HP 저장용)
         conv_state, _ = ConversationState.objects.get_or_create(
             conversation=conversation,
             defaults={'character_stats': {'hp': 0, 'max_hp': 100}}
         )
-        
-        # HP 값 가져오기
-        current_hp = conv_state.character_stats.get('hp', 0)
-        max_hp = conv_state.character_stats.get('max_hp', 100)
 
-        # 최근 20개 메시지
+        current_hp = conv_state.character_stats.get('hp', 0)
+        max_hp     = conv_state.character_stats.get('max_hp', 100)
+
         messages = conversation.messages.order_by('created_at')
 
-        # 서브 이미지 + HP 매핑 가져오기
         sub_images_data = []
-        all_sub_images = llm.sub_images.all()
+        all_sub_images  = llm.sub_images.all()
         print(f"[DEBUG] LLM: {llm.name}, 서브 이미지 개수: {all_sub_images.count()}")
 
         for sub in all_sub_images:
-            hp_mapping = HPImageMapping.objects.filter(sub_image=sub).first()
-            min_hp_val = hp_mapping.min_hp if hp_mapping and hp_mapping.min_hp is not None else 0
-            max_hp_val = hp_mapping.max_hp if hp_mapping and hp_mapping.max_hp is not None else 100
-
-            image_url = sub.image.url if sub.image else ''
-            print(f"[DEBUG] 서브이미지 ID:{sub.id}, image_url: {image_url}, min_hp: {min_hp_val}, max_hp: {max_hp_val}")
-
+            hp_mapping  = HPImageMapping.objects.filter(sub_image=sub).first()
+            min_hp_val  = hp_mapping.min_hp if hp_mapping and hp_mapping.min_hp is not None else 0
+            max_hp_val  = hp_mapping.max_hp if hp_mapping and hp_mapping.max_hp is not None else 100
+            image_url   = sub.image.url if sub.image else ''
             sub_images_data.append({
                 'image_url': image_url,
-                'min_hp': min_hp_val,
-                'max_hp': max_hp_val,
-                'title': sub.title or '',
+                'min_hp':    min_hp_val,
+                'max_hp':    max_hp_val,
+                'title':     sub.title or '',
             })
 
-        loarbook_list = LoreEntry.objects.filter(llm_id = llm)
+        loarbook_list = LoreEntry.objects.filter(llm_id=llm)
 
-        lastimage = None
-        lastimage_url = None  # 새로 추가
+        lastimage     = None
+        lastimage_url = None
 
         if current_hp >= 100:
             hp_mapping = HPImageMapping.objects.filter(
@@ -727,60 +749,44 @@ def chat_view(request, llm_uuid):
                 lastimage = hp_mapping.sub_image
                 try:
                     lastimage_url = lastimage.image.url
-                    print(f"[SUCCESS] lastimage_url 생성 성공: {lastimage_url}")
                 except Exception as e:
                     print(f"[ERROR] lastimage.image.url 접근 실패: {e}")
                     lastimage_url = None
             else:
-                print("[FALLBACK] HP 매핑 실패 → 서브 이미지 검색")
                 fallback = LLMSubImage.objects.filter(
-                    llm=llm,
-                    image__isnull=False
+                    llm=llm, image__isnull=False
                 ).order_by('-order', '-created_at').first()
-
                 if fallback:
                     lastimage = fallback
                     try:
                         lastimage_url = fallback.image.url
-                        print(f"[FALLBACK SUCCESS] lastimage_url: {lastimage_url}")
                     except Exception as e:
                         print(f"[FALLBACK ERROR] url 접근 실패: {e}")
-                else:
-                    print("[ERROR] lastimage 완전히 없음")
-            
+
         last_ward_exists = UserLastWard.objects.filter(
             user=request.user,
             last_ward__llm=llm,
             is_public=False
         ).exists()
 
-
-        
-
         if current_hp >= 100 and last_ward_exists:
             return redirect('character:last_ward', llm_uuid=llm_uuid)
-        print(f"[DEBUG] HP 확인: {current_hp}, last_ward 존재: {last_ward_exists}")
 
-        print(f"[DEBUG] 최종 sub_images_data: {sub_images_data}")
-        print(f"[DEBUG] llm.llm_image: {llm.llm_image.url if llm.llm_image else '없음'}")
-        print(f"[DEBUG] current_hp: {current_hp}")
         last_wards = UserLastWard.objects.filter(user=request.user)
 
         context = {
-            'llm': llm,
-            'conversation': conversation,
-            'messages': messages,
-            'sub_images_data': sub_images_data,
-            'current_hp': current_hp,
-            'max_hp': max_hp,
-            "loarbook_list" :loarbook_list,
-            "lastimage":lastimage,
-            "last_wards":last_wards,
-            "last_ward_exists":last_ward_exists
-
+            'llm':              llm,
+            'conversation':     conversation,
+            'messages':         messages,
+            'sub_images_data':  sub_images_data,
+            'current_hp':       current_hp,
+            'max_hp':           max_hp,
+            'loarbook_list':    loarbook_list,
+            'lastimage':        lastimage,
+            'last_wards':       last_wards,
+            'last_ward_exists': last_ward_exists,
         }
         return render(request, "character/chat.html", context)
-
 
 @login_required_to_main
 def last_ward(request, llm_uuid):
@@ -923,11 +929,27 @@ def chat_tts(request, llm_uuid):
             except Exception as save_error:
                 logging.error(f"❌ 오디오 저장 실패: {save_error}")
 
+        ad_url = None
+        if request.user.is_authenticated:
+            counter, _ = UserAdCounter.objects.get_or_create(user=request.user)
+            counter.tts_count += 1
+            counter.save()
+
+            if counter.tts_count % 3 == 0:
+                ad = (
+                    Advertisement.objects
+                    .filter(ad_type='image', placement='tts', is_active=True)
+                    .order_by('?').first()
+                )
+                if ad:
+                    ad_url = f"/character/ads/photo/{ad.public_uuid}/?next=/character/chat/{llm_uuid}/"
+
         return JsonResponse({
             'success': True,
             'audio': f'data:audio/mpeg;base64,{audio_base64}',
             'audio_url': audio_url,
             'message_id': message_id,
+            'ad_url': ad_url, 
         })
 
     except Exception as e:
@@ -936,8 +958,18 @@ def chat_tts(request, llm_uuid):
 
 
 
+from advertisment.models import Advertisement, AdImpression, UserAdCounter
+def photo_view(request, uuid):
+    ad = get_object_or_404(Advertisement, public_uuid=uuid, ad_type='image', is_active=True)
 
+    AdImpression.objects.create(
+        ad=ad,
+        user=request.user if request.user.is_authenticated else None,
+        placement=ad.placement,
+    )
 
+    next_url = request.GET.get('next', '/')
+    return render(request, "character/photo.html", {'ad': ad, 'next_url': next_url})
 
 
 

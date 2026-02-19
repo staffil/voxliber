@@ -12,7 +12,7 @@ from django.conf import settings
 from register.decorator import login_required_to_main
 from character.models import LLM, Story, Conversation, ConversationMessage
 from book.utils import merge_audio_files
-
+from django.urls import reverse
 COLAB_TTS_URL = os.getenv('COLAB_TTS_URL', 'https://xxxx.ngrok-free.app')
 
 # 작품 등록 이용약관
@@ -897,36 +897,28 @@ def delete_book(request, book_uuid):
     book.delete()
     return JsonResponse({"success": True})
 
-
-# 에피소드 상세보기
-@login_required_to_main
 def content_detail(request, content_uuid):
     from book.models import Content, ReadingProgress, ListeningHistory, AuthorAnnouncement
+    from advertisment.models import UserAdCounter, Advertisement
     from django.utils import timezone
 
-    # 삭제되지 않은 에피소드만 조회 가능
     content = get_object_or_404(Content, public_uuid=content_uuid, is_deleted=False)
     book = content.book
 
-    # 이전/다음 에피소드 (삭제되지 않은 것만)
     prev_content = Content.objects.filter(book=book, number__lt=content.number, is_deleted=False).order_by('-number').first()
     next_content = Content.objects.filter(book=book, number__gt=content.number, is_deleted=False).order_by('number').first()
 
-    # 마지막 재생 위치 가져오기
     last_position = 0
     if request.user.is_authenticated:
         listening_history = ListeningHistory.objects.filter(
             user=request.user,
             content=content
         ).first()
-
         if listening_history:
             last_position = listening_history.last_position
 
-    # 작가 공지사항 가져오기
     announcements = AuthorAnnouncement.objects.filter(book=book).select_related('author')[:3]
 
-    # 로그인한 사용자의 독서 진행 상황 자동 업데이트
     if request.user.is_authenticated:
         progress, created = ReadingProgress.objects.get_or_create(
             user=request.user,
@@ -937,23 +929,52 @@ def content_detail(request, content_uuid):
                 'current_content': content,
             }
         )
-
-        # 현재 콘텐츠가 이미 읽은 것보다 뒤에 있거나 같으면 업데이트
         if content.number >= progress.last_read_content_number:
             progress.last_read_content_number = content.number
             progress.current_content = content
-            progress.last_read_at = timezone.now()  # 마지막 읽은 시간 업데이트
+            progress.last_read_at = timezone.now()
 
-            # 마지막 에피소드를 읽으면 완독 처리 (삭제되지 않은 것만 카운트)
             total_contents = book.contents.filter(is_deleted=False).count()
             if content.number >= total_contents:
                 progress.status = 'completed'
                 progress.completed_at = timezone.now()
             else:
-                # 완독이 아니면 읽는 중으로 상태 변경
                 progress.status = 'reading'
-
             progress.save()
+
+        # ── 광고 카운터 체크 ──────────────────────────────
+        skip_count = request.GET.get('skip_count')
+        
+        # 🔍 디버그
+        print(f"\n{'='*50}")
+        print(f"[content_detail] {content.number}화 진입")
+        print(f"[content_detail] skip_count 파라미터: {repr(skip_count)}")
+        print(f"[content_detail] 전체 URL: {request.get_full_path()}")
+
+        if not skip_count:
+            counter, _ = UserAdCounter.objects.get_or_create(user=request.user)
+            print(f"[content_detail] 카운터 증가 전: {counter.episode_play_count}")
+            counter.episode_play_count += 1
+            counter.save()
+            print(f"[content_detail] 카운터 증가 후: {counter.episode_play_count}")
+
+            if counter.episode_play_count % 3 == 0:
+                ad = Advertisement.objects.filter(
+                    placement='episode',
+                    ad_type='audio',
+                    is_active=True,
+                ).order_by('?').first()
+
+                if ad:
+                    next_uuid = content.public_uuid if content  else None
+                    redirect_url = reverse('book:ad_audio', kwargs={'uuid': ad.public_uuid})
+                    if next_uuid:
+                        redirect_url += f'?next={next_uuid}'
+                    return redirect(redirect_url)
+        else:
+            print(f"[content_detail] skip_count 있음 → 카운터 증가 안 함")
+        print(f"{'='*50}\n")
+        # ────────────────────────────────────────────────
 
     context = {
         "content": content,
@@ -964,7 +985,6 @@ def content_detail(request, content_uuid):
         "announcements": announcements,
     }
     return render(request, "book/content_detail.html", context)
-
 
 # 청취 시간 기록
 @login_required
@@ -1744,6 +1764,8 @@ import random
 
 @login_required_to_main
 def book_snap_detail(request, snap_uuid):
+    from advertisment.models import Advertisement, AdImpression
+
     snap = get_object_or_404(BookSnap, public_uuid=snap_uuid)
     print(f"요청된 snap_uuid (str): {snap_uuid}")
 
@@ -1752,15 +1774,28 @@ def book_snap_detail(request, snap_uuid):
     is_authorized = request.user.is_authenticated and request.user.is_adult()
     show_blur = is_adult_content and not is_authorized
 
-    # 🔥 UUID를 처음부터 문자열로 통일
+    # ── 광고 (20% 확률, 광고에서 돌아온 경우 skip) ──────────────
+    skip_ad = request.GET.get('skip_ad')
+    if not skip_ad and request.user.is_authenticated:
+        if random.random() < 0.2:
+            ad = Advertisement.objects.filter(
+                placement='snap',
+                ad_type='video',
+                is_active=True,
+            ).order_by('?').first()
+            if ad:
+                redirect_url = reverse('book:ad_video', kwargs={'uuid': ad.public_uuid})
+                redirect_url += f'?next={snap_uuid}'
+                return redirect(redirect_url)
+    # ────────────────────────────────────────────────────────────
+
+    # UUID 전체 목록
     all_snap_uuids = list(
         BookSnap.objects
         .order_by('-created_at')
         .values_list('public_uuid', flat=True)
     )
-
-    # UUID → 문자열 변환 (완전 통일)
-    all_snap_uuids = [str(uuid) for uuid in all_snap_uuids]
+    all_snap_uuids = [str(u) for u in all_snap_uuids]
     current_str_uuid = str(snap.public_uuid)
 
     print(f"[DEBUG] 전체 스냅 개수: {len(all_snap_uuids)}")
@@ -1772,25 +1807,23 @@ def book_snap_detail(request, snap_uuid):
         print(f"[ERROR] UUID 매칭 실패")
         current_index = 0
 
-    # 이전 / 다음
     prev_snap_uuid = (
         all_snap_uuids[current_index - 1]
         if current_index > 0 else None
     )
-
     next_snap_uuid = (
         all_snap_uuids[current_index + 1]
         if current_index < len(all_snap_uuids) - 1 else None
     )
 
-    # 🔥 끝이면 UUID 기준 랜덤 선택
+    # 끝이면 랜덤 선택
     if next_snap_uuid is None and len(all_snap_uuids) > 1:
-        candidates = [uuid for uuid in all_snap_uuids if uuid != current_str_uuid]
+        candidates = [u for u in all_snap_uuids if u != current_str_uuid]
         if candidates:
             next_snap_uuid = random.choice(candidates)
 
     if prev_snap_uuid is None and len(all_snap_uuids) > 1:
-        candidates = [uuid for uuid in all_snap_uuids if uuid != current_str_uuid]
+        candidates = [u for u in all_snap_uuids if u != current_str_uuid]
         if candidates:
             prev_snap_uuid = random.choice(candidates)
 
@@ -1811,6 +1844,33 @@ def book_snap_detail(request, snap_uuid):
 
     return render(request, "book/snap/snap_detail.html", context)
 
+
+
+def video_view(request, uuid):
+    from book.models import Content, BookSnap
+    ad = get_object_or_404(Advertisement, public_uuid=uuid, ad_type='video', is_active=True)
+
+    AdImpression.objects.create(
+        ad=ad,
+        user=request.user if request.user.is_authenticated else None,
+        placement=ad.placement,
+    )
+
+    next_uuid = request.GET.get('next', None)
+
+    # snap에서 온 경우 vs content에서 온 경우 구분
+    next_content = None
+    next_snap = None
+    if next_uuid:
+        next_content = Content.objects.filter(public_uuid=next_uuid, is_deleted=False).first()
+        if not next_content:
+            next_snap = BookSnap.objects.filter(public_uuid=next_uuid).first()
+
+    return render(request, "book/snap/video.html", {
+        'ad': ad,
+        'next_content': next_content,
+        'next_snap': next_snap,
+    })
 
 # 좋아요 API
 @require_POST
@@ -2976,3 +3036,69 @@ def audiobook_task_status(request, task_id):
         }
 
     return JsonResponse(response)
+
+
+
+
+from advertisment.models import Advertisement, AdImpression
+
+
+
+def audio_view(request, uuid):
+    from book.models import Content
+    ad = get_object_or_404(Advertisement, public_uuid=uuid, ad_type='audio', is_active=True)
+
+    AdImpression.objects.create(
+        ad=ad,
+        user=request.user if request.user.is_authenticated else None,
+        placement=ad.placement,
+    )
+
+    next_content_uuid = request.GET.get('next', None)
+    next_content = None
+    if next_content_uuid:
+        next_content = Content.objects.filter(public_uuid=next_content_uuid, is_deleted=False).first()
+
+    # 🔍 디버그
+    print(f"\n{'='*50}")
+    print(f"[audio_view] 광고 페이지 진입")
+    print(f"[audio_view] next_content_uuid: {next_content_uuid}")
+    print(f"[audio_view] next_content: {next_content.number if next_content else None}화")
+    print(f"[audio_view] 전체 URL: {request.get_full_path()}")
+    print(f"{'='*50}\n")
+
+    return render(request, "book/audio.html", {
+        'ad': ad,
+        'next_content': next_content,
+    })
+
+
+# 클릭 기록 API
+@require_POST
+def ad_skip(request, uuid):
+    ad = get_object_or_404(Advertisement, public_uuid=uuid)
+    data = json.loads(request.body)
+    watched_seconds = data.get('watched_seconds', 0)
+
+    AdImpression.objects.filter(
+        ad=ad,
+        user=request.user if request.user.is_authenticated else None,
+    ).order_by('-created_at').update(
+        is_skipped=True,
+        watched_seconds=watched_seconds
+    )
+    return JsonResponse({'status': 'ok'})
+
+
+@require_POST  
+def ad_click(request, uuid):
+    ad = get_object_or_404(Advertisement, public_uuid=uuid)
+
+    AdImpression.objects.filter(
+        ad=ad,
+        user=request.user if request.user.is_authenticated else None,
+    ).order_by('-created_at').update(
+        is_clicked=True,
+        clicked_at=timezone.now()
+    )
+    return JsonResponse({'status': 'ok', 'redirect_url': ad.link_url})

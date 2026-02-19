@@ -1,0 +1,722 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}광고 신청 - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<style>
+    .wrap {
+        max-width: 720px;
+        margin: 80px auto 60px;
+        padding: 0 20px;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 4px;
+        background: #111;
+        border-radius: 12px;
+        padding: 4px;
+        margin-bottom: 32px;
+    }
+
+    .tab-btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        background: transparent;
+        color: #666;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .tab-btn.active { background: #222; color: #fff; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .form-card {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 16px;
+        padding: 28px;
+    }
+
+    .section-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #444;
+        margin: 24px 0 14px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #222;
+    }
+
+    .section-label:first-child { margin-top: 0; }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+
+    .form-group { margin-bottom: 14px; }
+
+    .form-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #ccc;
+        margin-bottom: 8px;
+    }
+
+    .form-label span { color: #e74c3c; margin-left: 2px; }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+        width: 100%;
+        background: #111;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        color: #fff;
+        font-size: 14px;
+        padding: 12px 16px;
+        outline: none;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus { border-color: #444; }
+    .form-textarea { resize: vertical; min-height: 80px; }
+
+    .type-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .type-card {
+        border: 2px solid #2a2a2a;
+        border-radius: 12px;
+        padding: 16px 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .type-card.selected { border-color: #fff; background: rgba(255,255,255,0.04); }
+    .type-card input[type="radio"] { display: none; }
+    .type-icon { font-size: 24px; margin-bottom: 5px; }
+    .type-name { font-size: 13px; font-weight: 600; }
+    .type-desc { font-size: 11px; color: #555; margin-top: 2px; }
+
+    .file-upload-area {
+        border: 2px dashed #2a2a2a;
+        border-radius: 12px;
+        padding: 30px 20px;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s;
+    }
+
+    .file-upload-area:hover { border-color: #444; }
+    .file-upload-area.has-file { border-color: #4CAF50; border-style: solid; }
+    .file-upload-area input[type="file"] {
+        position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    .upload-icon { font-size: 28px; margin-bottom: 8px; }
+    .upload-text { font-size: 13px; color: #777; }
+    .upload-hint { font-size: 11px; color: #444; margin-top: 4px; }
+    .upload-filename { font-size: 13px; color: #4CAF50; margin-top: 6px; font-weight: 600; }
+
+    .media-preview { margin-top: 12px; display: none; border-radius: 10px; overflow: hidden; }
+    .media-preview img,
+    .media-preview video { width: 100%; max-height: 240px; object-fit: contain; background: #000; border-radius: 10px; }
+    .media-preview audio { width: 100%; margin-top: 4px; }
+
+    .submit-btn {
+        width: 100%;
+        padding: 15px;
+        background: #fff;
+        color: #000;
+        border: none;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        margin-top: 8px;
+    }
+
+    .submit-btn:hover { opacity: 0.85; }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* 목록 */
+    .ad-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .ad-item {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 14px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .ad-thumb {
+        width: 60px; height: 60px;
+        border-radius: 10px;
+        background: #111;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        overflow: hidden;
+    }
+
+    .ad-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .ad-info { flex: 1; min-width: 0; }
+
+    .ad-title {
+        font-size: 14px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ad-meta {
+        font-size: 12px;
+        color: #555;
+        margin-top: 5px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .type-tag {
+        background: #222;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 2px 7px;
+        font-size: 11px;
+        color: #777;
+    }
+
+    .ad-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    .ad-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .badge-pending   { background: rgba(255,193,7,0.12);  color: #ffc107; }
+    .badge-approved  { background: rgba(76,175,80,0.12);  color: #4CAF50; }
+    .badge-rejected  { background: rgba(231,76,60,0.12);  color: #e74c3c; }
+    .badge-completed { background: rgba(150,150,150,0.12);color: #888; }
+
+    .edit-btn {
+        padding: 5px 12px;
+        background: #222;
+        border: 1px solid #333;
+        border-radius: 20px;
+        color: #ccc;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .edit-btn:hover { background: #2a2a2a; color: #fff; border-color: #444; }
+
+    .empty-state { text-align: center; padding: 70px 20px; color: #555; }
+    .empty-icon { font-size: 44px; margin-bottom: 14px; }
+    .empty-text { font-size: 14px; margin-bottom: 20px; }
+    .empty-link { color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline; }
+
+    /* 수정 모달 */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.8);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 20px;
+        padding: 28px;
+        width: 100%;
+        max-width: 560px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+
+    .modal-title { font-size: 18px; font-weight: 700; }
+
+    .modal-close {
+        width: 32px; height: 32px;
+        border: none;
+        background: #222;
+        border-radius: 50%;
+        color: #888;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .modal-close:hover { background: #333; color: #fff; }
+
+    .toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(16px);
+        background: #222;
+        color: #fff;
+        padding: 13px 22px;
+        border-radius: 30px;
+        font-size: 14px;
+        font-weight: 600;
+        opacity: 0;
+        transition: all 0.3s;
+        z-index: 9999;
+        white-space: nowrap;
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { border: 1px solid #4CAF50; }
+    .toast.error   { border: 1px solid #e74c3c; }
+
+    @media (max-width: 480px) {
+        .form-row { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('form', this)">광고 신청</button>
+        <button class="tab-btn" onclick="switchTab('list', this)">
+            내 신청 목록{% if my_ads %} <span style="color:#888;font-weight:400;">({{ my_ads.count }})</span>{% endif %}
+        </button>
+    </div>
+
+    <!-- 신청 폼 탭 -->
+    <div class="tab-content active" id="tab-form">
+        <div class="form-card">
+            <form id="adForm">
+                {% csrf_token %}
+
+                <div class="section-label">광고주 정보</div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">회사명 <span>*</span></label>
+                        <input type="text" class="form-input" name="company_name" placeholder="(주)예시컴퍼니" maxlength="200">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">담당자명 <span>*</span></label>
+                        <input type="text" class="form-input" name="contact_name" placeholder="홍길동" maxlength="100">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">이메일 <span>*</span></label>
+                        <input type="email" class="form-input" name="email" placeholder="example@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">연락처</label>
+                        <input type="text" class="form-input" name="phone" placeholder="010-0000-0000">
+                    </div>
+                </div>
+
+                <div class="section-label">광고 정보</div>
+
+                <div class="type-grid">
+                    <label class="type-card selected">
+                        <input type="radio" name="ad_type" value="image" checked>
+                        <div class="type-icon">🖼️</div>
+                        <div class="type-name">이미지</div>
+                        <div class="type-desc">JPG · PNG · WEBP</div>
+                    </label>
+                    <label class="type-card">
+                        <input type="radio" name="ad_type" value="video">
+                        <div class="type-icon">🎬</div>
+                        <div class="type-name">영상</div>
+                        <div class="type-desc">MP4 · MOV</div>
+                    </label>
+                    <label class="type-card">
+                        <input type="radio" name="ad_type" value="audio">
+                        <div class="type-icon">🎵</div>
+                        <div class="type-name">오디오</div>
+                        <div class="type-desc">MP3 · WAV</div>
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">노출 위치 <span>*</span></label>
+                        <select class="form-select" name="placement" id="placementSelect">
+                            <option value="chat">채팅 중간</option>
+                            <option value="tts">TTS 재생 후</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">예산 (원)</label>
+                        <input type="number" class="form-input" name="budget" placeholder="0" min="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">광고 제목 <span>*</span></label>
+                    <input type="text" class="form-input" name="title" placeholder="광고 제목" maxlength="200">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">광고 설명</label>
+                    <textarea class="form-textarea" name="description" placeholder="간단한 설명 (선택)"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">랜딩 URL</label>
+                    <input type="url" class="form-input" name="link_url" placeholder="https://example.com">
+                </div>
+
+                <div class="section-label">미디어 파일</div>
+
+                <div class="file-upload-area" id="uploadArea">
+                    <input type="file" id="mediaFile" name="media_file" accept="image/*">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">클릭하거나 파일을 드래그하세요</div>
+                    <div class="upload-hint" id="uploadHint">JPG, PNG, WEBP</div>
+                    <div class="upload-filename" id="uploadFilename"></div>
+                </div>
+                <div class="media-preview" id="mediaPreview"></div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">광고 신청하기</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 내 목록 탭 -->
+    <div class="tab-content" id="tab-list">
+        <div class="ad-list">
+            {% for ad in my_ads %}
+            <div class="ad-item">
+                <div class="ad-thumb">
+                    {% if ad.image %}<img src="{{ ad.image.url }}" alt="{{ ad.title }}">
+                    {% elif ad.ad_type == 'video' %}🎬
+                    {% elif ad.ad_type == 'audio' %}🎵
+                    {% else %}🖼️{% endif %}
+                </div>
+
+                <div class="ad-info">
+                    <div class="ad-title">{{ ad.title }}</div>
+                    <div class="ad-meta">
+                        <span class="type-tag">
+                            {% if ad.ad_type == 'image' %}이미지
+                            {% elif ad.ad_type == 'video' %}영상
+                            {% elif ad.ad_type == 'audio' %}오디오{% endif %}
+                        </span>
+                        <span>{{ ad.get_placement_display }}</span>
+                        <span>{{ ad.created_at|date:"Y.m.d" }}</span>
+                        {% if ad.budget %}<span>{{ ad.budget|floatformat:0 }}원</span>{% endif %}
+                    </div>
+                </div>
+
+                <div class="ad-actions">
+                    {% if ad.status == 'pending' %}
+                    <button class="edit-btn" onclick="openEditModal(
+                        {{ ad.id }},
+                        '{{ ad.company_name|escapejs }}',
+                        '{{ ad.contact_name|escapejs }}',
+                        '{{ ad.email|escapejs }}',
+                        '{{ ad.phone|default:""| escapejs }}',
+                        '{{ ad.title|escapejs }}',
+                        '{{ ad.description|default:""|escapejs }}',
+                        {{ ad.budget|default:0 }},
+                        '{{ ad.link_url|default:""|escapejs }}'
+                    )">수정</button>
+                    {% endif %}
+                    <div class="ad-badge
+                        {% if ad.status == 'pending' %}badge-pending
+                        {% elif ad.status == 'approved' %}badge-approved
+                        {% elif ad.status == 'rejected' %}badge-rejected
+                        {% else %}badge-completed{% endif %}">
+                        {{ ad.get_status_display }}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <div class="empty-text">아직 신청한 광고가 없습니다</div>
+                <span class="empty-link" onclick="switchTab('form', document.querySelector('.tab-btn'))">첫 광고 신청하기</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- 수정 모달 -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">광고 신청 수정</div>
+            <button class="modal-close" onclick="closeEditModal()">×</button>
+        </div>
+
+        <form id="editForm">
+            {% csrf_token %}
+            <input type="hidden" id="editReqId">
+
+            <div class="section-label">광고주 정보</div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">회사명 <span>*</span></label>
+                    <input type="text" class="form-input" id="edit_company_name" name="company_name" maxlength="200">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">담당자명 <span>*</span></label>
+                    <input type="text" class="form-input" id="edit_contact_name" name="contact_name" maxlength="100">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">이메일 <span>*</span></label>
+                    <input type="email" class="form-input" id="edit_email" name="email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">연락처</label>
+                    <input type="text" class="form-input" id="edit_phone" name="phone">
+                </div>
+            </div>
+
+            <div class="section-label">광고 내용</div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">광고 제목 <span>*</span></label>
+                    <input type="text" class="form-input" id="edit_title" name="title" maxlength="200">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">예산 (원)</label>
+                    <input type="number" class="form-input" id="edit_budget" name="budget" min="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">광고 설명</label>
+                <textarea class="form-textarea" id="edit_description" name="description"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">랜딩 URL</label>
+                <input type="url" class="form-input" id="edit_link_url" name="link_url" placeholder="https://example.com">
+            </div>
+
+            <div class="section-label">미디어 파일 교체 (선택)</div>
+
+            <div class="file-upload-area" id="editUploadArea">
+                <input type="file" id="editMediaFile" name="media_file" accept="image/*,video/*,audio/*">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">새 파일로 교체하려면 클릭하세요</div>
+                <div class="upload-hint">비워두면 기존 파일 유지</div>
+                <div class="upload-filename" id="editUploadFilename"></div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="editSubmitBtn">수정 저장</button>
+        </form>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = '{{ csrf_token }}';
+
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+}
+
+const placementOptions = {
+    image: [{ value: 'chat', label: '채팅 중간' }, { value: 'tts', label: 'TTS 재생 후' }],
+    video: [{ value: 'snap', label: '스냅 피드' }],
+    audio: [{ value: 'episode', label: '오디오북' }],
+};
+
+function updatePlacement(type) {
+    const select = document.getElementById('placementSelect');
+    select.innerHTML = '';
+    placementOptions[type].forEach(opt => {
+        const el = document.createElement('option');
+        el.value = opt.value;
+        el.textContent = opt.label;
+        select.appendChild(el);
+    });
+}
+
+document.querySelectorAll('.type-card').forEach(card => {
+    card.addEventListener('click', () => {
+        document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        const type = card.querySelector('input').value;
+        const hints = { image: 'JPG, PNG, WEBP', video: 'MP4, MOV', audio: 'MP3, WAV' };
+        document.getElementById('mediaFile').accept = type === 'image' ? 'image/*' : type === 'video' ? 'video/*' : 'audio/*';
+        document.getElementById('uploadHint').textContent = hints[type];
+        updatePlacement(type);
+        document.getElementById('mediaPreview').style.display = 'none';
+        document.getElementById('mediaPreview').innerHTML = '';
+        document.getElementById('uploadFilename').textContent = '';
+        document.getElementById('uploadArea').classList.remove('has-file');
+    });
+});
+
+function handleFilePreview(input, filenameEl, uploadAreaEl, previewEl) {
+    const file = input.files[0];
+    if (!file) return;
+    uploadAreaEl.classList.add('has-file');
+    filenameEl.textContent = file.name;
+    if (previewEl) {
+        previewEl.innerHTML = '';
+        const url = URL.createObjectURL(file);
+        let el;
+        if (file.type.startsWith('image/'))      { el = document.createElement('img');   el.src = url; }
+        else if (file.type.startsWith('video/')) { el = document.createElement('video'); el.src = url; el.controls = true; }
+        else if (file.type.startsWith('audio/')) { el = document.createElement('audio'); el.src = url; el.controls = true; }
+        if (el) { previewEl.appendChild(el); previewEl.style.display = 'block'; }
+    }
+}
+
+document.getElementById('mediaFile').addEventListener('change', function() {
+    handleFilePreview(this, document.getElementById('uploadFilename'), document.getElementById('uploadArea'), document.getElementById('mediaPreview'));
+});
+
+document.getElementById('editMediaFile').addEventListener('change', function() {
+    handleFilePreview(this, document.getElementById('editUploadFilename'), document.getElementById('editUploadArea'), null);
+});
+
+// 신청
+document.getElementById('adForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = '신청 중...';
+    try {
+        const res  = await fetch('', { method: 'POST', headers: { 'X-CSRFToken': CSRF }, body: new FormData(this) });
+        const data = await res.json();
+        if (data.success) {
+            showToast('✅ ' + data.message, 'success');
+            setTimeout(() => location.reload(), 1800);
+        } else {
+            showToast('❌ ' + data.error, 'error');
+            btn.disabled = false; btn.textContent = '광고 신청하기';
+        }
+    } catch {
+        showToast('❌ 오류가 발생했습니다.', 'error');
+        btn.disabled = false; btn.textContent = '광고 신청하기';
+    }
+});
+
+// 수정 모달
+function openEditModal(id, company, contact, email, phone, title, desc, budget, linkUrl) {
+    document.getElementById('editReqId').value         = id;
+    document.getElementById('edit_company_name').value = company;
+    document.getElementById('edit_contact_name').value = contact;
+    document.getElementById('edit_email').value        = email;
+    document.getElementById('edit_phone').value        = phone;
+    document.getElementById('edit_title').value        = title;
+    document.getElementById('edit_description').value  = desc;
+    document.getElementById('edit_budget').value       = budget;
+    document.getElementById('edit_link_url').value     = linkUrl;
+    document.getElementById('editUploadFilename').textContent = '';
+    document.getElementById('editUploadArea').classList.remove('has-file');
+    document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+}
+
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+});
+
+document.getElementById('editForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('editSubmitBtn');
+    const id  = document.getElementById('editReqId').value;
+    btn.disabled = true; btn.textContent = '저장 중...';
+    try {
+        const res  = await fetch(`/advertisement/request/${id}/edit/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF },
+            body: new FormData(this),
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('✅ ' + data.message, 'success');
+            closeEditModal();
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            showToast('❌ ' + data.error, 'error');
+            btn.disabled = false; btn.textContent = '수정 저장';
+        }
+    } catch {
+        showToast('❌ 오류가 발생했습니다.', 'error');
+        btn.disabled = false; btn.textContent = '수정 저장';
+    }
+});
+
+function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+{% endblock %}

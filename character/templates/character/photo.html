@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}광고 - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        background: #000;
+        overflow: hidden;
+        color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .container {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* 이미지 */
+    .ad-image {
+        width: min(calc(100vh * 9 / 16), 100vw);
+        height: 100vh;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* 링크 버튼 - 우측 하단 */
+    .link-btn {
+        position: absolute;
+        bottom: 100px;
+        right: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        text-decoration: none;
+        color: #fff;
+    }
+
+    .link-btn:hover { transform: scale(1.1); }
+
+    .btn-icon {
+        width: 48px; height: 48px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        transition: background 0.2s;
+    }
+
+    .link-btn:hover .btn-icon { background: rgba(255,255,255,0.25); }
+
+    .btn-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    /* 스킵 버튼 - 우측 상단 */
+    .skip-btn {
+        position: absolute;
+        top: 20px;
+        right: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 20px;
+        color: rgba(255,255,255,0.6);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        pointer-events: none;
+        opacity: 0.5;
+    }
+
+    .skip-btn.active {
+        pointer-events: auto;
+        opacity: 1;
+        color: #fff;
+        border-color: rgba(255,255,255,0.5);
+    }
+
+    .skip-btn.active:hover {
+        background: rgba(255,255,255,0.15);
+    }
+
+    /* 하단 진행 바 */
+    .progress-bar {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 3px;
+        background: rgba(255,255,255,0.15);
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: #fff;
+        width: 0%;
+        transition: width 0.1s linear;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<br><br><br>
+<div class="container">
+
+    {% if ad.image %}
+        <img class="ad-image" src="{{ ad.image.url }}" alt="{{ ad.title }}">
+    {% endif %}
+
+    {% if ad.link_url %}
+    <a class="link-btn" href="{{ ad.link_url }}" target="_blank" onclick="recordClick()">
+        <div class="btn-icon">🔗</div>
+        <div class="btn-label">바로가기</div>
+    </a>
+    {% endif %}
+
+    <button class="skip-btn" id="skipBtn" onclick="skipAd()">
+        <span id="skipLabel">5초 후 스킵</span> ⏭
+    </button>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const skipBtn      = document.getElementById('skipBtn');
+    const skipLabel    = document.getElementById('skipLabel');
+    const progressFill = document.getElementById('progressFill');
+
+    const TOTAL = 5000;
+    const start = Date.now();
+    let skipReady = false;
+
+    const ticker = setInterval(() => {
+        const elapsed = Date.now() - start;
+        progressFill.style.width = Math.min(elapsed / TOTAL * 100, 100) + '%';
+
+        const left = Math.max(5 - Math.floor(elapsed / 1000), 0);
+        skipLabel.textContent = elapsed >= TOTAL ? '스킵' : `${left}초 후 스킵`;
+
+        if (elapsed >= TOTAL) {
+            clearInterval(ticker);
+            skipReady = true;
+            skipBtn.classList.add('active');
+        }
+    }, 100);
+
+    const nextUrl = "{{ next_url|default:'/' }}";
+
+    function skipAd() {
+        if (!skipReady) return;
+        fetch("{% url 'book:ad_skip' ad.public_uuid %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ watched_seconds: 5 })
+        }).finally(() => window.location.href = nextUrl);
+    }
+
+    function recordClick() {
+        fetch("{% url 'book:ad_click' ad.public_uuid %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        });
+    }
+</script>
+{% endblock %}

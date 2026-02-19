@@ -345,7 +345,7 @@ async function sendTextMessage() {
     showTypingIndicator();
 
     try {
-        const response = await fetch(chatUrl, {  // ← chatUrl 써야 함 (chat-logic URL)
+        const response = await fetch(chatUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -364,12 +364,20 @@ async function sendTextMessage() {
                 updateHp(data.hp);
             }
 
-            // 리다이렉트 처리
+            // 리다이렉트 처리 (HP 100 도달)
             if (data.redirect) {
-                console.log('[REDIRECT] 엔딩 페이지로 이동 시도:', data.redirect);
                 setTimeout(() => {
                     window.location.href = data.redirect;
-                }, 1800);  // 1.8초로 조금 늘려서 여유 주기
+                }, 1800);
+                return;
+            }
+
+            // ── 광고 처리 ──
+            if (data.ad_url) {
+                setTimeout(() => {
+                    window.location.href = data.ad_url;
+                }, 1500);
+                return;
             }
 
         } else {
@@ -391,7 +399,6 @@ async function generateTTS(btn, msgId) {
 
     if (!text) return;
 
-    // 버튼 상태 변경
     btn.disabled = true;
     btn.classList.add('loading');
     btn.innerHTML = `
@@ -416,7 +423,6 @@ async function generateTTS(btn, msgId) {
         if (data.success && (data.audio || data.audio_url)) {
             const audioUrl = data.audio_url || data.audio;
 
-            // TTS 버튼을 오디오 버튼으로 교체
             btn.classList.remove('loading', 'tts-btn');
             btn.classList.add('audio-btn', 'has-audio');
             btn.disabled = false;
@@ -430,8 +436,15 @@ async function generateTTS(btn, msgId) {
                 </svg>
             `;
 
-            // 자동 재생
             playAudio(audioUrl, btn);
+
+            // ── 광고 처리 ──
+            if (data.ad_url) {
+                setTimeout(() => {
+                    window.location.href = data.ad_url;
+                }, 2000);  // 오디오 재생 시작 후 2초 뒤 이동
+            }
+
         } else {
             btn.disabled = false;
             btn.classList.remove('loading');

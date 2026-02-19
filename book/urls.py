@@ -60,6 +60,11 @@ urlpatterns=[
     path('chat-api/', views.chat_api, name='chat_api'),
 
 
+    path('ads/audio/<uuid:uuid>/', views.audio_view, name='ad_audio'),
+    path('ads/click/<uuid:uuid>/', views.ad_click, name='ad_click'),
+    path('ads/skip/<uuid:uuid>/', views.ad_skip, name='ad_skip'),
+    path('ads/video/<uuid:uuid>/', views.video_view, name='ad_video'),
+
     # 작가 센터
     path("author/dashboard/", views.author_dashboard, name="author_dashboard"),
     path('<uuid:book_uuid>/toggle_status/', views.toggle_status, name='toggle_status'),

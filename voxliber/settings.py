@@ -59,6 +59,16 @@ ALLOWED_HOSTS = [
 
 ]
 
+
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    "run-ai-factory-every-30-minutes": {
+        "task": "book.tasks.run_ai_factory",
+        "schedule": crontab(minute="*/120"),  # 30분마다 실행
+    },
+}
+
+
 # 개발 환경
 if DEBUG:
     ALLOWED_HOSTS.extend([
@@ -105,6 +115,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     "django_celery_results",
     "character",
+    "advertisment",
     
 ]
 CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"

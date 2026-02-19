@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}광고 - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --accent: #c8f542;
+    --accent2: #7b5ea7;
+    --text: #f0f0f0;
+    --muted: #666680;
+    --border: rgba(255,255,255,0.06);
+    --glow: 0 0 40px rgba(200, 245, 66, 0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* 배경 그라디언트 orbs */
+  .bg-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.12;
+    pointer-events: none;
+    animation: drift 12s ease-in-out infinite;
+  }
+  .bg-orb-1 { width: 500px; height: 500px; background: var(--accent); top: -100px; right: -100px; animation-delay: 0s; }
+  .bg-orb-2 { width: 400px; height: 400px; background: var(--accent2); bottom: -80px; left: -80px; animation-delay: -6s; }
+
+  @keyframes drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -20px) scale(1.05); }
+    66% { transform: translate(-20px, 30px) scale(0.95); }
+  }
+
+  /* 메인 카드 */
+  .ad-card {
+    position: relative;
+    width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 40px 36px 32px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6), var(--glow);
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 상단 라벨 */
+  .ad-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+  .ad-label::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* 타이틀 */
+  .ad-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38px;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .ad-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 32px;
+  }
+
+  /* 오디오 비주얼라이저 영역 */
+  .visualizer-wrap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 20px 20px;
+    margin-bottom: 20px;
+  }
+
+  .visualizer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 48px;
+    margin-bottom: 20px;
+  }
+
+  .bar {
+    width: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+    transform-origin: bottom;
+    animation: eq 1.2s ease-in-out infinite;
+    opacity: 0.3;
+    transition: opacity 0.2s;
+  }
+
+  .bar:nth-child(1)  { height: 20%; animation-delay: 0.0s; }
+  .bar:nth-child(2)  { height: 45%; animation-delay: 0.1s; }
+  .bar:nth-child(3)  { height: 70%; animation-delay: 0.2s; }
+  .bar:nth-child(4)  { height: 55%; animation-delay: 0.3s; }
+  .bar:nth-child(5)  { height: 90%; animation-delay: 0.15s; }
+  .bar:nth-child(6)  { height: 65%; animation-delay: 0.25s; }
+  .bar:nth-child(7)  { height: 40%; animation-delay: 0.05s; }
+  .bar:nth-child(8)  { height: 80%; animation-delay: 0.35s; }
+  .bar:nth-child(9)  { height: 55%; animation-delay: 0.2s; }
+  .bar:nth-child(10) { height: 30%; animation-delay: 0.1s; }
+  .bar:nth-child(11) { height: 75%; animation-delay: 0.3s; }
+  .bar:nth-child(12) { height: 50%; animation-delay: 0.0s; }
+  .bar:nth-child(13) { height: 85%; animation-delay: 0.25s; }
+  .bar:nth-child(14) { height: 40%; animation-delay: 0.15s; }
+  .bar:nth-child(15) { height: 60%; animation-delay: 0.05s; }
+  .bar:nth-child(16) { height: 25%; animation-delay: 0.35s; }
+
+  @keyframes eq {
+    0%, 100% { transform: scaleY(0.4); }
+    50%       { transform: scaleY(1); }
+  }
+
+  /* 재생 중일 때 bars 활성화 */
+  .playing .bar { opacity: 1; }
+
+  /* 커스텀 오디오 컨트롤 */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .play-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 0 20px rgba(200, 245, 66, 0.3);
+  }
+  .play-btn:hover { transform: scale(1.08); box-shadow: 0 0 30px rgba(200, 245, 66, 0.5); }
+  .play-btn:active { transform: scale(0.96); }
+
+  .play-btn svg { fill: #0a0a0f; width: 16px; height: 16px; }
+
+  .progress-wrap { flex: 1; }
+
+  .progress-bar-bg {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 8px rgba(200,245,66,0.6);
+  }
+
+  .time-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 10px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 숨겨진 네이티브 오디오 */
+  audio { display: none; }
+
+  /* 구분선 */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  /* 광고주 링크 버튼 */
+  .ad-link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 14px 18px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    text-decoration: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .ad-link-btn:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.15);
+  }
+  .ad-link-btn span { color: var(--muted); font-size: 11px; }
+
+  /* 스킵 카운트다운 */
+  .skip-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 8px;
+  }
+
+  .skip-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: none;
+  }
+  .skip-btn.visible { display: inline-flex; }
+  .skip-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+  .skip-countdown {
+    font-size: 11px;
+    color: var(--muted);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<div class="ad-card">
+  <div class="ad-label">광고</div>
+
+  <div class="ad-title">{{ ad.title }}</div>
+  <p class="ad-desc">잠시 후 콘텐츠로 돌아갑니다</p>
+
+  <div class="visualizer-wrap" id="vizWrap">
+    <div class="visualizer" id="visualizer">
+      {% for i in "1234567890123456" %}
+        <div class="bar"></div>
+      {% endfor %}
+    </div>
+
+    <div class="controls">
+      <button class="play-btn" id="playBtn" onclick="togglePlay()">
+        <!-- play icon -->
+        <svg id="iconPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <!-- pause icon (hidden) -->
+        <svg id="iconPause" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      </button>
+
+      <div class="progress-wrap">
+        <div class="progress-bar-bg" id="progressBg" onclick="seek(event)">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="time-row">
+          <span id="currentTime">0:00</span>
+          <span id="totalTime">0:00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <audio id="adAudio" src="{{ ad.audio.url }}" preload="metadata"></audio>
+
+  {% if ad.link_url %}
+  <div class="divider"></div>
+  <a href="{{ ad.link_url }}" class="ad-link-btn" target="_blank" id="adLink" onclick="recordClick()">
+    <span>{{ ad.title }} 더 알아보기</span>
+    <span>→</span>
+  </a>
+  {% endif %}
+
+  <div class="skip-row">
+    <span class="skip-countdown" id="skipCountdown">5초 후 스킵 가능</span>
+    <button class="skip-btn" id="skipBtn" onclick="skipAd()">스킵 →</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const audio = document.getElementById('adAudio');
+  const playBtn = document.getElementById('playBtn');
+  const iconPlay = document.getElementById('iconPlay');
+  const iconPause = document.getElementById('iconPause');
+  const progressFill = document.getElementById('progressFill');
+  const currentTimeEl = document.getElementById('currentTime');
+  const totalTimeEl = document.getElementById('totalTime');
+  const vizWrap = document.getElementById('vizWrap');
+  const skipBtn = document.getElementById('skipBtn');
+  const skipCountdown = document.getElementById('skipCountdown');
+
+  let skipTimer = 5;
+  let skipInterval = null;
+
+  // 포맷 함수
+  function fmt(s) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2,'0')}`;
+  }
+
+  // 메타데이터 로드
+  audio.addEventListener('loadedmetadata', () => {
+    totalTimeEl.textContent = fmt(audio.duration);
+  });
+
+  // 자동 재생 시도
+  window.addEventListener('DOMContentLoaded', () => {
+    audio.play().then(() => {
+      setPlaying(true);
+    }).catch(() => {
+      // 자동재생 차단 시 버튼 대기
+    });
+    startSkipTimer();
+  });
+
+  function setPlaying(state) {
+    if (state) {
+      iconPlay.style.display = 'none';
+      iconPause.style.display = 'block';
+      vizWrap.classList.add('playing');
+    } else {
+      iconPlay.style.display = 'block';
+      iconPause.style.display = 'none';
+      vizWrap.classList.remove('playing');
+    }
+  }
+
+  function togglePlay() {
+    if (audio.paused) {
+      audio.play();
+      setPlaying(true);
+    } else {
+      audio.pause();
+      setPlaying(false);
+    }
+  }
+
+  // 진행바 업데이트
+  audio.addEventListener('timeupdate', () => {
+    if (!audio.duration) return;
+    const pct = (audio.currentTime / audio.duration) * 100;
+    progressFill.style.width = pct + '%';
+    currentTimeEl.textContent = fmt(audio.currentTime);
+  });
+
+  // 진행바 클릭 seek
+  function seek(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    audio.currentTime = ratio * audio.duration;
+  }
+
+  // 재생 종료
+// 재생 종료 - 이 부분 교체
+audio.addEventListener('ended', () => {
+  setPlaying(false);
+  progressFill.style.width = '100%';
+  clearInterval(skipInterval);
+
+  {% if next_content %}
+    // 시청 기록 전송
+    fetch("{% url 'book:ad_skip' ad.public_uuid %}", {
+      method: 'POST',
+      headers: {'X-CSRFToken': '{{ csrf_token }}'},
+      body: JSON.stringify({ watched_seconds: Math.floor(audio.duration || 0) })
+    });
+
+    // 2초 카운트다운 후 자동 이동
+    let count = 2;
+    skipCountdown.textContent = `${count}초 후 다음 에피소드로 이동합니다...`;
+    skipCountdown.style.display = 'block';
+
+    const moveTimer = setInterval(() => {
+      count--;
+      if (count <= 0) {
+        clearInterval(moveTimer);
+      window.location.href = "{% url 'book:content_detail' next_content.public_uuid %}?skip_count=1";
+      } else {
+        skipCountdown.textContent = `${count}초 후 다음 에피소드로 이동합니다...`;
+      }
+    }, 1000);
+
+    // 스킵 버튼 눌러도 바로 이동
+    skipBtn.classList.add('visible');
+    skipBtn.onclick = () => {
+      clearInterval(moveTimer);
+      window.location.href = "{% url 'book:content_detail' next_content.public_uuid %}?skip_count=1";
+    };
+
+  {% else %}
+    skipBtn.classList.add('visible');
+    skipCountdown.style.display = 'none';
+  {% endif %}
+});
+
+  // 스킵 타이머
+  function startSkipTimer() {
+    skipInterval = setInterval(() => {
+      skipTimer--;
+      if (skipTimer <= 0) {
+        clearInterval(skipInterval);
+        skipCountdown.style.display = 'none';
+        skipBtn.classList.add('visible');
+      } else {
+        skipCountdown.textContent = `${skipTimer}초 후 스킵 가능`;
+      }
+    }, 1000);
+  }
+function skipAd() {
+  fetch("{% url 'book:ad_skip' ad.public_uuid %}", {
+    method: 'POST',
+    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ watched_seconds: Math.floor(audio.currentTime) })
+  }).finally(() => {
+    {% if next_content %}
+      window.location.href = "{% url 'book:content_detail' next_content.public_uuid %}?skip_count=1";
+    {% else %}
+      history.back();
+    {% endif %}
+  });
+}
+
+
+
+  function recordClick() {
+    fetch("{% url 'book:ad_click' ad.public_uuid %}?skip_count=1", {
+      method: 'POST',
+      headers: {'X-CSRFToken': '{{ csrf_token }}'},
+    });
+  }
+</script>
+{% endblock %}

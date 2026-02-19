@@ -45,6 +45,7 @@ urlpatterns = [
     path("llm/delete/<uuid:llm_uuid>/", views.delete_llm, name='delete_llm'),
     path("story/<uuid:story_uuid>/bookmark/toggle/", views.toggle_story_bookmark, name='toggle_story_bookmark'),
 
+    path('ads/photo/<uuid:uuid>/', views.photo_view, name='ad_photo'),
 
 
     # api 

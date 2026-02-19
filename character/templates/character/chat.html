@@ -205,7 +205,7 @@
                     </div>
                     {% if msg.role == 'assistant' %}
                     <div class="message-actions">
-                        <!-- {% if msg.audio %}
+                        {% if msg.audio %}
                         <button class="audio-btn has-audio" data-audio-url="{{ msg.audio.url }}" title="음성 재생">
                             <svg class="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M8 5v14l11-7z"/>
@@ -222,7 +222,7 @@
                             </svg>
                             <span>음성 생성</span>
                         </button>
-                        {% endif %} -->
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
@@ -434,7 +434,13 @@ function addMessage(text, isAi = true, messageId = null) {
             <div class="message-body">
                 <div class="message-bubble">${formattedText}</div>
                 <div class="message-actions">
-                
+                    <button class="tts-btn" data-msg-id="${messageId || ''}" title="음성 생성">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                        </svg>
+                        <span>음성 생성</span>
+                    </button>
                 </div>
             </div>`;
     } else {
@@ -443,6 +449,7 @@ function addMessage(text, isAi = true, messageId = null) {
                 <div class="message-bubble"><p>${text.replace(/\n/g, '<br>')}</p></div>
             </div>`;
     }
+
 
     area.appendChild(msgDiv);
     area.scrollTop = area.scrollHeight;
