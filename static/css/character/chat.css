@@ -690,6 +690,7 @@ body.light-mode .message-bubble .dialogue {
 
     .messages-container {
         padding: 16px;
+        margin-bottom: 180px;
     }
 
     .message {
