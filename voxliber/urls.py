@@ -88,6 +88,9 @@ urlpatterns = [
     # 스냅
     path("api/v1/create-snap/", voxliber_api.api_create_snap, name="api_create_snap"),
 
+    # AI 스토리 생성
+    path("api/v1/create-ai-story/", voxliber_api.api_create_ai_story, name="api_create_ai_story"),
+
     # 광고 API (앱용)
     path("api/v1/ads/check/", voxliber_api.api_ad_check, name="api_ad_check"),
     path("api/v1/ads/impression/", voxliber_api.api_ad_impression, name="api_ad_impression"),

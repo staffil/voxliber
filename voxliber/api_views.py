@@ -66,7 +66,7 @@ def api_create_book(request):
     tag_ids = data.get("tag_ids", [])
     status = data.get("status", "ongoing")
     adult_choice = data.get("adult_choice", False)
-    author_name = data.get("author_name", "").strip() or None
+    author_name = data.get("author_name", "").strip() or "미상"
 
     if not title:
         return api_response(error="제목(title)은 필수입니다.", status=400)
@@ -510,18 +510,12 @@ def api_create_background_music(request):
 
     try:
         print(f"🎼 [API] 배경음 생성: {music_name} - {music_description} ({duration_seconds}초)")
-        audio_stream = background_music(music_name, music_description, duration_seconds)
+        audio_path = background_music(music_name, music_description, duration_seconds)
 
-        if not audio_stream:
+        if not audio_path:
             return api_response(error="배경음 생성에 실패했습니다.", status=500)
 
-        # 스트림을 임시 파일로 저장
-        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
-            temp_path = temp_file.name
-            for chunk in audio_stream:
-                temp_file.write(chunk)
-
-        # DB에 저장
+        # DB에 저장 (background_music()이 이미 파일 경로를 반환)
         music_obj = BackgroundMusicLibrary.objects.create(
             music_name=music_name,
             music_description=music_description,
@@ -529,10 +523,14 @@ def api_create_background_music(request):
             user=request.api_user,
         )
 
-        with open(temp_path, 'rb') as f:
+        with open(audio_path, 'rb') as f:
             music_obj.audio_file.save(f"bgm_{music_obj.id}.mp3", File(f), save=True)
 
-        os.remove(temp_path)
+        # background_music()이 media/audio/에 저장한 임시 파일 삭제
+        try:
+            os.remove(audio_path)
+        except OSError:
+            pass
 
         print(f"✅ [API] 배경음 생성 완료: {music_name}")
 
@@ -1642,3 +1640,151 @@ def api_ad_skip(request):
         impression.save(update_fields=["is_skipped", "watched_seconds"])
 
     return api_response(data={"message": "스킵 기록 완료"})
+
+
+# ==================== 25. AI 스토리 생성 API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_create_ai_story(request):
+    """
+    AI 스토리 + LLM 캐릭터 자동 생성 API (이미지/영상 제외 전 필드)
+
+    POST /api/v1/create-ai-story/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "title": "스토리 제목",
+        "description": "스토리 설명",
+        "genre_ids": [7, 9],
+        "tag_names": ["로맨스", "츤데레"],
+        "is_adult": false,
+        "is_public": false,
+        "character_name": "캐릭터 이름",
+        "character_title": "캐릭터 한 줄 소개",
+        "character_description": "캐릭터 공개 소개문",
+        "character_prompt": "캐릭터 시스템 프롬프트",
+        "first_sentence": "AI의 첫 마디",
+        "narrator_voice_id": "voice_id (선택)",
+        "llm_model": "gpt:gpt-4o-mini",
+        "temperature": 1.0,
+        "stability": 0.5,
+        "speed": 1.0,
+        "style": 0.5
+    }
+    """
+    from character.models import Story, LLM
+    from book.models import Genres, Tags, VoiceList
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    title = data.get("title", "").strip()
+    if not title:
+        return api_response(error="title은 필수입니다.", status=400)
+
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    admin_user = User.objects.filter(is_superuser=True).first()
+    if not admin_user:
+        return api_response(error="관리자 계정이 없습니다.", status=500)
+
+    try:
+        # Story 생성 (이미지/영상 필드 제외)
+        story = Story.objects.create(
+            user=admin_user,
+            title=title,
+            description=data.get("description", ""),
+            adult_choice=data.get("is_adult", False),
+            is_public=data.get("is_public", False),
+        )
+
+        # 장르 설정
+        genre_ids = data.get("genre_ids", [])
+        if genre_ids:
+            story.genres.set(Genres.objects.filter(id__in=genre_ids))
+
+        # 태그 설정 (이름으로 조회)
+        tag_names = data.get("tag_names", [])
+        if tag_names:
+            tags = Tags.objects.filter(name__in=tag_names)
+            story.tags.set(tags)
+
+        story.save()
+
+        # LLM 캐릭터 생성 (이미지 필드 제외 전부)
+        narrator_voice = None
+        narrator_voice_id = data.get("narrator_voice_id", "")
+        if narrator_voice_id:
+            narrator_voice = VoiceList.objects.filter(voice_id=narrator_voice_id).first()
+
+        llm = LLM.objects.create(
+            user=admin_user,
+            story=story,
+            name=data.get("character_name", title),
+            title=data.get("character_title", ""),
+            description=data.get("character_description", ""),
+            prompt=data.get("character_prompt", ""),
+            first_sentence=data.get("first_sentence", ""),
+            model=data.get("llm_model", "gpt:gpt-4o-mini"),
+            narrator_voice=narrator_voice,
+            language="ko",
+            temperature=float(data.get("temperature", 1.0)),
+            stability=float(data.get("stability", 0.5)),
+            speed=float(data.get("speed", 1.0)),
+            style=float(data.get("style", 0.5)),
+        )
+
+        # 서브이미지 + HP 매핑 생성 (이미지 파일 없음, 텍스트만)
+        from character.models import LLMSubImage, HPImageMapping, LastWard
+        sub_images_data = data.get("sub_images", [])
+        sub_images_count = 0
+        for item in sub_images_data:
+            sub_img = LLMSubImage.objects.create(
+                llm=llm,
+                title=item.get("title", ""),
+                description=item.get("description", ""),
+                order=item.get("order", 0),
+                is_public=False,
+            )
+            # HP 매핑 연결
+            hp_min = item.get("hp_min")
+            hp_max = item.get("hp_max")
+            if hp_min is not None and hp_max is not None:
+                HPImageMapping.objects.create(
+                    llm=llm,
+                    sub_image=sub_img,
+                    min_hp=hp_min,
+                    max_hp=hp_max,
+                    note=f"HP {hp_min}~{hp_max} - {item.get('title','')}",
+                    priority=item.get("order", 0),
+                )
+            sub_images_count += 1
+
+        # 마지막 이미지 생성 (이미지 파일 없음, 텍스트만)
+        last_wards_data = data.get("last_wards", [])
+        last_wards_count = 0
+        for item in last_wards_data:
+            LastWard.objects.create(
+                llm=llm,
+                ward=item.get("ward", ""),
+                description=item.get("description", ""),
+                order=item.get("order", 0),
+                is_public=False,
+            )
+            last_wards_count += 1
+
+        return api_response(data={
+            "story_uuid":       str(story.public_uuid),
+            "story_title":      story.title,
+            "llm_uuid":         str(llm.public_uuid),
+            "character_name":   llm.name,
+            "sub_images_count": sub_images_count,
+            "last_wards_count": last_wards_count,
+            "story_url":        f"https://voxliber.ink/character/story/{story.public_uuid}/",
+        })
+
+    except Exception as e:
+        return api_response(error=f"스토리 생성 실패: {str(e)}", status=500)

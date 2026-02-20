@@ -1049,7 +1049,7 @@ def update_listening_position_api(request):
     try:
         data = json.loads(request.body)
         api_key = data.get('api_key')
-        book_id = data.get('public_uuid')
+        book_id = data.get('book_id') or data.get('public_uuid')  # Flutter는 'book_id'로 전송
         content_id = data.get('content_id')
         last_position = float(data.get('last_position', 0))
         listened_seconds = int(data.get('listened_seconds', 0))
