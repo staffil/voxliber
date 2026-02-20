@@ -6,7 +6,7 @@
   <link rel="icon" href="/static/img/favicon.ico" type="image/x-icon">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>404 - 페이지 없음 | VOXLIBER</title>
+  <title>408 - 요청 시간 초과 | VOXLIBER</title>
   <link rel="stylesheet" href="{% static 'css/home/main/common.css' %}">
   <link rel="stylesheet" href="{% static 'css/error_pages.css' %}">
 </head>
@@ -21,13 +21,13 @@
   <div class="decorative-element bottom-left"></div>
   <div class="decorative-element bottom-right"></div>
 
-  <div class="error-container error-404">
-    <h1 class="error-code">404</h1>
+  <div class="error-container error-408">
+    <h1 class="error-code">408</h1>
     <div class="error-divider"></div>
-    <h2 class="error-title">페이지를 찾을 수 없습니다</h2>
+    <h2 class="error-title">요청 시간이 초과되었습니다</h2>
     <p class="error-subtitle">
-      요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다.<br>
-      URL을 다시 확인해주시거나 홈으로 돌아가주세요.
+      서버 응답 시간이 너무 오래 걸렸습니다.<br>
+      네트워크 상태를 확인 후 다시 시도해주세요.
     </p>
     <a href="/" class="home-button">
       <svg class="home-icon" viewBox="0 0 24 24" fill="currentColor">

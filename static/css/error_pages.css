@@ -1,0 +1,249 @@
+/* ========================================
+   Error Pages - VOXLIBER 메인 디자인 통합
+   ======================================== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+/* 에러 페이지 전용 body 스타일 */
+.error-page-body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary, #1a1a2e);
+  color: var(--text-primary, #e8e8ff);
+  font-family: 'Poppins', sans-serif;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 배경 그리드 (메인과 동일한 느낌) */
+.error-page-body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 배경 원들 - 메인과 동일 */
+.circle-bg {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+  animation: errorFloat 8s ease-in-out infinite;
+}
+.circle-1 { width: 500px; height: 500px; background: #6366f1; top: -150px; left: -150px; animation-delay: 0s; }
+.circle-2 { width: 400px; height: 400px; background: #8b5cf6; bottom: -100px; right: -100px; animation-delay: 2s; }
+.circle-3 { width: 300px; height: 300px; background: #06b6d4; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: 4s; }
+.circle-4 { width: 200px; height: 200px; background: #f43f5e; top: 20%; right: 20%; animation-delay: 1s; }
+.circle-5 { width: 250px; height: 250px; background: #10b981; bottom: 20%; left: 20%; animation-delay: 3s; }
+
+@keyframes errorFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+
+/* 장식 원 */
+.decorative-element {
+  position: fixed;
+  width: 200px;
+  height: 200px;
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: errorSpin 20s linear infinite;
+}
+.decorative-element::before {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border: 1px solid rgba(99,102,241,0.1);
+  border-radius: 50%;
+}
+.top-left    { top: -80px; left: -80px; }
+.top-right   { top: -80px; right: -80px; animation-direction: reverse; }
+.bottom-left { bottom: -80px; left: -80px; animation-direction: reverse; }
+.bottom-right{ bottom: -80px; right: -80px; }
+
+@keyframes errorSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ========================================
+   에러 컨테이너 - 메인의 카드 스타일과 동일
+   ======================================== */
+.error-container {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 60px 48px;
+  max-width: 560px;
+  width: 90%;
+  background: var(--bg-tertiary, rgba(17,17,30,0.85));
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 20px;
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(99,102,241,0.08),
+    0 40px 80px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  animation: errorSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes errorSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 라이트 모드 */
+body.light-mode .error-container {
+  background: rgba(255,255,255,0.9);
+  border-color: rgba(99,102,241,0.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+}
+
+/* ========================================
+   에러 코드 숫자 - hero-title 스타일 참고
+   ======================================== */
+.error-code {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(72px, 14vw, 120px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -4px;
+  background: var(--gradient-primary, linear-gradient(135deg, #6366f1, #8b5cf6));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+  animation: errorGlitch 5s ease-in-out infinite;
+}
+
+@keyframes errorGlitch {
+  0%, 88%, 100% {
+    filter: drop-shadow(0 0 20px rgba(99,102,241,0.4));
+    transform: translate(0);
+  }
+  90% { transform: translate(-2px, 1px); filter: drop-shadow(2px 0 0 #f43f5e) drop-shadow(-2px 0 0 #06b6d4); }
+  92% { transform: translate(2px, -1px); filter: drop-shadow(-2px 0 0 #f43f5e) drop-shadow(2px 0 0 #06b6d4); }
+  94% { transform: translate(0); filter: drop-shadow(0 0 20px rgba(99,102,241,0.4)); }
+}
+
+/* 에러 코드별 색상 */
+.error-400 .error-code { background: linear-gradient(135deg, #f59e0b, #ef4444); -webkit-background-clip: text; background-clip: text; }
+.error-403 .error-code { background: linear-gradient(135deg, #ef4444, #f43f5e); -webkit-background-clip: text; background-clip: text; }
+.error-404 .error-code { background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4); -webkit-background-clip: text; background-clip: text; }
+.error-500 .error-code { background: linear-gradient(135deg, #f43f5e, #ef4444, #f97316); -webkit-background-clip: text; background-clip: text; }
+.error-408 .error-code { background: linear-gradient(135deg, #f59e0b, #f97316); -webkit-background-clip: text; background-clip: text; }
+.error-503 .error-code { background: linear-gradient(135deg, #6366f1, #06b6d4); -webkit-background-clip: text; background-clip: text; }
+
+/* 구분선 */
+.error-divider {
+  width: 48px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary, #6366f1), transparent);
+  margin: 12px auto 20px;
+}
+
+/* 에러 타이틀 - section-title 참고 */
+.error-title {
+  font-size: clamp(17px, 2.5vw, 22px);
+  font-weight: 700;
+  color: var(--text-primary, #e8e8ff);
+  margin-bottom: 12px;
+  letter-spacing: -0.3px;
+}
+body.light-mode .error-title {
+  color: #1e293b;
+}
+
+/* 에러 설명 */
+.error-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #7070a0);
+  line-height: 1.8;
+  margin-bottom: 36px;
+  font-weight: 300;
+}
+body.light-mode .error-subtitle {
+  color: #64748b;
+}
+
+/* ========================================
+   홈 버튼 - hero-cta 스타일과 동일
+   ======================================== */
+.home-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  background: var(--gradient-primary, linear-gradient(135deg, #6366f1, #8b5cf6));
+  color: #fff;
+  text-decoration: none;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 30px rgba(99,102,241,0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.home-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.2), transparent);
+  left: -100%;
+  transition: left 0.5s ease;
+}
+
+.home-button:hover::after { left: 100%; }
+.home-button:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 12px 40px rgba(99,102,241,0.6);
+  color: #fff;
+  text-decoration: none;
+}
+.home-button:active { transform: translateY(0); }
+
+.home-icon {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  z-index: 1;
+}
+.home-button span { position: relative; z-index: 1; }
+
+/* ========================================
+   반응형
+   ======================================== */
+@media (max-width: 768px) {
+  .error-container {
+    padding: 48px 32px;
+  }
+  .decorative-element { display: none; }
+}
+
+@media (max-width: 480px) {
+  .error-container {
+    padding: 40px 24px;
+    border-radius: 16px;
+  }
+  .circle-bg { opacity: 0.08; }
+  .home-button {
+    padding: 14px 28px;
+    font-size: 14px;
+  }
+}
