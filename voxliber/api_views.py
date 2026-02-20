@@ -8,7 +8,10 @@ import json
 import os
 import tempfile
 import traceback
+import random
 
+from django.db.models import Q
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.core.files import File
 from django.core.files.base import ContentFile
@@ -19,6 +22,7 @@ from book.models import (
 )
 from book.api_utils import require_api_key_secure, api_response
 from book.utils import generate_tts, merge_audio_files, sound_effect, background_music, mix_audio_with_background
+from advertisment.models import Advertisement, AdImpression, UserAdCounter
 
 
 # ==================== 1. 책 생성 API ====================
@@ -1355,3 +1359,286 @@ def api_create_snap(request):
         "book_uuid": str(connected_book.public_uuid) if connected_book else None,
         "message": "스냅이 생성되었습니다."
     })
+
+
+# ==================== 21. 광고 체크 API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_ad_check(request):
+    """
+    광고 노출 여부 확인 API (카운터 증가 포함)
+    - 앱에서 에피소드/스냅 진입 또는 채팅 메시지 전송 시 호출
+    - 카운터를 증가시키고 광고 노출 여부를 판단 후 광고 데이터 반환
+
+    POST /api/v1/ads/check/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "placement": "episode"  // "episode" | "chat" | "tts" | "snap"
+    }
+
+    Returns (광고 있을 때):
+    {
+        "success": true,
+        "data": {
+            "show_ad": true,
+            "ad": {
+                "uuid": "...",
+                "title": "...",
+                "ad_type": "audio",
+                "placement": "episode",
+                "media_url": "https://...",
+                "thumbnail_url": null,
+                "link_url": "https://...",
+                "duration_seconds": 30
+            }
+        }
+    }
+
+    Returns (광고 없을 때):
+    {
+        "success": true,
+        "data": { "show_ad": false, "ad": null }
+    }
+
+    노출 빈도:
+    - episode: 3번 재생마다 1회 (오디오 광고)
+    - chat:    10번 메시지마다 1회 (이미지 광고)
+    - tts:     3번 생성마다 1회 (이미지 광고)
+    - snap:    20% 랜덤 확률 (영상 광고)
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    placement = data.get("placement", "").strip()
+    valid_placements = ["episode", "chat", "tts", "snap"]
+    if placement not in valid_placements:
+        return api_response(
+            error=f"placement는 {', '.join(valid_placements)} 중 하나여야 합니다.",
+            status=400,
+        )
+
+    user = request.api_user
+    counter, _ = UserAdCounter.objects.get_or_create(user=user)
+
+    # 카운터 증가
+    if placement == "episode":
+        counter.episode_play_count += 1
+    elif placement == "chat":
+        counter.chat_message_count += 1
+    elif placement == "tts":
+        counter.tts_count += 1
+    elif placement == "snap":
+        counter.snap_view_count += 1
+    counter.save()
+
+    # 광고 노출 여부 판단 (웹 뷰와 동일한 임계값)
+    show_ad = False
+    if placement == "snap":
+        show_ad = random.random() < 0.2
+    elif placement == "episode":
+        show_ad = counter.episode_play_count > 0 and counter.episode_play_count % 3 == 0
+    elif placement == "chat":
+        show_ad = counter.chat_message_count > 0 and counter.chat_message_count % 10 == 0
+    elif placement == "tts":
+        show_ad = counter.tts_count > 0 and counter.tts_count % 3 == 0
+
+    if not show_ad:
+        return api_response(data={"show_ad": False, "ad": None})
+
+    # placement → ad_type 매핑
+    type_map = {"episode": "audio", "chat": "image", "tts": "image", "snap": "video"}
+    ad_type = type_map[placement]
+
+    # 유효한 광고 랜덤 선택 (날짜 범위 체크)
+    now = timezone.now()
+    ad = (
+        Advertisement.objects.filter(
+            placement=placement,
+            ad_type=ad_type,
+            is_active=True,
+        )
+        .filter(
+            Q(start_date__isnull=True) | Q(start_date__lte=now),
+            Q(end_date__isnull=True) | Q(end_date__gte=now),
+        )
+        .order_by("?")
+        .first()
+    )
+
+    if not ad:
+        return api_response(data={"show_ad": False, "ad": None})
+
+    base_url = request.build_absolute_uri("/").rstrip("/")
+
+    media_url = None
+    if ad.audio and ad.ad_type == "audio":
+        media_url = base_url + ad.audio.url
+    elif ad.image and ad.ad_type == "image":
+        media_url = base_url + ad.image.url
+    elif ad.video and ad.ad_type == "video":
+        media_url = base_url + ad.video.url
+
+    thumbnail_url = base_url + ad.thumbnail.url if ad.thumbnail else None
+
+    print(f"📢 [API] 광고 노출: placement={placement}, ad={ad.title}")
+
+    return api_response(data={
+        "show_ad": True,
+        "ad": {
+            "uuid": str(ad.public_uuid),
+            "title": ad.title,
+            "ad_type": ad.ad_type,
+            "placement": ad.placement,
+            "media_url": media_url,
+            "thumbnail_url": thumbnail_url,
+            "link_url": ad.link_url,
+            "duration_seconds": ad.duration_seconds,
+        },
+    })
+
+
+# ==================== 22. 광고 노출 기록 API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_ad_impression(request):
+    """
+    광고 노출 기록 API
+    - 광고가 실제로 유저에게 보여진 시점에 호출
+
+    POST /api/v1/ads/impression/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "ad_uuid": "xxxx-xxxx-xxxx",
+        "placement": "episode"
+    }
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    ad_uuid = data.get("ad_uuid", "").strip()
+    placement = data.get("placement", "").strip()
+
+    if not ad_uuid:
+        return api_response(error="ad_uuid는 필수입니다.", status=400)
+
+    try:
+        ad = Advertisement.objects.get(public_uuid=ad_uuid)
+    except Advertisement.DoesNotExist:
+        return api_response(error="광고를 찾을 수 없습니다.", status=404)
+
+    AdImpression.objects.create(
+        ad=ad,
+        user=request.api_user,
+        placement=placement or ad.placement,
+    )
+
+    return api_response(data={"message": "노출 기록 완료"})
+
+
+# ==================== 23. 광고 클릭 기록 API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_ad_click(request):
+    """
+    광고 클릭 기록 API
+    - 유저가 광고를 클릭했을 때 호출
+
+    POST /api/v1/ads/click/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "ad_uuid": "xxxx-xxxx-xxxx"
+    }
+
+    Returns:
+    {
+        "success": true,
+        "data": {
+            "message": "클릭 기록 완료",
+            "redirect_url": "https://advertiser.com"
+        }
+    }
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    ad_uuid = data.get("ad_uuid", "").strip()
+    if not ad_uuid:
+        return api_response(error="ad_uuid는 필수입니다.", status=400)
+
+    try:
+        ad = Advertisement.objects.get(public_uuid=ad_uuid)
+    except Advertisement.DoesNotExist:
+        return api_response(error="광고를 찾을 수 없습니다.", status=404)
+
+    impression = (
+        AdImpression.objects.filter(ad=ad, user=request.api_user)
+        .order_by("-created_at")
+        .first()
+    )
+    if impression:
+        impression.is_clicked = True
+        impression.clicked_at = timezone.now()
+        impression.save(update_fields=["is_clicked", "clicked_at"])
+
+    return api_response(data={
+        "message": "클릭 기록 완료",
+        "redirect_url": ad.link_url,
+    })
+
+
+# ==================== 24. 광고 스킵 기록 API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_ad_skip(request):
+    """
+    광고 스킵 기록 API
+    - 유저가 광고를 스킵했을 때 호출 (오디오/영상 광고)
+
+    POST /api/v1/ads/skip/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "ad_uuid": "xxxx-xxxx-xxxx",
+        "watched_seconds": 5
+    }
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    ad_uuid = data.get("ad_uuid", "").strip()
+    watched_seconds = int(data.get("watched_seconds", 0))
+
+    if not ad_uuid:
+        return api_response(error="ad_uuid는 필수입니다.", status=400)
+
+    try:
+        ad = Advertisement.objects.get(public_uuid=ad_uuid)
+    except Advertisement.DoesNotExist:
+        return api_response(error="광고를 찾을 수 없습니다.", status=404)
+
+    impression = (
+        AdImpression.objects.filter(ad=ad, user=request.api_user)
+        .order_by("-created_at")
+        .first()
+    )
+    if impression:
+        impression.is_skipped = True
+        impression.watched_seconds = watched_seconds
+        impression.save(update_fields=["is_skipped", "watched_seconds"])
+
+    return api_response(data={"message": "스킵 기록 완료"})

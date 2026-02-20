@@ -88,6 +88,12 @@ urlpatterns = [
     # 스냅
     path("api/v1/create-snap/", voxliber_api.api_create_snap, name="api_create_snap"),
 
+    # 광고 API (앱용)
+    path("api/v1/ads/check/", voxliber_api.api_ad_check, name="api_ad_check"),
+    path("api/v1/ads/impression/", voxliber_api.api_ad_impression, name="api_ad_impression"),
+    path("api/v1/ads/click/", voxliber_api.api_ad_click, name="api_ad_click"),
+    path("api/v1/ads/skip/", voxliber_api.api_ad_skip, name="api_ad_skip"),
+
     # Deep Link Verification Files
     path('.well-known/apple-app-site-association',
          lambda request: serve_well_known(request, 'apple-app-site-association')),
