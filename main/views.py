@@ -911,3 +911,20 @@ def shared_novel(request, conv_id):
         "last_wards":last_wards
     }
     return render(request, 'main/shared_conversation.html', context)
+
+
+
+# 에러
+def bad_request(request, exception):
+    return render(request, "error/400.html", status=400)
+
+def permission_denied(request, exception):
+    return render(request, "error/403.html", status=403)
+
+def page_not_found(request, exception):
+    return render(request, "error/404.html", status=404)
+
+def server_error(request):
+    return render(request, "error/500.html", status=500)
+
+

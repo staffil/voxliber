@@ -103,3 +103,11 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
+
+from main import views as  main
+
+
+handler400 = 'main.views.bad_request'
+handler403 = 'main.views.permission_denied'
+handler404 = 'main.views.page_not_found'
+handler500 = 'main.views.server_error'
