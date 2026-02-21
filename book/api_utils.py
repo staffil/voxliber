@@ -79,7 +79,7 @@ def check_rate_limit(request, key_suffix='', limit=100, period=60):
         tuple: (is_allowed, remaining, reset_time)
     """
     ip = get_client_ip(request)
-    user_id = request.api_user.id if hasattr(request, 'api_user') else 'anonymous'
+    user_id = request.api_user.pk if hasattr(request, 'api_user') else 'anonymous'
     cache_key = f'rate_limit:{ip}:{user_id}:{key_suffix}'
 
     # 현재 요청 수 확인
