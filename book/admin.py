@@ -252,8 +252,8 @@ class BookSnapAdmin(admin.ModelAdmin):
     # --- 썸네일 미리보기 ---
     def preview_thumb(self, obj):
         """이미지 또는 비디오 썸네일 미리보기"""
-        if obj.snap_image:
-            return format_html(f'<img src="{obj.snap_image.url}" style="width:120px; height:auto; border-radius:8px;" />')
+        if obj.thumbnail:
+            return format_html(f'<img src="{obj.thumbnail.url}" style="width:120px; height:auto; border-radius:8px;" />')
         if obj.snap_video:
             return format_html(f'''
                 <video width="120" style="border-radius:8px;" muted>
