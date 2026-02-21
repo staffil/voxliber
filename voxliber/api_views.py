@@ -1739,14 +1739,14 @@ def api_create_ai_story(request):
         )
 
         # 서브이미지 + HP 매핑 생성 (이미지 파일 없음, 텍스트만)
-        from character.models import LLMSubImage, HPImageMapping, LastWard
+        from character.models import LLMSubImage, HPImageMapping, LastWard, LoreEntry
         sub_images_data = data.get("sub_images", [])
         sub_images_count = 0
         for item in sub_images_data:
             sub_img = LLMSubImage.objects.create(
                 llm=llm,
-                title=item.get("title", ""),
-                description=item.get("description", ""),
+                title=item.get("description", ""),   # 설명 내용 → 제목으로
+                description=item.get("title", ""),   # 짧은 제목 → description에
                 order=item.get("order", 0),
                 is_public=False,
             )
@@ -1777,6 +1777,20 @@ def api_create_ai_story(request):
             )
             last_wards_count += 1
 
+        # 로어북 항목 생성
+        lore_entries_data = data.get("lore_entries", [])
+        lore_count = 0
+        for item in lore_entries_data:
+            LoreEntry.objects.create(
+                llm=llm,
+                keys=item.get("keys", ""),
+                content=item.get("content", ""),
+                priority=item.get("priority", 0),
+                always_active=item.get("always_active", False),
+                category=item.get("category", "world"),
+            )
+            lore_count += 1
+
         return api_response(data={
             "story_uuid":       str(story.public_uuid),
             "story_title":      story.title,
@@ -1784,6 +1798,7 @@ def api_create_ai_story(request):
             "character_name":   llm.name,
             "sub_images_count": sub_images_count,
             "last_wards_count": last_wards_count,
+            "lore_count":       lore_count,
             "story_url":        f"https://voxliber.ink/character/story/{story.public_uuid}/",
         })
 
@@ -1922,3 +1937,123 @@ def api_create_ai_llm(request):
 
     except Exception as e:
         return api_response(error=f"LLM 생성 실패: {str(e)}", status=500)
+
+
+# ==================== 27. 로어북 CRUD API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_lore_entry_create(request):
+    """
+    로어북 항목 생성/수정 API
+
+    POST /api/v1/lore-entry/
+    Body (JSON):
+    {
+        "llm_uuid": "LLM UUID (필수)",
+        "entries": [
+            {
+                "keys": "키워드1, 키워드2",
+                "content": "이 키워드가 등장하면 주입될 내용",
+                "priority": 10,
+                "always_active": false,
+                "category": "world"  // personality | world | relationship
+            }
+        ],
+        "replace_all": false  // true면 기존 항목 모두 삭제 후 교체
+    }
+    """
+    from character.models import LLM, LoreEntry
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    llm_uuid = data.get("llm_uuid", "").strip()
+    if not llm_uuid:
+        return api_response(error="llm_uuid는 필수입니다.", status=400)
+
+    try:
+        llm = LLM.objects.get(public_uuid=llm_uuid)
+    except LLM.DoesNotExist:
+        return api_response(error="LLM을 찾을 수 없습니다.", status=404)
+
+    entries_data = data.get("entries", [])
+    if not entries_data:
+        return api_response(error="entries는 필수입니다.", status=400)
+
+    VALID_CATEGORIES = {"personality", "world", "relationship", ""}
+
+    try:
+        # replace_all=True면 기존 항목 삭제
+        if data.get("replace_all", False):
+            LoreEntry.objects.filter(llm=llm).delete()
+
+        created = []
+        for item in entries_data:
+            category = item.get("category", "world")
+            if category not in VALID_CATEGORIES:
+                category = "world"
+            entry = LoreEntry.objects.create(
+                llm=llm,
+                keys=item.get("keys", ""),
+                content=item.get("content", ""),
+                priority=int(item.get("priority", 0)),
+                always_active=bool(item.get("always_active", False)),
+                category=category,
+            )
+            created.append({
+                "id": entry.id,
+                "keys": entry.keys,
+                "category": entry.category,
+                "priority": entry.priority,
+                "always_active": entry.always_active,
+            })
+
+        return api_response(data={
+            "llm_uuid": llm_uuid,
+            "created_count": len(created),
+            "entries": created,
+        })
+
+    except Exception as e:
+        return api_response(error=f"로어북 생성 실패: {str(e)}", status=500)
+
+
+@require_api_key_secure
+@require_http_methods(["GET"])
+def api_lore_entry_list(request):
+    """
+    로어북 항목 조회 API
+
+    GET /api/v1/lore-entry/?llm_uuid=<UUID>
+    """
+    from character.models import LLM, LoreEntry
+
+    llm_uuid = request.GET.get("llm_uuid", "").strip()
+    if not llm_uuid:
+        return api_response(error="llm_uuid 파라미터가 필요합니다.", status=400)
+
+    try:
+        llm = LLM.objects.get(public_uuid=llm_uuid)
+    except LLM.DoesNotExist:
+        return api_response(error="LLM을 찾을 수 없습니다.", status=404)
+
+    entries = LoreEntry.objects.filter(llm=llm).order_by("-priority", "id")
+    return api_response(data={
+        "llm_uuid": llm_uuid,
+        "character_name": llm.name,
+        "total": entries.count(),
+        "entries": [
+            {
+                "id": e.id,
+                "keys": e.keys,
+                "content": e.content,
+                "priority": e.priority,
+                "always_active": e.always_active,
+                "category": e.category,
+            }
+            for e in entries
+        ],
+    })
