@@ -233,7 +233,7 @@
     height: 260px;
   }
   .promo-controls {
-    bottom: 12px;              /* 배너 안쪽 하단으로 이동 (공간 절약) */
+    bottom: -62px;              /* 배너 안쪽 하단으로 이동 (공간 절약) */
     left: 50%;
     transform: translateX(-50%);
     width: fit-content;
@@ -290,7 +290,7 @@
     height: 180px;             /* 모바일에서 매우 컴팩트 */
   }
   .promo-controls {
-    bottom: 8px;
+    bottom: -62px;              /* 배너 안쪽 하단으로 이동 (공간 절약) */
     gap: 10px;
     padding: 6px 12px;
   }
@@ -358,7 +358,7 @@
 
   /* 하단 컨트롤 완전 압축 */
   .promo-controls {
-    bottom: 6px;
+    bottom: -62px;              /* 배너 안쪽 하단으로 이동 (공간 절약) */
     gap: 6px;
     padding: 4px 8px;
     border-radius: 20px;
