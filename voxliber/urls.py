@@ -90,6 +90,7 @@ urlpatterns = [
 
     # AI 스토리 생성
     path("api/v1/create-ai-story/", voxliber_api.api_create_ai_story, name="api_create_ai_story"),
+    path("api/v1/create-ai-llm/", voxliber_api.api_create_ai_llm, name="api_create_ai_llm"),
 
     # 광고 API (앱용)
     path("api/v1/ads/check/", voxliber_api.api_ad_check, name="api_ad_check"),

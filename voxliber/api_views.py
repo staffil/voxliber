@@ -1673,8 +1673,14 @@ def api_create_ai_story(request):
         "style": 0.5
     }
     """
+    from book.api_utils import check_rate_limit
     from character.models import Story, LLM
     from book.models import Genres, Tags, VoiceList
+
+    # AI 생성 전용 엄격한 rate limit (분당 5회)
+    is_allowed, _, _ = check_rate_limit(request, key_suffix='create_ai_story', limit=5, period=60)
+    if not is_allowed:
+        return api_response(error="AI 생성 요청 제한 초과. 1분당 최대 5회 가능합니다.", status=429)
 
     try:
         data = json.loads(request.body)
@@ -1788,3 +1794,136 @@ def api_create_ai_story(request):
 
     except Exception as e:
         return api_response(error=f"스토리 생성 실패: {str(e)}", status=500)
+
+
+# ==================== 26. AI LLM 추가 생성 API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_create_ai_llm(request):
+    """
+    기존 스토리에 LLM 캐릭터 추가 생성 API (이미지/영상 제외 전 필드)
+
+    POST /api/v1/create-ai-llm/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "story_uuid": "기존 스토리 UUID (필수)",
+        "character_name": "캐릭터 이름",
+        "character_title": "캐릭터 한 줄 소개",
+        "character_description": "캐릭터 공개 소개문",
+        "character_prompt": "캐릭터 시스템 프롬프트",
+        "first_sentence": "AI의 첫 마디",
+        "narrator_voice_id": "voice_id (선택)",
+        "llm_model": "gpt:gpt-4o-mini",
+        "temperature": 1.0,
+        "stability": 0.5,
+        "speed": 1.0,
+        "style": 0.5,
+        "sub_images": [...],
+        "last_wards": [...]
+    }
+    """
+    from book.api_utils import check_rate_limit
+    from character.models import Story, LLM, LLMSubImage, HPImageMapping, LastWard
+    from book.models import VoiceList
+
+    # AI 생성 전용 엄격한 rate limit (분당 5회)
+    is_allowed, _, _ = check_rate_limit(request, key_suffix='create_ai_llm', limit=5, period=60)
+    if not is_allowed:
+        return api_response(error="AI 생성 요청 제한 초과. 1분당 최대 5회 가능합니다.", status=429)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    story_uuid = data.get("story_uuid", "").strip()
+    if not story_uuid:
+        return api_response(error="story_uuid는 필수입니다.", status=400)
+
+    try:
+        story = Story.objects.get(public_uuid=story_uuid)
+    except Story.DoesNotExist:
+        return api_response(error=f"스토리를 찾을 수 없습니다: {story_uuid}", status=404)
+
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    admin_user = User.objects.filter(is_superuser=True).first()
+    if not admin_user:
+        return api_response(error="관리자 계정이 없습니다.", status=500)
+
+    try:
+        narrator_voice = None
+        narrator_voice_id = data.get("narrator_voice_id", "")
+        if narrator_voice_id:
+            narrator_voice = VoiceList.objects.filter(voice_id=narrator_voice_id).first()
+
+        character_name = data.get("character_name", "").strip()
+        if not character_name:
+            return api_response(error="character_name은 필수입니다.", status=400)
+
+        llm = LLM.objects.create(
+            user=admin_user,
+            story=story,
+            name=character_name,
+            title=data.get("character_title", ""),
+            description=data.get("character_description", ""),
+            prompt=data.get("character_prompt", ""),
+            first_sentence=data.get("first_sentence", ""),
+            model=data.get("llm_model", "gpt:gpt-4o-mini"),
+            narrator_voice=narrator_voice,
+            language="ko",
+            temperature=float(data.get("temperature", 1.0)),
+            stability=float(data.get("stability", 0.5)),
+            speed=float(data.get("speed", 1.0)),
+            style=float(data.get("style", 0.5)),
+        )
+
+        # 서브이미지 + HP 매핑
+        sub_images_count = 0
+        for item in data.get("sub_images", []):
+            sub_img = LLMSubImage.objects.create(
+                llm=llm,
+                title=item.get("title", ""),
+                description=item.get("description", ""),
+                order=item.get("order", 0),
+                is_public=False,
+            )
+            hp_min = item.get("hp_min")
+            hp_max = item.get("hp_max")
+            if hp_min is not None and hp_max is not None:
+                HPImageMapping.objects.create(
+                    llm=llm,
+                    sub_image=sub_img,
+                    min_hp=hp_min,
+                    max_hp=hp_max,
+                    note=f"HP {hp_min}~{hp_max} - {item.get('title','')}",
+                    priority=item.get("order", 0),
+                )
+            sub_images_count += 1
+
+        # 마지막 이미지
+        last_wards_count = 0
+        for item in data.get("last_wards", []):
+            LastWard.objects.create(
+                llm=llm,
+                ward=item.get("ward", ""),
+                description=item.get("description", ""),
+                order=item.get("order", 0),
+                is_public=False,
+            )
+            last_wards_count += 1
+
+        return api_response(data={
+            "story_uuid":       str(story.public_uuid),
+            "story_title":      story.title,
+            "llm_uuid":         str(llm.public_uuid),
+            "character_name":   llm.name,
+            "sub_images_count": sub_images_count,
+            "last_wards_count": last_wards_count,
+            "story_url":        f"https://voxliber.ink/character/story/{story.public_uuid}/",
+        })
+
+    except Exception as e:
+        return api_response(error=f"LLM 생성 실패: {str(e)}", status=500)

@@ -23,8 +23,8 @@ def require_api_key(view_func):
     """
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        # HTTP 헤더에서 API Key 추출
-        api_key = request.headers.get('X-API-Key') or request.GET.get('api_key')
+        # HTTP 헤더에서만 API Key 추출 (URL 파라미터 허용 안 함 - 로그 노출 위험)
+        api_key = request.headers.get('X-API-Key')
 
         if not api_key:
             return JsonResponse({
@@ -181,10 +181,8 @@ def require_api_key_secure(view_func):
         # DRF Request와 Django HttpRequest 모두 지원
         try:
             log_decorator("  Step 1: API Key 추출 시작")
-            if hasattr(request, 'query_params'):  # DRF Request
-                api_key = request.headers.get('X-API-Key') or request.query_params.get('api_key')
-            else:  # Django HttpRequest
-                api_key = request.headers.get('X-API-Key') or request.GET.get('api_key')
+            # HTTP 헤더에서만 API Key 추출 (URL 파라미터 허용 안 함 - 로그 노출 위험)
+            api_key = request.headers.get('X-API-Key')
 
             log_decorator(f"🔑 [require_api_key_secure] API Key: {api_key[:10] if api_key else 'None'}...")
             print(f"🔑 [require_api_key_secure] API Key: {api_key[:10] if api_key else 'None'}...")
