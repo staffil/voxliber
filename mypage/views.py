@@ -224,8 +224,8 @@ def my_library(request):
 def api_my_library(request):
     from book.models import APIKey
 
-    # API Key로 사용자 인증
-    api_key = request.GET.get('api_key')
+    # API Key로 사용자 인증 (헤더 우선, GET 파라미터 폴백)
+    api_key = request.headers.get('X-API-Key') or request.GET.get('api_key')
     if not api_key:
         return JsonResponse({'error': 'API key is required'}, status=401)
 

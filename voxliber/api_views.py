@@ -436,16 +436,11 @@ def api_create_sound_effect(request):
 
     try:
         print(f"🎵 [API] 사운드 이펙트 생성: {effect_name} - {effect_description}")
-        audio_stream = sound_effect(effect_name, effect_description, duration_seconds)
+        # sound_effect() saves file internally, returns file path
+        audio_path = sound_effect(effect_name, effect_description, duration_seconds)
 
-        if not audio_stream:
+        if not audio_path:
             return api_response(error="사운드 이펙트 생성에 실패했습니다.", status=500)
-
-        # 스트림을 임시 파일로 저장
-        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
-            temp_path = temp_file.name
-            for chunk in audio_stream:
-                temp_file.write(chunk)
 
         # DB에 저장
         effect_obj = SoundEffectLibrary.objects.create(
@@ -454,10 +449,10 @@ def api_create_sound_effect(request):
             user=request.api_user,
         )
 
-        with open(temp_path, 'rb') as f:
+        with open(audio_path, 'rb') as f:
             effect_obj.audio_file.save(f"effect_{effect_obj.id}.mp3", File(f), save=True)
 
-        os.remove(temp_path)
+        os.remove(audio_path)
 
         print(f"✅ [API] 사운드 이펙트 생성 완료: {effect_name}")
 

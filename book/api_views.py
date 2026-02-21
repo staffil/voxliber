@@ -1280,7 +1280,7 @@ def api_snap_comment(request, snap_uuid):
 
 
     # API Key로 유저 가져오기
-    api_key = request.GET.get('api_key')
+    api_key = request.headers.get('X-API-Key') or request.GET.get('api_key')
     try:
         api_key_obj = APIKey.objects.select_related('user').get(key=api_key, is_active=True)
         user = api_key_obj.user

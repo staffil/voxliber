@@ -17,7 +17,7 @@ from book.models import Books, BookSnap, Follow
 
 @api_view(['GET', 'PATCH'])
 def api_user_info(request):
-    api_key = request.GET.get('api_key')
+    api_key = request.headers.get('X-API-Key') or request.GET.get('api_key')
 
     if not api_key:
         return Response({"error": "로그인이 필요합니다."}, status=401)
