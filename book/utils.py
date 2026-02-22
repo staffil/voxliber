@@ -1,5 +1,6 @@
 # tts 생성 (디버깅용)
 import os
+import re
 import traceback
 from django.conf import settings
 from elevenlabs import ElevenLabs
@@ -187,9 +188,10 @@ def merge_audio_files(audio_files, pages_text=None):
                     'endTime': cumulative_time
                 }
 
-                # 페이지 텍스트가 있으면 추가
+                # 페이지 텍스트가 있으면 추가 (TTS용 [] 태그 제거 후 저장)
                 if pages_text and idx < len(pages_text):
-                    timestamp_data['text'] = pages_text[idx]
+                    raw = pages_text[idx] or ''
+                    timestamp_data['text'] = re.sub(r'\[[^\]]*\]', '', raw).strip()
 
                 timestamps_info.append(timestamp_data)
 

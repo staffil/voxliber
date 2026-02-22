@@ -507,8 +507,9 @@ document.addEventListener("DOMContentLoaded", function () {
             // content-text-section을 페이지별 span으로 교체
             const contentTextEl = document.getElementById('contentText');
             if (contentTextEl) {
-                contentTextEl.innerHTML = pages.map((pg, i) =>
-                    `<span class="page-block" data-page="${i}">${escapeHtml(pg.text).replace(/\n/g, '<br>')}</span>`
+                const cleanTag = t => t.replace(/\[[^\]]*\]/g, '').trim();
+            contentTextEl.innerHTML = pages.map((pg, i) =>
+                    `<span class="page-block" data-page="${i}">${escapeHtml(cleanTag(pg.text)).replace(/\n/g, '<br>')}</span>`
                 ).join('');
             }
 

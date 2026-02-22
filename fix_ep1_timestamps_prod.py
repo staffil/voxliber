@@ -4,7 +4,11 @@
 - String으로 저장된 timestamps를 Python 객체로 변환
 실행: python fix_ep1_timestamps_prod.py
 """
-import os, sys, django, json
+import os, sys, django, json, re
+
+def clean_tags(text):
+    """TTS용 [] 태그 제거"""
+    return re.sub(r'\[[^\]]*\]', '', text or '').strip()
 sys.stdout.reconfigure(encoding='utf-8')
 
 # 프로덕션 서버 Django 설정 경로에 맞게 조정
@@ -43,28 +47,25 @@ for ep in Content.objects.filter(book=book, is_deleted=False).order_by('number')
         print(f"  건너뜀: 비어있음")
         continue
 
-    # startTime 이미 있으면 스킵
-    if 'startTime' in ts[0]:
-        print(f"  ✅ 이미 startTime 있음 (타입 수정만 필요한지 확인)")
-        # 타입만 string → list였으면 저장
-        if isinstance(ep.audio_timestamps, str):
-            ep.audio_timestamps = ts
-            ep.save(update_fields=['audio_timestamps'])
-            print(f"  ✅ String → list 타입 수정 완료")
-        continue
+    # startTime 없으면 추가
+    if 'startTime' not in ts[0]:
+        start = INTRO_SILENCE
+        for i, entry in enumerate(ts):
+            if i == 0:
+                entry['startTime'] = start
+            else:
+                entry['startTime'] = ts[i-1]['endTime'] + INTER_SILENCE
+            if 'endTime' not in entry:
+                entry['endTime'] = entry['startTime'] + 3000
+        print(f"  startTime 추가 완료")
 
-    # startTime 추가
-    start = INTRO_SILENCE
-    for i, entry in enumerate(ts):
-        if i == 0:
-            entry['startTime'] = start
-        else:
-            entry['startTime'] = ts[i-1]['endTime'] + INTER_SILENCE
-        if 'endTime' not in entry:
-            entry['endTime'] = entry['startTime'] + 3000
+    # [] 태그 제거
+    for entry in ts:
+        if 'text' in entry:
+            entry['text'] = clean_tags(entry['text'])
 
-    ep.audio_timestamps = ts  # Python 객체로 저장 (json.dumps 없이)
+    ep.audio_timestamps = ts  # Python 객체로 저장
     ep.save(update_fields=['audio_timestamps'])
-    print(f"  ✅ startTime 추가 + list 저장 완료 ({len(ts)}페이지)")
+    print(f"  ✅ 수정 완료 ({len(ts)}페이지)")
 
 print("\n=== 완료 ===")
