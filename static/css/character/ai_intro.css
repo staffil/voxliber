@@ -125,7 +125,7 @@ header{
 .intro-main-image {
     position: relative;
     width: 100%;
-    aspect-ratio: 1 / 0.75;
+    aspect-ratio: 1 / 1.2;
     overflow: hidden;
     background: var(--intro-card);
 }

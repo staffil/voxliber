@@ -2057,3 +2057,192 @@ def api_lore_entry_list(request):
             for e in entries
         ],
     })
+
+
+# ==================== 28. 인기 작가 API ====================
+
+@require_api_key_secure
+@require_http_methods(["GET"])
+def api_popular_authors(request):
+    """
+    이달의 작가 (인기 작가) 목록 API
+
+    GET /api/v1/popular-authors/
+    Headers: X-API-Key: <your_api_key>
+
+    Returns:
+    {
+        "success": true,
+        "data": {
+            "authors": [
+                {
+                    "user_uuid": "...",
+                    "nickname": "작가명",
+                    "profile_img": "https://...",
+                    "book_count": 3,
+                    "avg_score": 4.5,
+                    "representative_books": [
+                        {"book_uuid": "...", "title": "...", "cover_img": "..."}
+                    ]
+                }
+            ]
+        }
+    }
+    """
+    from django.db.models import Count, Sum
+    from register.models import Users
+
+    limit = min(int(request.GET.get("limit", 8)), 20)
+
+    authors = (
+        Users.objects.annotate(
+            book_count=Count("books", distinct=True),
+            avg_score=Sum("books__book_score") / Count("books", distinct=True),
+        )
+        .filter(book_count__gt=0)
+        .order_by("-avg_score", "-book_count")[:limit]
+    )
+
+    base_url = request.build_absolute_uri("/").rstrip("/")
+
+    authors_data = []
+    for author in authors:
+        rep_books = Books.objects.filter(user=author).order_by("-book_score", "-created_at")[:3]
+        rep_books_data = []
+        for b in rep_books:
+            rep_books_data.append({
+                "book_uuid": str(b.public_uuid),
+                "title": b.name,
+                "cover_img": base_url + b.cover_img.url if b.cover_img else None,
+            })
+
+        authors_data.append({
+            "user_uuid": str(author.public_uuid) if author.public_uuid else None,
+            "nickname": author.nickname,
+            "profile_img": base_url + author.user_img.url if author.user_img else None,
+            "book_count": author.book_count,
+            "avg_score": round(float(author.avg_score or 0), 2),
+            "representative_books": rep_books_data,
+        })
+
+    return api_response(data={
+        "authors": authors_data,
+        "total": len(authors_data),
+    })
+
+
+# ==================== 29. 실시간 인기 차트 API ====================
+
+@require_api_key_secure
+@require_http_methods(["GET"])
+def api_realtime_chart(request):
+    """
+    실시간 인기 차트 (청취 수 기반) API
+
+    GET /api/v1/realtime-chart/
+    Headers: X-API-Key: <your_api_key>
+
+    Query params:
+    - limit: 반환 개수 (기본 12, 최대 30)
+
+    Returns:
+    {
+        "success": true,
+        "data": {
+            "books": [
+                {
+                    "rank": 1,
+                    "book_uuid": "...",
+                    "title": "...",
+                    "cover_img": "https://...",
+                    "author": "작가명",
+                    "author_uuid": "...",
+                    "genres": [{"name": "판타지", "color": "#fff"}],
+                    "book_score": 4.8,
+                    "listener_count": 120,
+                    "total_listened_seconds": 36000,
+                    "episode_count": 5
+                }
+            ]
+        }
+    }
+    """
+    from django.db.models import Count, Sum
+
+    limit = min(int(request.GET.get("limit", 12)), 30)
+
+    books = (
+        Books.objects
+        .select_related("user")
+        .prefetch_related("genres")
+        .annotate(
+            total_listened=Sum("listening_stats__listened_seconds"),
+            listener_count=Count("listening_stats__user", distinct=True),
+            episode_count=Count("contents", distinct=True),
+        )
+        .order_by("-listener_count", "-total_listened")[:limit]
+    )
+
+    base_url = request.build_absolute_uri("/").rstrip("/")
+
+    books_data = []
+    for rank, book in enumerate(books, start=1):
+        books_data.append({
+            "rank": rank,
+            "book_uuid": str(book.public_uuid),
+            "title": book.name,
+            "cover_img": base_url + book.cover_img.url if book.cover_img else None,
+            "author": book.user.nickname if book.user else None,
+            "author_uuid": str(book.user.public_uuid) if book.user and book.user.public_uuid else None,
+            "genres": [{"name": g.name, "color": g.genres_color} for g in book.genres.all()],
+            "book_score": float(book.book_score or 0),
+            "listener_count": book.listener_count or 0,
+            "total_listened_seconds": book.total_listened or 0,
+            "episode_count": book.episode_count or 0,
+        })
+
+    return api_response(data={
+        "books": books_data,
+        "total": len(books_data),
+    })
+
+
+# ==================== 30. 공지/새소식 배너 API ====================
+
+@require_api_key_secure
+@require_http_methods(["GET"])
+def api_announcement(request):
+    """
+    공지/새소식 배너 API (ScreenAI 첫 번째 항목)
+
+    GET /api/v1/announcement/
+    Headers: X-API-Key: <your_api_key>
+
+    Returns:
+    {
+        "success": true,
+        "data": {
+            "announcement": {
+                "title": "새 기능 출시!",
+                "link": "https://voxliber.ink/...",
+                "image_url": "https://..."
+            }
+        }
+    }
+    """
+    from main.models import ScreenAI
+
+    item = ScreenAI.objects.first()
+    if not item:
+        return api_response(data={"announcement": None})
+
+    base_url = request.build_absolute_uri("/").rstrip("/")
+    image_url = base_url + item.advertisment_img.url if item.advertisment_img else None
+
+    return api_response(data={
+        "announcement": {
+            "title": item.title,
+            "link": item.link,
+            "image_url": image_url,
+        }
+    })

@@ -96,6 +96,11 @@ urlpatterns = [
     path("api/v1/lore-entry/", voxliber_api.api_lore_entry_list, name="api_lore_entry_list"),
     path("api/v1/lore-entry/create/", voxliber_api.api_lore_entry_create, name="api_lore_entry_create"),
 
+    # 홈 차트/작가 (앱용)
+    path("api/v1/popular-authors/", voxliber_api.api_popular_authors, name="api_popular_authors"),
+    path("api/v1/realtime-chart/", voxliber_api.api_realtime_chart, name="api_realtime_chart"),
+    path("api/v1/announcement/", voxliber_api.api_announcement, name="api_announcement"),
+
     # 광고 API (앱용)
     path("api/v1/ads/check/", voxliber_api.api_ad_check, name="api_ad_check"),
     path("api/v1/ads/impression/", voxliber_api.api_ad_impression, name="api_ad_impression"),

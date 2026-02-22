@@ -1074,27 +1074,28 @@ document.addEventListener("DOMContentLoaded", () => {
     </section>
     {% endif %}
 
-<!-- 
-<section class="hero-section" style="height: 300px;">
-  <div class="hero-background">
-    {% for news in ai_advertismemt_img %}
-      {% if news.advertisment_img %}
-        <img src="{{ news.advertisment_img.url }}" alt="VOXLIBER" loading="lazy">
+
+{% with ann=ai_advertismemt_img.0 %}
+{% if ann %}
+<a href="{{ ann.link }}" class="hero-announce-link">
+  <section class="hero-section hero-announce">
+    <div class="hero-background">
+      {% if ann.advertisment_img %}
+        <img src="{{ ann.advertisment_img.url }}" alt="{{ ann.title }}">
       {% else %}
-        <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
+        <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER">
       {% endif %}
-    {% empty %}
-      <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
-    {% endfor %}
-  </div>
-
-  <div class="hero-overlay" style="border-radius: 15px;"></div>
-
-  <div class="hero-content">
-
-
-  </div>
-</section> -->
+    </div>
+    <div class="hero-overlay" style="border-radius: 15px;"></div>
+    <div class="hero-content">
+      <p class="hero-announce-label">📣 새로운 소식</p>
+      <h2 class="hero-announce-title">{{ ann.title }}</h2>
+      <span class="hero-announce-cta">자세히 보기 →</span>
+    </div>
+  </section>
+</a>
+{% endif %}
+{% endwith %}
 
     <!-- 인기있는 작가 섹션 -->
     <section class="content-section">
