@@ -161,8 +161,7 @@ def book_profile(request):
         else:
             book.tags.clear()
 
-        return redirect(f"/book/book/serialization/?public_uuid={book.public_uuid}")
-
+        return redirect(f"/book/serialization/fast/{book.public_uuid}/")
     context = {
         "genres_list": genres_list,
         "tag_list": tag_list,
