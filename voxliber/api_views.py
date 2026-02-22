@@ -266,9 +266,9 @@ def api_create_episode(request):
                         save=True
                     )
 
-                # 5. 타임스탬프 저장
+                # 5. 타임스탬프 저장 (JSONField에 Python 객체 직접 저장 - json.dumps 불필요)
                 if timestamps_info:
-                    content.audio_timestamps = json.dumps(timestamps_info)
+                    content.audio_timestamps = timestamps_info
                     timestamps = timestamps_info
 
                 # 6. 오디오 길이 계산
