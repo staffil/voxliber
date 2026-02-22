@@ -176,13 +176,15 @@ def merge_audio_files(audio_files, pages_text=None):
                 if idx > 0:
                     cumulative_time += 500
 
+                page_start = cumulative_time  # startTime: 이 페이지 오디오 시작 시점
+
                 # 오디오 길이만큼 누적
                 cumulative_time += duration
 
-                # 대사 끝나는 시간만 저장 (간단한 방식)
                 timestamp_data = {
                     'pageIndex': idx,
-                    'endTime': cumulative_time  # 누적 끝 시간만 저장
+                    'startTime': page_start,
+                    'endTime': cumulative_time
                 }
 
                 # 페이지 텍스트가 있으면 추가

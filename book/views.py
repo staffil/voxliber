@@ -2673,13 +2673,42 @@ def book_serilazation_fast_view(request, book_uuid):
     from book.models import AudioBookGuide
     guides = AudioBookGuide.objects.filter(category='fast', is_active=True).order_by('order_num')
 
+    import json as _json
     context = {
         'book': book,
         'voice_list': voice_list,
         'next_episode_number': next_episode_number,
         'guides': guides,
+        'voice_config_json': _json.dumps(book.voice_config or {}),
+        'draft_text_json': _json.dumps(book.draft_text or ''),
+        'draft_episode_title_json': _json.dumps(book.draft_episode_title or ''),
     }
     return render(request, 'book/book_serialization_fast.html', context)
+
+
+@login_required
+@require_POST
+def save_voice_config(request, book_uuid):
+    """캐릭터 보이스 설정 + 소설 텍스트 임시저장"""
+    import json as _json
+    book = get_object_or_404(Books, public_uuid=book_uuid, user=request.user)
+    try:
+        data = _json.loads(request.body)
+        update_fields = []
+        if 'voice_config' in data:
+            book.voice_config = data['voice_config']
+            update_fields.append('voice_config')
+        if 'draft_text' in data:
+            book.draft_text = data['draft_text']
+            update_fields.append('draft_text')
+        if 'draft_episode_title' in data:
+            book.draft_episode_title = data['draft_episode_title']
+            update_fields.append('draft_episode_title')
+        if update_fields:
+            book.save(update_fields=update_fields)
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
 # ==================== AI 오디오북 분석 (Grok) ====================

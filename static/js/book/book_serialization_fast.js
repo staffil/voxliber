@@ -40,6 +40,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 저장된 소설 텍스트 + 에피소드 제목 복원
+    if (typeof savedDraftText !== 'undefined' && savedDraftText) {
+        const novelTextEl = document.getElementById('novelText');
+        if (novelTextEl) { novelTextEl.value = savedDraftText; updateCharCount(); }
+    }
+    if (typeof savedDraftTitle !== 'undefined' && savedDraftTitle) {
+        const titleInputEl = document.getElementById('episodeTitle');
+        if (titleInputEl) titleInputEl.value = savedDraftTitle;
+    }
+
+    // 저장된 보이스 설정 복원
+    if (typeof savedVoiceConfig !== 'undefined' && savedVoiceConfig && Object.keys(savedVoiceConfig).length > 0) {
+        restoreVoiceConfig(savedVoiceConfig);
+    }
+
+    // 소설 텍스트/제목 변경 시 debounce 자동 저장 (3초)
+    let draftSaveTimer = null;
+    function scheduleDraftSave() {
+        clearTimeout(draftSaveTimer);
+        draftSaveTimer = setTimeout(() => saveDraft(), 3000);
+    }
+    const _novelTextEl = document.getElementById('novelText');
+    const _titleInputEl = document.getElementById('episodeTitle');
+    if (_novelTextEl) _novelTextEl.addEventListener('input', scheduleDraftSave);
+    if (_titleInputEl) _titleInputEl.addEventListener('input', scheduleDraftSave);
+
     console.log('오디오북 생성기 초기화 완료');
 });
 
@@ -256,6 +282,10 @@ function generateJSONPreview() {
     }
 
     showStatus(`JSON 생성 완료 (${rawPages.length}줄 → ${pages.length}페이지) - 수정 후 실행 가능`, 'success');
+
+    // 보이스 설정 자동 저장
+    saveVoiceConfig(charMap);
+
     return jsonData;
 }
 
@@ -641,6 +671,114 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+
+// ==================== 보이스 설정 저장/복원 ====================
+
+/**
+ * 저장된 config에서 캐릭터 & 목소리를 복원
+ * config: { "0": {name, voice_id}, "1": {name, voice_id}, ... }
+ */
+function restoreVoiceConfig(config) {
+    const list = document.getElementById('characterList');
+    if (!list) return;
+
+    const keys = Object.keys(config).map(Number).sort((a, b) => a - b);
+    let maxNum = 1;
+
+    for (const num of keys) {
+        const cfg = config[num];
+        if (!cfg || !cfg.voice_id) continue;
+
+        let item = list.querySelector(`.character-item[data-number="${num}"]`);
+
+        if (num >= 1 && !item) {
+            // 새 캐릭터 항목 생성
+            item = document.createElement('div');
+            item.className = 'character-item';
+            item.dataset.number = num;
+            item.innerHTML = `
+                <div class="character-number-badge">${num}</div>
+                <div class="character-content">
+                    <input type="text" class="character-name" placeholder="캐릭터 이름" data-number="${num}">
+                    <select class="voice-select" data-number="${num}">
+                        <option value="">목소리 선택</option>
+                        ${voiceList.map(v => `<option value="${v.id}">${v.name}</option>`).join('')}
+                    </select>
+                </div>
+                <button class="btn-remove-char" onclick="removeCharacter(${num})">삭제</button>
+            `;
+            list.appendChild(item);
+        }
+
+        if (item) {
+            const nameInput = item.querySelector('.character-name');
+            const voiceSel = item.querySelector('.voice-select');
+            if (nameInput && cfg.name) nameInput.value = cfg.name;
+            if (voiceSel && cfg.voice_id) voiceSel.value = cfg.voice_id;
+        }
+
+        if (num > maxNum) maxNum = num;
+    }
+
+    characterCount = maxNum;
+    console.log('보이스 설정 복원 완료:', Object.keys(config).length, '개 캐릭터');
+}
+
+/**
+ * 캐릭터 맵 + 소설 텍스트 + 제목을 DB에 저장
+ */
+async function saveVoiceConfig(charMap) {
+    if (!bookId) return;
+
+    const novelTextEl = document.getElementById('novelText');
+    const titleInputEl = document.getElementById('episodeTitle');
+
+    const payload = {};
+    if (charMap && Object.keys(charMap).length > 0) payload.voice_config = charMap;
+    if (novelTextEl) payload.draft_text = novelTextEl.value;
+    if (titleInputEl) payload.draft_episode_title = titleInputEl.value;
+
+    try {
+        await fetch(`/book/serialization/fast/${bookId}/voice-config/save/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(payload)
+        });
+    } catch (e) {
+        console.warn('설정 저장 실패:', e);
+    }
+}
+
+/**
+ * 소설 텍스트 + 제목만 저장 (debounce 자동 저장용)
+ */
+async function saveDraft() {
+    if (!bookId) return;
+
+    const novelTextEl = document.getElementById('novelText');
+    const titleInputEl = document.getElementById('episodeTitle');
+
+    const payload = {
+        draft_text: novelTextEl ? novelTextEl.value : '',
+        draft_episode_title: titleInputEl ? titleInputEl.value : ''
+    };
+
+    try {
+        await fetch(`/book/serialization/fast/${bookId}/voice-config/save/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(payload)
+        });
+    } catch (e) {
+        console.warn('임시저장 실패:', e);
+    }
 }
 
 console.log('오디오북 생성기 스크립트 로드 완료');

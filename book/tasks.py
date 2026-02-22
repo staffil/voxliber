@@ -220,6 +220,7 @@ def process_batch_audiobook(self, data, user_id):
 
                 # 페이지별 TTS 생성
                 audio_files = []
+                successful_texts = []  # TTS 성공한 페이지 텍스트 (timestamps 싱크용)
                 for page_idx, page in enumerate(pages):
                     text = page.get('text', '')
                     voice_id = page.get('voice_id', '')
@@ -276,7 +277,8 @@ def process_batch_audiobook(self, data, user_id):
                                 # 원본 파일 그대로 사용
 
                         audio_files.append(tts_file)
-                        
+                        successful_texts.append(text)
+
                     except Exception as e:
                         print(f"❌ TTS 생성 오류 ({page_idx + 1}번 페이지): {e}")
                         continue
@@ -294,7 +296,7 @@ def process_batch_audiobook(self, data, user_id):
                 })
 
                 try:
-                    merged_file, timestamps, total_duration = merge_audio_files(audio_files)
+                    merged_file, timestamps, total_duration = merge_audio_files(audio_files, pages_text=successful_texts)
                     
                     # 🔥 병합 결과 검증
                     if not merged_file or not os.path.exists(merged_file):

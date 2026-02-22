@@ -7,7 +7,22 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/content_detail.css' %}">
 <style>
-
+.page-block {
+    display: block;
+    padding: 10px 14px;
+    margin: 4px 0;
+    border-radius: 8px;
+    border-left: 3px solid transparent;
+    transition: background 0.3s, border-color 0.3s;
+    line-height: 1.9;
+}
+.page-block:hover {
+    background: rgba(102, 126, 234, 0.07);
+}
+.page-block.page-active {
+    background: rgba(102, 126, 234, 0.15);
+    border-left-color: #667eea;
+}
 </style>
 {% endblock %}
 
@@ -122,34 +137,8 @@
         {% endif %}
     </div>
 
-    <!-- 대사 하이라이트 섹션 (사운드 이팩트 제외)
-    {% if content.audio_file %}
-    <div class="dialogue-highlight-section">
-        <div class="dialogue-header">
-            <h3>📝 대사별 듣기</h3>
-            <div class="dialogue-nav-buttons">
-                <button id="prevDialogueBtn" class="dialogue-nav-btn" title="이전 대사">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="15 18 9 12 15 6"/>
-                    </svg>
-                </button>
-                <span id="dialogueCounter" style="font-size: 13px; color: #888;">-/-</span>
-                <button id="nextDialogueBtn" class="dialogue-nav-btn" title="다음 대사">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-        <div id="dialogueList" class="dialogue-list">
-            대사 목록이 JavaScript로 여기에 추가됩니다
-        </div>
-    </div>
-    {% endif %} -->
-
     <!-- 본문 -->
 <div class="content-text-section" id="contentText">
-
     {{ content.text|remove_brackets|linebreaks }}
 </div>
     <!-- 이전/다음 -->
@@ -508,78 +497,54 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    /* ── 대사 하이라이트 ── */
+    /* ── 페이지 기준 하이라이트 ── */
     const timestampsData = document.getElementById('audio-timestamps-data');
     if (timestampsData) {
         const audioTimestamps = JSON.parse(timestampsData.textContent || '[]');
-        const dialogues = audioTimestamps.filter(ts => ts.text && ts.text.trim());
+        const pages = audioTimestamps.filter(ts => ts.text && ts.text.trim() && ts.startTime !== undefined);
 
-        if (dialogues.length > 0) {
-            const dialogueList    = document.getElementById('dialogueList');
-            const prevDialogueBtn = document.getElementById('prevDialogueBtn');
-            const nextDialogueBtn = document.getElementById('nextDialogueBtn');
-            const dialogueCounter = document.getElementById('dialogueCounter');
-            let currentDialogueIndex = -1;
-
-            function updateCounter() {
-                if (!dialogueCounter) return;
-                dialogueCounter.textContent = currentDialogueIndex >= 0
-                    ? `${currentDialogueIndex + 1}/${dialogues.length}`
-                    : `-/${dialogues.length}`;
+        if (pages.length > 0) {
+            // content-text-section을 페이지별 span으로 교체
+            const contentTextEl = document.getElementById('contentText');
+            if (contentTextEl) {
+                contentTextEl.innerHTML = pages.map((pg, i) =>
+                    `<span class="page-block" data-page="${i}">${escapeHtml(pg.text).replace(/\n/g, '<br>')}</span>`
+                ).join('');
             }
 
-            function renderDialogues() {
-                if (!dialogueList) return;
-                dialogueList.innerHTML = '';
-                dialogues.forEach((dialogue, index) => {
-                    const item = document.createElement('div');
-                    item.className = 'dialogue-item' + (index === currentDialogueIndex ? ' active' : '');
-                    item.innerHTML = `
-                        <div class="dialogue-number">대사 ${index + 1}</div>
-                        <div class="dialogue-text">${escapeHtml(dialogue.text)}</div>
-                    `;
-                    item.addEventListener('click', () => jumpToDialogue(index));
-                    dialogueList.appendChild(item);
+            let currentPage = -1;
+
+            function highlightPage(idx) {
+                if (idx === currentPage) return;
+                currentPage = idx;
+                document.querySelectorAll('.page-block').forEach((el, i) => {
+                    el.classList.toggle('page-active', i === idx);
                 });
-                updateCounter();
-            }
-
-            function jumpToDialogue(index) {
-                if (index >= 0 && index < dialogues.length) {
-                    audioPlayer.currentTime = dialogues[index].startTime / 1000;
-                    currentDialogueIndex = index;
-                    renderDialogues();
+                // 현재 페이지 스크롤
+                const activeEl = document.querySelector('.page-block.page-active');
+                if (activeEl) {
+                    activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
             }
 
             audioPlayer.addEventListener('timeupdate', () => {
-                const currentMs = audioPlayer.currentTime * 1000;
-                for (let i = 0; i < dialogues.length; i++) {
-                    if (currentMs >= dialogues[i].startTime && currentMs < dialogues[i].endTime) {
-                        if (currentDialogueIndex !== i) {
-                            currentDialogueIndex = i;
-                            renderDialogues();
-                        }
+                const ms = audioPlayer.currentTime * 1000;
+                for (let i = 0; i < pages.length; i++) {
+                    if (ms >= pages[i].startTime && ms < pages[i].endTime) {
+                        highlightPage(i);
                         break;
                     }
                 }
             });
 
-            if (prevDialogueBtn) {
-                prevDialogueBtn.addEventListener('click', () => {
-                    if (currentDialogueIndex > 0) jumpToDialogue(currentDialogueIndex - 1);
+            // 페이지 클릭 → 해당 위치로 이동
+            document.querySelectorAll('.page-block').forEach((el, i) => {
+                el.style.cursor = 'pointer';
+                el.addEventListener('click', () => {
+                    audioPlayer.currentTime = pages[i].startTime / 1000;
+                    audioPlayer.play();
                 });
-            }
-            if (nextDialogueBtn) {
-                nextDialogueBtn.addEventListener('click', () => {
-                    if (currentDialogueIndex < dialogues.length - 1) jumpToDialogue(currentDialogueIndex + 1);
-                });
-            }
-
-            renderDialogues();
-        } else {
-            const highlightSection = document.querySelector('.dialogue-highlight-section');
-            if (highlightSection) highlightSection.style.display = 'none';
+            });
         }
     }
 

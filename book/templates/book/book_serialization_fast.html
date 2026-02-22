@@ -363,6 +363,9 @@ const voiceList = [
 
 const bookId = "{{ book.public_uuid }}";
 const nextEpisodeNumber = {{ next_episode_number }};
+const savedVoiceConfig = {{ voice_config_json|safe }};
+const savedDraftText = {{ draft_text_json|safe }};
+const savedDraftTitle = {{ draft_episode_title_json|safe }};
 
 // 이미지 관련 로직은 book_serialization_fast.js에서 처리
 

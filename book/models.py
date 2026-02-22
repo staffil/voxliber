@@ -64,6 +64,9 @@ class Books(models.Model):
     )
     adult_choice = models.BooleanField(default=False)
     author_name = models.CharField(max_length=100, null=True, blank=True, help_text="작가명 (미입력 시 유저 닉네임 사용)")
+    voice_config = models.JSONField(default=dict, null=True, blank=True, help_text="캐릭터별 보이스 설정 {0: {name, voice_id}, ...}")
+    draft_episode_title = models.CharField(max_length=200, null=True, blank=True, help_text="임시저장 에피소드 제목")
+    draft_text = models.TextField(null=True, blank=True, help_text="임시저장 소설 텍스트")
 
     class Meta:
         db_table = 'book'

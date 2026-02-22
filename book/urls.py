@@ -93,6 +93,7 @@ urlpatterns=[
 
     # book_serilazation_fast
     path("serialization/fast/<uuid:book_uuid>/", views.book_serilazation_fast_view, name="book_serilazation_fast_view"),
+    path("serialization/fast/<uuid:book_uuid>/voice-config/save/", views.save_voice_config, name="save_voice_config"),
     path("json/generate/", views.process_json_audiobook, name="process_json_audiobook"),
     path("json/ai-generate/", views.ai_analyze_audiobook, name="ai_analyze_audiobook"),
     path("json/ai-speakers/", views.ai_assign_speakers, name="ai_assign_speakers"),
