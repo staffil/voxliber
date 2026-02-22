@@ -1,1173 +1,926 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ========================================
+   Variables
+   ======================================== */
 :root {
-    --primary-gradient: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-    --card-bg: #16213e;
-    --card-hover-shadow: 0 16px 40px rgba(139, 92, 246, 0.3);
-    --border-color: #2d3561;
-    --text-primary: #ffffff;
-    --text-secondary: #cbd5e1;
-    --bg-main: #0b0b0b;
-    --success-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-    --danger-gradient: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  --primary:         #6366f1;
+  --primary-dark:    #4f46e5;
+  --primary-glow:    rgba(99, 102, 241, 0.32);
+  --secondary:       #8b5cf6;
+  --accent:          #ec4899;
+  --success:         #10b981;
+  --danger:          #ef4444;
+  --warning:         #f59e0b;
+
+  --bg-primary:      #0d0f14;
+  --bg-secondary:    #13161e;
+  --bg-tertiary:     #1a1e2a;
+  --bg-elevated:     #1f2433;
+  --card-bg:         #16213e;
+
+  --border-color:    rgba(255, 255, 255, 0.07);
+  --border-active:   rgba(99, 102, 241, 0.5);
+  --text-primary:    #f0f2f8;
+  --text-secondary:  #8892a4;
+  --text-tertiary:   #4b5568;
+
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --gradient-accent:  linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+  --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --gradient-danger:  linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+
+  --shadow-card:  0 8px 28px rgba(0, 0, 0, 0.45);
+  --shadow-hover: 0 16px 48px rgba(99, 102, 241, 0.28);
+
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   22px;
+  --radius-full: 9999px;
+
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+body.light-mode {
+  --bg-primary:     #f4f6ff;
+  --bg-secondary:   #ffffff;
+  --bg-tertiary:    #eef1fb;
+  --bg-elevated:    #ffffff;
+  --card-bg:        #ffffff;
+  --border-color:   rgba(0, 0, 0, 0.07);
+  --border-active:  rgba(99, 102, 241, 0.35);
+  --text-primary:   #0f172a;
+  --text-secondary: #64748b;
+  --text-tertiary:  #94a3b8;
+  --shadow-card:    0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-hover:   0 12px 36px rgba(99, 102, 241, 0.18);
+}
+
+/* ========================================
+   Base
+   ======================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    background: var(--bg-main);
-    color: var(--text-primary);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin-top: 80px;
-}
-/* 🔥 내 보이스 가로 스크롤 래퍼 */
-.myvoice-scroll-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+  font-family: 'Poppins', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  margin-top: 80px;
 }
 
-/* 데스크탑/태블릿에서는 세로 스크롤 */
-@media (min-width: 769px) {
-    .my-voices-section {
-        position: sticky;
-        top: 100px;
-        height: fit-content;
-        max-height: calc(100vh - 150px);
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
-    }
+a { text-decoration: none; color: inherit; }
+button { font-family: 'Poppins', sans-serif; cursor: pointer; border: none; outline: none; }
+input, select { font-family: 'Poppins', sans-serif; }
 
-    .my-voices-section::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .my-voices-section::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .my-voices-section::-webkit-scrollbar-thumb {
-        background: rgba(139, 92, 246, 0.3);
-        border-radius: 3px;
-    }
-
-    .myvoice-scroll-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .myvoice-card-small {
-        margin-bottom: 0;
-    }
-}
-
-/* 🔥 모바일에서만 가로 스크롤 */
-@media (max-width: 768px) {
-    .my-voices-section {
-        position: static;
-        max-height: none;
-        overflow: visible;
-        padding: 0 20px;
-    }
-
-    .myvoice-scroll-wrapper {
-        display: flex;
-        flex-direction: row;
-        gap: 12px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        padding-bottom: 8px;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-
-    .myvoice-scroll-wrapper::-webkit-scrollbar {
-        display: none;
-    }
-
-    .myvoice-card-small {
-        min-width: 280px;
-        flex-shrink: 0;
-        margin-bottom: 0;
-        padding: 14px;
-    }
-
-    /* 빈 상태 메시지는 전체 너비 */
-    .myvoice-scroll-wrapper .no-myvoice-small {
-        min-width: 100%;
-        flex-shrink: 0;
-    }
-}
-
-@media (max-width: 576px) {
-    .my-voices-section {
-        padding: 0 16px;
-    }
-
-    .myvoice-card-small {
-        min-width: 260px;
-    }
-}
-
-@media (max-width: 400px) {
-    .myvoice-card-small {
-        min-width: 240px;
-    }
-}
-/* ==================== 페이지 헤더 ==================== */
+/* ========================================
+   Page Header
+   ======================================== */
 .page-header {
-    padding: 40px 60px 30px;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
-    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+  padding: 44px 60px 32px;
+  background: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(139, 92, 246, 0.05) 60%,
+    transparent 100%);
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .page-title {
-    font-size: 36px;
-    font-weight: 800;
-    margin-bottom: 8px;
-    background: linear-gradient(135deg, #a78bfa, #c4b5fd);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  font-size: 38px;
+  font-weight: 900;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #a78bfa, #c4b5fd, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
 }
 
 .page-subtitle {
-    font-size: 16px;
-    color: var(--text-secondary);
-    font-weight: 500;
+  font-size: 15px;
+  color: var(--text-secondary);
+  font-weight: 400;
 }
 
-/* ==================== 검색 & 필터 섹션 ==================== */
+/* ========================================
+   Search & Filter
+   ======================================== */
 .search-filter-section {
-    padding: 20px 60px;
-    background: rgba(22, 33, 62, 0.3);
-    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+  padding: 20px 60px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.voice-search-box {
-    margin-bottom: 16px;
-}
+.voice-search-box { margin: 0; }
 
 .voice-search-input {
-    width: 100%;
-    max-width: 400px;
-    padding: 14px 20px;
-    background: var(--card-bg);
-    border: 2px solid var(--border-color);
-    border-radius: 14px;
-    color: var(--text-primary);
-    font-size: 15px;
-    font-weight: 500;
-    transition: all 0.3s ease;
+  width: 100%;
+  max-width: 420px;
+  padding: 12px 18px;
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  transition: all var(--transition);
+  outline: none;
 }
 
 .voice-search-input:focus {
-    outline: none;
-    border-color: #8b5cf6;
-    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
+  border-color: var(--border-active);
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
-.voice-search-input::placeholder {
-    color: var(--text-secondary);
-}
+.voice-search-input::placeholder { color: var(--text-tertiary); }
 
-/* 타입 필터 버튼 */
+/* Filter buttons */
 .filter-buttons {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .filter-btn {
-    position: relative;
-    padding: 12px 28px;
-    background: var(--card-bg);
-    border: 2px solid var(--border-color);
-    border-radius: 14px;
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    overflow: hidden;
+  padding: 8px 20px;
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-.filter-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--primary-gradient);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: -1;
+.filter-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity var(--transition);
 }
 
 .filter-btn:hover {
-    border-color: #8b5cf6;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
-}
-
-.filter-btn:hover::before {
-    opacity: 0.1;
+  border-color: var(--border-active);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px var(--primary-glow);
 }
 
 .filter-btn.active {
-    background: var(--primary-gradient);
-    border-color: #8b5cf6;
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
-    transform: translateY(-2px);
+  background: var(--gradient-primary);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 6px 20px var(--primary-glow);
+  transform: translateY(-1px);
 }
 
-.filter-btn.active::before {
-    opacity: 1;
-}
-
-/* ==================== 메인 레이아웃 ==================== */
+/* ========================================
+   Main Layout
+   ======================================== */
 .main-layout {
-    display: grid;
-    grid-template-columns: 400px 1fr;
-    gap: 32px;
-    padding: 48px 60px;
-    max-width: 1800px;
-    margin: 0 auto;
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 28px;
+  padding: 36px 60px;
+  max-width: 1800px;
+  margin: 0 auto;
 }
 
-/* ==================== 섹션 헤더 ==================== */
+/* ========================================
+   Section Header
+   ======================================== */
 .section-header {
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid rgba(139, 92, 246, 0.3);
-    color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-/* ==================== 내 보이스 섹션 ==================== */
+/* ========================================
+   My Voices Section
+   ======================================== */
 .my-voices-section {
-    position: sticky;
-    top: 100px;
-    height: fit-content;
-    max-height: calc(100vh - 150px);
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+  position: sticky;
+  top: 100px;
+  height: fit-content;
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
 }
 
-.my-voices-section::-webkit-scrollbar {
-    width: 6px;
-}
-
-.my-voices-section::-webkit-scrollbar-track {
-    background: transparent;
-}
-
+.my-voices-section::-webkit-scrollbar { width: 4px; }
+.my-voices-section::-webkit-scrollbar-track { background: transparent; }
 .my-voices-section::-webkit-scrollbar-thumb {
-    background: rgba(139, 92, 246, 0.3);
-    border-radius: 3px;
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: var(--radius-full);
 }
 
-/* 내 보이스 카드 */
+.myvoice-scroll-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* MyVoice Card */
 .myvoice-card-small {
-    background: var(--card-bg);
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 16px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(139, 92, 246, 0.1);
-    position: relative;
-    overflow: hidden;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition);
+  border: 1.5px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
 }
 
 .myvoice-card-small::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(99, 102, 241, 0.05));
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity var(--transition);
+  border-radius: var(--radius-full) 0 0 var(--radius-full);
 }
 
 .myvoice-card-small:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(139, 92, 246, 0.4);
-    border-color: rgba(139, 92, 246, 0.5);
+  transform: translateY(-4px) translateX(2px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--border-active);
 }
 
-.myvoice-card-small:hover::before {
-    opacity: 1;
-}
+.myvoice-card-small:hover::before { opacity: 1; }
 
 .myvoice-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .myvoice-img-small {
-    width: 60px;
-    height: 60px;
-    min-width: 60px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid transparent;
-    background: linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
-                var(--primary-gradient) border-box;
-    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--bg-secondary), var(--bg-secondary)) padding-box,
+    var(--gradient-primary) border-box;
+  box-shadow: 0 4px 14px var(--primary-glow);
+  transition: all var(--transition);
 }
 
-.myvoice-info-small {
-    flex: 1;
-    min-width: 0;
+.myvoice-card-small:hover .myvoice-img-small {
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px var(--primary-glow);
 }
+
+.myvoice-info-small { flex: 1; min-width: 0; }
 
 .myvoice-name-small {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .myvoice-alias-small {
-    font-size: 12px;
-    color: var(--text-secondary);
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .favorite-btn-small {
-    background: rgba(22, 33, 62, 0.9);
-    border: 2px solid rgba(139, 92, 246, 0.3);
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    font-size: 18px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .favorite-btn-small:hover {
-    transform: scale(1.1) rotate(12deg);
-    border-color: rgba(139, 92, 246, 0.6);
+  transform: scale(1.15) rotate(12deg);
+  border-color: var(--border-active);
+  background: var(--bg-elevated);
 }
 
+/* Book select */
 .book-select-small {
-    width: 100%;
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 2px solid var(--border-color);
-    background: rgba(15, 23, 42, 0.8);
-    color: var(--text-primary);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    outline: none;
-    margin-bottom: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  outline: none;
+  margin-bottom: 10px;
 }
 
-.book-select-small:hover {
-    border-color: #8b5cf6;
-}
+.book-select-small:hover,
+.book-select-small:focus { border-color: var(--border-active); }
 
+/* Audio player small */
 .audio-player-small {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(22, 33, 62, 0.6));
-    padding: 10px 12px;
-    border-radius: 12px;
-    margin-bottom: 12px;
-    border: 1px solid rgba(139, 92, 246, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-tertiary);
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  border: 1px solid var(--border-color);
+  transition: border-color var(--transition);
 }
+
+.audio-player-small:hover { border-color: var(--border-active); }
 
 .audio-player-small button {
-    background: var(--primary-gradient);
-    border: none;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    color: white;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px var(--primary-glow);
 }
 
 .audio-player-small button:hover {
-    transform: scale(1.1);
+  transform: scale(1.12);
+  box-shadow: 0 5px 16px var(--primary-glow);
 }
 
-.audio-player-small .progress-bar-small {
-    flex: 1;
-    min-width: 0;
-    height: 6px;
-    background: rgba(15, 23, 42, 0.9);
-    border-radius: 3px;
-    overflow: hidden;
-    position: relative;
-    cursor: pointer;
+.progress-bar-small {
+  flex: 1;
+  min-width: 0;
+  height: 5px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  cursor: pointer;
 }
 
-.audio-player-small .progress-small {
-    height: 100%;
-    width: 0%;
-    background: var(--primary-gradient);
-    transition: width 0.1s linear;
+.progress-small {
+  height: 100%;
+  width: 0%;
+  background: var(--gradient-primary);
+  transition: width 0.1s linear;
+  border-radius: var(--radius-full);
 }
 
-.audio-player-small .time-small {
-    font-size: 11px;
-    color: var(--text-secondary);
-    font-weight: 600;
-    min-width: 70px;
-    text-align: right;
+.time-small {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  min-width: 68px;
+  text-align: right;
 }
 
+/* Delete button */
 .delete-btn-small {
-    width: 100%;
-    padding: 8px 12px;
-    background: var(--danger-gradient);
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1.5px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-md);
+  color: #f87171;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
 }
 
 .delete-btn-small:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(239, 68, 68, 0.5);
+  background: var(--gradient-danger);
+  border-color: transparent;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(239, 68, 68, 0.3);
 }
 
+/* Empty state */
 .no-myvoice-small {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text-secondary);
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1.5px dashed var(--border-color);
+  border-radius: var(--radius-lg);
 }
 
 .no-myvoice-icon-small {
-    font-size: 48px;
-    margin-bottom: 16px;
-    opacity: 0.5;
+  font-size: 44px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+  display: block;
 }
 
-/* ==================== 전체 보이스 목록 ==================== */
+/* ========================================
+   Voice List Section
+   ======================================== */
 .voice-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
 }
 
+/* Voice Card */
 .voice-card {
-    background: var(--card-bg);
-    border-radius: 16px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(139, 92, 246, 0.1);
-    position: relative;
-    overflow: hidden;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition);
+  border: 1.5px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
 }
 
+.voice-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity var(--transition);
+  pointer-events: none;
+  border-radius: var(--radius-lg);
+}
+
+/* shimmer top line */
 .voice-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(99, 102, 241, 0.05));
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    pointer-events: none;
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity var(--transition);
 }
 
 .voice-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--card-hover-shadow);
-    border-color: rgba(139, 92, 246, 0.5);
+  transform: translateY(-7px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--border-active);
 }
 
-.voice-card:hover::before {
-    opacity: 1;
-}
+.voice-card:hover::after { opacity: 0.04; }
+.voice-card:hover::before { opacity: 1; }
 
 .voice-image {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 16px;
-    border: 3px solid transparent;
-    background: linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
-                var(--primary-gradient) border-box;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 18px rgba(139, 92, 246, 0.3);
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 14px;
+  border: 2.5px solid transparent;
+  background:
+    linear-gradient(var(--bg-secondary), var(--bg-secondary)) padding-box,
+    var(--gradient-primary) border-box;
+  box-shadow: 0 5px 18px var(--primary-glow);
+  transition: all var(--transition);
+  position: relative;
+  z-index: 1;
 }
 
 .voice-card:hover .voice-image {
-    transform: scale(1.05);
-    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.5);
+  transform: scale(1.07);
+  box-shadow: 0 8px 26px var(--primary-glow);
 }
 
 .voice-name {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    width: 100%;
-    text-align: center;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  width: 100%;
+  text-align: center;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  z-index: 1;
 }
 
 .voice-types {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 12px;
-    justify-content: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .type-badge {
-    padding: 4px 10px;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(99, 102, 241, 0.25));
-    border: 1px solid rgba(139, 92, 246, 0.6);
-    border-radius: 12px;
-    font-size: 10px;
-    font-weight: 700;
-    color: #c4b5fd;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    transition: all 0.3s ease;
+  padding: 3px 9px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  color: #a5b4fc;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  transition: all var(--transition);
 }
 
 .voice-card:hover .type-badge {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(99, 102, 241, 0.4));
-    border-color: rgba(139, 92, 246, 0.8);
-    transform: scale(1.05);
+  background: rgba(99, 102, 241, 0.28);
+  border-color: rgba(99, 102, 241, 0.6);
 }
 
 .voice-desc {
-    font-size: 12px;
-    color: var(--text-secondary);
-    text-align: center;
-    margin-bottom: 16px;
-    max-height: 36px;
-    line-height: 1.5;
-    overflow-y: auto;
-    word-break: break-word;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 14px;
+  max-height: 34px;
+  line-height: 1.5;
+  overflow: hidden;
+  word-break: break-word;
+  position: relative;
+  z-index: 1;
 }
 
+/* Voice audio player */
 .voice-audio-player {
-    width: 100%;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(22, 33, 62, 0.6));
-    padding: 10px 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    transition: all 0.3s ease;
+  width: 100%;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--bg-tertiary);
+  padding: 9px 11px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition);
+  position: relative;
+  z-index: 1;
 }
 
-.voice-audio-player:hover {
-    border-color: rgba(139, 92, 246, 0.5);
-}
+.voice-audio-player:hover { border-color: var(--border-active); }
 
 .voice-audio-player .play-btn {
-    background: var(--primary-gradient);
-    border: none;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    color: white;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px var(--primary-glow);
 }
 
 .voice-audio-player .play-btn:hover {
-    transform: scale(1.1);
+  transform: scale(1.13);
+  box-shadow: 0 5px 16px var(--primary-glow);
 }
 
 .voice-audio-player .audio-progress {
-    flex: 1;
-    min-width: 0;
-    height: 6px;
-    background: rgba(15, 23, 42, 0.9);
-    border-radius: 3px;
-    overflow: hidden;
-    position: relative;
-    cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  height: 5px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  cursor: pointer;
 }
 
 .voice-audio-player .audio-progress-bar {
-    height: 100%;
-    width: 0%;
-    background: var(--primary-gradient);
-    transition: width 0.1s linear;
+  height: 100%;
+  width: 0%;
+  background: var(--gradient-primary);
+  transition: width 0.1s linear;
+  border-radius: var(--radius-full);
 }
 
 .voice-audio-player .audio-time {
-    font-size: 11px;
-    color: var(--text-secondary);
-    font-weight: 600;
-    min-width: 70px;
-    text-align: right;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  min-width: 66px;
+  text-align: right;
 }
 
+/* Select button */
 .select-voice-btn {
-    padding: 10px 16px;
-    background: var(--primary-gradient);
-    border: none;
-    border-radius: 10px;
-    color: #fff;
-    font-weight: 700;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    width: 100%;
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  padding: 9px 16px;
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all var(--transition);
+  width: 100%;
+  box-shadow: 0 4px 14px var(--primary-glow);
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
 }
+
+.select-voice-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.15), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.45s ease;
+}
+
+.select-voice-btn:hover::after { transform: translateX(100%); }
 
 .select-voice-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px var(--primary-glow);
 }
 
+/* Empty state */
 .no-voices {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 60px 24px;
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 72px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-secondary);
+  border: 1.5px dashed var(--border-color);
+  border-radius: var(--radius-xl);
 }
 
-.no-voices-icon {
-    font-size: 56px;
-    margin-bottom: 20px;
-    opacity: 0.5;
-}
+.no-voices-icon { font-size: 52px; opacity: 0.35; }
 
 .no-voices-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .no-voices-text {
-    font-size: 14px;
-    color: var(--text-secondary);
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
-/* ==================== Light Mode ==================== */
-body.light-mode {
-    --card-bg: #ffffff;
-    --card-hover-shadow: 0 16px 40px rgba(139, 92, 246, 0.2);
-    --border-color: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-    --bg-main: #f8fafc;
-}
-
+/* ========================================
+   Light mode overrides
+   ======================================== */
 body.light-mode .page-header {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%);
-    border-bottom-color: rgba(139, 92, 246, 0.1);
+  background: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.06) 0%,
+    rgba(139, 92, 246, 0.02) 100%);
 }
 
-body.light-mode .search-filter-section {
-    background: rgba(248, 250, 252, 0.5);
-    border-bottom-color: rgba(139, 92, 246, 0.1);
-}
-
-body.light-mode .voice-card,
-body.light-mode .myvoice-card-small {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-}
-
-body.light-mode .voice-card:hover,
-body.light-mode .myvoice-card-small:hover {
-    box-shadow: 0 12px 32px rgba(139, 92, 246, 0.15);
+body.light-mode .voice-image,
+body.light-mode .myvoice-img-small {
+  background:
+    linear-gradient(var(--bg-secondary), var(--bg-secondary)) padding-box,
+    var(--gradient-primary) border-box;
 }
 
 body.light-mode .type-badge {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1));
-    border-color: rgba(139, 92, 246, 0.4);
-    color: #7c3aed;
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #6366f1;
 }
 
 body.light-mode .voice-card:hover .type-badge {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(99, 102, 241, 0.2));
-    border-color: rgba(139, 92, 246, 0.6);
+  background: rgba(99, 102, 241, 0.16);
+  border-color: rgba(99, 102, 241, 0.5);
 }
 
-body.light-mode .book-select-small {
-    background: rgba(248, 250, 252, 0.8);
+body.light-mode .delete-btn-small {
+  background: rgba(239, 68, 68, 0.05);
 }
 
-body.light-mode .audio-player-small,
-body.light-mode .voice-audio-player {
-    background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 0.8));
-}
-
-body.light-mode .audio-player-small .progress-bar-small,
-body.light-mode .voice-audio-player .audio-progress {
-    background: rgba(226, 232, 240, 0.9);
-}
-
-/* ==================== 반응형 - 데스크탑 ==================== */
+/* ========================================
+   Responsive — Desktop large
+   ======================================== */
 @media (max-width: 1400px) {
-    .main-layout {
-        grid-template-columns: 350px 1fr;
-        padding: 40px 40px;
-    }
+  .main-layout {
+    grid-template-columns: 340px 1fr;
+    padding: 32px 40px;
+  }
 }
 
-/* ==================== 반응형 - 태블릿 ==================== */
+/* Tablet landscape */
 @media (min-width: 769px) and (max-width: 1200px) {
-    body {
-        margin-top: 70px;
-    }
+  body { margin-top: 70px; }
 
-    .page-header {
-        padding: 32px 40px 24px;
-    }
+  .page-header { padding: 32px 40px 24px; }
+  .page-title { font-size: 30px; }
+  .search-filter-section { padding: 18px 40px; }
 
-    .page-title {
-        font-size: 32px;
-    }
+  .main-layout {
+    grid-template-columns: 1fr;
+    padding: 28px 40px;
+  }
 
-    .search-filter-section {
-        padding: 24px 40px;
-    }
+  .my-voices-section {
+    position: static;
+    max-height: none;
+  }
 
-    .main-layout {
-        grid-template-columns: 1fr;
-        padding: 32px 40px;
-        gap: 32px;
-    }
+  .myvoice-scroll-wrapper {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
 
-    .my-voices-section {
-        position: static;
-        max-height: none;
-    }
+  .myvoice-scroll-wrapper::-webkit-scrollbar { display: none; }
 
-    /* 🔥 태블릿 - 5컬럼 */
-    .voice-container {
-        grid-template-columns: repeat(5, 1fr);
-        gap: 16px;
-    }
+  .myvoice-card-small {
+    min-width: 280px;
+    flex-shrink: 0;
+  }
 
-    .voice-image {
-        width: 80px;
-        height: 80px;
-    }
+  .voice-container {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+  }
+
+  .voice-image { width: 76px; height: 76px; }
 }
 
-/* ==================== 반응형 - 모바일 ==================== */
+/* Mobile */
 @media (max-width: 768px) {
-    body {
-        margin-top: 60px;
-    }
+  body { margin-top: 60px; }
 
-    .page-header {
-        padding: 24px 20px 16px;
-    }
+  .page-header { padding: 22px 20px 14px; }
+  .page-title { font-size: 22px; }
+  .page-subtitle { font-size: 13px; }
 
-    .page-title {
-        font-size: 22px;
-    }
+  .search-filter-section { padding: 14px 0; }
+  .voice-search-box { padding: 0 20px; margin-bottom: 10px; }
+  .voice-search-input { max-width: 100%; font-size: 16px; padding: 11px 16px; }
 
-    .page-subtitle {
-        font-size: 14px;
-    }
+  .filter-buttons {
+    padding: 0 20px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .filter-buttons::-webkit-scrollbar { display: none; }
 
-    /* 🔥 검색 & 필터 - 가로 스크롤 */
-    .search-filter-section {
-        padding: 16px 0;
-    }
+  .filter-btn {
+    padding: 7px 14px;
+    font-size: 11.5px;
+    flex-shrink: 0;
+  }
 
-    .voice-search-box {
-        padding: 0 20px;
-        margin-bottom: 12px;
-    }
+  .main-layout { padding: 18px 0; grid-template-columns: 1fr; gap: 16px; }
 
-    .voice-search-input {
-        max-width: 100%;
-        font-size: 16px;
-        padding: 12px 16px;
-    }
+  .my-voices-section {
+    position: static;
+    max-height: none;
+    padding: 0 20px;
+  }
 
-    /* 🔥 필터 버튼 가로 스크롤 */
-    .filter-buttons {
-        padding: 0 20px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        flex-wrap: nowrap;
-        gap: 8px;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
+  .myvoice-scroll-wrapper {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+  .myvoice-scroll-wrapper::-webkit-scrollbar { display: none; }
 
-    .filter-buttons::-webkit-scrollbar {
-        display: none;
-    }
+  .myvoice-card-small { min-width: 272px; flex-shrink: 0; padding: 14px; }
 
-    .filter-btn {
-        padding: 8px 16px;
-        font-size: 12px;
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
+  .myvoice-img-small { width: 44px; height: 44px; min-width: 44px; }
+  .myvoice-name-small { font-size: 13px; }
+  .myvoice-alias-small { font-size: 10px; }
+  .favorite-btn-small { width: 30px; height: 30px; min-width: 30px; font-size: 14px; }
+  .audio-player-small { padding: 7px 9px; gap: 7px; }
+  .audio-player-small button { width: 28px; height: 28px; min-width: 28px; font-size: 11px; }
+  .time-small { font-size: 9px; min-width: 50px; }
+  .book-select-small, .delete-btn-small { font-size: 11px; padding: 6px 10px; }
 
-    /* 🔥 메인 레이아웃 */
-    .main-layout {
-        padding: 20px 0;
-        gap: 20px;
-        grid-template-columns: 1fr;
-    }
+  .voice-list-section { padding: 0 20px; }
 
-    /* 🔥 내 보이스 - 가로 스크롤 */
-    .my-voices-section {
-        position: static;
-        max-height: none;
-        overflow-x: auto;
-        overflow-y: hidden;
-        padding: 0 20px;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
+  .voice-container {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
 
-    .my-voices-section::-webkit-scrollbar {
-        display: none;
-    }
+  .voice-card { padding: 12px 10px; }
+  .voice-image { width: 58px; height: 58px; margin-bottom: 8px; }
+  .voice-name {
+    font-size: 11px;
+    margin-bottom: 6px;
+    white-space: normal;
+    height: 30px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .voice-types, .voice-desc { display: none; }
+  .voice-audio-player { padding: 6px 8px; gap: 6px; margin-bottom: 8px; }
+  .voice-audio-player .play-btn { width: 26px; height: 26px; min-width: 26px; font-size: 10px; }
+  .voice-audio-player .audio-time { font-size: 9px; min-width: 46px; }
+  .select-voice-btn { font-size: 10.5px; padding: 7px 8px; }
 
-    .section-header {
-        font-size: 16px;
-        margin-bottom: 12px;
-        white-space: nowrap;
-    }
-
-    /* 🔥 가로 스크롤을 위한 flex 컨테이너 */
-    .my-voices-section {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .my-voices-section > :not(.section-header) {
-        display: flex;
-        gap: 12px;
-        overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-
-    .my-voices-section > :not(.section-header)::-webkit-scrollbar {
-        display: none;
-    }
-
-    .myvoice-card-small {
-        min-width: 280px;
-        flex-shrink: 0;
-        margin-bottom: 0;
-        padding: 14px;
-    }
-
-    .myvoice-img-small {
-        width: 45px;
-        height: 45px;
-        min-width: 45px;
-    }
-
-    .myvoice-name-small {
-        font-size: 13px;
-    }
-
-    .myvoice-alias-small {
-        font-size: 10px;
-    }
-
-    .favorite-btn-small {
-        width: 32px;
-        height: 32px;
-        min-width: 32px;
-        font-size: 16px;
-    }
-
-    .audio-player-small {
-        padding: 6px 8px;
-        gap: 6px;
-    }
-
-    .audio-player-small button {
-        width: 28px;
-        height: 28px;
-        min-width: 28px;
-        font-size: 11px;
-    }
-
-    .audio-player-small .time-small {
-        font-size: 9px;
-        min-width: 45px;
-    }
-
-    .book-select-small,
-    .delete-btn-small {
-        font-size: 10px;
-        padding: 5px 8px;
-    }
-
-    /* 🔥 보이스 카드 - 3컬럼 */
-    .voice-list-section {
-        padding: 0 20px;
-    }
-
-    .voice-container {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-    }
-
-    .voice-card {
-        padding: 12px;
-    }
-
-    .voice-image {
-        width: 60px;
-        height: 60px;
-        margin-bottom: 8px;
-    }
-
-    .voice-name {
-        font-size: 11px;
-        margin-bottom: 6px;
-        line-height: 1.3;
-        height: 28px;
-        white-space: normal;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-    }
-
-    /* 🔥 타입 배지 숨기기 */
-    .voice-types {
-        display: none;
-    }
-
-    .voice-desc {
-        display: none;
-    }
-
-    .voice-audio-player {
-        padding: 6px 8px;
-        gap: 6px;
-        margin-bottom: 8px;
-    }
-
-    .voice-audio-player .play-btn {
-        width: 28px;
-        height: 28px;
-        min-width: 28px;
-        font-size: 11px;
-    }
-
-    .voice-audio-player .audio-time {
-        font-size: 9px;
-        min-width: 45px;
-    }
-
-    .select-voice-btn {
-        font-size: 10px;
-        padding: 6px 8px;
-    }
-
-    /* 빈 상태 */
-    .no-myvoice-small {
-        min-width: 100%;
-        padding: 30px 16px;
-    }
-
-    .no-myvoice-icon-small {
-        font-size: 36px;
-    }
+  .section-header { font-size: 15px; }
 }
 
-/* ==================== 반응형 - 작은 모바일 ==================== */
+/* Small mobile */
 @media (max-width: 576px) {
-    .page-header {
-        padding: 20px 16px 12px;
-    }
-
-    .page-title {
-        font-size: 20px;
-    }
-
-    .page-subtitle {
-        font-size: 12px;
-    }
-
-    .search-filter-section {
-        padding: 12px 0;
-    }
-
-    .voice-search-box {
-        padding: 0 16px;
-    }
-
-    .filter-buttons {
-        padding: 0 16px;
-    }
-
-    .filter-btn {
-        font-size: 11px;
-        padding: 6px 12px;
-    }
-
-    .main-layout {
-        padding: 16px 0;
-    }
-
-    .my-voices-section {
-        padding: 0 16px;
-    }
-
-    .section-header {
-        font-size: 14px;
-    }
-
-    .myvoice-card-small {
-        min-width: 260px;
-        padding: 12px;
-    }
-
-    .voice-list-section {
-        padding: 0 16px;
-    }
-
-    .voice-container {
-        gap: 6px;
-    }
-
-    .voice-card {
-        padding: 10px;
-    }
-
-    .voice-image {
-        width: 50px;
-        height: 50px;
-        margin-bottom: 6px;
-    }
-
-    .voice-name {
-        font-size: 10px;
-        height: 26px;
-    }
-
-    .voice-audio-player {
-        padding: 5px 6px;
-        gap: 5px;
-        margin-bottom: 6px;
-    }
-
-    .voice-audio-player .play-btn {
-        width: 24px;
-        height: 24px;
-        min-width: 24px;
-        font-size: 10px;
-    }
-
-    .voice-audio-player .audio-time {
-        font-size: 8px;
-        min-width: 40px;
-    }
-
-    .select-voice-btn {
-        font-size: 9px;
-        padding: 5px 6px;
-    }
-
-    .no-voices {
-        padding: 40px 16px;
-    }
-
-    .no-voices-icon {
-        font-size: 40px;
-    }
-
-    .no-voices-title {
-        font-size: 16px;
-    }
-
-    .no-voices-text {
-        font-size: 12px;
-    }
+  .page-header { padding: 18px 16px 12px; }
+  .page-title { font-size: 19px; }
+  .voice-search-box { padding: 0 16px; }
+  .filter-buttons { padding: 0 16px; }
+  .main-layout { padding: 14px 0; }
+  .my-voices-section, .voice-list-section { padding: 0 16px; }
+  .myvoice-card-small { min-width: 256px; padding: 12px; }
+  .voice-container { gap: 6px; }
+  .voice-card { padding: 10px 8px; }
+  .voice-image { width: 50px; height: 50px; }
+  .voice-name { font-size: 10px; height: 26px; }
+  .voice-audio-player .play-btn { width: 24px; height: 24px; min-width: 24px; }
+  .select-voice-btn { font-size: 9.5px; padding: 6px; }
 }
 
-/* ==================== 반응형 - 매우 작은 모바일 ==================== */
 @media (max-width: 400px) {
-    .voice-name {
-        font-size: 9px;
-    }
-
-    .voice-image {
-        width: 45px;
-        height: 45px;
-    }
-
-    .myvoice-card-small {
-        min-width: 240px;
-    }
+  .myvoice-card-small { min-width: 238px; }
+  .voice-image { width: 44px; height: 44px; }
+  .voice-name { font-size: 9.5px; }
 }
 
-/* ==================== 가로 모드 최적화 ==================== */
+/* Landscape height constraint */
 @media (max-height: 500px) and (orientation: landscape) {
-    body {
-        margin-top: 50px;
-    }
-
-    .page-header {
-        padding: 16px 24px 12px;
-    }
-
-    .my-voices-section {
-        max-height: calc(100vh - 100px);
-    }
+  body { margin-top: 50px; }
+  .page-header { padding: 14px 24px 10px; }
+  .my-voices-section { max-height: calc(100vh - 100px); }
 }
