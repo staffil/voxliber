@@ -238,34 +238,29 @@ body.light-mode .hero-subtitle {
 .hero-announce-link {
   display: block;
   text-decoration: none;
-}
-.hero-announce-link:hover .hero-section {
-  transform: scale(1.005);
   transition: transform 0.3s ease;
 }
+.hero-announce-link:hover {
+  transform: scale(1.005);
+}
 
-/* 단일 이미지: 애니메이션 제거, opacity 1 고정 */
+/* 단일 이미지: 애니메이션·opacity 기본값 충돌 해소 */
 .hero-announce .hero-background img {
   opacity: 1;
   animation: none;
+  border-radius: 0; /* 컨테이너(.hero-section)가 overflow:hidden으로 처리 */
 }
 
-/* 오버레이 - 텍스트 가독성을 위해 왼쪽→어둡게 */
-.hero-announce .hero-overlay {
-  background: linear-gradient(
-    100deg,
-    rgba(10, 15, 35, 0.88) 0%,
-    rgba(20, 25, 55, 0.65) 50%,
-    rgba(10, 15, 35, 0.1) 100%
-  );
-}
+/* 오버레이 - 좌→우 그라디언트, 라이트/다크 모두 어두운 톤 유지 */
+.hero-announce .hero-overlay,
 body.light-mode .hero-announce .hero-overlay {
   background: linear-gradient(
-    100deg,
-    rgba(10, 15, 35, 0.75) 0%,
-    rgba(20, 25, 55, 0.45) 50%,
-    rgba(10, 15, 35, 0.05) 100%
+    105deg,
+    rgba(8, 12, 30, 0.85) 0%,
+    rgba(15, 20, 50, 0.55) 50%,
+    rgba(8, 12, 30, 0.08) 100%
   );
+  border-radius: 0; /* light-mode 전역 규칙의 border-radius 덮어쓰기 */
 }
 
 /* 텍스트 왼쪽 정렬 */
@@ -276,49 +271,53 @@ body.light-mode .hero-announce .hero-overlay {
 }
 
 .hero-announce-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.75);
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 10px;
 }
 
 .hero-announce-title {
-  font-size: clamp(20px, 3vw, 36px);
+  font-size: clamp(18px, 2.8vw, 34px);
   font-weight: 800;
   color: #ffffff;
   line-height: 1.3;
-  max-width: 600px;
+  max-width: 580px;
   margin-bottom: 16px;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  text-shadow: 0 1px 6px rgba(0,0,0,0.4);
 }
 
 .hero-announce-cta {
   display: inline-block;
-  padding: 10px 24px;
-  background: rgba(255,255,255,0.18);
+  padding: 9px 22px;
+  background: rgba(255, 255, 255, 0.15);
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.35);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  backdrop-filter: blur(8px);
+  /* backdrop-filter 제거 */
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 .hero-announce-link:hover .hero-announce-cta {
-  background: rgba(255,255,255,0.28);
-  border-color: rgba(255,255,255,0.6);
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
 @media (max-width: 768px) {
   .hero-announce .hero-content { padding: 0 var(--spacing-lg); }
-  .hero-announce-title { font-size: clamp(16px, 4vw, 24px); }
+  .hero-announce-title { font-size: clamp(15px, 3.5vw, 22px); }
 }
+/* 480px에서 기본 hero-section은 숨기되, hero-announce는 표시 */
 @media (max-width: 480px) {
-  .hero-announce-link .hero-section { display: flex; height: 160px; }
-  .hero-announce-title { font-size: 16px; }
-  .hero-announce-cta { font-size: 12px; padding: 8px 18px; }
+  .hero-announce-link .hero-section {
+    display: flex;
+    height: 150px;
+  }
+  .hero-announce-title { font-size: 15px; }
+  .hero-announce-cta { font-size: 12px; padding: 7px 16px; }
 }
 
 /* ========================================
