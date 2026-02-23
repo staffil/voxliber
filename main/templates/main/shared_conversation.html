@@ -6,6 +6,131 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/mypage/novel_result.css' %}?v=3">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── 순차 재생 플로팅 바 ── */
+#seq-player-bar {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20, 20, 35, 0.96);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 40px;
+    padding: 10px 20px;
+    gap: 12px;
+    align-items: center;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    min-width: 280px;
+    max-width: 90vw;
+}
+#seq-player-bar.active { display: flex; }
+#seq-play-btn {
+    background: rgba(167,139,250,0.15);
+    border: 1px solid rgba(167,139,250,0.4);
+    border-radius: 50%;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #a78bfa; font-size: 14px;
+    flex-shrink: 0; transition: all 0.2s;
+}
+#seq-play-btn:hover { background: rgba(167,139,250,0.3); }
+#seq-progress-wrap {
+    flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0;
+}
+#seq-label {
+    color: #c4b5fd; font-size: 11px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+}
+#seq-progress {
+    width: 100%; height: 3px; background: rgba(255,255,255,0.1);
+    border-radius: 2px; overflow: hidden;
+}
+#seq-progress-fill {
+    height: 100%; background: #a78bfa; width: 0%;
+    transition: width 0.1s linear; border-radius: 2px;
+}
+#seq-stop-btn {
+    background: none; border: none; color: #888;
+    cursor: pointer; font-size: 18px; line-height: 1;
+    flex-shrink: 0; padding: 0 2px;
+}
+#seq-stop-btn:hover { color: #fff; }
+.dialogue-block.seq-playing {
+    background: rgba(167,139,250,0.08) !important;
+    border-left: 3px solid #a78bfa;
+    padding-left: 10px;
+    transition: background 0.3s;
+}
+
+/* ── 순차 재생 시작 버튼 ── */
+#start-seq-btn {
+    display: block;
+    margin: 16px auto 0;
+    padding: 10px 24px;
+    background: rgba(167,139,250,0.1);
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 20px;
+    color: #a78bfa;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+#start-seq-btn:hover { background: rgba(167,139,250,0.2); }
+
+/* ── 머지 오디오 카드 ── */
+#merged-audio-card {
+    margin: 32px auto 0;
+    max-width: 480px;
+    background: rgba(20,20,35,0.85);
+    border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 16px;
+    padding: 18px 20px 14px;
+    backdrop-filter: blur(10px);
+}
+.mac-title-row {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+}
+.mac-icon {
+    font-size: 22px; flex-shrink: 0;
+}
+.mac-label {
+    font-size: 10px; color: #a78bfa; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px;
+}
+.mac-name {
+    font-size: 14px; color: #e9d5ff; font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;
+}
+.mac-progress-wrap { margin-bottom: 10px; cursor: pointer; }
+.mac-progress-track {
+    width: 100%; height: 4px; background: rgba(255,255,255,0.12);
+    border-radius: 2px; overflow: hidden; margin-bottom: 4px;
+}
+.mac-progress-fill {
+    height: 100%; background: linear-gradient(90deg,#a78bfa,#818cf8); width: 0%;
+    border-radius: 2px; transition: width 0.1s linear;
+}
+.mac-time-row {
+    display: flex; justify-content: space-between; font-size: 10px; color: #888;
+}
+.mac-controls {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+}
+.mac-btn-play {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(167,139,250,0.2); border: 1px solid rgba(167,139,250,0.4);
+    color: #a78bfa; font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.mac-btn-play:hover { background: rgba(167,139,250,0.35); }
+.mac-btn-skip {
+    background: none; border: none; color: #888; font-size: 12px;
+    cursor: pointer; padding: 6px; transition: color 0.2s;
+}
+.mac-btn-skip:hover { color: #c4b5fd; }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -30,6 +155,9 @@
     </div>
     {% endif %}
 
+    <!-- 순차 재생 시작 버튼 -->
+    <button id="start-seq-btn">&#9654; 순서대로 듣기</button>
+
     <!-- 챕터 목록 -->
     {% for chapter in novel.chapters %}
     <section class="chapter">
@@ -38,7 +166,7 @@
         {% if chapter.image and chapter.image.image %}
         <div class="chapter-image">
             <img src="{{ chapter.image.image.url }}" alt="{{ chapter.image.title|default:'챕터 이미지' }}">
-            
+
             <div class="episode-text-overlay">
                 <h2 class="chapter-title">
                     {{ chapter.title }}
@@ -72,7 +200,7 @@
                         <span class="btn-icon">&#9654;</span>
                         <span class="btn-text">음성 듣기</span>
                     </button>
-                    <audio id="audio-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" src="{{ msg.audio }}" preload="none"></audio>
+                    <audio id="audio-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" src="{{ msg.audio }}" preload="none" class="seq-audio"></audio>
                 </div>
                 {% endif %}
             </div>
@@ -127,6 +255,29 @@
     </footer>
     {% endif %}
 
+    <!-- 머지 오디오 플레이어 (생성된 경우에만) -->
+    {% if conversation.merged_audio %}
+    <div id="merged-audio-card">
+        <div class="mac-title-row">
+            <div class="mac-icon">🎙</div>
+            <div class="mac-title-text">
+                <div class="mac-label">대화 오디오</div>
+                <div class="mac-name">{{ conversation.merged_audio_title|default:"대화 오디오" }}</div>
+            </div>
+        </div>
+        <div class="mac-progress-wrap" id="mac-progress-wrap">
+            <div class="mac-progress-track"><div class="mac-progress-fill" id="mac-fill"></div></div>
+            <div class="mac-time-row"><span id="mac-cur">0:00</span><span id="mac-dur">--:--</span></div>
+        </div>
+        <div class="mac-controls">
+            <button class="mac-btn-skip" id="mac-back">&#9664;&#9664;</button>
+            <button class="mac-btn-play" id="mac-play">&#9654;</button>
+            <button class="mac-btn-skip" id="mac-fwd">&#9654;&#9654;</button>
+        </div>
+        <audio id="mac-audio" src="{{ conversation.merged_audio.url }}" preload="metadata"></audio>
+    </div>
+    {% endif %}
+
     <!-- 공유 안내 (공유 모드일 때만) -->
     {% if is_shared %}
     <div class="shared-info-box">
@@ -150,25 +301,28 @@
 
 </div>
 
+<!-- 순차 재생 플로팅 바 -->
+<div id="seq-player-bar">
+    <button id="seq-play-btn">&#9654;</button>
+    <div id="seq-progress-wrap">
+        <div id="seq-label">재생 준비 중...</div>
+        <div id="seq-progress"><div id="seq-progress-fill"></div></div>
+    </div>
+    <button id="seq-stop-btn">&#10005;</button>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 나레이션/대사 포맷팅
+    // ── 나레이션/대사 포맷팅 ──
     document.querySelectorAll('.dialogue-block.assistant .content-text').forEach(el => {
         let html = el.innerHTML;
-
-        // "대사" 를 강조
         html = html.replace(/"([^"]+)"/g, '<q>$1</q>');
-
-        // *나레이션* 을 이탤릭
         html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-
-        // [감정] 태그
         html = html.replace(/\[([^\]]+)\]/g, '<span style="color:#a78bfa;font-size:0.85em;">[$1]</span>');
-
         el.innerHTML = html;
     });
 
-    // 오디오 재생
+    // ── 개별 TTS 버튼 ──
     let currentAudio = null;
     let currentBtn = null;
 
@@ -178,10 +332,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const audio = document.getElementById(audioId);
             const btnText = this.querySelector('.btn-text');
             const btnIcon = this.querySelector('.btn-icon');
-
             if (!audio) return;
 
-            // 다른 오디오 중지
             if (currentAudio && currentAudio !== audio) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
@@ -191,7 +343,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentBtn.querySelector('.btn-icon').innerHTML = '&#9654;';
                 }
             }
-
             if (audio.paused) {
                 audio.play();
                 this.classList.add('playing');
@@ -210,7 +361,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 오디오 종료 시
     document.querySelectorAll('audio').forEach(audio => {
         audio.addEventListener('ended', function() {
             const btn = document.querySelector(`[data-audio-id="${audio.id}"]`);
@@ -223,6 +373,148 @@ document.addEventListener('DOMContentLoaded', function() {
             currentBtn = null;
         });
     });
+
+    // ── 순차 재생 ──
+    const seqAudios = Array.from(document.querySelectorAll('audio.seq-audio'));
+    const seqBar    = document.getElementById('seq-player-bar');
+    const seqPlayBtn = document.getElementById('seq-play-btn');
+    const seqStopBtn = document.getElementById('seq-stop-btn');
+    const seqLabel  = document.getElementById('seq-label');
+    const seqFill   = document.getElementById('seq-progress-fill');
+    const startSeqBtn = document.getElementById('start-seq-btn');
+
+    let seqIdx = 0;
+    let seqPlaying = false;
+    let seqPaused = false;
+
+    function clearHighlight() {
+        document.querySelectorAll('.dialogue-block.seq-playing').forEach(b => b.classList.remove('seq-playing'));
+    }
+
+    function updateProgress(audio) {
+        if (!audio.duration) return;
+        const pct = (audio.currentTime / audio.duration) * 100;
+        seqFill.style.width = pct + '%';
+    }
+
+    function playSeqAt(idx) {
+        if (idx >= seqAudios.length) {
+            stopSeq();
+            return;
+        }
+        clearHighlight();
+        seqIdx = idx;
+        const audio = seqAudios[idx];
+        const block = audio.closest('.dialogue-block');
+        if (block) {
+            block.classList.add('seq-playing');
+            block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const textEl = block.querySelector('.content-text');
+            seqLabel.textContent = textEl ? textEl.textContent.slice(0, 40) : `${idx + 1} / ${seqAudios.length}`;
+        }
+        seqFill.style.width = '0%';
+        audio.currentTime = 0;
+        audio.play().catch(() => playSeqAt(idx + 1));
+    }
+
+    function stopSeq() {
+        seqPlaying = false;
+        seqPaused = false;
+        clearHighlight();
+        seqBar.classList.remove('active');
+        seqPlayBtn.innerHTML = '&#9654;';
+        seqLabel.textContent = '재생 준비 중...';
+        seqFill.style.width = '0%';
+        seqAudios.forEach(a => { a.pause(); a.currentTime = 0; });
+        seqIdx = 0;
+    }
+
+    seqAudios.forEach((audio, idx) => {
+        audio.addEventListener('timeupdate', () => { if (seqIdx === idx) updateProgress(audio); });
+        audio.addEventListener('ended', () => {
+            if (seqPlaying && !seqPaused) playSeqAt(idx + 1);
+        });
+    });
+
+    if (startSeqBtn) {
+        startSeqBtn.addEventListener('click', function() {
+            if (seqAudios.length === 0) return;
+            seqPlaying = true;
+            seqPaused = false;
+            seqBar.classList.add('active');
+            seqPlayBtn.innerHTML = '&#10074;&#10074;';
+            playSeqAt(0);
+        });
+    }
+
+    seqPlayBtn.addEventListener('click', function() {
+        if (!seqPlaying) return;
+        const audio = seqAudios[seqIdx];
+        if (!audio) return;
+        if (seqPaused) {
+            seqPaused = false;
+            audio.play();
+            seqPlayBtn.innerHTML = '&#10074;&#10074;';
+        } else {
+            seqPaused = true;
+            audio.pause();
+            seqPlayBtn.innerHTML = '&#9654;';
+        }
+    });
+
+    seqStopBtn.addEventListener('click', stopSeq);
+
+    // ── 머지 오디오 플레이어 ──
+    const macAudio = document.getElementById('mac-audio');
+    if (macAudio) {
+        const macPlay = document.getElementById('mac-play');
+        const macBack = document.getElementById('mac-back');
+        const macFwd  = document.getElementById('mac-fwd');
+        const macFill = document.getElementById('mac-fill');
+        const macCur  = document.getElementById('mac-cur');
+        const macDur  = document.getElementById('mac-dur');
+        const macWrap = document.getElementById('mac-progress-wrap');
+
+        function fmtTime(s) {
+            if (!isFinite(s)) return '--:--';
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return m + ':' + String(sec).padStart(2, '0');
+        }
+
+        macAudio.addEventListener('loadedmetadata', () => { macDur.textContent = fmtTime(macAudio.duration); });
+        macAudio.addEventListener('timeupdate', () => {
+            if (macAudio.duration) {
+                macFill.style.width = (macAudio.currentTime / macAudio.duration * 100) + '%';
+            }
+            macCur.textContent = fmtTime(macAudio.currentTime);
+        });
+        macAudio.addEventListener('ended', () => {
+            macPlay.innerHTML = '&#9654;';
+            macFill.style.width = '0%';
+            macAudio.currentTime = 0;
+        });
+
+        macPlay.addEventListener('click', () => {
+            if (macAudio.paused) {
+                macAudio.play();
+                macPlay.innerHTML = '&#10074;&#10074;';
+            } else {
+                macAudio.pause();
+                macPlay.innerHTML = '&#9654;';
+            }
+        });
+
+        macBack.addEventListener('click', () => { macAudio.currentTime = Math.max(0, macAudio.currentTime - 10); });
+        macFwd.addEventListener('click',  () => { macAudio.currentTime = Math.min(macAudio.duration || 0, macAudio.currentTime + 10); });
+
+        macWrap.addEventListener('click', e => {
+            if (!macAudio.duration) return;
+            const rect = macWrap.getBoundingClientRect();
+            const ratio = (e.clientX - rect.left) / rect.width;
+            macAudio.currentTime = ratio * macAudio.duration;
+        });
+    }
 });
 </script>
 {% endblock %}

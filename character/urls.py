@@ -56,6 +56,7 @@ urlpatterns = [
     path("api/ai/llm/detail/<uuid:llm_uuid>/", api_views.public_llm_detail, name='public_llm_detail'),
     path("api/ai/shared/novel/<int:conv_id>/", api_views.api_shared_novel, name= "api_shared_novel"),
     path("api/ai/novel/result/<int:conv_id>/", api_views.api_novel_result, name= "api_novel_result"),
+    path("api/ai/novel/audio/<int:conv_id>/", api_views.api_chat_to_audio, name="api_chat_to_audio"),
     path('api/chat/<uuid:llm_uuid>/', api_views.api_chat_view, name='api_chat_view'),
     path('api/chat/<uuid:llm_uuid>/send/', api_views.api_chat_send, name='api_chat_send'),
     path('api/chat/<uuid:llm_uuid>/reset/', api_views.api_chat_reset, name='api_chat_reset'),

@@ -213,6 +213,8 @@ class Conversation(models.Model):
     is_public = models.BooleanField(default=False, verbose_name="공개 여부")
     shared_at = models.DateTimeField(null=True, blank=True, verbose_name="공유 시간")
     is_deleted_by_user = models.BooleanField(default=False)
+    merged_audio = models.FileField(upload_to='uploads/conversation_audio/', null=True, blank=True, verbose_name="병합 오디오")
+    merged_audio_title = models.CharField(max_length=200, null=True, blank=True, verbose_name="오디오 제목")
 
 
 

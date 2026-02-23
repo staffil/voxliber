@@ -5,8 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.utils import timezone
-from book.models import Books, ReadingProgress, Content, MyVoiceList, Books
-from book.utils import generate_tts
+from book.models import Books, ReadingProgress, Content, MyVoiceList, Books, BackgroundMusicLibrary, VoiceList
+from book.utils import generate_tts, merge_audio_files, mix_audio_with_background
 from django.conf import settings
 from character.models import Story, LLM, LLMSubImage, LoreEntry, Conversation, StoryBookmark, ConversationMessage, ConversationState, HPImageMapping, LastWard, UserLastWard
 import re 
@@ -706,13 +706,101 @@ def novel_result(request, llm_uuid):
 
 
 
+    import os as _os
+    bgm_list_raw = BackgroundMusicLibrary.objects.exclude(audio_file='').exclude(audio_file=None).order_by('music_name')
+    bgm_list = [b for b in bgm_list_raw if _os.path.exists(b.audio_file.path)]
+
     context = {
         'novel': novel,
         'conversation': conversation,
         'is_public': conversation.is_public,
-        "last_wards": last_wards
+        'last_wards': last_wards,
+        'llm': llm,
+        'bgm_list': bgm_list,
     }
     return render(request, 'mypage/novel_result.html', context)
+
+
+@login_required_to_main
+@require_POST
+def chat_to_episode(request):
+    """채팅 → 대화 오디오 변환 AJAX 뷰 (기존 생성된 오디오만 병합, 새 TTS 생성 없음)"""
+    import os
+    from uuid import uuid4
+    from django.core.files.base import ContentFile
+
+    try:
+        llm_uuid = request.POST.get('llm_uuid')
+        audio_title = request.POST.get('audio_title', '').strip()
+        bgm_id = request.POST.get('bgm_id', '').strip()
+
+        if not llm_uuid or not audio_title:
+            return JsonResponse({'error': '필수 값이 누락되었습니다.'}, status=400)
+
+        llm = get_object_or_404(LLM, public_uuid=llm_uuid)
+        conversation = Conversation.objects.filter(user=request.user, llm=llm).last()
+        if not conversation:
+            return JsonResponse({'error': '대화를 찾을 수 없습니다.'}, status=404)
+
+        messages_qs = conversation.messages.order_by('created_at')
+
+        audio_files = []
+        pages_text = []
+
+        # 이미 생성된 오디오 파일만 수집 (새 TTS 생성 없음, 역할 무관)
+        for msg in messages_qs:
+            if msg.audio and msg.audio.name:
+                audio_path = msg.audio.path
+                if os.path.exists(audio_path):
+                    audio_files.append(audio_path)
+                    pages_text.append(msg.content[:200])
+
+        if not audio_files:
+            return JsonResponse({'error': '생성할 오디오가 없습니다.'}, status=400)
+
+        merged_path, timestamps, duration_seconds = merge_audio_files(audio_files, pages_text)
+        if not merged_path:
+            return JsonResponse({'error': '오디오 병합에 실패했습니다.'}, status=500)
+
+        # BGM 믹싱 (선택) — endTime은 ms 단위
+        if bgm_id:
+            try:
+                bgm_obj = BackgroundMusicLibrary.objects.get(id=int(bgm_id))
+                if bgm_obj.audio_file and bgm_obj.audio_file.name:
+                    bgm_path = bgm_obj.audio_file.path
+                    if not os.path.exists(bgm_path):
+                        print(f"[chat_to_episode] BGM 파일 없음 (무시): {bgm_path}")
+                    else:
+                        bg_tracks = [{
+                            'audioPath': bgm_path,
+                            'startTime': 0,
+                            'endTime': int((duration_seconds or 0) * 1000),
+                            'volume': -12,
+                        }]
+                        mixed = mix_audio_with_background(merged_path, bg_tracks)
+                        if mixed and mixed != merged_path:
+                            merged_path = mixed
+            except Exception as e:
+                print(f"[chat_to_episode] BGM 믹싱 실패 (무시): {e}")
+
+        # Conversation에 저장
+        conversation.merged_audio_title = audio_title
+        with open(merged_path, 'rb') as f:
+            file_name = f"conv_{conversation.id}_{uuid4().hex[:8]}.mp3"
+            conversation.merged_audio.save(file_name, ContentFile(f.read()), save=False)
+        conversation.save(update_fields=['merged_audio', 'merged_audio_title'])
+
+        return JsonResponse({
+            'success': True,
+            'audio_url': conversation.merged_audio.url,
+            'audio_title': audio_title,
+            'message': f'"{audio_title}" 오디오가 생성되었습니다.',
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': f'오류가 발생했습니다: {str(e)}'}, status=500)
 
 
 @login_required_to_main

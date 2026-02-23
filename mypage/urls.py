@@ -11,6 +11,7 @@ urlpatterns = [
     path("library/", views.my_library, name="my_library"),
     path("ai/detail/<uuid:public_uuid>/", views.ai_detail, name="ai_detail"),
     path("novel/result/<uuid:llm_uuid>/", views.novel_result, name="novel_result"),
+    path("chat-to-episode/", views.chat_to_episode, name="chat_to_episode"),
     path("snippet/<uuid:book_uuid>/", views.book_snippet_form, name="book_snippet_form"),
     path("poems/create/", views.poem_create, name="poem_create"),
     path("ai/list/", views.ai_list, name="ai_list"),

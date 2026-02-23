@@ -399,6 +399,115 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 from character.models import Conversation, ConversationMessage, HPImageMapping, LLM
 from book.api_utils import api_response, require_api_key_secure  # 기존 데코레이터 사용 (필요 시 제거 가능)
+from character.models import LastWard as _LastWard
+
+def _build_last_wards(request, conversation):
+    """Conversation의 last_wards 데이터를 빌드 (HP >= 100 시)"""
+    try:
+        from character.models import ConversationState
+        conv_state = ConversationState.objects.get(conversation=conversation)
+        current_hp = conv_state.character_stats.get('hp', 0)
+        if current_hp >= 100:
+            wards = _LastWard.objects.filter(llm=conversation.llm).order_by('order')
+            return [
+                {
+                    'id': w.id,
+                    'image_url': request.build_absolute_uri(w.image.url) if w.image else None,
+                    'ward': w.ward or '',
+                    'description': w.description or '',
+                    'order': w.order,
+                }
+                for w in wards
+            ]
+    except Exception:
+        pass
+    return []
+
+
+@csrf_exempt
+@require_api_key_secure
+def api_chat_to_audio(request, conv_id):
+    """앱용: 기존 생성된 오디오만 병합 → Conversation.merged_audio에 저장"""
+    import os
+    from uuid import uuid4
+    from django.core.files.base import ContentFile
+    from django.conf import settings
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST only'}, status=405)
+
+    request_user = _get_request_user(request)
+    if not request_user:
+        return JsonResponse({'success': False, 'error': '인증 필요'}, status=401)
+
+    conversation = get_object_or_404(Conversation, id=conv_id, user=request_user)
+
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        body = {}
+
+    audio_title = (body.get('audio_title') or '').strip()
+    bgm_id = body.get('bgm_id', '')
+
+    if not audio_title:
+        return JsonResponse({'success': False, 'error': 'audio_title 필요'}, status=400)
+
+    messages_qs = conversation.messages.order_by('created_at')
+
+    from book.utils import merge_audio_files, mix_audio_with_background
+    from book.models import BackgroundMusicLibrary
+
+    audio_files = []
+    pages_text = []
+
+    for msg in messages_qs:
+        if msg.audio and msg.audio.name:
+            audio_path = msg.audio.path
+            if os.path.exists(audio_path):
+                audio_files.append(audio_path)
+                pages_text.append(msg.content[:200])
+
+    if not audio_files:
+        return JsonResponse({'success': False, 'error': '병합할 오디오가 없습니다.'}, status=400)
+
+    merged_path, timestamps, duration_seconds = merge_audio_files(audio_files, pages_text)
+    if not merged_path:
+        return JsonResponse({'success': False, 'error': '오디오 병합 실패'}, status=500)
+
+    if bgm_id:
+        try:
+            bgm_obj = BackgroundMusicLibrary.objects.get(id=int(bgm_id))
+            if bgm_obj.audio_file and bgm_obj.audio_file.name:
+                bgm_path = bgm_obj.audio_file.path
+                if not os.path.exists(bgm_path):
+                    print(f"[api_chat_to_audio] BGM 파일 없음 (무시): {bgm_path}")
+                else:
+                    bg_tracks = [{
+                        'audioPath': bgm_path,
+                        'startTime': 0,
+                        'endTime': int((duration_seconds or 0) * 1000),
+                        'volume': -12,
+                    }]
+                    mixed = mix_audio_with_background(merged_path, bg_tracks)
+                    if mixed and mixed != merged_path:
+                        merged_path = mixed
+        except Exception as e:
+            print(f"[api_chat_to_audio] BGM 실패(무시): {e}")
+
+    conversation.merged_audio_title = audio_title
+    with open(merged_path, 'rb') as f:
+        file_name = f"conv_{conversation.id}_{uuid4().hex[:8]}.mp3"
+        conversation.merged_audio.save(file_name, ContentFile(f.read()), save=False)
+    conversation.save(update_fields=['merged_audio', 'merged_audio_title'])
+
+    return JsonResponse({
+        'success': True,
+        'audio_url': request.build_absolute_uri(conversation.merged_audio.url),
+        'audio_title': audio_title,
+        'message': f'"{audio_title}" 오디오가 생성되었습니다.',
+    })
+
 
 @csrf_exempt
 def api_shared_novel(request, conv_id):
@@ -497,11 +606,14 @@ def api_shared_novel(request, conv_id):
         # 대화 전체 메시지
         'messages': messages_data,
         'message_count': len(messages_data),
-        
+
         # LLM 추가 데이터 (서브 이미지, 로어북, HP 매핑)
         'sub_images': sub_images_data,
         'lore_entries': lore_data,
         'hp_mappings': hp_data,
+        'last_wards': _build_last_wards(request, conversation),
+        'merged_audio_url': request.build_absolute_uri(conversation.merged_audio.url) if conversation.merged_audio else None,
+        'merged_audio_title': conversation.merged_audio_title or None,
     }
 
     return api_response(data)
@@ -783,7 +895,9 @@ def api_novel_result(request, conv_id):
         "subImages": sub_images_data,
         "loreEntries": lore_data,
         "hpMappings": hp_data,
-        "lastWards": last_wards_data,  # ← 추가
+        "lastWards": last_wards_data,
+        "mergedAudioUrl": request.build_absolute_uri(conversation.merged_audio.url) if conversation.merged_audio else None,
+        "mergedAudioTitle": conversation.merged_audio_title or None,
     }
 
     return api_response(data)
