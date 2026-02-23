@@ -704,7 +704,6 @@ def api_response(data, status=200):
 
 def api_error(message, status=400):
     return JsonResponse({'success': False, 'error': message}, status=status)
-
 @csrf_exempt
 def api_novel_result(request, conv_id):
     """
@@ -728,14 +727,12 @@ def api_novel_result(request, conv_id):
         authorized = False
         request_user = _get_request_user(request)
 
-        # 웹 또는 앱 사용자 (본인 확인)
         if request_user and request_user == owner:
             authorized = True
 
         if not authorized:
             return api_error("권한이 없습니다.", status=403)
 
-        # JSON body
         try:
             body = json.loads(request.body.decode("utf-8"))
         except Exception:
@@ -757,13 +754,12 @@ def api_novel_result(request, conv_id):
     # GET : 대화 조회
     # =====================================================
 
-    # 비공개 대화 접근 제한 (본인만 접근 가능)
+    # 비공개 대화 접근 제한
     if not conversation.is_public:
         request_user = _get_request_user(request)
 
-        # owner가 None인 경우 (익명 대화) - 누구나 접근 가능
         if owner is None:
-            pass  # allow
+            pass  # 익명 대화 - 누구나 접근 가능
         elif request_user is None:
             api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
             if api_key:
@@ -773,7 +769,6 @@ def api_novel_result(request, conv_id):
         elif request_user != owner:
             print(f"[api_novel_result] 소유자 불일치: request_user={request_user.pk}, owner={owner.pk}, conv_id={conv_id}")
             return api_error("이 대화에 접근 권한이 없습니다.", status=403)
-        # else: request_user == owner → OK
 
     # -------------------------
     # 서브 이미지
@@ -866,6 +861,24 @@ def api_novel_result(request, conv_id):
         pass
 
     # -------------------------
+    # BGM 목록 (웹 novel_result와 동일 로직)
+    # -------------------------
+    import os as _os
+    from book.models import BackgroundMusicLibrary
+
+    bgm_list_raw = BackgroundMusicLibrary.objects.exclude(
+        audio_file=''
+    ).exclude(
+        audio_file=None
+    ).order_by('music_name')
+
+    bgm_data = [
+        {'id': b.id, 'music_name': b.music_name}
+        for b in bgm_list_raw
+        if _os.path.exists(b.audio_file.path)
+    ]
+
+    # -------------------------
     # 최종 응답
     # -------------------------
     data = {
@@ -890,8 +903,10 @@ def api_novel_result(request, conv_id):
 
         "sharedBy": {
             "nickname": (owner.nickname if hasattr(owner, "nickname") else owner.username) if owner else "익명",
-            "profileImage": (request.build_absolute_uri(owner.user_img.url)
-            if hasattr(owner, "user_img") and owner.user_img else None) if owner else None,
+            "profileImage": (
+                request.build_absolute_uri(owner.user_img.url)
+                if hasattr(owner, "user_img") and owner.user_img else None
+            ) if owner else None,
         },
 
         "messages": messages_data,
@@ -902,10 +917,10 @@ def api_novel_result(request, conv_id):
         "lastWards": last_wards_data,
         "mergedAudioUrl": request.build_absolute_uri(conversation.merged_audio.url) if conversation.merged_audio else None,
         "mergedAudioTitle": conversation.merged_audio_title or None,
+        "bgmList": bgm_data,  # ← 추가
     }
 
     return api_response(data)
-
 
 
 def api_chat_view(request, llm_uuid):
