@@ -2,7 +2,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg, Count, Max, Q
 from django.views.decorators.csrf import csrf_exempt
-from character.models import LLM, Story, CharacterMemory, Conversation, ConversationMessage, ConversationState, HPImageMapping, LLMSubImage, LoreEntry, LLMPrompt, StoryLike, StoryComment, StoryBookmark,  Prompt,  Comment, LLMLike, UserLastWard
+from character.models import LLM, Story, CharacterMemory, Conversation, ConversationMessage, ConversationState, HPImageMapping, LLMSubImage, LoreEntry, LLMPrompt, StoryLike, StoryComment, StoryBookmark,  Prompt,  Comment, LLMLike, UserLastWard, Report
 from book.api_utils import require_api_key, paginate, api_response, require_api_key_secure
 from rest_framework.decorators import api_view
 import json
@@ -11,6 +11,33 @@ from django.db.models import Prefetch
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from .models import Story
+
+
+import re as _re
+
+# ── 채팅 모더레이션 ──────────────────────────────────────────
+_BLOCKED_PATTERNS = [
+    # 미성년자 관련 성적 표현 (CSAM - 최우선 차단)
+    r'미성년자.{0,10}(섹스|성관계|야동|포르노|음란)',
+    r'(어린이|아동|초등|중학생|고등학생).{0,10}(섹스|성관계|신체)',
+    r'(loli|shota|underage).{0,10}(sex|porn|nude)',
+    # 주민등록번호 패턴
+    r'\d{6}[-\s]?\d{7}',
+    # 개인정보 — 전화번호
+    r'01[0-9][-\s]?\d{3,4}[-\s]?\d{4}',
+]
+_BLOCKED_PATTERNS_COMPILED = [_re.compile(p, _re.IGNORECASE) for p in _BLOCKED_PATTERNS]
+
+def _moderate_user_input(text: str):
+    """
+    사용자 입력 모더레이션.
+    Returns (ok: bool, reason: str)
+    """
+    for pattern in _BLOCKED_PATTERNS_COMPILED:
+        if pattern.search(text):
+            return False, '부적절한 내용이 포함되어 있습니다. 개인정보나 불법 콘텐츠는 입력할 수 없습니다.'
+    return True, ''
+# ────────────────────────────────────────────────────────────
 
 
 def _get_request_user(request):
@@ -1179,6 +1206,11 @@ def api_chat_send(request, llm_uuid):
         if not user_text:
             return JsonResponse({'success': False, 'error': '메시지를 입력해주세요.'}, status=400)
 
+        # 모더레이션 검사
+        ok, reason = _moderate_user_input(user_text)
+        if not ok:
+            return JsonResponse({'success': False, 'error': reason}, status=400)
+
         # 대화 가져오기 또는 생성
         if conversation_id:
             try:
@@ -1330,5 +1362,58 @@ def api_chat_reset(request, llm_uuid):
         'max_hp': 100,
     })
 
+
+# =====================================================
+# 콘텐츠 신고 API
+# =====================================================
+@csrf_exempt
+@require_api_key_secure
+def api_report_content(request):
+    """UGC 콘텐츠 신고"""
+    if request.method != 'POST':
+        return api_response({}, message="", success=False)
+
+    request_user = _get_request_user(request)
+    if request_user is None:
+        return JsonResponse({'success': False, 'error': '로그인이 필요합니다.'}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'success': False, 'error': '잘못된 요청입니다.'}, status=400)
+
+    content_type = data.get('content_type', '')
+    content_id = str(data.get('content_id', '')).strip()
+    reason = data.get('reason', '')
+    description = data.get('description', '')[:500]
+
+    valid_types = [c[0] for c in Report.CONTENT_TYPE_CHOICES]
+    valid_reasons = [r[0] for r in Report.REASON_CHOICES]
+
+    if content_type not in valid_types:
+        return JsonResponse({'success': False, 'error': '잘못된 콘텐츠 유형입니다.'}, status=400)
+    if reason not in valid_reasons:
+        return JsonResponse({'success': False, 'error': '잘못된 신고 사유입니다.'}, status=400)
+    if not content_id:
+        return JsonResponse({'success': False, 'error': '콘텐츠 ID가 없습니다.'}, status=400)
+
+    # 중복 신고 방지
+    already = Report.objects.filter(
+        reporter=request_user,
+        content_type=content_type,
+        content_id=content_id,
+    ).exists()
+    if already:
+        return JsonResponse({'success': True, 'already_reported': True, 'message': '이미 신고한 콘텐츠입니다.'})
+
+    Report.objects.create(
+        reporter=request_user,
+        content_type=content_type,
+        content_id=content_id,
+        reason=reason,
+        description=description,
+    )
+
+    return JsonResponse({'success': True, 'message': '신고가 접수되었습니다.'})
 
 

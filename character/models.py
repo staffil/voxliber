@@ -408,6 +408,52 @@ class StoryBookmark(models.Model):
         verbose_name = '스토리 북마크'
 
 
+# 콘텐츠 신고
+class Report(models.Model):
+    CONTENT_TYPE_CHOICES = [
+        ('conversation', '공유 대화'),
+        ('story', 'AI 스토리'),
+        ('llm', 'AI 캐릭터'),
+        ('snap', '스냅'),
+        ('user', '사용자'),
+        ('comment', '댓글'),
+    ]
+    REASON_CHOICES = [
+        ('spam', '스팸/광고'),
+        ('inappropriate', '부적절한 내용'),
+        ('violence', '폭력적 내용'),
+        ('adult', '성인 콘텐츠'),
+        ('hate', '혐오 발언'),
+        ('other', '기타'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', '검토 대기'),
+        ('reviewed', '검토 중'),
+        ('resolved', '처리 완료'),
+    ]
+
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='reports',
+        verbose_name='신고자',
+    )
+    content_type = models.CharField(max_length=20, choices=CONTENT_TYPE_CHOICES, verbose_name='콘텐츠 유형')
+    content_id = models.CharField(max_length=200, verbose_name='콘텐츠 ID')
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES, verbose_name='신고 사유')
+    description = models.TextField(blank=True, default='', verbose_name='상세 설명')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='처리 상태')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'content_report'
+        verbose_name = '신고'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.content_type}] {self.content_id} - {self.reason}"
+
+
 
 
 

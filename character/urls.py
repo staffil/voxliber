@@ -62,5 +62,6 @@ urlpatterns = [
     path('api/chat/<uuid:llm_uuid>/reset/', api_views.api_chat_reset, name='api_chat_reset'),
     path('delete/api/ai/conversation/<int:conv_id>/', api_views.api_delete_conversation, name="api_delete_conversation"),
     path('api/ai/final/chapter/<uuid:llm_uuid>/', api_views.api_last_ward, name="api_last_ward"),
+    path('api/report/', api_views.api_report_content, name='api_report_content'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
