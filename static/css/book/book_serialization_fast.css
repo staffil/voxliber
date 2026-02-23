@@ -1082,6 +1082,7 @@ input:checked + .slider-switch:before {
     border: 1px solid var(--border-color);
     background: var(--bg-tertiary);
     color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 .btn-header-link:hover,
@@ -1089,6 +1090,34 @@ input:checked + .slider-switch:before {
     border-color: var(--accent-primary);
     color: var(--accent-primary);
     transform: translateY(-1px);
+}
+
+/* YouTube 가이드 버튼 텍스트 토글 */
+.yt-label-short { display: none; }
+.yt-label-full  { display: inline; }
+
+/* YouTube 가이드 버튼 */
+.btn-yt-guide {
+    border-color: rgba(255, 0, 0, 0.3);
+    color: #ff4444;
+}
+
+.btn-yt-guide:hover {
+    border-color: #ff0000 !important;
+    color: #ff0000 !important;
+    background: rgba(255, 0, 0, 0.08) !important;
+    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+}
+
+@media (max-width: 640px) {
+    .btn-header-link,
+    .btn-header-guide {
+        padding: 7px 12px;
+        font-size: 12px;
+    }
+
+    .btn-yt-guide span.yt-label-full { display: none; }
+    .btn-yt-guide span.yt-label-short { display: inline; }
 }
 
 /* ==================== 가이드 모달 ==================== */
