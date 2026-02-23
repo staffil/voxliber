@@ -139,8 +139,15 @@
 <div class="novel-container">
 
     <!-- 제목 -->
-    <h1 class="novel-title">{{ novel.title }}</h1>
+    {% for conv in user_share_list %}
 
+        {% if conv.merged_audio_title %}
+        <h1 class="novel-title">{{ conv.merged_audio_title }}</h1>
+        {% else %}
+        <h1 class="novel-title">{{ conv.llm.name }}</h1>
+
+        {% endif %}    <!-- 프롤로그 -->
+        {% endfor %}
     <!-- 프롤로그 -->
     {% if novel.prologue %}
     <p class="novel-prologue">{{ novel.prologue|safe }}</p>
@@ -151,6 +158,7 @@
     <div style="text-align: center;">
         <a href="{% url 'character:ai_intro' llm.public_uuid %}" class="ai-chat-link">
             {{ llm.name }}와(과) 대화하기
+            
         </a>
     </div>
     {% endif %}
@@ -463,58 +471,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     seqStopBtn.addEventListener('click', stopSeq);
-
-    // ── 머지 오디오 플레이어 ──
-    const macAudio = document.getElementById('mac-audio');
-    if (macAudio) {
-        const macPlay = document.getElementById('mac-play');
-        const macBack = document.getElementById('mac-back');
-        const macFwd  = document.getElementById('mac-fwd');
-        const macFill = document.getElementById('mac-fill');
-        const macCur  = document.getElementById('mac-cur');
-        const macDur  = document.getElementById('mac-dur');
-        const macWrap = document.getElementById('mac-progress-wrap');
-
-        function fmtTime(s) {
-            if (!isFinite(s)) return '--:--';
-            const m = Math.floor(s / 60);
-            const sec = Math.floor(s % 60);
-            return m + ':' + String(sec).padStart(2, '0');
-        }
-
-        macAudio.addEventListener('loadedmetadata', () => { macDur.textContent = fmtTime(macAudio.duration); });
-        macAudio.addEventListener('timeupdate', () => {
-            if (macAudio.duration) {
-                macFill.style.width = (macAudio.currentTime / macAudio.duration * 100) + '%';
-            }
-            macCur.textContent = fmtTime(macAudio.currentTime);
-        });
-        macAudio.addEventListener('ended', () => {
-            macPlay.innerHTML = '&#9654;';
-            macFill.style.width = '0%';
-            macAudio.currentTime = 0;
-        });
-
-        macPlay.addEventListener('click', () => {
-            if (macAudio.paused) {
-                macAudio.play();
-                macPlay.innerHTML = '&#10074;&#10074;';
-            } else {
-                macAudio.pause();
-                macPlay.innerHTML = '&#9654;';
-            }
-        });
-
-        macBack.addEventListener('click', () => { macAudio.currentTime = Math.max(0, macAudio.currentTime - 10); });
-        macFwd.addEventListener('click',  () => { macAudio.currentTime = Math.min(macAudio.duration || 0, macAudio.currentTime + 10); });
-
-        macWrap.addEventListener('click', e => {
-            if (!macAudio.duration) return;
-            const rect = macWrap.getBoundingClientRect();
-            const ratio = (e.clientX - rect.left) / rect.width;
-            macAudio.currentTime = ratio * macAudio.duration;
-        });
-    }
 });
 </script>
 {% endblock %}

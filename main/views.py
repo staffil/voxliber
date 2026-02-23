@@ -900,6 +900,11 @@ def shared_novel(request, conv_id):
     if current_hp >= 100:
         last_wards = LastWard.objects.filter(llm= conversation.llm).order_by('order')
 
+    user_share_list = Conversation.objects.filter(
+        is_public=True,
+        llm=conversation.llm
+
+    ).select_related('llm', 'user')
 
 
 
@@ -908,7 +913,8 @@ def shared_novel(request, conv_id):
         'conversation': conversation,
         'is_shared': True,  # 공유 모드임을 템플릿에 알림
         'llm': llm,
-        "last_wards":last_wards
+        "last_wards":last_wards,
+        "user_share_list":user_share_list
     }
     return render(request, 'main/shared_conversation.html', context)
 

@@ -1457,7 +1457,12 @@ document.addEventListener("DOMContentLoaded", () => {
                   </div>
                 </div>
                 <div class="card-content">
-                  <h3 class="card-title">{{ conv.llm.name }}과의 이야기</h3>
+                  {% if conv.merged_audio_title %}
+                  <h3 class="card-title">{{ conv.merged_audio_title }}</h3>
+                  {% else %}
+                  <h3 class="card-title">{{ conv.llm.name }}</h3>
+
+                  {% endif %}
                   {% if conv.messages.exists %}
                   <p class="card-desc">{{ conv.messages.first.content|truncatechars:40|safe }}</p>
                   {% else %}

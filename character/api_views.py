@@ -514,7 +514,6 @@ def api_chat_to_audio(request, conv_id):
 @csrf_exempt
 def api_shared_novel(request, conv_id):
 
-# 1. 공개된 Conversation 조회
     conversation = get_object_or_404(
         Conversation.objects.select_related('llm', 'user', 'llm__user'),
         id=conv_id,
@@ -522,9 +521,8 @@ def api_shared_novel(request, conv_id):
     )
 
     llm = conversation.llm
-    user = conversation.user  # 대화를 공개한 사용자
+    user = conversation.user
 
-    # 2. LLM 서브 이미지 전체 (order 순)
     sub_images = LLMSubImage.objects.filter(llm=llm).order_by('order', 'created_at')
     sub_images_data = [
         {
@@ -538,7 +536,6 @@ def api_shared_novel(request, conv_id):
         for sub in sub_images
     ]
 
-    # 3. LLM 로어북 전체 (LoreEntry) - priority 높은 순
     lore_entries = LoreEntry.objects.filter(llm=llm).order_by('-priority')
     lore_data = [
         {
@@ -551,7 +548,6 @@ def api_shared_novel(request, conv_id):
         for lore in lore_entries
     ]
 
-    # 4. LLM HP 매핑 전체 (HPImageMapping) - priority + min_hp 순
     hp_mappings = HPImageMapping.objects.filter(llm=llm).select_related('sub_image').order_by('-priority', 'min_hp')
     hp_data = [
         {
@@ -566,7 +562,6 @@ def api_shared_novel(request, conv_id):
         for mapping in hp_mappings
     ]
 
-    # 5. 대화 메시지 전체 (시간순)
     messages = ConversationMessage.objects.filter(conversation=conversation).order_by('created_at')
     messages_data = [
         {
@@ -581,12 +576,10 @@ def api_shared_novel(request, conv_id):
         for msg in messages
     ]
 
-    # 최종 응답 데이터
     data = {
         'conversation_id': conv_id,
         'shared_at': conversation.shared_at.isoformat() if conversation.shared_at else conversation.created_at.isoformat(),
         
-        # 연결된 LLM 정보
         'llm': {
             'id': str(llm.public_uuid),
             'name': llm.name,
@@ -599,64 +592,56 @@ def api_shared_novel(request, conv_id):
             'is_public': llm.is_public,
         },
         
-        # 대화를 공개한 사용자 정보
         'shared_by': {
             'nickname': user.nickname if hasattr(user, 'nickname') else user.username,
             'profile_image': request.build_absolute_uri(user.user_img.url) if hasattr(user, 'user_img') and user.user_img else None,
         },
         
-        # 대화 전체 메시지
         'messages': messages_data,
         'message_count': len(messages_data),
-
-        # LLM 추가 데이터 (서브 이미지, 로어북, HP 매핑)
         'sub_images': sub_images_data,
         'lore_entries': lore_data,
         'hp_mappings': hp_data,
         'last_wards': _build_last_wards(request, conversation),
         'merged_audio_url': request.build_absolute_uri(conversation.merged_audio.url) if conversation.merged_audio else None,
-        'merged_audio_title': conversation.merged_audio_title or None,
+        'merged_audio_title': conversation.merged_audio_title or None,  # 이미 있음
     }
 
     return api_response(data)
 
 
-
-
 @csrf_exempt
-@require_api_key_secure  # 필요 없으면 제거 가능 (공개 목록이니)
+@require_api_key_secure
 def public_shared_llm_conversations(request):
 
     page = int(request.GET.get('page', 1))
     per_page = int(request.GET.get('per_page', 20))
 
-    # 공개된 Conversation만 가져오기
     conversations = Conversation.objects.filter(
         is_public=True
     ).select_related(
-        'llm',          # LLM 정보
-        'user',         # 대화를 공개한 사용자
-        'llm__user'     # LLM 만든 사용자 (필요 시)
+        'llm',
+        'user',
+        'llm__user'
     ).prefetch_related(
         Prefetch(
             'messages',
             queryset=ConversationMessage.objects.order_by('created_at'),
             to_attr='all_messages'
         )
-    ).order_by('-shared_at', '-created_at')  # 최신 공유/생성 순
+    ).order_by('-shared_at', '-created_at')
 
     result = paginate(conversations, page, per_page)
 
     conv_data = []
     for conv in result['items']:
         llm = conv.llm
-        user = conv.user  # 대화를 공개한 사람
+        user = conv.user
 
         conv_item = {
             'conversation_id': conv.id,
             'shared_at': conv.shared_at.isoformat() if conv.shared_at else conv.created_at.isoformat(),
             
-            # LLM 정보
             'llm': {
                 'id': str(llm.public_uuid),
                 'name': llm.name,
@@ -666,13 +651,11 @@ def public_shared_llm_conversations(request):
                 'llm_background_image': request.build_absolute_uri(llm.llm_background_image.url) if llm.llm_background_image else None,
             },
             
-            # 대화를 공개한 사용자 정보
             'shared_by': {
                 'nickname': user.nickname if hasattr(user, 'nickname') else user.username,
                 'profile_image': request.build_absolute_uri(user.user_img.url) if hasattr(user, 'user_img') and user.user_img else None,
             },
             
-            # 전체 메시지 (role, content, created_at 등)
             'messages': [
                 {
                     'role': msg.role,
@@ -684,6 +667,7 @@ def public_shared_llm_conversations(request):
             ],
             
             'message_count': len(getattr(conv, 'all_messages', [])),
+            'merged_audio_title': conv.merged_audio_title or None,  # ← 추가
         }
 
         conv_data.append(conv_item)
@@ -692,8 +676,6 @@ def public_shared_llm_conversations(request):
         'shared_conversations': conv_data,
         'pagination': result['pagination']
     })
-
-
 
 
 
