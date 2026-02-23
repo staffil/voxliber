@@ -376,8 +376,10 @@ def process_batch_audiobook(self, data, user_id):
                     return {'success': False, 'error': 'book_uuid가 필요합니다'}
 
                 ep_number = step.get('episode_number', 1)
-                content = Content.objects.filter(book=book, number=ep_number).first()
+                # 같은 에피소드 번호로 여러 번 생성시 가장 최신 에피소드를 사용
+                content = Content.objects.filter(book=book, number=ep_number).order_by('-pk').first()
                 if not content:
+                    print(f"⚠️ 에피소드 {ep_number}를 찾을 수 없습니다")
                     continue
 
                 self.update_state(state='PROGRESS', meta={
@@ -408,9 +410,10 @@ def process_batch_audiobook(self, data, user_id):
                     return int(timestamps[prev_idx].get('endTime', 0))
 
                 def page_end_ms(page_idx):
-                    """페이지 끝 시간(ms)"""
+                    """페이지 끝 시간(ms) - timestamps 없으면 전체 duration 사용"""
                     if not timestamps:
-                        return 0
+                        # fallback: 전체 에피소드 길이 사용
+                        return int(content.duration_seconds * 1000) if content.duration_seconds else 0
                     idx = min(page_idx, len(timestamps) - 1)
                     return int(timestamps[idx].get('endTime', 0))
 
@@ -420,10 +423,11 @@ def process_batch_audiobook(self, data, user_id):
                     mid = track.get('music_id', '')
                     bgm_obj = BackgroundMusicLibrary.objects.filter(id=mid).first()
                     if not bgm_obj or not bgm_obj.audio_file:
+                        print(f"⚠️ BGM ID={mid} 없음, 건너뜀")
                         continue
 
                     start_page = track.get('start_page', 0)
-                    end_page = track.get('end_page', len(timestamps) - 1 if timestamps else 0)
+                    end_page = track.get('end_page', len(timestamps) - 1 if timestamps else -1)
                     volume = track.get('volume', 0.25)
                     volume_db = 20 * math.log10(max(volume, 0.01))
 
