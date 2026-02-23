@@ -15,14 +15,16 @@ from .models import Story
 
 def _get_request_user(request):
     """API key 또는 세션에서 유저를 가져옴 (앱/웹 공통)"""
+    from book.models import APIKey
     api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
     if api_key:
         try:
-            from book.models import APIKey
             api_key_obj = APIKey.objects.select_related('user').get(key=api_key, is_active=True)
             return api_key_obj.user
-        except Exception:
-            pass
+        except APIKey.DoesNotExist:
+            print(f"[_get_request_user] API Key 없음 또는 비활성: {api_key[:10]}...")
+        except Exception as e:
+            print(f"[_get_request_user] API Key 조회 오류: {e}")
     if hasattr(request, 'user') and request.user.is_authenticated:
         return request.user
     return None
@@ -757,19 +759,21 @@ def api_novel_result(request, conv_id):
 
     # 비공개 대화 접근 제한 (본인만 접근 가능)
     if not conversation.is_public:
-        authorized = False
         request_user = _get_request_user(request)
-
-        # 웹 또는 앱 사용자 (본인 확인)
-        if request_user and request_user == owner:
-            authorized = True
 
         # owner가 None인 경우 (익명 대화) - 누구나 접근 가능
         if owner is None:
-            authorized = True
-
-        if not authorized:
-            return api_error("권한이 없습니다.", status=403)
+            pass  # allow
+        elif request_user is None:
+            api_key = request.GET.get('api_key') or request.headers.get('X-API-Key')
+            if api_key:
+                print(f"[api_novel_result] API key 있지만 인증 실패 (conv_id={conv_id})")
+                return api_error("API 키가 유효하지 않습니다. 앱을 재로그인 해주세요.", status=401)
+            return api_error("로그인이 필요합니다.", status=401)
+        elif request_user != owner:
+            print(f"[api_novel_result] 소유자 불일치: request_user={request_user.pk}, owner={owner.pk}, conv_id={conv_id}")
+            return api_error("이 대화에 접근 권한이 없습니다.", status=403)
+        # else: request_user == owner → OK
 
     # -------------------------
     # 서브 이미지
