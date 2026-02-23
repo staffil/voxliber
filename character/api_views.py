@@ -1369,13 +1369,21 @@ def api_chat_reset(request, llm_uuid):
 @csrf_exempt
 @require_api_key_secure
 def api_report_content(request):
-    """UGC 콘텐츠 신고"""
-    if request.method != 'POST':
-        return api_response({}, message="", success=False)
-
+    """UGC 콘텐츠 신고 / 신고 확인 / 신고 취소"""
     request_user = _get_request_user(request)
     if request_user is None:
         return JsonResponse({'success': False, 'error': '로그인이 필요합니다.'}, status=401)
+
+    # GET — 신고 여부 확인
+    if request.method == 'GET':
+        content_type = request.GET.get('content_type', '')
+        content_id = request.GET.get('content_id', '').strip()
+        reported = Report.objects.filter(
+            reporter=request_user,
+            content_type=content_type,
+            content_id=content_id,
+        ).exists()
+        return JsonResponse({'success': True, 'reported': reported})
 
     try:
         data = json.loads(request.body)
@@ -1384,6 +1392,25 @@ def api_report_content(request):
 
     content_type = data.get('content_type', '')
     content_id = str(data.get('content_id', '')).strip()
+
+    if not content_id:
+        return JsonResponse({'success': False, 'error': '콘텐츠 ID가 없습니다.'}, status=400)
+
+    # DELETE — 신고 취소
+    if request.method == 'DELETE':
+        deleted, _ = Report.objects.filter(
+            reporter=request_user,
+            content_type=content_type,
+            content_id=content_id,
+        ).delete()
+        if deleted:
+            return JsonResponse({'success': True, 'message': '신고가 취소되었습니다.'})
+        return JsonResponse({'success': False, 'error': '취소할 신고가 없습니다.'}, status=404)
+
+    # POST — 신고 제출
+    if request.method != 'POST':
+        return api_response({}, message="", success=False)
+
     reason = data.get('reason', '')
     description = data.get('description', '')[:500]
 
@@ -1394,8 +1421,6 @@ def api_report_content(request):
         return JsonResponse({'success': False, 'error': '잘못된 콘텐츠 유형입니다.'}, status=400)
     if reason not in valid_reasons:
         return JsonResponse({'success': False, 'error': '잘못된 신고 사유입니다.'}, status=400)
-    if not content_id:
-        return JsonResponse({'success': False, 'error': '콘텐츠 ID가 없습니다.'}, status=400)
 
     # 중복 신고 방지
     already = Report.objects.filter(
