@@ -30,9 +30,9 @@
   --info-dark: #2563eb;
 
   /* Dark Mode 중심 배경 (검은색 톤) */
-  --bg-primary: #110e0e;          /* 메인 배경: 완전 블랙 */
-  --bg-secondary: #0f0f0f;        /* 카드/섹션 배경: 아주 어두운 그레이 */
-  --bg-tertiary: #1a1a1a;         /* 더 어두운 레이어 */
+  --bg-primary: #0d0f14;          /* 메인 배경: 쿨 다크 네이비 */
+  --bg-secondary: #13161e;        /* 카드/섹션 배경: 다크 네이비 그레이 */
+  --bg-tertiary: #1a1e2a;         /* 더 어두운 레이어 */
 
   --text-primary: #f8fafc;        /* 주요 텍스트: 거의 화이트 */
   --text-secondary: #cbd5e1;      /* 부수 텍스트: 밝은 그레이 */
@@ -88,6 +88,87 @@
   --shadow-lg: 0 8px 32px var(--shadow-color);
   --shadow-xl: 0 12px 48px var(--shadow-color);
 
+  /* 개별 페이지에서 마이그레이션된 변수 */
+  --accent-danger: #ef4444;
+  --accent-primary: #6366f1;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --ai-accent: #f472b6;
+  --ai-bg: #0f0f17;
+  --ai-bg-card: #12121a;
+  --ai-bg-dark: #0a0a0f;
+  --ai-bg-input: #1a1a25;
+  --ai-border: #2a2a3a;
+  --ai-card: #1a1a25;
+  --ai-card-hover: #22222f;
+  --ai-danger: #ef4444;
+  --ai-glow: rgba(0, 212, 255, 0.3);
+  --ai-gradient: linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #f472b6 100%);
+  --ai-gradient-subtle: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+  --ai-primary: #00d4ff;
+  --ai-secondary: #a855f7;
+  --ai-success: #22c55e;
+  --ai-text: #e0e0e0;
+  --ai-text-muted: #8888a0;
+  --ai-warning: #f59e0b;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-dark: #0a0a0f;
+  --bg-elevated: #1f2433;
+  --bg-hover: #22222f;
+  --bg-input: #1a1a25;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-active: rgba(99, 102, 241, 0.5);
+  --chat-ai-bubble: #1e1e2a;
+  --chat-bg: #0f0f14;
+  --chat-border: rgba(255, 255, 255, 0.08);
+  --chat-danger: #ef4444;
+  --chat-primary: #6366f1;
+  --chat-primary-hover: #818cf8;
+  --chat-success: #22c55e;
+  --chat-surface: #1a1a24;
+  --chat-surface-hover: #222230;
+  --chat-text: #f1f1f1;
+  --chat-text-muted: #8b8b9e;
+  --chat-user-bubble: #6366f1;
+  --chat-warning: #f59e0b;
+  --dark: #100f0f;
+  --dark-light: #1e293b;
+  --glass: rgba(255, 255, 255, 0.05);
+  --gradient-info: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --hover-bg: rgba(255, 255, 255, 0.08);
+  --intro-accent: #a78bfa;
+  --intro-bg: #0f0f17;
+  --intro-border: #2a2a3a;
+  --intro-card: #1a1a25;
+  --intro-card-hover: #22222f;
+  --intro-danger: #ef4444;
+  --intro-muted: #8888a0;
+  --intro-primary: #6366f1;
+  --intro-success: #22c55e;
+  --intro-text: #e0e0e0;
+  --intro-text-muted: #8888a0;
+  --novel-accent: #818cf8;
+  --novel-bg: #0a0a0f;
+  --novel-border: rgba(255, 255, 255, 0.06);
+  --novel-dialogue: #F9FAFB;
+  --novel-narration: #9CA3AF;
+  --novel-paper: #151520;
+  --novel-paper-light: #1a1a28;
+  --novel-primary: #6366f1;
+  --novel-primary-soft: rgba(99, 102, 241, 0.15);
+  --novel-text: #e8e8ed;
+  --novel-text-muted: #8b8b9e;
+  --novel-user: #a78bfa;
+  --primary-glow: rgba(99, 102, 241, 0.35);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 20px rgba(0, 212, 255, 0.3);
+  --shadow-hover: 0 16px 48px rgba(99, 102, 241, 0.28);
+  --text: #f1f5f9;
+  --text-muted: #64748b;
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
   /* Z-index (기존 유지) */
   --z-dropdown: 1000;
   --z-sticky: 1020;
@@ -130,7 +211,7 @@ body.light-mode {
 
 /* Body Base Styles - 검은색 배경 강제 */
 body {
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Pretendard', 'Noto Sans KR', 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--bg-primary);  /* 완전 검정 */
   color: var(--text-primary);
   line-height: 1.6;

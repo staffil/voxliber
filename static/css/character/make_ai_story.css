@@ -2,20 +2,6 @@
    AI Story Creation Page - Cyberpunk Theme
    ========================================== */
 
-:root {
-    --ai-primary: #00d4ff;
-    --ai-secondary: #a855f7;
-    --ai-accent: #f472b6;
-    --ai-bg-dark: #0a0a0f;
-    --ai-bg-card: #12121a;
-    --ai-bg-input: #1a1a25;
-    --ai-border: #2a2a3a;
-    --ai-text: #e0e0e0;
-    --ai-text-muted: #8888a0;
-    --ai-glow: rgba(0, 212, 255, 0.3);
-    --ai-gradient: linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #f472b6 100%);
-}
-
 /* Main Container */
 .story-create-container {
     max-width: 800px;

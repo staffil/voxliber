@@ -1,20 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 /* CSS 변수 정의 */
-:root {
-    --primary: #6366f1;
-    --secondary: #8b5cf6;
-    --accent: #ec4899;
-    --dark: #0f172a;
-    --dark-light: #1e293b;
-    --text: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --border: rgba(255, 255, 255, 0.1);
-    --glass: rgba(255, 255, 255, 0.05);
-    --card-bg: rgba(30, 41, 59, 0.6);
-    --input-bg: rgba(255, 255, 255, 0.05);
-    --hover-bg: rgba(255, 255, 255, 0.08);
-}
 .form-error {
     color: #ef4444; /* 빨간색 */
     font-size: 0.9rem;

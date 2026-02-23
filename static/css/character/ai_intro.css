@@ -1,13 +1,3 @@
-:root {
-    --intro-bg: #0f0f17;
-    --intro-card: #1a1a25;
-    --intro-border: #2a2a3a;
-    --intro-text: #e0e0e0;
-    --intro-muted: #8888a0;
-    --intro-primary: #6366f1;
-    --intro-accent: #a78bfa;
-}
-
 body {
     background: var(--intro-bg);
     margin: 0;

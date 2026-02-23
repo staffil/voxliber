@@ -2,21 +2,6 @@
    Novel Reader - 소설 읽기 스타일
    ========================================== */
 
-:root {
-    --novel-bg: #0a0a0f;
-    --novel-paper: #151520;
-    --novel-paper-light: #1a1a28;
-    --novel-border: rgba(255, 255, 255, 0.06);
-    --novel-primary: #6366f1;
-    --novel-primary-soft: rgba(99, 102, 241, 0.15);
-    --novel-text: #e8e8ed;
-    --novel-text-muted: #8b8b9e;
-    --novel-narration: #9CA3AF;
-    --novel-dialogue: #F9FAFB;
-    --novel-user: #a78bfa;
-    --novel-accent: #818cf8;
-}
-
 * {
     box-sizing: border-box;
 }

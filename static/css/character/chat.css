@@ -2,22 +2,6 @@
    Chat View - Modern Redesign v3
    ========================================== */
 
-:root {
-    --chat-bg: #0f0f14;
-    --chat-surface: #1a1a24;
-    --chat-surface-hover: #222230;
-    --chat-border: rgba(255, 255, 255, 0.08);
-    --chat-primary: #6366f1;
-    --chat-primary-hover: #818cf8;
-    --chat-text: #f1f1f1;
-    --chat-text-muted: #8b8b9e;
-    --chat-user-bubble: #6366f1;
-    --chat-ai-bubble: #1e1e2a;
-    --chat-success: #22c55e;
-    --chat-warning: #f59e0b;
-    --chat-danger: #ef4444;
-}
-
 * {
     box-sizing: border-box;
 }

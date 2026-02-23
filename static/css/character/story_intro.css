@@ -1,17 +1,4 @@
 /* Story Intro Page Styles */
-:root {
-    --intro-bg: #0f0f17;
-    --intro-card: #1a1a25;
-    --intro-card-hover: #22222f;
-    --intro-border: #2a2a3a;
-    --intro-text: #e0e0e0;
-    --intro-text-muted: #8888a0;
-    --intro-primary: #6366f1;
-    --intro-accent: #a78bfa;
-    --intro-success: #22c55e;
-    --intro-danger: #ef4444;
-}
-
 body {
     background: var(--intro-bg);
 }

@@ -3,45 +3,6 @@
 /* ========================================
    Variables
    ======================================== */
-:root {
-  --primary:         #6366f1;
-  --primary-dark:    #4f46e5;
-  --primary-glow:    rgba(99, 102, 241, 0.32);
-  --secondary:       #8b5cf6;
-  --accent:          #ec4899;
-  --success:         #10b981;
-  --danger:          #ef4444;
-  --warning:         #f59e0b;
-
-  --bg-primary:      #0d0f14;
-  --bg-secondary:    #13161e;
-  --bg-tertiary:     #1a1e2a;
-  --bg-elevated:     #1f2433;
-  --card-bg:         #16213e;
-
-  --border-color:    rgba(255, 255, 255, 0.07);
-  --border-active:   rgba(99, 102, 241, 0.5);
-  --text-primary:    #f0f2f8;
-  --text-secondary:  #8892a4;
-  --text-tertiary:   #4b5568;
-
-  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  --gradient-accent:  linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
-  --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  --gradient-danger:  linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-
-  --shadow-card:  0 8px 28px rgba(0, 0, 0, 0.45);
-  --shadow-hover: 0 16px 48px rgba(99, 102, 241, 0.28);
-
-  --radius-sm:   6px;
-  --radius-md:   10px;
-  --radius-lg:   16px;
-  --radius-xl:   22px;
-  --radius-full: 9999px;
-
-  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 body.light-mode {
   --bg-primary:     #f4f6ff;
   --bg-secondary:   #ffffff;

@@ -1,17 +1,4 @@
 /* AI List Page Styles */
-:root {
-    --ai-bg: #0f0f17;
-    --ai-card: #1a1a25;
-    --ai-card-hover: #22222f;
-    --ai-border: #2a2a3a;
-    --ai-text: #e0e0e0;
-    --ai-text-muted: #8888a0;
-    --ai-primary: #6366f1;
-    --ai-accent: #a78bfa;
-    --ai-success: #22c55e;
-    --ai-warning: #f59e0b;
-}
-
 body {
     background: var(--ai-bg);
 }

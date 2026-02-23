@@ -2,38 +2,6 @@
    스토리 상세 페이지 - Cyberpunk AI Theme
    ===================================================== */
 
-:root {
-    --ai-primary: #00d4ff;
-    --ai-secondary: #a855f7;
-    --ai-accent: #f472b6;
-    --ai-success: #22c55e;
-    --ai-warning: #f59e0b;
-    --ai-danger: #ef4444;
-    --ai-gradient: linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #f472b6 100%);
-
-    --bg-dark: #0a0a0f;
-    --bg-card: #12121a;
-    --bg-input: #1a1a25;
-    --bg-hover: #22222f;
-
-    --text-primary: #ffffff;
-    --text-secondary: #a0a0b0;
-    --text-muted: #6b6b7b;
-
-    --border-color: #2a2a3a;
-    --border-active: #00d4ff;
-
-    --shadow-glow: 0 0 20px rgba(0, 212, 255, 0.3);
-    --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
-
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 24px;
-
-    --transition: all 0.3s ease;
-}
-
 /* 컨테이너 */
 .story-detail-container {
     max-width: 1200px;
