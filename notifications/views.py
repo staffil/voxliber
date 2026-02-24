@@ -27,7 +27,7 @@ def register_fcm_token(request):
 
     # 같은 토큰이 있으면 내 유저로 업데이트, 없으면 새로 생성
     FCMToken.objects.filter(token=token).delete()
-    FCMToken.objects.create(user=request.user, token=token, device=device)
+    FCMToken.objects.create(user=request.api_user, token=token, device=device)
 
     return JsonResponse({'success': True})
 
