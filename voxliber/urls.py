@@ -117,6 +117,9 @@ urlpatterns = [
     path("api/v1/realtime-chart/", voxliber_api.api_realtime_chart, name="api_realtime_chart"),
     path("api/v1/announcement/", voxliber_api.api_announcement, name="api_announcement"),
 
+    # 알림 API (앱용)
+    path("api/v1/notifications/", include("notifications.urls")),
+
     # 광고 API (앱용)
     path("api/v1/ads/check/", voxliber_api.api_ad_check, name="api_ad_check"),
     path("api/v1/ads/impression/", voxliber_api.api_ad_impression, name="api_ad_impression"),

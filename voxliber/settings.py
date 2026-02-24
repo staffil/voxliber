@@ -116,8 +116,11 @@ INSTALLED_APPS = [
     "django_celery_results",
     "character",
     "advertisment",
-    
+    "notifications",
 ]
+
+# Firebase Admin SDK 키 경로
+FIREBASE_KEY_PATH = BASE_DIR / 'voxliber-e6c96-firebase-adminsdk-fbsvc-673aff1037.json'
 CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
