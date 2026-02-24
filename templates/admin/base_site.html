@@ -1,0 +1,59 @@
+{% extends "admin/base.html" %}
+
+{% block nav-global %}
+<div style="background:#1a1a2e; padding:8px 20px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+
+  <a href="/admin/book/episode-ranking/" 
+     target="_blank"
+     style="color:#a5b4fc; font-size:0.82rem; text-decoration:none; font-weight:600;
+            padding:4px 12px; border-radius:20px; border:1px solid #3f3f6e;"
+     onmouseover="this.style.background='#2d2d50'" 
+     onmouseout="this.style.background='transparent'">
+    📊 에피소드 인기 랭킹
+  </a>
+
+  <span style="color:#333;">|</span>
+
+  <a href="/admin/book/listening-stats/" 
+     target="_blank"
+     style="color:#a5b4fc; font-size:0.82rem; text-decoration:none; font-weight:600;
+            padding:4px 12px; border-radius:20px; border:1px solid #3f3f6e;"
+     onmouseover="this.style.background='#2d2d50'" 
+     onmouseout="this.style.background='transparent'">
+    🎧 청취 기록 통계
+  </a>
+
+  <span style="color:#333;">|</span>
+
+  <a href="/admin/book/listening-calendar/" 
+     target="_blank"
+     style="color:#a5b4fc; font-size:0.82rem; text-decoration:none; font-weight:600;
+            padding:4px 12px; border-radius:20px; border:1px solid #3f3f6e;"
+     onmouseover="this.style.background='#2d2d50'" 
+     onmouseout="this.style.background='transparent'">
+    📅 청취 캘린더
+  </a>
+
+    <a href="/admin/character/stats/" 
+     target="_blank"
+     style="color:#a5b4fc; font-size:0.82rem; text-decoration:none; font-weight:600;
+            padding:4px 12px; border-radius:20px; border:1px solid #3f3f6e;"
+     onmouseover="this.style.background='#2d2d50'" 
+     onmouseout="this.style.background='transparent'">
+🤖 캐릭터 통계
+  </a>
+
+      <a href="/admin/character/calendar/" 
+     target="_blank"
+     style="color:#a5b4fc; font-size:0.82rem; text-decoration:none; font-weight:600;
+            padding:4px 12px; border-radius:20px; border:1px solid #3f3f6e;"
+     onmouseover="this.style.background='#2d2d50'" 
+     onmouseout="this.style.background='transparent'">
+📅 TTS 캘린더
+  </a>
+  <span style="color:#333;">|</span>
+
+
+
+</div>
+{% endblock %}

@@ -1,0 +1,416 @@
+{% extends "admin/base_site.html" %}
+{% block title %}캐릭터 & TTS 통계{% endblock %}
+
+{% block extrastyle %}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0d0d1a;
+  --surface:  #16162a;
+  --surface2: #1e1e35;
+  --border:   #2a2a48;
+  --violet:   #7c6ff7;
+  --violet2:  #a89bfa;
+  --teal:     #2dd4bf;
+  --rose:     #fb7185;
+  --amber:    #fbbf24;
+  --green:    #34d399;
+  --text:     #e8e8f8;
+  --muted:    #7070a0;
+  --radius:   14px;
+  --mono:     'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg) !important; color: var(--text); font-family: 'Noto Sans KR', sans-serif; }
+#content, .content { background: transparent !important; }
+#content-main { padding: 0 !important; }
+
+.dash-wrap { padding: 28px 24px 80px; max-width: 1280px; }
+
+/* ── 헤더 ── */
+.dash-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.dash-head h1 {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+.dash-head h1 em { color: var(--violet2); font-style: normal; }
+
+/* ── 기간 버튼 ── */
+.period-row { display: flex; gap: 6px; }
+.pbtn {
+  padding: 6px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 700;
+  border: 1.5px solid var(--border); background: var(--surface2);
+  color: var(--muted); cursor: pointer; text-decoration: none; transition: all 0.16s;
+}
+.pbtn:hover { border-color: var(--violet); color: var(--violet2); }
+.pbtn.active { background: var(--violet); color: #fff; border-color: var(--violet); }
+
+/* ── 요약 카드 그리드 ── */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+.s-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 18px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.s-card:hover { border-color: var(--violet); }
+.s-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.s-card.violet::before { background: var(--violet); }
+.s-card.teal::before   { background: var(--teal); }
+.s-card.rose::before   { background: var(--rose); }
+.s-card.amber::before  { background: var(--amber); }
+.s-card.green::before  { background: var(--green); }
+
+.s-card .icon { font-size: 1.5rem; margin-bottom: 10px; }
+.s-card .val {
+  font-size: 1.9rem; font-weight: 900;
+  font-family: var(--mono);
+  line-height: 1;
+  color: var(--text);
+}
+.s-card .lbl { font-size: 0.74rem; color: var(--muted); margin-top: 6px; }
+
+/* ── 섹션 타이틀 ── */
+.sec-title {
+  font-size: 0.95rem; font-weight: 800; color: var(--text);
+  margin: 32px 0 14px;
+  display: flex; align-items: center; gap: 8px;
+  letter-spacing: -0.02em;
+}
+.sec-title::after {
+  content: ''; flex: 1;
+  height: 1px; background: var(--border);
+}
+
+/* ── 2단 레이아웃 ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ── 패널 ── */
+.panel {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.panel-title { font-size: 0.82rem; font-weight: 700; color: var(--muted); margin-bottom: 16px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+/* ── 바 차트 (순수 CSS) ── */
+.bar-chart { display: flex; align-items: flex-end; gap: 5px; height: 100px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; justify-content: flex-end; }
+.bar-fill {
+  width: 100%; border-radius: 4px 4px 0 0;
+  min-height: 2px;
+  transition: height 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative;
+}
+.bar-fill:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%; transform: translateX(-50%);
+  background: #000; color: #fff;
+  font-size: 0.65rem; padding: 3px 7px; border-radius: 5px;
+  white-space: nowrap; pointer-events: none; z-index: 10;
+}
+.bar-col .lbl { font-size: 0.58rem; color: var(--muted); writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+.violet-bar { background: linear-gradient(to top, #5a4ff0, #a89bfa); }
+.teal-bar   { background: linear-gradient(to top, #0d9488, #2dd4bf); }
+
+/* ── 랭크 테이블 ── */
+.rank-list { display: flex; flex-direction: column; gap: 8px; }
+.rank-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface2); border-radius: 10px;
+  padding: 10px 14px; transition: background 0.15s;
+}
+.rank-item:hover { background: #252545; }
+.rank-num {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--muted); width: 22px; text-align: center; flex-shrink: 0;
+}
+.rank-num.gold   { color: #fbbf24; }
+.rank-num.silver { color: #c0c0d8; }
+.rank-num.bronze { color: #cd7c3b; }
+
+.rank-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  object-fit: cover; flex-shrink: 0;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+}
+.rank-avatar-ph {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--violet), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+}
+.rank-info { flex: 1; min-width: 0; }
+.rank-name { font-size: 0.84rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rank-sub  { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+.rank-val {
+  font-family: var(--mono); font-size: 0.9rem; font-weight: 700;
+  color: var(--violet2); white-space: nowrap;
+}
+
+/* ── 스토리 카드 ── */
+.story-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+.story-card {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+  cursor: default;
+}
+.story-card:hover { border-color: var(--violet); transform: translateY(-2px); }
+.story-cover {
+  width: 100%; height: 110px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #1e1e40, #2e2e60);
+}
+.story-cover-ph {
+  width: 100%; height: 110px;
+  background: linear-gradient(135deg, #1e1e40, #3a3a70);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+}
+.story-body { padding: 12px; }
+.story-title { font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 6px; line-height: 1.35; }
+.story-meta { display: flex; gap: 10px; font-size: 0.72rem; color: var(--muted); }
+.story-meta span { display: flex; align-items: center; gap: 3px; }
+
+/* ── 신고 배지 ── */
+.report-row { display: flex; flex-direction: column; gap: 6px; }
+.report-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface2); border-radius: 8px; padding: 9px 14px;
+}
+.report-type { font-size: 0.8rem; font-weight: 700; color: var(--text); flex: 1; }
+.report-bar-wrap { flex: 2; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.report-bar-fill { height: 100%; background: var(--rose); border-radius: 3px; }
+.report-cnt { font-family: var(--mono); font-size: 0.78rem; color: var(--rose); font-weight: 700; min-width: 30px; text-align: right; }
+
+/* ── TTS 키 메트릭 ── */
+.tts-metrics { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+.tts-pill {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 6px 14px;
+  font-size: 0.78rem; font-weight: 700; color: var(--muted);
+}
+.tts-pill span { color: var(--violet2); font-family: var(--mono); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dash-wrap">
+
+  <!-- ── 헤더 ── -->
+  <div class="dash-head">
+    <h1>🤖 캐릭터 <em>&</em> TTS 통계</h1>
+    <div class="period-row">
+      {% for p, label in period_choices %}
+      <a href="?period={{ p }}" class="pbtn {% if period == p %}active{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ── 요약 카드 ── -->
+  <div class="summary-grid">
+    <div class="s-card violet">
+      <div class="icon">🎙</div>
+      <div class="val">{{ tts_total_count|default:"0" }}</div>
+      <div class="lbl">TTS 생성 건수</div>
+    </div>
+    <div class="s-card teal">
+      <div class="icon">⏱</div>
+      <div class="val">{{ tts_total_minutes }}m</div>
+      <div class="lbl">총 음성 생성 시간 ({{ tts_total_seconds }}초)</div>
+    </div>
+    <div class="s-card amber">
+      <div class="icon">🤖</div>
+      <div class="val">{{ total_llms }}</div>
+      <div class="lbl">전체 AI 캐릭터 수 (공개 {{ total_public }})</div>
+    </div>
+    <div class="s-card green">
+      <div class="icon">💬</div>
+      <div class="val">{{ total_conv }}</div>
+      <div class="lbl">기간 내 대화 세션</div>
+    </div>
+    <div class="s-card violet">
+      <div class="icon">📖</div>
+      <div class="val">{{ total_stories }}</div>
+      <div class="lbl">전체 스토리 수</div>
+    </div>
+    <div class="s-card rose">
+      <div class="icon">🚨</div>
+      <div class="val">{{ pending_reports }}</div>
+      <div class="lbl">미처리 신고</div>
+    </div>
+  </div>
+
+
+
+  <!-- ── 캐릭터 좋아요 + TTS 초 ── -->
+  <div class="sec-title">🤖 AI 캐릭터 순위</div>
+  <div class="two-col">
+
+    <!-- 좋아요 TOP 20 -->
+    <div class="panel">
+      <div class="panel-title">❤️ 캐릭터별 좋아요 TOP 20</div>
+      <div class="rank-list">
+        {% for llm in top_llm_likes %}
+        <div class="rank-item">
+          <div class="rank-num {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+            {{ forloop.counter }}
+          </div>
+          {% if llm.llm_image %}
+          <img class="rank-avatar" src="/media/{{ llm.llm_image }}" alt="">
+          {% else %}
+          <div class="rank-avatar-ph">🤖</div>
+          {% endif %}
+          <div class="rank-info">
+            <div class="rank-name">{{ llm.name }}</div>
+            <div class="rank-sub">{% if llm.is_public %}공개{% else %}비공개{% endif %}</div>
+          </div>
+          <div class="rank-val">♥ {{ llm.like_cnt }}</div>
+        </div>
+        {% empty %}
+        <div style="color:var(--muted);text-align:center;padding:20px;font-size:0.85rem;">데이터 없음</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 기간 내 TTS 음성 초 TOP -->
+    <div class="panel">
+      <div class="panel-title">🎙 캐릭터별 TTS 생성 초 TOP 15 (기간 내)</div>
+      <div class="rank-list">
+        {% for s in llm_tts_stats %}
+        <div class="rank-item">
+          <div class="rank-num {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+            {{ forloop.counter }}
+          </div>
+          {% if s.conversation__llm__llm_image %}
+          <img class="rank-avatar" src="/media/{{ s.conversation__llm__llm_image }}" alt="">
+          {% else %}
+          <div class="rank-avatar-ph">🎙</div>
+          {% endif %}
+          <div class="rank-info">
+            <div class="rank-name">{{ s.conversation__llm__name }}</div>
+            <div class="rank-sub">{{ s.tts_count }}건 생성</div>
+          </div>
+          <div class="rank-val">{{ s.tts_seconds|floatformat:0 }}초</div>
+        </div>
+        {% empty %}
+        <div style="color:var(--muted);text-align:center;padding:20px;font-size:0.85rem;">데이터 없음</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── 급상승 캐릭터 ── -->
+  <div class="sec-title">🚀 급상승 캐릭터 (기간 내 새 좋아요)</div>
+  <div class="panel">
+    <div class="rank-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px;">
+      {% for r in rising_llms %}
+      <div class="rank-item">
+        <div class="rank-num {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+          {{ forloop.counter }}
+        </div>
+        {% if r.llm__llm_image %}
+        <img class="rank-avatar" src="/media/{{ r.llm__llm_image }}" alt="">
+        {% else %}
+        <div class="rank-avatar-ph">⚡</div>
+        {% endif %}
+        <div class="rank-info">
+          <div class="rank-name">{{ r.llm__name }}</div>
+          <div class="rank-sub">기간 내 신규 좋아요</div>
+        </div>
+        <div class="rank-val" style="color:var(--amber);">+{{ r.new_likes }}</div>
+      </div>
+      {% empty %}
+      <div style="color:var(--muted);font-size:0.85rem;padding:12px;">데이터 없음</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ── 인기 스토리 ── -->
+  <div class="sec-title">📖 인기 스토리 TOP 10</div>
+  <div class="story-grid">
+    {% for st in top_stories %}
+    <div class="story-card">
+      {% if st.cover_image %}
+      <img class="story-cover" src="/media/{{ st.cover_image }}" alt="{{ st.title }}">
+      {% else %}
+      <div class="story-cover-ph">📖</div>
+      {% endif %}
+      <div class="story-body">
+        <div class="story-title">{{ st.title }}</div>
+        <div class="story-meta">
+          <span>♥ {{ st.like_cnt }}</span>
+          <span>💬 {{ st.comment_cnt }}</span>
+          <span>🤖 {{ st.char_cnt }}</span>
+        </div>
+        <div style="margin-top:6px;font-size:0.68rem;color:var(--muted);">
+          {% if st.is_public %}🌐 공개{% else %}🔒 비공개{% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div style="color:var(--muted);font-size:0.85rem;padding:12px;">데이터 없음</div>
+    {% endfor %}
+  </div>
+
+  <!-- ── 신고 현황 ── -->
+  {% if report_by_type %}
+  <div class="sec-title">🚨 미처리 신고 유형별 현황</div>
+  <div class="panel" style="max-width:600px;">
+    {% with max_report=report_by_type|dictsort:"cnt"|last %}
+    <div class="report-row">
+      {% for r in report_by_type %}
+      {% widthratio r.cnt max_report.cnt 100 as bar_pct %}
+      <div class="report-item">
+        <div class="report-type">{{ r.content_type }}</div>
+        <div class="report-bar-wrap">
+          <div class="report-bar-fill" style="width:{{ bar_pct }}%;"></div>
+        </div>
+        <div class="report-cnt">{{ r.cnt }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endwith %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

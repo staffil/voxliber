@@ -1,0 +1,197 @@
+{% extends "admin/base_site.html" %}
+{% block title %}청취 기록 통계{% endblock %}
+
+{% block content %}
+<style>
+.stats-wrap { max-width: 1100px; }
+.period-form { display:flex; gap:10px; align-items:center; margin-bottom:24px; flex-wrap:wrap; }
+.period-btn {
+  padding:6px 16px; border-radius:8px; font-size:0.85rem; font-weight:600;
+  border:1px solid #c7d2fe; background:#fff; color:#6366f1; cursor:pointer; text-decoration:none;
+}
+.period-btn.active { background:#6366f1; color:#fff; border-color:#6366f1; }
+.summary-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+.stat-card {
+  background:#fff; border:1px solid #e0e7ff; border-radius:12px;
+  padding:18px 20px; text-align:center; box-shadow:0 1px 4px rgba(99,102,241,0.07);
+}
+.stat-card .val { font-size:2rem; font-weight:800; color:#6366f1; line-height:1.2; }
+.stat-card .lbl { font-size:0.78rem; color:#888; margin-top:4px; }
+.section-title {
+  font-size:1rem; font-weight:700; color:#1e1b4b;
+  margin:24px 0 12px; padding-left:10px;
+  border-left:4px solid #6366f1;
+}
+.rank-table { width:100%; border-collapse:collapse; font-size:0.88rem; }
+.rank-table th {
+  background:#f5f3ff; color:#4c1d95; font-weight:700;
+  padding:9px 12px; text-align:left; border-bottom:2px solid #e0e7ff; white-space:nowrap;
+}
+.rank-table td { padding:9px 12px; border-bottom:1px solid #f3f4f6; vertical-align:middle; }
+.rank-table tr:hover td { background:#fafafe; }
+.bar-row { display:flex; align-items:center; gap:8px; }
+.bar-bg { flex:1; height:6px; background:#e5e7eb; border-radius:3px; overflow:hidden; max-width:120px; }
+.bar-fill { height:100%; background:#6366f1; border-radius:3px; }
+.daily-chart { display:flex; align-items:flex-end; gap:6px; height:100px; margin:16px 0 4px; }
+.daily-bar-wrap { display:flex; flex-direction:column; align-items:center; flex:1; }
+.daily-bar { width:100%; background:#6366f1; border-radius:3px 3px 0 0; min-height:2px; transition:height 0.3s; }
+.daily-label { font-size:0.65rem; color:#aaa; margin-top:4px; white-space:nowrap; }
+.daily-cnt { font-size:0.68rem; color:#6366f1; font-weight:700; }
+</style>
+
+<div class="stats-wrap">
+  <h1 style="margin-bottom:6px;">📊 청취 기록 통계</h1>
+
+  <!-- 기간 선택 -->
+  <div class="period-form">
+    <span style="font-size:0.85rem; color:#888;">기간:</span>
+    {% for p, label in period_choices %}
+    <a href="?period={{ p }}"
+       class="period-btn {% if period == p %}active{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- 요약 카드 -->
+  <div class="summary-grid">
+    <div class="stat-card">
+      <div class="val">{{ total_users }}</div>
+      <div class="lbl">👥 청취 유저 수</div>
+    </div>
+    <div class="stat-card">
+      <div class="val">{{ total_hours }}h {{ total_minutes }}m</div>
+      <div class="lbl">⏱ 총 청취 시간</div>
+    </div>
+    <div class="stat-card">
+      <div class="val">{{ total_sessions }}</div>
+      <div class="lbl">🎧 총 청취 세션</div>
+    </div>
+  </div>
+
+  <!-- 일별 청취자 그래프 -->
+  <!-- <div class="section-title">📈 일별 청취자 수</div>
+  {% if daily %}
+  {% with max_cnt=daily|dictsort:"count"|last %}
+  <div class="daily-chart">
+    {% for day in daily %}
+    <div class="daily-bar-wrap">
+      <div class="daily-cnt">{{ day.count }}</div>
+      {% if max_cnt.count > 0 %}
+      <div class="daily-bar"
+           style="height:{{ day.count|default:0 }}px;
+                  opacity:{% if day.count == 0 %}0.1{% else %}1{% endif %};"></div>
+      {% else %}
+      <div class="daily-bar" style="height:2px;opacity:0.1;"></div>
+      {% endif %}
+      <div class="daily-label">{{ day.date }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endwith %}
+  {% endif %} -->
+
+  <!-- 책별 TOP 10 -->
+  <div class="section-title">📚 책별 청취 TOP 10</div>
+  {% if top_books %}
+  {% with max_l=top_books.0.listeners %}
+  <table class="rank-table">
+    <thead>
+      <tr>
+        <th style="width:36px;">순위</th>
+        <th>책 이름</th>
+        <th style="width:110px;">👥 청취자</th>
+        <th style="width:180px;">비율</th>
+        <th style="width:110px;">⏱ 총 청취(분)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in top_books %}
+      <tr>
+        <td>
+          {% if forloop.counter <= 3 %}
+          <span style="font-weight:800;color:{% if forloop.counter == 1 %}#f59e0b{% elif forloop.counter == 2 %}#94a3b8{% else %}#b45309{% endif %};">
+            {{ forloop.counter }}
+          </span>
+          {% else %}
+          <span style="color:#aaa;">{{ forloop.counter }}</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/admin/book/books/{{ b.book__id }}/change/" target="_blank"
+             style="color:#1e1b4b; font-weight:600; text-decoration:none;">
+            {{ b.book__name }}
+          </a>
+        </td>
+        <td><b style="color:#1d4ed8;">{{ b.listeners }}명</b></td>
+        <td>
+          <div class="bar-row">
+            <div class="bar-bg">
+              {% if max_l > 0 %}
+              <div class="bar-fill" style="width:{% widthratio b.listeners max_l 100 %}%;"></div>
+              {% endif %}
+            </div>
+            {% if max_l > 0 %}
+            <span style="font-size:0.75rem;color:#888;">{% widthratio b.listeners max_l 100 %}%</span>
+            {% endif %}
+          </div>
+        </td>
+        <td style="color:#888;">{{ b.total_sec|default:0|divisibleby:60 }}분</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endwith %}
+  {% else %}
+  <p style="color:#aaa; text-align:center; padding:20px;">데이터가 없습니다.</p>
+  {% endif %}
+
+  <!-- 에피소드별 TOP 10 -->
+  <div class="section-title">🎙 에피소드별 청취 TOP 10</div>
+  {% if top_episodes %}
+  <table class="rank-table">
+    <thead>
+      <tr>
+        <th style="width:36px;">순위</th>
+        <th>에피소드</th>
+        <th>책</th>
+        <th style="width:100px;">👥 청취자</th>
+        <th style="width:110px;">⏱ 평균 위치</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ep in top_episodes %}
+      <tr>
+        <td>
+          {% if forloop.counter <= 3 %}
+          <span style="font-weight:800;color:{% if forloop.counter == 1 %}#f59e0b{% elif forloop.counter == 2 %}#94a3b8{% else %}#b45309{% endif %};">
+            {{ forloop.counter }}
+          </span>
+          {% else %}
+          <span style="color:#aaa;">{{ forloop.counter }}</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/admin/book/content/{{ ep.content__id }}/change/" target="_blank"
+             style="color:#1e1b4b; font-weight:600; text-decoration:none;">
+            {{ ep.content__title }}
+          </a>
+        </td>
+        <td style="color:#6366f1; font-size:0.82rem;">{{ ep.content__book__name }}</td>
+        <td><b style="color:#1d4ed8;">{{ ep.listeners }}명</b></td>
+        <td style="color:#888;">
+          {% with pos=ep.avg_pos|default:0 %}
+          {% widthratio pos 60 1 %}분
+          {% endwith %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#aaa; text-align:center; padding:20px;">데이터가 없습니다.</p>
+  {% endif %}
+
+  <p style="margin-top:20px; font-size:0.75rem; color:#ccc;">
+    최근 {{ period }}일 기준 데이터
+  </p>
+</div>
+{% endblock %}

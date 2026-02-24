@@ -1,0 +1,475 @@
+{% extends "admin/base_site.html" %}
+{% block title %}캐릭터 & TTS 캘린더{% endblock %}
+
+{% block extrastyle %}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0d0d1a;
+  --surface:  #16162a;
+  --surface2: #1e1e35;
+  --border:   #2a2a48;
+  --violet:   #7c6ff7;
+  --violet2:  #a89bfa;
+  --teal:     #2dd4bf;
+  --rose:     #fb7185;
+  --amber:    #fbbf24;
+  --green:    #34d399;
+  --text:     #e8e8f8;
+  --muted:    #7070a0;
+  --radius:   14px;
+  --mono:     'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg) !important; color: var(--text); font-family: 'Noto Sans KR', sans-serif; }
+#content, .content { background: transparent !important; }
+#content-main { padding: 0 !important; }
+
+.cal-wrap { padding: 28px 24px 80px; max-width: 1100px; }
+
+/* ── 헤더 ── */
+.cal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 28px; flex-wrap: wrap; gap: 14px;
+}
+.cal-head h1 {
+  font-size: 1.5rem; font-weight: 900; color: var(--text);
+  letter-spacing: -0.04em; margin: 0;
+}
+.cal-head h1 em { color: var(--violet2); font-style: normal; }
+
+/* ── 월 네비 ── */
+.month-nav {
+  display: flex; align-items: center; gap: 0;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 50px; padding: 4px; box-shadow: 0 2px 12px rgba(124,111,247,0.15);
+}
+.month-nav a, .month-nav .cur-label {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 7px 16px; border-radius: 40px; font-size: 0.86rem; font-weight: 700;
+  text-decoration: none; color: var(--muted); transition: all 0.16s; white-space: nowrap;
+}
+.month-nav a:hover { background: var(--surface2); color: var(--violet2); }
+.month-nav .cur-label {
+  background: var(--violet); color: #fff; font-size: 0.92rem;
+  letter-spacing: -0.02em; min-width: 110px; text-align: center;
+}
+.month-nav a.arrow { padding: 7px 13px; font-size: 1.15rem; }
+
+/* ── 연도 탭 ── */
+.year-tabs { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+.ytab {
+  padding: 5px 15px; border-radius: 40px; font-size: 0.8rem; font-weight: 700;
+  text-decoration: none; color: var(--muted);
+  background: var(--surface); border: 1.5px solid var(--border); transition: all 0.15s;
+}
+.ytab:hover { border-color: var(--violet); color: var(--violet2); }
+.ytab.active { background: var(--violet); color: #fff; border-color: var(--violet); }
+
+/* ── 요약 필 ── */
+.summary-strip { display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
+.s-pill {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 50px; padding: 7px 16px;
+  font-size: 0.79rem; font-weight: 700; color: var(--muted);
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 2px 8px rgba(124,111,247,0.08);
+}
+.s-pill .pval { color: var(--violet2); font-family: var(--mono); font-size: 0.9rem; }
+.s-pill.teal .pval { color: var(--teal); }
+.s-pill.rose .pval { color: var(--rose); }
+.s-pill.amber .pval { color: var(--amber); }
+
+/* ── 캘린더 ── */
+.calendar-box {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  box-shadow: 0 4px 24px rgba(124,111,247,0.1);
+}
+.dow-row {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  background: var(--surface2); border-bottom: 1.5px solid var(--border);
+}
+.dow-row div {
+  padding: 11px 0; text-align: center;
+  font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.05em;
+}
+.dow-row div:nth-child(6) { color: #5c9af5; }
+.dow-row div:nth-child(7) { color: var(--rose); }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+
+.cal-cell {
+  min-height: 100px; padding: 10px 10px 8px;
+  border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 4px;
+  transition: background 0.14s; position: relative;
+}
+.cal-cell:nth-child(7n)  { border-right: none; }
+.cal-cell.empty { background: #0a0a16; }
+
+/* 히트맵 — TTS 초 기준 */
+.cal-cell.lv0 { background: var(--surface); }
+.cal-cell.lv1 { background: #1a1838; }
+.cal-cell.lv2 { background: #252260; }
+.cal-cell.lv3 { background: #3730a3; }
+.cal-cell.lv4 { background: #4f46e5; }
+
+.cal-cell.today-cell { outline: 2px solid var(--violet2); outline-offset: -2px; }
+
+.day-num {
+  font-size: 0.8rem; font-weight: 700; color: var(--muted);
+  font-family: var(--mono); width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; flex-shrink: 0;
+}
+.today-cell .day-num { background: var(--violet); color: #fff; }
+.cal-cell.sat .day-num { color: #5c9af5; }
+.cal-cell.sun .day-num { color: var(--rose); }
+
+/* 지표 배지들 */
+.cell-badges { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
+.cbadge {
+  display: inline-flex; align-items: center; gap: 3px;
+  border-radius: 4px; padding: 2px 6px;
+  font-size: 0.64rem; font-weight: 700; font-family: var(--mono);
+  align-self: flex-start; white-space: nowrap;
+}
+.cbadge.tts  { background: rgba(124,111,247,0.25); color: var(--violet2); }
+.cbadge.conv { background: rgba(45,212,191,0.18); color: var(--teal); }
+.cbadge.like { background: rgba(251,113,133,0.18); color: var(--rose); }
+
+/* 클릭 가능 셀 */
+.cal-cell.clickable { cursor: pointer; }
+.cal-cell.clickable:hover { filter: brightness(1.15); }
+
+/* ── 범례 ── */
+.legend {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 14px; justify-content: flex-end;
+  font-size: 0.72rem; color: var(--muted);
+}
+.lb { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.06); }
+.lb0 { background: var(--surface); }
+.lb1 { background: #1a1838; }
+.lb2 { background: #252260; }
+.lb3 { background: #3730a3; }
+.lb4 { background: #4f46e5; }
+
+/* ── 하단 바 차트 ── */
+.chart-section { margin-top: 28px; }
+.chart-panel {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 22px 20px 16px;
+}
+.chart-title {
+  font-size: 0.8rem; font-weight: 700; color: var(--muted);
+  letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 16px;
+}
+.bar-chart-wrap { display: flex; align-items: flex-end; gap: 3px; height: 90px; overflow: hidden; }
+.bc { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%; justify-content: flex-end; }
+.bf {
+  width: 100%; border-radius: 3px 3px 0 0; min-height: 2px;
+  position: relative; transition: height 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+.bf:hover::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+  background: #000; color: #fff; font-size: 0.62rem; padding: 3px 7px; border-radius: 5px;
+  white-space: nowrap; pointer-events: none; z-index: 99;
+}
+.bc .lx { font-size: 0.55rem; color: var(--muted); }
+.vbar  { background: linear-gradient(to top, #5a4ff0, #a89bfa); }
+.tbar  { background: linear-gradient(to top, #0d9488, #2dd4bf); }
+.lbar  { background: linear-gradient(to top, #be123c, #fb7185); }
+
+/* ── 모달 ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(5,5,20,0.7); backdrop-filter: blur(6px);
+  z-index: 9999; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 30px 28px;
+  max-width: 440px; width: 92%;
+  box-shadow: 0 20px 60px rgba(124,111,247,0.3);
+  animation: popIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative;
+}
+@keyframes popIn {
+  from { transform: scale(0.86); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+.modal-close {
+  position: absolute; top: 16px; right: 18px;
+  background: none; border: none; font-size: 1.2rem;
+  color: var(--muted); cursor: pointer; line-height: 1;
+}
+.modal-close:hover { color: var(--text); }
+.modal-date-label {
+  font-size: 1.15rem; font-weight: 900; color: var(--text);
+  letter-spacing: -0.03em; margin-bottom: 20px;
+}
+.modal-stats { display: flex; gap: 10px; margin-bottom: 22px; }
+.mstat {
+  flex: 1; background: var(--surface2); border-radius: 12px;
+  padding: 14px 10px; text-align: center;
+  border: 1.5px solid var(--border);
+}
+.mstat .mv {
+  font-size: 1.35rem; font-weight: 900; font-family: var(--mono); line-height: 1;
+}
+.mstat .ml { font-size: 0.68rem; color: var(--muted); margin-top: 4px; }
+.mstat.v .mv { color: var(--violet2); }
+.mstat.t .mv { color: var(--teal); }
+.mstat.r .mv { color: var(--rose); }
+
+.modal-chars-title { font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.05em; text-transform: uppercase; }
+.modal-char-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+.mchar-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2); border-radius: 8px; padding: 8px 12px;
+  font-size: 0.82rem;
+}
+.mchar-name { color: var(--text); font-weight: 600; }
+.mchar-val  { color: var(--violet2); font-family: var(--mono); font-size: 0.78rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cal-wrap">
+
+  <!-- 헤더 -->
+  <div class="cal-head">
+    <h1>📅 캐릭터 <em>&</em> TTS 캘린더</h1>
+    <nav class="month-nav">
+      <a class="arrow" href="?year={{ prev_year }}&month={{ prev_month }}">‹</a>
+      <span class="cur-label">{{ year }}년 {{ month }}월</span>
+      <a class="arrow" href="?year={{ next_year }}&month={{ next_month }}">›</a>
+    </nav>
+  </div>
+
+  <!-- 연도 탭 -->
+  <div class="year-tabs">
+    {% for y in year_range %}
+    <a class="ytab {% if y == year %}active{% endif %}"
+       href="?year={{ y }}&month={{ month }}">{{ y }}년</a>
+    {% endfor %}
+  </div>
+
+  <!-- 월 요약 -->
+  <div class="summary-strip">
+    <div class="s-pill">🎙 TTS 생성 <span class="pval">{{ month_total_tts }}건</span></div>
+    <div class="s-pill teal">⏱ 음성 시간 <span class="pval">{{ month_total_minutes }}m ({{ month_total_seconds }}초)</span></div>
+    <div class="s-pill">💬 대화 세션 <span class="pval">{{ month_total_conv }}건</span></div>
+    <div class="s-pill rose">❤️ 좋아요 <span class="pval">{{ month_total_likes }}개</span></div>
+    <div class="s-pill amber">📅 활성 일수 <span class="pval">{{ active_days }}일</span></div>
+  </div>
+
+  <!-- 캘린더 본체 -->
+  <div class="calendar-box">
+    <!-- 요일 헤더 -->
+    <div class="dow-row">
+      <div>월</div><div>화</div><div>수</div><div>목</div><div>금</div>
+      <div>토</div><div>일</div>
+    </div>
+
+    <div class="cal-grid">
+
+      <!-- 앞 빈칸 -->
+      {% for _ in leading_blanks %}
+      <div class="cal-cell empty"></div>
+      {% endfor %}
+
+      <!-- 날짜 셀 -->
+      {% for cell in calendar_cells %}
+      <div class="cal-cell
+          lv{{ cell.level }}
+          {% if cell.is_today %}today-cell{% endif %}
+          {% if cell.dow == 5 %}sat{% elif cell.dow == 6 %}sun{% endif %}
+          {% if cell.has_data %}clickable{% endif %}"
+        {% if cell.has_data %}
+        onclick="openModal(
+          '{{ cell.date_str }}',
+          {{ cell.tts_count }},
+          {{ cell.tts_seconds }},
+          {{ cell.conv_count }},
+          {{ cell.like_count }},
+          '{{ cell.chars_json|escapejs }}'
+        )"
+        {% endif %}
+      >
+        <div class="day-num">{{ cell.day }}</div>
+        {% if cell.has_data %}
+        <div class="cell-badges">
+          {% if cell.tts_count > 0 %}
+          <span class="cbadge tts">🎙 {{ cell.tts_count }}건</span>
+          {% endif %}
+          {% if cell.conv_count > 0 %}
+          <span class="cbadge conv">💬 {{ cell.conv_count }}</span>
+          {% endif %}
+          {% if cell.like_count > 0 %}
+          <span class="cbadge like">❤️ {{ cell.like_count }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <!-- 뒤 빈칸 -->
+      {% for _ in trailing_blanks %}
+      <div class="cal-cell empty"></div>
+      {% endfor %}
+
+    </div>
+  </div>
+
+  <!-- 범례 -->
+  <div class="legend">
+    TTS 적음
+    <div class="lb lb0"></div>
+    <div class="lb lb1"></div>
+    <div class="lb lb2"></div>
+    <div class="lb lb3"></div>
+    <div class="lb lb4"></div>
+    많음
+  </div>
+
+  <!-- 하단 바 차트 -->
+  <div class="chart-section">
+    <div class="chart-panel">
+      <div class="chart-title">📊 이달 일별 TTS 생성 초 / 대화 수 / 좋아요</div>
+      <div id="barChart" class="bar-chart-wrap"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 날짜 상세 모달 -->
+<div class="modal-overlay" id="detailModal" onclick="closeOutside(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-date-label" id="mDate"></div>
+    <div class="modal-stats">
+      <div class="mstat v">
+        <div class="mv" id="mTts">-</div>
+        <div class="ml">TTS 생성</div>
+      </div>
+      <div class="mstat t">
+        <div class="mv" id="mSec">-</div>
+        <div class="ml">생성 초</div>
+      </div>
+      <div class="mstat">
+        <div class="mv" id="mConv" style="color:var(--teal)">-</div>
+        <div class="ml">대화 세션</div>
+      </div>
+      <div class="mstat r">
+        <div class="mv" id="mLike">-</div>
+        <div class="ml">좋아요</div>
+      </div>
+    </div>
+    <div class="modal-chars-title">🤖 당일 활성 캐릭터 (TTS 초 순)</div>
+    <div class="modal-char-list" id="mChars"></div>
+  </div>
+</div>
+
+<script>
+// ── 모달 ──────────────────────────────────────────
+function openModal(dateStr, ttsCount, ttsSec, convCount, likeCount, charsRaw) {
+  document.getElementById('mDate').textContent = '📅 ' + dateStr;
+  document.getElementById('mTts').textContent  = ttsCount + '건';
+  document.getElementById('mSec').textContent  = ttsSec + '초';
+  document.getElementById('mConv').textContent = convCount + '건';
+  document.getElementById('mLike').textContent = likeCount + '개';
+
+  let chars = [];
+  try { chars = JSON.parse(charsRaw); } catch(e) {}
+  const el = document.getElementById('mChars');
+  el.innerHTML = chars.length
+    ? chars.map(c =>
+        `<div class="mchar-item">
+           <span class="mchar-name">🤖 ${c.name}</span>
+           <span class="mchar-val">${c.seconds}초</span>
+         </div>`
+      ).join('')
+    : '<div style="color:var(--muted);font-size:0.82rem;padding:8px 0;">캐릭터 데이터 없음</div>';
+
+  document.getElementById('detailModal').classList.add('open');
+}
+function closeModal() { document.getElementById('detailModal').classList.remove('open'); }
+function closeOutside(e) { if (e.target.id === 'detailModal') closeModal(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── 바 차트 렌더링 ────────────────────────────────
+(function() {
+  const data = {{ daily_chart_json|safe }};
+  const maxSec  = Math.max(...data.map(d => d.tts_sec), 1);
+  const maxConv = Math.max(...data.map(d => d.conv),    1);
+  const maxLike = Math.max(...data.map(d => d.likes),   1);
+
+  const container = document.getElementById('barChart');
+  const H = 86; // 최대 바 높이 px
+
+  data.forEach(d => {
+    const col = document.createElement('div');
+    col.className = 'bc';
+
+    const hTts  = Math.max(Math.round(d.tts_sec  / maxSec  * H), d.tts_sec  > 0 ? 2 : 0);
+    const hConv = Math.max(Math.round(d.conv      / maxConv * H), d.conv     > 0 ? 2 : 0);
+    const hLike = Math.max(Math.round(d.likes     / maxLike * H), d.likes    > 0 ? 2 : 0);
+
+    const barGroup = document.createElement('div');
+    barGroup.style.cssText = 'display:flex;align-items:flex-end;gap:1px;width:100%;justify-content:center;';
+
+    if (d.tts_sec > 0) {
+      const b = document.createElement('div');
+      b.className = 'bf vbar';
+      b.style.height = hTts + 'px';
+      b.setAttribute('data-tip', `TTS ${d.tts_sec}초`);
+      barGroup.appendChild(b);
+    }
+    if (d.conv > 0) {
+      const b = document.createElement('div');
+      b.className = 'bf tbar';
+      b.style.cssText = `height:${hConv}px;width:4px;flex-shrink:0;`;
+      b.setAttribute('data-tip', `대화 ${d.conv}건`);
+      barGroup.appendChild(b);
+    }
+    if (d.likes > 0) {
+      const b = document.createElement('div');
+      b.className = 'bf lbar';
+      b.style.cssText = `height:${hLike}px;width:3px;flex-shrink:0;`;
+      b.setAttribute('data-tip', `좋아요 ${d.likes}개`);
+      barGroup.appendChild(b);
+    }
+    if (!d.tts_sec && !d.conv && !d.likes) {
+      const ph = document.createElement('div');
+      ph.style.cssText = 'height:2px;width:100%;background:var(--border);border-radius:2px;';
+      barGroup.appendChild(ph);
+    }
+
+    col.appendChild(barGroup);
+
+    const lx = document.createElement('div');
+    lx.className = 'lx';
+    lx.textContent = parseInt(d.day) % 5 === 1 ? d.day : '';
+    col.appendChild(lx);
+
+    container.appendChild(col);
+  });
+
+  // 범례
+  const legend = document.createElement('div');
+  legend.style.cssText = 'font-size:0.68rem;color:var(--muted);margin-top:12px;display:flex;gap:14px;flex-wrap:wrap;';
+  legend.innerHTML = `
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#a89bfa;margin-right:4px;"></span>TTS 초</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#2dd4bf;margin-right:4px;"></span>대화 세션</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#fb7185;margin-right:4px;"></span>좋아요</span>
+  `;
+  container.parentElement.appendChild(legend);
+})();
+</script>
+{% endblock %}

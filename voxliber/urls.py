@@ -25,6 +25,7 @@ from book.sitemaps import BookSitemap, StaticViewSitemap
 from django.http import FileResponse
 from voxliber import api_views as voxliber_api
 import os
+from book.admin import EpisodeRankingView, ListeningStatsView,ListeningCalendarView,CharacterStatsView,CharacterCalendarView
 
 # Sitemap 설정
 sitemaps = {
@@ -38,7 +39,16 @@ def serve_well_known(request, filename):
     return FileResponse(open(file_path, 'rb'), content_type='application/json')
 
 urlpatterns = [
+    path('admin/character/calendar/', CharacterCalendarView.as_view(), name='character_calendar'),
+
+    path('admin/character/stats/', CharacterStatsView.as_view(), name='character_stats'),
+
+    path('admin/book/listening-calendar/', ListeningCalendarView.as_view(), name='listening_calendar'),
+
+    path('admin/book/episode-ranking/', EpisodeRankingView.as_view(), name='episode_ranking'),
+    path('admin/book/listening-stats/', ListeningStatsView.as_view(), name="listening-stats"),
     path("admin/", admin.site.urls),
+
     path("", include(("main.urls", "main"), namespace="main")),
     path("login/", include(("register.urls", "register"), namespace="register")),
     path("book/", include(("book.urls", "book"), namespace="book")),
@@ -114,10 +124,8 @@ urlpatterns = [
          lambda request: serve_well_known(request, 'assetlinks.json')),
 
 
-    
 
 ]
-
 # 개발 환경에서 미디어 파일 서빙
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

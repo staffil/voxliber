@@ -115,16 +115,6 @@ class ScreenAIAdmin(admin.ModelAdmin):
     def 링크(self, obj):
         return obj.link
     
-# 시 관리자
-@admin.register(Poem_list)
-class Poem_listAdmin(admin.ModelAdmin):
-    list_display = ("제목",  )
-    search_fields = ("title", )
-
-    @admin.display(description="제목")
-    def 제목(self, obj):
-        return obj.title
-
 
     
 

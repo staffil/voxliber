@@ -1,0 +1,474 @@
+{% extends "admin/base_site.html" %}
+{% block title %}청취 캘린더{% endblock %}
+
+{% block extrastyle %}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --indigo: #5c6bc0;
+  --indigo-dark: #3949ab;
+  --indigo-light: #e8eaf6;
+  --indigo-pale: #f3f4fd;
+  --accent: #7986cb;
+  --text-primary: #1a1a2e;
+  --text-secondary: #5a5a7a;
+  --text-muted: #9090b0;
+  --surface: #ffffff;
+  --border: #e0e0f0;
+  --shadow: 0 2px 12px rgba(92,107,192,0.10);
+  --shadow-hover: 0 6px 24px rgba(92,107,192,0.18);
+  --radius: 14px;
+}
+
+body { font-family: 'Noto Sans KR', sans-serif; background: #f0f0fa; }
+
+.cal-page { max-width: 1060px; margin: 0 auto; padding: 32px 20px 60px; }
+
+/* ─── 헤더 ─── */
+.cal-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.cal-title {
+  font-size: 1.55rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+}
+.cal-title span { color: var(--indigo); }
+
+/* ─── 월 네비 ─── */
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 50px;
+  padding: 4px;
+  box-shadow: var(--shadow);
+}
+.month-nav a, .month-nav span.current-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 18px;
+  border-radius: 40px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--text-secondary);
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.month-nav a:hover { background: var(--indigo-light); color: var(--indigo-dark); }
+.month-nav span.current-label {
+  background: var(--indigo);
+  color: #fff;
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+  min-width: 110px;
+  text-align: center;
+}
+.month-nav a.nav-arrow { padding: 7px 12px; font-size: 1.1rem; }
+
+/* ─── 요약 바 ─── */
+.summary-strip {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.summary-pill {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 50px;
+  padding: 8px 18px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.summary-pill .val {
+  color: var(--indigo);
+  font-size: 1rem;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ─── 캘린더 그리드 ─── */
+.calendar-wrap {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.dow-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--indigo-pale);
+  border-bottom: 1.5px solid var(--border);
+}
+.dow-header div {
+  padding: 11px 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+.dow-header div:nth-child(6) { color: #5c9af5; }
+.dow-header div:nth-child(7) { color: #e05c5c; }
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.cal-day {
+  min-height: 92px;
+  padding: 10px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  cursor: default;
+  transition: background 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cal-day:nth-child(7n) { border-right: none; }
+.cal-day.empty { background: #fafafa; }
+.cal-day.today { background: #f0f0ff; }
+.cal-day.today .day-num { color: var(--indigo); }
+
+.day-num {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-family: 'DM Mono', monospace;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.cal-day.today .day-num {
+  background: var(--indigo);
+  color: #fff;
+}
+.cal-day.sat .day-num { color: #5c9af5; }
+.cal-day.sun .day-num { color: #e05c5c; }
+
+/* ─── 히트맵 배경 ─── */
+.cal-day.lv0 {}
+.cal-day.lv1 { background: #eef0fb; }
+.cal-day.lv2 { background: #dde0f7; }
+.cal-day.lv3 { background: #c5caf0; }
+.cal-day.lv4 { background: #aab0e8; }
+
+/* ─── 청취자 배지 ─── */
+.listener-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--indigo);
+  color: #fff;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  align-self: flex-start;
+  margin-top: auto;
+}
+.cal-day.lv0 .listener-badge { background: #ccc; color: #888; }
+.cal-day.lv1 .listener-badge { background: #8891cf; }
+.cal-day.lv2 .listener-badge { background: #5c6bc0; }
+.cal-day.lv3 .listener-badge { background: #3f51b5; }
+.cal-day.lv4 .listener-badge { background: #283593; }
+
+/* ─── 세션/시간 작은 표시 ─── */
+.day-meta {
+  font-size: 0.63rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.day-meta strong { color: var(--indigo-dark); }
+
+/* ─── 범례 ─── */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  justify-content: flex-end;
+  font-size: 0.73rem;
+  color: var(--text-muted);
+}
+.legend-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.lb0 { background: #f0f0f0; }
+.lb1 { background: #eef0fb; }
+.lb2 { background: #dde0f7; }
+.lb3 { background: #c5caf0; }
+.lb4 { background: #aab0e8; }
+
+/* ─── 연도 탭 ─── */
+.year-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.year-tab {
+  padding: 5px 16px;
+  border-radius: 40px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  transition: all 0.16s;
+}
+.year-tab:hover { border-color: var(--indigo); color: var(--indigo); }
+.year-tab.active { background: var(--indigo); color: #fff; border-color: var(--indigo); }
+
+/* ─── 빈 상태 ─── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+/* ─── 상세 팝업 (모달) ─── */
+.detail-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(20,20,50,0.35);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+.detail-modal-overlay.open { display: flex; }
+.detail-modal {
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: 0 16px 60px rgba(92,107,192,0.25);
+  padding: 32px;
+  max-width: 480px;
+  width: 92%;
+  position: relative;
+  animation: modalIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes modalIn {
+  from { transform: scale(0.88); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+.modal-close {
+  position: absolute;
+  top: 16px; right: 18px;
+  background: none; border: none;
+  font-size: 1.3rem; cursor: pointer;
+  color: var(--text-muted);
+  line-height: 1;
+}
+.modal-date {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin-bottom: 18px;
+  letter-spacing: -0.03em;
+}
+.modal-stat-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.modal-stat {
+  flex: 1;
+  background: var(--indigo-pale);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+.modal-stat .mv { font-size: 1.4rem; font-weight: 900; color: var(--indigo); font-family: 'DM Mono', monospace; }
+.modal-stat .ml { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+.modal-book-list { max-height: 220px; overflow-y: auto; }
+.modal-book-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.83rem;
+}
+.modal-book-item:last-child { border-bottom: none; }
+.modal-book-item .bname { color: var(--text-primary); font-weight: 600; }
+.modal-book-item .bcnt { color: var(--indigo); font-weight: 700; font-family: 'DM Mono', monospace; font-size: 0.78rem; }
+
+/* 달력 셀 클릭 가능 */
+.cal-day.has-data { cursor: pointer; }
+.cal-day.has-data:hover { box-shadow: inset 0 0 0 2px var(--accent); z-index:1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cal-page">
+
+  <!-- 제목 + 월 네비 -->
+  <div class="cal-header-bar">
+    <div class="cal-title">🎧 <span>청취 캘린더</span></div>
+
+    <nav class="month-nav">
+      <a class="nav-arrow" href="?year={{ prev_year }}&month={{ prev_month }}">‹</a>
+      <span class="current-label">{{ year }}년 {{ month }}월</span>
+      <a class="nav-arrow" href="?year={{ next_year }}&month={{ next_month }}">›</a>
+    </nav>
+  </div>
+
+  <!-- 연도 빠른 이동 -->
+  <div class="year-tabs">
+    {% for y in year_range %}
+    <a class="year-tab {% if y == year %}active{% endif %}"
+       href="?year={{ y }}&month={{ month }}">{{ y }}년</a>
+    {% endfor %}
+  </div>
+
+  <!-- 이달 요약 -->
+  <div class="summary-strip">
+    <div class="summary-pill">👥 월간 총 청취자 <span class="val">{{ month_total_users }}</span>명</div>
+    <div class="summary-pill">⏱ 총 청취 시간 <span class="val">{{ month_total_hours }}h {{ month_total_minutes }}m</span></div>
+    <div class="summary-pill">🎧 총 세션 <span class="val">{{ month_total_sessions }}</span>건</div>
+    <div class="summary-pill">📅 활성 일수 <span class="val">{{ active_days }}</span>일</div>
+  </div>
+
+  <!-- 캘린더 본체 -->
+  <div class="calendar-wrap">
+    <div class="dow-header">
+      <div>월</div><div>화</div><div>수</div><div>목</div><div>금</div>
+      <div>토</div><div>일</div>
+    </div>
+
+    <div class="cal-grid">
+      <!-- 첫 주 앞 빈칸 -->
+      {% for _ in leading_blanks %}
+      <div class="cal-day empty"></div>
+      {% endfor %}
+
+      <!-- 날짜 셀 -->
+      {% for cell in calendar_cells %}
+      <div class="cal-day
+          {% if cell.is_today %}today{% endif %}
+          {% if cell.dow == 5 %}sat{% elif cell.dow == 6 %}sun{% endif %}
+          lv{{ cell.level }}
+          {% if cell.count > 0 %}has-data{% endif %}"
+        {% if cell.count > 0 %}
+        onclick="openModal('{{ cell.date_str }}', {{ cell.count }}, {{ cell.sessions }}, {{ cell.total_seconds }}, {{ cell.books|escapejs }})"
+        {% endif %}
+      >
+        <div class="day-num">{{ cell.day }}</div>
+        {% if cell.count > 0 %}
+        <div class="listener-badge">👥 {{ cell.count }}</div>
+        {% if cell.sessions > 0 %}
+        <div class="day-meta">{{ cell.sessions }}세션</div>
+        {% endif %}
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <!-- 마지막 주 뒷 빈칸 -->
+      {% for _ in trailing_blanks %}
+      <div class="cal-day empty"></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 범례 -->
+  <div class="legend">
+    적음
+    <div class="legend-box lb0"></div>
+    <div class="legend-box lb1"></div>
+    <div class="legend-box lb2"></div>
+    <div class="legend-box lb3"></div>
+    <div class="legend-box lb4"></div>
+    많음
+  </div>
+
+</div>
+
+<!-- 날짜 상세 모달 -->
+<div class="detail-modal-overlay" id="detailModal" onclick="closeModalOutside(event)">
+  <div class="detail-modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-date" id="modalDate"></div>
+    <div class="modal-stat-row">
+      <div class="modal-stat">
+        <div class="mv" id="modalUsers">-</div>
+        <div class="ml">청취자 수</div>
+      </div>
+      <div class="modal-stat">
+        <div class="mv" id="modalSessions">-</div>
+        <div class="ml">총 세션</div>
+      </div>
+      <div class="modal-stat">
+        <div class="mv" id="modalTime">-</div>
+        <div class="ml">청취 시간</div>
+      </div>
+    </div>
+    <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:8px;">📚 인기 도서 (세션 순)</div>
+    <div class="modal-book-list" id="modalBooks"></div>
+  </div>
+</div>
+
+<script>
+function openModal(dateStr, users, sessions, totalSec, booksJson) {
+  document.getElementById('modalDate').textContent = '📅 ' + dateStr;
+  document.getElementById('modalUsers').textContent = users + '명';
+  document.getElementById('modalSessions').textContent = sessions + '건';
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  document.getElementById('modalTime').textContent = h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+
+  let books = [];
+  try { books = JSON.parse(booksJson); } catch(e) {}
+  const listEl = document.getElementById('modalBooks');
+  if (books.length === 0) {
+    listEl.innerHTML = '<div style="color:#bbb;font-size:0.82rem;padding:12px 0;">도서 정보 없음</div>';
+  } else {
+    listEl.innerHTML = books.map(b =>
+      `<div class="modal-book-item">
+        <span class="bname">${b.name}</span>
+        <span class="bcnt">${b.cnt}세션</span>
+      </div>`
+    ).join('');
+  }
+  document.getElementById('detailModal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('detailModal').classList.remove('open');
+}
+function closeModalOutside(e) {
+  if (e.target.id === 'detailModal') closeModal();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+{% endblock %}

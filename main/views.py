@@ -9,7 +9,7 @@ import os
 from uuid import uuid4
 from django.conf import settings
 from main.models import SnapBtn, Advertisment, Event, ScreenAI
-from book.models import Books,ReadingProgress, BookSnap, Content, Poem_list, BookTag, Tags, BookSnippet, ListeningHistory
+from book.models import Books,ReadingProgress, BookSnap, Content, Poem_list, BookTag, Tags, BookSnippet, ListeningHistory, GenrePlaylist
 from character.models import Story, CharacterMemory, LLM, LoreEntry, ConversationMessage, Conversation,LastWard, UserLastWard, ConversationState
 from book.service.recommendation import recommend_books
 from django.db.models import Max
@@ -150,6 +150,13 @@ def main(request):
     # 에피소드 없데이트 바로 한 책 
     latest_episodes = Content.objects.select_related('book').order_by('-created_at')[:20]
 
+    # 장르당 인기 많은 수록 책들
+    popular_genres = GenrePlaylist.objects.filter(
+        playlist_type='popular',
+        is_active=True
+    ).select_related('genre').prefetch_related(
+        'items__content__book'
+    )[:6]
 
     # ai 추천
     ai_recommended_books = []
@@ -194,6 +201,7 @@ def main(request):
         "ai_stories":story_list,
         "ai_advertismemt_img":ai_advertismemt_img,
         "user_share_list":user_share_list,
+        "popular_genres":popular_genres
     }
     return render(request, "main/main.html", context)
 

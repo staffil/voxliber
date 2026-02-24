@@ -699,3 +699,100 @@ class BookmarkBook(models.Model):
 
     def __str__(self):
         return f"{self.user.nickname} → {self.book.name}"
+    
+
+
+
+
+
+class GenrePlaylist(models.Model):
+    PLAYLIST_TYPE_CHOICES = [
+        ('popular', '🔥 인기'),
+        ('new', '🆕 신작'),
+        ('short', '⚡ 짧게 듣기'),
+        ('rated', '⭐ 고평점'),
+        ('night', '🌙 자기 전 듣기'),
+        ('custom', '✨ 큐레이션'),
+    ]
+
+    genre = models.ForeignKey(
+        'Genres',
+        on_delete=models.CASCADE,
+        related_name='playlists',
+        verbose_name='장르'
+    )
+    playlist_type = models.CharField(
+        max_length=20,
+        choices=PLAYLIST_TYPE_CHOICES,
+        default='popular',
+        verbose_name='플레이리스트 유형'
+    )
+    title = models.CharField(max_length=200, verbose_name='플레이리스트 제목')
+    description = models.TextField(blank=True, null=True, verbose_name='설명')
+    cover_img = models.ImageField(
+        upload_to='uploads/playlists/',
+        null=True, blank=True,
+        verbose_name='커버 이미지'
+    )
+    is_active = models.BooleanField(default=True, verbose_name='활성화')
+    is_auto_generated = models.BooleanField(
+        default=True,
+        verbose_name='자동생성 여부',
+        help_text='True면 주기적으로 자동 갱신, False면 관리자 수동 관리'
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'genre_playlist'
+        verbose_name = '장르 플레이리스트'
+        unique_together = ('genre', 'playlist_type')  # 장르당 유형별 1개
+
+    def __str__(self):
+        return f"[{self.genre.name}] {self.title}"
+
+    def get_total_duration_seconds(self):
+        return sum(
+            item.content.duration_seconds
+            for item in self.items.select_related('content').all()
+        )
+
+    def get_total_duration_formatted(self):
+        total = self.get_total_duration_seconds()
+        hours = total // 3600
+        minutes = (total % 3600) // 60
+        if hours > 0:
+            return f"{hours}시간 {minutes}분"
+        return f"{minutes}분"
+
+    def get_listener_count(self):
+        from django.db.models import Count
+        return ListeningHistory.objects.filter(
+            content__in=self.items.values('content')
+        ).values('user').distinct().count()
+
+
+class PlaylistItem(models.Model):
+    playlist = models.ForeignKey(
+        GenrePlaylist,
+        on_delete=models.CASCADE,
+        related_name='items',
+        verbose_name='플레이리스트'
+    )
+    content = models.ForeignKey(
+        'Content',
+        on_delete=models.CASCADE,
+        related_name='playlist_items',
+        verbose_name='에피소드'
+    )
+    order = models.PositiveIntegerField(default=0, verbose_name='재생 순서')
+    added_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'playlist_item'
+        verbose_name = '플레이리스트 항목'
+        ordering = ['order']
+        unique_together = ('playlist', 'content')  # 중복 에피소드 방지
+
+    def __str__(self):
+        return f"{self.playlist.title} - {self.order}. {self.content.title}"
