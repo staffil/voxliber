@@ -417,6 +417,7 @@ class Report(models.Model):
         ('snap', '스냅'),
         ('user', '사용자'),
         ('comment', '댓글'),
+        ('book', '오디오북'),
     ]
     REASON_CHOICES = [
         ('spam', '스팸/광고'),

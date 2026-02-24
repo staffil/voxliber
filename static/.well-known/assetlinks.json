@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.example.voxliber_app",
+      "package_name": "ink.voxliber.app",
       "sha256_cert_fingerprints": [
-        "33:F4:61:4A:33:BB:2D:7D:3C:52:50:3E:2E:B3:22:EC:61:BC:D3:AF:73:4C:7E:01:F2:FC:C2:F5:16:67:88:EC"
+        "A6:7E:0E:A1:E5:FF:11:3B:E8:72:5D:02:63:5B:F9:BC:78:32:25:45:53:58:9C:89:59:68:21:F6:90:04:2F:84"
       ]
     }
   }
