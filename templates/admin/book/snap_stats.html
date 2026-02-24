@@ -1,0 +1,328 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}📸 BookSnap 통계{% endblock %}
+
+{% block extrahead %}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#09091a;--surface:#11111f;--card:#17172a;--card2:#1e1e35;
+  --border:#2a2a45;--indigo:#6366f1;--violet:#8b5cf6;--pink:#ec4899;
+  --teal:#14b8a6;--amber:#f59e0b;--green:#22c55e;--text:#e2e8f0;--muted:#94a3b8;
+  --mono:'DM Mono',monospace;
+}
+body,#content{background:var(--bg)!important;color:var(--text)!important;}
+#header{background:linear-gradient(135deg,#1a0533,#0d0d2b)!important;border-bottom:1px solid var(--border);}
+.pg{padding:28px 32px;max-width:1440px;}
+h1.pg-ttl{font-size:1.55rem;font-weight:900;margin:0 0 6px;
+  background:linear-gradient(135deg,var(--pink),var(--violet));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.pg-sub{color:var(--muted);font-size:.84rem;margin-bottom:24px;}
+
+/* Nav */
+#topnav{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:22px;}
+#topnav a{padding:6px 14px;border-radius:9px;font-size:.8rem;font-weight:600;
+  background:var(--card);color:var(--muted);border:1px solid var(--border);text-decoration:none;transition:.18s;}
+#topnav a:hover{border-color:var(--indigo);color:var(--indigo);}
+#topnav a.cur{background:var(--pink);color:#fff;border-color:var(--pink);}
+
+/* Period */
+.period-row{display:flex;gap:8px;margin-bottom:26px;flex-wrap:wrap;}
+.period-row a{padding:7px 20px;border-radius:20px;font-size:.81rem;font-weight:600;
+  background:var(--card);color:var(--muted);border:1px solid var(--border);text-decoration:none;transition:.18s;}
+.period-row a:hover{border-color:var(--pink);color:var(--pink);}
+.period-row a.on{background:var(--pink);color:#fff;border-color:var(--pink);}
+
+/* Cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:15px;margin-bottom:26px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0;}
+.c-pink::before{background:linear-gradient(90deg,var(--pink),#f97316);}
+.c-indigo::before{background:linear-gradient(90deg,var(--indigo),var(--violet));}
+.c-violet::before{background:linear-gradient(90deg,var(--violet),var(--pink));}
+.c-teal::before{background:linear-gradient(90deg,var(--teal),var(--green));}
+.c-amber::before{background:linear-gradient(90deg,var(--amber),var(--green));}
+.c-green::before{background:linear-gradient(90deg,var(--green),var(--teal));}
+.card-ico{font-size:1.4rem;margin-bottom:7px;}
+.card-val{font-size:1.75rem;font-weight:900;font-family:var(--mono);line-height:1;}
+.card-lbl{font-size:.73rem;color:var(--muted);margin-top:5px;}
+.card-sub{font-size:.69rem;color:var(--muted);margin-top:2px;opacity:.75;}
+
+/* Section */
+.sec{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:20px;}
+.sec-ttl{font-size:.97rem;font-weight:700;margin:0 0 16px;display:flex;align-items:center;gap:7px;}
+
+/* Chart */
+.chart-area{overflow-x:auto;padding-bottom:6px;}
+.bars{display:flex;align-items:flex-end;gap:5px;height:160px;min-width:500px;}
+.bg{display:flex;flex-direction:column;align-items:center;flex:1;min-width:24px;}
+.b-stack{display:flex;flex-direction:column;align-items:center;width:100%;gap:2px;}
+.b{width:100%;border-radius:4px 4px 0 0;min-height:2px;position:relative;cursor:default;}
+.b:hover::after{content:attr(data-t);position:absolute;bottom:calc(100%+5px);left:50%;transform:translateX(-50%);
+  background:#0d0d1a;color:#fff;padding:3px 8px;border-radius:6px;font-size:.68rem;white-space:nowrap;z-index:9;pointer-events:none;}
+.b-lbl{font-size:.58rem;color:var(--muted);transform:rotate(-30deg);transform-origin:top center;
+  margin-top:4px;white-space:nowrap;}
+.legend{display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap;}
+.leg{display:flex;align-items:center;gap:5px;font-size:.77rem;color:var(--muted);}
+.leg-dot{width:10px;height:10px;border-radius:2px;}
+
+/* Table */
+.twrap{overflow-x:auto;}
+.stbl{width:100%;border-collapse:collapse;font-size:.82rem;}
+.stbl th{padding:9px 11px;text-align:left;color:var(--muted);font-weight:600;
+  border-bottom:1px solid var(--border);white-space:nowrap;}
+.stbl td{padding:9px 11px;border-bottom:1px solid rgba(42,42,69,.45);vertical-align:middle;}
+.stbl tr:hover td{background:rgba(236,72,153,.04);}
+.rk{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.68rem;font-weight:700;font-family:var(--mono);}
+.rk1{background:#fbbf24;color:#000;} .rk2{background:#94a3b8;color:#000;}
+.rk3{background:#cd7c2e;color:#fff;} .rkn{background:var(--card2);color:var(--muted);}
+.th{width:40px;height:40px;object-fit:cover;border-radius:7px;}
+.thph{width:40px;height:40px;border-radius:7px;background:var(--card2);
+  display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.chip{background:var(--card2);border-radius:7px;padding:2px 8px;
+  font-family:var(--mono);font-size:.77rem;font-weight:600;}
+.chip.i{color:var(--indigo);} .chip.p{color:var(--pink);}
+.chip.t{color:var(--teal);}   .chip.a{color:var(--amber);}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;gap:0;}
+.tab{padding:7px 14px;background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:.81rem;font-weight:600;border-bottom:2px solid transparent;transition:.18s;margin-bottom:-1px;}
+.tab.on{color:var(--pink);border-bottom-color:var(--pink);}
+.pnl{display:none;} .pnl.on{display:block;}
+
+/* Link type */
+.lrow{display:flex;gap:14px;flex-wrap:wrap;}
+.lbox{flex:1;min-width:150px;background:var(--card2);border-radius:12px;padding:14px 16px;}
+.lbox-ico{font-size:1.4rem;margin-bottom:5px;}
+.lbox-val{font-size:1.35rem;font-weight:900;font-family:var(--mono);}
+.lbox-lbl{font-size:.73rem;color:var(--muted);margin-top:3px;}
+
+@media(max-width:700px){.pg{padding:14px;} .cards{grid-template-columns:repeat(2,1fr);}}
+</style>
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+{% block content %}
+<div class="pg">
+
+  <div id="topnav">
+    <a href="/admin/book/episode-ranking/">📊 에피소드 랭킹</a>
+    <a href="/admin/book/listening-stats/">🎧 청취 통계</a>
+    <a href="/admin/book/listening-calendar/">📅 청취 캘린더</a>
+    <a href="/admin/book/snap-stats/" class="cur">📸 스냅 통계</a>
+    <a href="/admin/register/ad-stats/">📢 광고 통계</a>
+    <a href="/admin/character/stats/">🤖 캐릭터 통계</a>
+  </div>
+
+  <h1 class="pg-ttl">📸 BookSnap 통계</h1>
+  <p class="pg-sub">스냅 업로드 · 조회수 · 링크 클릭(shares) · 좋아요 · 댓글 현황</p>
+
+  <div class="period-row">
+    {% for v,l in period_choices %}
+      <a href="?period={{ v }}" class="{% if period == v %}on{% endif %}">{{ l }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- 요약 카드 -->
+  <div class="cards">
+    <div class="card c-indigo">
+      <div class="card-ico">📸</div>
+      <div class="card-val">{{ total_snaps }}</div>
+      <div class="card-lbl">신규 스냅 (기간 내)</div>
+      <div class="card-sub">전체 {{ all_total_snaps }}개</div>
+    </div>
+    <div class="card c-violet">
+      <div class="card-ico">👁</div>
+      <div class="card-val">{{ total_views }}</div>
+      <div class="card-lbl">조회수 합계</div>
+      <div class="card-sub">전체 누적 {{ all_total_views }}</div>
+    </div>
+    <div class="card c-pink">
+      <div class="card-ico">🔗</div>
+      <div class="card-val">{{ total_shares }}</div>
+      <div class="card-lbl">링크 클릭수 (shares)</div>
+      <div class="card-sub">전체 누적 {{ all_total_shares }}</div>
+    </div>
+    <div class="card c-teal">
+      <div class="card-ico">❤️</div>
+      <div class="card-val">{{ total_likes }}</div>
+      <div class="card-lbl">좋아요 합계</div>
+    </div>
+    <div class="card c-amber">
+      <div class="card-ico">💬</div>
+      <div class="card-val">{{ total_comments }}</div>
+      <div class="card-lbl">댓글 수</div>
+    </div>
+    <div class="card c-green">
+      <div class="card-ico">📖</div>
+      <div class="card-val">{{ has_book_link }}</div>
+      <div class="card-lbl">책 링크 포함</div>
+      <div class="card-sub">스토리 {{ has_story_link }}개</div>
+    </div>
+  </div>
+
+  <!-- 일별 추이 -->
+  <div class="sec">
+    <div class="sec-ttl">📈 일별 업로드 · 조회수 · 링크 클릭 추이</div>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:rgba(139,92,246,.8)"></div>조회수</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(236,72,153,.8)"></div>링크 클릭</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(99,102,241,.55)"></div>업로드 수</div>
+    </div>
+    <div class="chart-area">
+      <div class="bars" id="dailyChart"></div>
+    </div>
+  </div>
+
+  <!-- 링크 타입 분포 -->
+  <div class="sec">
+    <div class="sec-ttl">🔗 링크 타입별 스냅 분포</div>
+    <div class="lrow">
+      <div class="lbox">
+        <div class="lbox-ico">📚</div>
+        <div class="lbox-val" style="color:var(--indigo)">{{ has_book_link }}</div>
+        <div class="lbox-lbl">책(오디오북) 링크</div>
+      </div>
+      <div class="lbox">
+        <div class="lbox-ico">✨</div>
+        <div class="lbox-val" style="color:var(--violet)">{{ has_story_link }}</div>
+        <div class="lbox-lbl">AI 스토리 링크</div>
+      </div>
+      <div class="lbox">
+        <div class="lbox-ico">🚫</div>
+        <div class="lbox-val" style="color:var(--muted)">{{ has_no_link }}</div>
+        <div class="lbox-lbl">링크 없음</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP 스냅 랭킹 -->
+  <div class="sec">
+    <div class="sec-ttl">🏆 TOP 스냅 랭킹</div>
+    <div class="tabs">
+      <button class="tab on" onclick="swTab('views',this)">👁 조회수 TOP</button>
+      <button class="tab" onclick="swTab('shares',this)">🔗 링크클릭 TOP</button>
+      <button class="tab" onclick="swTab('likes',this)">❤️ 좋아요 TOP</button>
+      <button class="tab" onclick="swTab('cmts',this)">💬 댓글 TOP</button>
+    </div>
+
+    <!-- 조회수 -->
+    <div class="pnl on" id="tab-views">
+      <div class="twrap"><table class="stbl">
+        <thead><tr><th>#</th><th>썸네일</th><th>제목</th><th>연결</th><th>조회수</th><th>링크클릭</th><th>좋아요</th><th>댓글</th></tr></thead>
+        <tbody>
+        {% for s in top_by_views %}
+        <tr>
+          <td><div class="rk {% if forloop.counter == 1 %}rk1{% elif forloop.counter == 2 %}rk2{% elif forloop.counter == 3 %}rk3{% else %}rkn{% endif %}">{{ forloop.counter }}</div></td>
+          <td>{% if s.thumbnail %}<img src="{{ s.thumbnail.url }}" class="th">{% else %}<div class="thph">📸</div>{% endif %}</td>
+          <td style="max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            <a href="/admin/book/booksnap/{{ s.id }}/change/" target="_blank" style="color:var(--text);text-decoration:none;">{{ s.snap_title|default:"제목 없음" }}</a>
+          </td>
+          <td>
+            {% if s.book %}<span style="font-size:.69rem;background:rgba(99,102,241,.14);color:var(--indigo);padding:2px 6px;border-radius:9px;">📚{{ s.book.name|truncatechars:10 }}</span>
+            {% elif s.story %}<span style="font-size:.69rem;background:rgba(139,92,246,.14);color:var(--violet);padding:2px 6px;border-radius:9px;">✨{{ s.story.title|truncatechars:10 }}</span>
+            {% else %}<span style="color:var(--muted);font-size:.74rem;">-</span>{% endif %}
+          </td>
+          <td><span class="chip i">{{ s.views }}</span></td>
+          <td><span class="chip p">{{ s.shares }}</span></td>
+          <td><span class="chip t">{{ s.like_cnt }}</span></td>
+          <td><span class="chip a">{{ s.comment_cnt }}</span></td>
+        </tr>
+        {% empty %}<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px;">데이터 없음</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+
+    <!-- 링크클릭 -->
+    <div class="pnl" id="tab-shares">
+      <div class="twrap"><table class="stbl">
+        <thead><tr><th>#</th><th>썸네일</th><th>제목</th><th>연결</th><th>링크클릭</th><th>조회수</th><th>클릭률</th><th>좋아요</th></tr></thead>
+        <tbody>
+        {% for s in top_by_shares %}
+        <tr>
+          <td><div class="rk {% if forloop.counter == 1 %}rk1{% elif forloop.counter == 2 %}rk2{% elif forloop.counter == 3 %}rk3{% else %}rkn{% endif %}">{{ forloop.counter }}</div></td>
+          <td>{% if s.thumbnail %}<img src="{{ s.thumbnail.url }}" class="th">{% else %}<div class="thph">📸</div>{% endif %}</td>
+          <td style="max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            <a href="/admin/book/booksnap/{{ s.id }}/change/" target="_blank" style="color:var(--text);text-decoration:none;">{{ s.snap_title|default:"제목 없음" }}</a>
+          </td>
+          <td>{% if s.book %}<span style="font-size:.69rem;background:rgba(99,102,241,.14);color:var(--indigo);padding:2px 6px;border-radius:9px;">📚{{ s.book.name|truncatechars:10 }}</span>{% elif s.story %}<span style="font-size:.69rem;background:rgba(139,92,246,.14);color:var(--violet);padding:2px 6px;border-radius:9px;">✨{{ s.story.title|truncatechars:10 }}</span>{% else %}-{% endif %}</td>
+          <td><span class="chip p" style="font-size:.84rem;font-weight:800;">{{ s.shares }}</span></td>
+          <td><span class="chip i">{{ s.views }}</span></td>
+          <td>{% if s.views > 0 %}<span style="color:var(--teal);font-family:var(--mono);font-size:.8rem;font-weight:700;">{% widthratio s.shares s.views 100 %}%</span>{% else %}-{% endif %}</td>
+          <td><span class="chip t">{{ s.like_cnt }}</span></td>
+        </tr>
+        {% empty %}<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px;">데이터 없음</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+
+    <!-- 좋아요 -->
+    <div class="pnl" id="tab-likes">
+      <div class="twrap"><table class="stbl">
+        <thead><tr><th>#</th><th>썸네일</th><th>제목</th><th>좋아요</th><th>조회수</th><th>링크클릭</th></tr></thead>
+        <tbody>
+        {% for s in top_by_likes %}
+        <tr>
+          <td><div class="rk {% if forloop.counter == 1 %}rk1{% elif forloop.counter == 2 %}rk2{% elif forloop.counter == 3 %}rk3{% else %}rkn{% endif %}">{{ forloop.counter }}</div></td>
+          <td>{% if s.thumbnail %}<img src="{{ s.thumbnail.url }}" class="th">{% else %}<div class="thph">📸</div>{% endif %}</td>
+          <td><a href="/admin/book/booksnap/{{ s.id }}/change/" target="_blank" style="color:var(--text);text-decoration:none;">{{ s.snap_title|default:"제목 없음" }}</a></td>
+          <td><span class="chip t" style="font-size:.84rem;font-weight:800;">❤️ {{ s.like_cnt }}</span></td>
+          <td><span class="chip i">{{ s.views }}</span></td>
+          <td><span class="chip p">{{ s.shares }}</span></td>
+        </tr>
+        {% empty %}<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">데이터 없음</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+
+    <!-- 댓글 -->
+    <div class="pnl" id="tab-cmts">
+      <div class="twrap"><table class="stbl">
+        <thead><tr><th>#</th><th>썸네일</th><th>제목</th><th>댓글</th><th>조회수</th><th>좋아요</th></tr></thead>
+        <tbody>
+        {% for s in top_commented %}
+        <tr>
+          <td><div class="rk {% if forloop.counter == 1 %}rk1{% elif forloop.counter == 2 %}rk2{% elif forloop.counter == 3 %}rk3{% else %}rkn{% endif %}">{{ forloop.counter }}</div></td>
+          <td>{% if s.thumbnail %}<img src="{{ s.thumbnail.url }}" class="th">{% else %}<div class="thph">📸</div>{% endif %}</td>
+          <td><a href="/admin/book/booksnap/{{ s.id }}/change/" target="_blank" style="color:var(--text);text-decoration:none;">{{ s.snap_title|default:"제목 없음" }}</a></td>
+          <td><span class="chip a" style="font-size:.84rem;font-weight:800;">💬 {{ s.comment_cnt }}</span></td>
+          <td><span class="chip i">{{ s.views }}</span></td>
+          <td><span class="chip t">{% with s.booksnap_like.count as lc %}{{ lc }}{% endwith %}</span></td>
+        </tr>
+        {% empty %}<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">데이터 없음</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+</div>
+<script>
+const raw={{ daily_data|safe }};
+const maxV={{ max_views }}, maxS={{ max_shares }};
+(function buildChart(){
+  const w=document.getElementById('dailyChart'); if(!w)return;
+  const maxC=Math.max(...raw.map(d=>d.count||0),1);
+  w.innerHTML=raw.map(d=>{
+    const hV=Math.max(2,Math.round((d.views/maxV)*140));
+    const hS=Math.max(2,Math.round((d.shares/maxS)*140));
+    const hC=Math.max(2,Math.round(((d.count||0)/maxC)*140));
+    return`<div class="bg">
+      <div class="b-stack" style="height:148px;justify-content:flex-end;">
+        <div class="b" style="height:${hV}px;background:rgba(139,92,246,.75);" data-t="조회수 ${d.views}"></div>
+        <div class="b" style="height:${hS}px;background:rgba(236,72,153,.75);" data-t="링크클릭 ${d.shares}"></div>
+        <div class="b" style="height:${hC}px;background:rgba(99,102,241,.5);" data-t="업로드 ${d.count}"></div>
+      </div>
+      <div class="b-lbl">${d.date}</div></div>`;
+  }).join('');
+})();
+function swTab(id,btn){
+  document.querySelectorAll('.pnl').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tab-'+id).classList.add('on');
+  btn.classList.add('on');
+}
+</script>
+{% endblock %}

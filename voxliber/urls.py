@@ -25,7 +25,7 @@ from book.sitemaps import BookSitemap, StaticViewSitemap
 from django.http import FileResponse
 from voxliber import api_views as voxliber_api
 import os
-from book.admin import EpisodeRankingView, ListeningStatsView,ListeningCalendarView,CharacterStatsView,CharacterCalendarView
+from book.admin import EpisodeRankingView, ListeningStatsView,ListeningCalendarView,CharacterStatsView,CharacterCalendarView,SnapStatsView,AdStatsView,SnapCalendarView,AdCalendarView
 
 # Sitemap 설정
 sitemaps = {
@@ -39,6 +39,12 @@ def serve_well_known(request, filename):
     return FileResponse(open(file_path, 'rb'), content_type='application/json')
 
 urlpatterns = [
+    path('admin/book/snap-calendar/',   SnapCalendarView.as_view()),
+    path('admin/register/ad-calendar/', AdCalendarView.as_view()),
+    path('admin/book/snap-stats/',      SnapStatsView.as_view(),  name='snap_stats'),
+
+    # 📢 광고 통계
+    path('admin/register/ad-stats/',    AdStatsView.as_view(),    name='ad_stats'),
     path('admin/character/calendar/', CharacterCalendarView.as_view(), name='character_calendar'),
 
     path('admin/character/stats/', CharacterStatsView.as_view(), name='character_stats'),

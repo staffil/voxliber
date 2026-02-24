@@ -1593,3 +1593,690 @@ class CharacterCalendarView(View):
             'max_tts_sec':      max_tts_sec,
         }
         return dj_render(request, self.template_name, context)
+
+
+
+"""
+=================================================================
+book/admin.py 또는 register/admin.py 하단에 추가하세요.
+
+URL 등록 (urls.py):
+    path('admin/book/snap-stats/',   SnapStatsView.as_view(),  name='snap_stats'),
+    path('admin/register/ad-stats/', AdStatsView.as_view(),    name='ad_stats'),
+=================================================================
+"""
+
+import json
+from datetime import timedelta
+
+from django.contrib import admin as django_admin
+from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Avg, Count, Q, Sum
+from django.shortcuts import render as dj_render
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views import View
+from advertisment.models import Advertisement, AdImpression, UserAdCounter, AdRequest
+from book.models import BookSnap, BookSnapComment
+
+
+# =====================================================
+# 📸 BookSnap 통계 대시보드
+# URL: /admin/book/snap-stats/
+# =====================================================
+class SnapStatsView(View):
+    template_name = 'admin/book/snap_stats.html'
+
+    @method_decorator(staff_member_required)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def get(self, request):
+        now = timezone.now()
+
+        period_choices = [('1', '오늘'), ('7', '7일'), ('30', '30일'), ('90', '90일')]
+        period = request.GET.get('period', '7')
+        days   = int(period)
+        since  = now - timedelta(days=days)
+
+        # ── 기간 내 요약 ─────────────────────────────
+        snap_qs = BookSnap.objects.filter(created_at__gte=since)
+        total_snaps    = snap_qs.count()
+        total_views    = snap_qs.aggregate(s=Sum('views'))['s'] or 0
+        total_shares   = snap_qs.aggregate(s=Sum('shares'))['s'] or 0   # shares = 링크 클릭수
+        total_comments = BookSnapComment.objects.filter(
+            snap__created_at__gte=since
+        ).count()
+        # 좋아요 (M2M — 기간 내 업로드된 스냅의 현재 좋아요 수 합산)
+        total_likes = sum(
+            s.booksnap_like.count()
+            for s in snap_qs.prefetch_related('booksnap_like')
+        )
+
+        # ── 전체 누적 요약 ───────────────────────────
+        all_agg = BookSnap.objects.aggregate(
+            all_views=Sum('views'), all_shares=Sum('shares')
+        )
+        all_total_views  = all_agg['all_views']  or 0
+        all_total_shares = all_agg['all_shares'] or 0
+        all_total_snaps  = BookSnap.objects.count()
+
+        # ── 일별 업로드 / 조회수 / 링크클릭 추이 ────
+        daily_data = []
+        for i in range(days - 1, -1, -1):
+            day_start = (now - timedelta(days=i)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            day_end = day_start + timedelta(days=1)
+            day_qs  = BookSnap.objects.filter(created_at__gte=day_start, created_at__lt=day_end)
+            day_agg = day_qs.aggregate(v=Sum('views'), sh=Sum('shares'))
+            daily_data.append({
+                'date':   day_start.strftime('%m/%d'),
+                'count':  day_qs.count(),
+                'views':  day_agg['v']  or 0,
+                'shares': day_agg['sh'] or 0,
+            })
+
+        max_views  = max((d['views']  for d in daily_data), default=1) or 1
+        max_shares = max((d['shares'] for d in daily_data), default=1) or 1
+
+        # ── TOP 스냅 (조회수) ────────────────────────
+        top_by_views = list(
+            BookSnap.objects
+            .annotate(
+                like_cnt=Count('booksnap_like', distinct=True),
+                comment_cnt=Count('comments', distinct=True),
+            )
+            .order_by('-views')
+            .select_related('book', 'story', 'user')[:15]
+        )
+
+        # ── TOP 스냅 (링크 클릭 = shares) ───────────
+        top_by_shares = list(
+            BookSnap.objects
+            .annotate(
+                like_cnt=Count('booksnap_like', distinct=True),
+                comment_cnt=Count('comments', distinct=True),
+            )
+            .order_by('-shares')
+            .select_related('book', 'story', 'user')[:15]
+        )
+
+        # ── TOP 스냅 (좋아요) ────────────────────────
+        top_by_likes = list(
+            BookSnap.objects
+            .annotate(like_cnt=Count('booksnap_like', distinct=True))
+            .order_by('-like_cnt')
+            .select_related('book', 'user')[:10]
+        )
+
+        # ── 댓글 많은 스냅 TOP 10 ────────────────────
+        top_commented = list(
+            BookSnap.objects
+            .annotate(comment_cnt=Count('comments', distinct=True))
+            .filter(comment_cnt__gt=0)
+            .order_by('-comment_cnt')
+            .select_related('book', 'user')[:10]
+        )
+
+        # ── 링크 타입별 현황 ─────────────────────────
+        has_book_link   = BookSnap.objects.filter(
+            book_link__isnull=False).exclude(book_link='').count()
+        has_story_link  = BookSnap.objects.filter(
+            story_link__isnull=False).exclude(story_link='').count()
+        has_no_link     = all_total_snaps - has_book_link - has_story_link
+
+        context = {
+            **django_admin.site.each_context(request),
+            'title':          '📸 BookSnap 통계',
+            'period':         period,
+            'period_choices': period_choices,
+            'total_snaps':    total_snaps,
+            'total_views':    total_views,
+            'total_shares':   total_shares,
+            'total_likes':    total_likes,
+            'total_comments': total_comments,
+            'all_total_snaps':  all_total_snaps,
+            'all_total_views':  all_total_views,
+            'all_total_shares': all_total_shares,
+            'top_by_views':   top_by_views,
+            'top_by_shares':  top_by_shares,
+            'top_by_likes':   top_by_likes,
+            'top_commented':  top_commented,
+            'has_book_link':  has_book_link,
+            'has_story_link': has_story_link,
+            'has_no_link':    has_no_link,
+            'daily_data':     json.dumps(daily_data, ensure_ascii=False),
+            'daily_data_list': daily_data,
+            'max_views':      max_views,
+            'max_shares':     max_shares,
+            'opts':           BookSnap._meta,
+        }
+        return dj_render(request, self.template_name, context)
+
+
+# =====================================================
+# 📢 광고(Advertisement) 통계 대시보드
+# URL: /admin/register/ad-stats/
+# =====================================================
+class AdStatsView(View):
+    template_name = 'admin/register/ad_stats.html'
+
+    @method_decorator(staff_member_required)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def get(self, request):
+
+        now = timezone.now()
+
+        period_choices = [('1', '오늘'), ('7', '7일'), ('30', '30일'), ('90', '90일')]
+        period = request.GET.get('period', '7')
+        days   = int(period)
+        since  = now - timedelta(days=days)
+
+        imp_qs = AdImpression.objects.filter(created_at__gte=since)
+
+        # ── 핵심 지표 ────────────────────────────────
+        total_impressions = imp_qs.count()
+        total_clicks      = imp_qs.filter(is_clicked=True).count()
+        total_skips       = imp_qs.filter(is_skipped=True).count()
+        ctr               = round(total_clicks / total_impressions * 100, 2) if total_impressions else 0
+        avg_watched_sec   = round(imp_qs.aggregate(a=Avg('watched_seconds'))['a'] or 0, 1)
+
+        # 총 시청(노출) 시간
+        total_watched_sec = imp_qs.aggregate(s=Sum('watched_seconds'))['s'] or 0
+        tw_hours   = total_watched_sec // 3600
+        tw_minutes = (total_watched_sec % 3600) // 60
+        tw_seconds = total_watched_sec % 60
+
+        # ── 광고 위치별 성과 ─────────────────────────
+        PLACEMENT_LABELS = {
+            'episode': '🎧 에피소드',
+            'chat':    '💬 AI 채팅',
+            'tts':     '🎙 TTS',
+            'snap':    '📸 북스냅',
+        }
+        placement_stats = []
+        for row in (
+            imp_qs
+            .values('placement')
+            .annotate(
+                impr=Count('id'),
+                clicks=Count('id', filter=Q(is_clicked=True)),
+                skips=Count('id', filter=Q(is_skipped=True)),
+                avg_watch=Avg('watched_seconds'),
+                total_watch=Sum('watched_seconds'),
+            )
+            .order_by('-impr')
+        ):
+            tw = row['total_watch'] or 0
+            row['label']    = PLACEMENT_LABELS.get(row['placement'], row['placement'])
+            row['ctr']      = round(row['clicks'] / row['impr'] * 100, 1) if row['impr'] else 0
+            row['avg_watch'] = round(row['avg_watch'] or 0, 1)
+            row['tw_hours']  = tw // 3600
+            row['tw_min']    = (tw % 3600) // 60
+            row['tw_sec']    = tw % 60
+            placement_stats.append(row)
+
+        # ── 광고 타입별 성과 ─────────────────────────
+        TYPE_LABELS = {'audio': '🔊 오디오', 'image': '🖼 이미지', 'video': '🎬 영상'}
+        type_stats = []
+        for row in (
+            imp_qs
+            .values('ad__ad_type')
+            .annotate(
+                impr=Count('id'),
+                clicks=Count('id', filter=Q(is_clicked=True)),
+                avg_watch=Avg('watched_seconds'),
+            )
+            .order_by('-impr')
+        ):
+            row['label'] = TYPE_LABELS.get(row['ad__ad_type'], row['ad__ad_type'] or '-')
+            row['ctr']   = round(row['clicks'] / row['impr'] * 100, 1) if row['impr'] else 0
+            type_stats.append(row)
+
+        # ── 광고별 성과 TOP 20 ───────────────────────
+        top_ads = list(
+            Advertisement.objects
+            .filter(impressions__created_at__gte=since)
+            .annotate(
+                impr_cnt=Count('impressions', distinct=True),
+                click_cnt=Count('impressions',
+                                filter=Q(impressions__is_clicked=True), distinct=True),
+                skip_cnt=Count('impressions',
+                                filter=Q(impressions__is_skipped=True), distinct=True),
+                avg_watch=Avg('impressions__watched_seconds'),
+                total_watch=Sum('impressions__watched_seconds'),
+            )
+            .order_by('-click_cnt')[:20]
+        )
+        # 시청 시간 포맷 추가
+        for ad in top_ads:
+            tw = ad.total_watch or 0
+            ad.ctr = round(ad.click_cnt / ad.impr_cnt * 100, 1) if ad.impr_cnt else 0
+            ad.tw_hours   = tw // 3600
+            ad.tw_minutes = (tw % 3600) // 60
+            ad.tw_fmt     = (f"{ad.tw_hours}시간 {ad.tw_minutes}분"
+                             if ad.tw_hours else f"{ad.tw_minutes}분 {tw % 60}초")
+
+        # ── 비용 청구 집계 ───────────────────────────
+        # "비용 청구당 시간" = watched_seconds 합 / 3600 (시간 단위)
+        # AdRequest.budget 승인분 합계
+        approved_reqs = AdRequest.objects.filter(status='approved')
+        total_budget  = approved_reqs.aggregate(s=Sum('budget'))['s'] or 0
+
+        # 광고별 총 시청 시간 (비용 청구 기준, 초 → 시간)
+        billing_stats = []
+        for row in (
+            AdImpression.objects
+            .filter(created_at__gte=since)
+            .values('ad__id', 'ad__title', 'ad__ad_type', 'ad__placement')
+            .annotate(
+                total_watch_sec=Sum('watched_seconds'),
+                impr=Count('id'),
+                clicks=Count('id', filter=Q(is_clicked=True)),
+            )
+            .order_by('-total_watch_sec')[:20]
+        ):
+            tw = row['total_watch_sec'] or 0
+            billing_stats.append({
+                **row,
+                'tw_hours':   tw // 3600,
+                'tw_minutes': (tw % 3600) // 60,
+                'tw_seconds': tw % 60,
+                'tw_fmt':     (f"{tw // 3600}시간 {(tw % 3600) // 60}분"
+                               if tw >= 3600 else f"{(tw % 3600) // 60}분 {tw % 60}초"),
+                'type_label': TYPE_LABELS.get(row['ad__ad_type'], '-'),
+                'place_label': PLACEMENT_LABELS.get(row['ad__placement'], '-'),
+                'ctr': round(row['clicks'] / row['impr'] * 100, 1) if row['impr'] else 0,
+            })
+
+        # ── 일별 노출/클릭/시청시간 추이 ────────────
+        daily_data = []
+        for i in range(days - 1, -1, -1):
+            day_start = (now - timedelta(days=i)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            day_end = day_start + timedelta(days=1)
+            day_qs  = AdImpression.objects.filter(
+                created_at__gte=day_start, created_at__lt=day_end
+            )
+            day_impr   = day_qs.count()
+            day_clicks = day_qs.filter(is_clicked=True).count()
+            day_watch  = day_qs.aggregate(s=Sum('watched_seconds'))['s'] or 0
+            daily_data.append({
+                'date':        day_start.strftime('%m/%d'),
+                'impressions': day_impr,
+                'clicks':      day_clicks,
+                'ctr':         round(day_clicks / day_impr * 100, 1) if day_impr else 0,
+                'watch_min':   round(day_watch / 60, 1),
+            })
+
+        max_impr  = max((d['impressions'] for d in daily_data), default=1) or 1
+        max_watch = max((d['watch_min']   for d in daily_data), default=0.1) or 0.1
+
+        # ── 광고 요청 현황 ───────────────────────────
+        STATUS_LABELS = {
+            'pending': '⏳ 검토중', 'approved': '✅ 승인',
+            'rejected': '❌ 거절',  'completed': '🏁 종료',
+        }
+        request_stats = [
+            {**r, 'label': STATUS_LABELS.get(r['status'], r['status'])}
+            for r in AdRequest.objects.values('status').annotate(cnt=Count('id'))
+        ]
+
+        # ── 현재 활성 광고 목록 ──────────────────────
+        active_ads = Advertisement.objects.filter(is_active=True).order_by('-created_at')[:20]
+
+        context = {
+            **django_admin.site.each_context(request),
+            'title':           '📢 광고 통계 대시보드',
+            'period':          period,
+            'period_choices':  period_choices,
+            # 핵심 지표
+            'total_impressions':   total_impressions,
+            'total_clicks':        total_clicks,
+            'total_skips':         total_skips,
+            'ctr':                 ctr,
+            'avg_watched_sec':     avg_watched_sec,
+            # 시청 시간 합계
+            'tw_hours':   tw_hours,
+            'tw_minutes': tw_minutes,
+            'tw_seconds': tw_seconds,
+            'total_watched_sec': total_watched_sec,
+            # 비용/예산
+            'total_budget':   total_budget,
+            'billing_stats':  billing_stats,
+            # 위치별/타입별
+            'placement_stats': placement_stats,
+            'type_stats':      type_stats,
+            # 광고별 성과
+            'top_ads':         top_ads,
+            # 요청 현황
+            'request_stats':   request_stats,
+            'approved_count':  approved_reqs.count(),
+            'pending_count':   AdRequest.objects.filter(status='pending').count(),
+            # 활성 광고
+            'active_ads':      active_ads,
+            # 일별 추이
+            'daily_data':      json.dumps(daily_data, ensure_ascii=False),
+            'daily_data_list': daily_data,
+            'max_impr':        max_impr,
+            'max_watch':       max_watch,
+        }
+        return dj_render(request, self.template_name, context)
+    
+
+"""
+URL 등록:
+    path('admin/book/snap-calendar/',   SnapCalendarView.as_view(),  name='snap_calendar'),
+    path('admin/register/ad-calendar/', AdCalendarView.as_view(),    name='ad_calendar'),
+"""
+
+import calendar
+import json
+from datetime import date, timedelta
+
+from django.contrib import admin as django_admin
+from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Count, Q, Sum
+from django.shortcuts import render as dj_render
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views import View
+
+from book.models import BookSnap, BookSnapComment
+
+
+# =====================================================
+# 📸 BookSnap 캘린더  (admin/book/snap-calendar/)
+# =====================================================
+class SnapCalendarView(View):
+    template_name = 'admin/book/snap_calendar.html'
+
+    @method_decorator(staff_member_required)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def get(self, request):
+        today = timezone.localdate()
+
+        try:    year  = int(request.GET.get('year',  today.year))
+        except: year  = today.year
+        try:    month = int(request.GET.get('month', today.month))
+        except: month = today.month
+
+        month = max(1, min(12, month))
+        year  = max(2023, min(today.year + 1, year))
+
+        prev_year,  prev_month  = (year - 1, 12)  if month == 1  else (year, month - 1)
+        next_year,  next_month  = (year + 1, 1)   if month == 12 else (year, month + 1)
+
+        # ── 이달 전체 집계 ──────────────────────────
+        month_snap_qs = BookSnap.objects.filter(
+            created_at__year=year, created_at__month=month,
+        )
+        month_comment_qs = BookSnapComment.objects.filter(
+            created_at__year=year, created_at__month=month,
+        )
+        month_agg = month_snap_qs.aggregate(
+            total_views=Sum('views'), total_shares=Sum('shares'),
+        )
+        month_total_snaps    = month_snap_qs.count()
+        month_total_views    = month_agg['total_views']  or 0
+        month_total_shares   = month_agg['total_shares'] or 0
+        month_total_comments = month_comment_qs.count()
+        month_total_likes    = sum(
+            s.booksnap_like.count()
+            for s in month_snap_qs.prefetch_related('booksnap_like')
+        )
+
+        # ── 일별 데이터 ─────────────────────────────
+        _, days_in_month = calendar.monthrange(year, month)
+
+        snap_by_day = {
+            r['created_at__day']: {
+                'snap_count': r['snap_count'],
+                'views':      r['day_views']  or 0,
+                'shares':     r['day_shares'] or 0,
+            }
+            for r in month_snap_qs
+            .values('created_at__day')
+            .annotate(snap_count=Count('id'), day_views=Sum('views'), day_shares=Sum('shares'))
+        }
+
+        comment_by_day = {
+            r['created_at__day']: r['cnt']
+            for r in month_comment_qs.values('created_at__day').annotate(cnt=Count('id'))
+        }
+
+        # 일별 인기 스냅 TOP 3 (조회수 기준)
+        tops_by_day = {}
+        for r in (
+            month_snap_qs
+            .values('created_at__day', 'snap_title', 'id', 'views', 'shares')
+            .order_by('created_at__day', '-views')
+        ):
+            d = r['created_at__day']
+            tops_by_day.setdefault(d, [])
+            if len(tops_by_day[d]) < 3:
+                tops_by_day[d].append({
+                    'title':  r['snap_title'] or '제목 없음',
+                    'views':  r['views'],
+                    'shares': r['shares'],
+                })
+
+        # ── 히트맵 레벨 (조회수 기준) ────────────────
+        max_views = max((v['views'] for v in snap_by_day.values()), default=1) or 1
+
+        def level(v):
+            if v == 0: return 0
+            r = v / max_views
+            return 1 if r <= .25 else 2 if r <= .50 else 3 if r <= .75 else 4
+
+        # ── 캘린더 셀 ───────────────────────────────
+        first_weekday, _ = calendar.monthrange(year, month)
+        calendar_cells = []
+        for day in range(1, days_in_month + 1):
+            cell_date = date(year, month, day)
+            sn = snap_by_day.get(day, {'snap_count': 0, 'views': 0, 'shares': 0})
+            calendar_cells.append({
+                'day':        day,
+                'date_str':   f"{year}년 {month}월 {day}일",
+                'dow':        cell_date.weekday(),
+                'is_today':   cell_date == today,
+                'snap_count': sn['snap_count'],
+                'views':      sn['views'],
+                'shares':     sn['shares'],
+                'comments':   comment_by_day.get(day, 0),
+                'tops_json':  json.dumps(tops_by_day.get(day, []), ensure_ascii=False),
+                'level':      level(sn['views']),
+                'has_data':   sn['snap_count'] > 0,
+            })
+
+        leading_blanks  = range(first_weekday)
+        trailing_blanks = range((7 - (first_weekday + days_in_month) % 7) % 7)
+        year_range      = range(2023, today.year + 1)
+
+        daily_chart = [
+            {
+                'day':    str(d),
+                'snaps':  snap_by_day.get(d, {}).get('snap_count', 0),
+                'views':  snap_by_day.get(d, {}).get('views', 0),
+                'shares': snap_by_day.get(d, {}).get('shares', 0),
+                'cmts':   comment_by_day.get(d, 0),
+            }
+            for d in range(1, days_in_month + 1)
+        ]
+
+        context = {
+            **django_admin.site.each_context(request),
+            'title': '📸 BookSnap 캘린더',
+            'year': year, 'month': month,
+            'prev_year': prev_year, 'prev_month': prev_month,
+            'next_year': next_year, 'next_month': next_month,
+            'year_range': list(year_range),
+            'calendar_cells': calendar_cells,
+            'leading_blanks': leading_blanks,
+            'trailing_blanks': trailing_blanks,
+            'month_total_snaps': month_total_snaps,
+            'month_total_views': month_total_views,
+            'month_total_shares': month_total_shares,
+            'month_total_likes': month_total_likes,
+            'month_total_comments': month_total_comments,
+            'active_days': sum(1 for c in calendar_cells if c['has_data']),
+            'daily_chart_json': json.dumps(daily_chart, ensure_ascii=False),
+            'max_views': max_views,
+        }
+        return dj_render(request, self.template_name, context)
+
+
+# =====================================================
+# 📢 광고 캘린더  (admin/register/ad-calendar/)
+# =====================================================
+class AdCalendarView(View):
+    template_name = 'admin/register/ad_calendar.html'
+
+    @method_decorator(staff_member_required)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def get(self, request):
+
+        today = timezone.localdate()
+
+        try:    year  = int(request.GET.get('year',  today.year))
+        except: year  = today.year
+        try:    month = int(request.GET.get('month', today.month))
+        except: month = today.month
+
+        month = max(1, min(12, month))
+        year  = max(2023, min(today.year + 1, year))
+
+        prev_year,  prev_month  = (year - 1, 12)  if month == 1  else (year, month - 1)
+        next_year,  next_month  = (year + 1, 1)   if month == 12 else (year, month + 1)
+
+        # ── 이달 전체 집계 ──────────────────────────
+        month_imp_qs = AdImpression.objects.filter(
+            created_at__year=year, created_at__month=month,
+        )
+        month_agg = month_imp_qs.aggregate(
+            total_impr=Count('id'),
+            total_clicks=Count('id', filter=Q(is_clicked=True)),
+            total_skips=Count('id', filter=Q(is_skipped=True)),
+            total_watched=Sum('watched_seconds'),
+        )
+        month_total_impr    = month_agg['total_impr']    or 0
+        month_total_clicks  = month_agg['total_clicks']  or 0
+        month_total_skips   = month_agg['total_skips']   or 0
+        month_total_watched = month_agg['total_watched'] or 0
+        month_ctr = round(month_total_clicks / month_total_impr * 100, 1) if month_total_impr else 0
+
+        tw = month_total_watched
+        tw_fmt = f"{tw//3600}시간 {(tw%3600)//60}분" if tw >= 3600 else f"{tw//60}분 {tw%60}초"
+
+        # ── 일별 데이터 ─────────────────────────────
+        _, days_in_month = calendar.monthrange(year, month)
+
+        imp_by_day = {
+            r['created_at__day']: {
+                'impr':    r['impr'],
+                'clicks':  r['clicks'],
+                'skips':   r['skips'],
+                'watched': r['watched'] or 0,
+            }
+            for r in month_imp_qs
+            .values('created_at__day')
+            .annotate(
+                impr=Count('id'),
+                clicks=Count('id', filter=Q(is_clicked=True)),
+                skips=Count('id', filter=Q(is_skipped=True)),
+                watched=Sum('watched_seconds'),
+            )
+        }
+
+        # 일별 TOP 광고 3 (클릭 기준)
+        PLACEMENT_ICON = {'episode': '🎧', 'chat': '💬', 'tts': '🎙', 'snap': '📸'}
+        tops_by_day = {}
+        for r in (
+            month_imp_qs.filter(is_clicked=True)
+            .values('created_at__day', 'ad__id', 'ad__title', 'ad__placement')
+            .annotate(click_cnt=Count('id'))
+            .order_by('created_at__day', '-click_cnt')
+        ):
+            d = r['created_at__day']
+            tops_by_day.setdefault(d, [])
+            if len(tops_by_day[d]) < 3:
+                tops_by_day[d].append({
+                    'title':  r['ad__title'] or '광고',
+                    'clicks': r['click_cnt'],
+                    'icon':   PLACEMENT_ICON.get(r['ad__placement'], '📢'),
+                })
+
+        # ── 히트맵 레벨 (노출 수 기준) ───────────────
+        max_impr = max((v['impr'] for v in imp_by_day.values()), default=1) or 1
+
+        def level(v):
+            if v == 0: return 0
+            r = v / max_impr
+            return 1 if r <= .25 else 2 if r <= .50 else 3 if r <= .75 else 4
+
+        # ── 캘린더 셀 ───────────────────────────────
+        first_weekday, _ = calendar.monthrange(year, month)
+        calendar_cells = []
+        for day in range(1, days_in_month + 1):
+            cell_date = date(year, month, day)
+            imp = imp_by_day.get(day, {'impr': 0, 'clicks': 0, 'skips': 0, 'watched': 0})
+            w   = imp['watched']
+            ctr = round(imp['clicks'] / imp['impr'] * 100, 1) if imp['impr'] else 0
+            calendar_cells.append({
+                'day':         day,
+                'date_str':    f"{year}년 {month}월 {day}일",
+                'dow':         cell_date.weekday(),
+                'is_today':    cell_date == today,
+                'impr':        imp['impr'],
+                'clicks':      imp['clicks'],
+                'skips':       imp['skips'],
+                'watched':     w,
+                'watched_fmt': (f"{w//3600}h {(w%3600)//60}m" if w >= 3600 else f"{w//60}m {w%60}s"),
+                'ctr':         ctr,
+                'tops_json':   json.dumps(tops_by_day.get(day, []), ensure_ascii=False),
+                'level':       level(imp['impr']),
+                'has_data':    imp['impr'] > 0,
+            })
+
+        leading_blanks  = range(first_weekday)
+        trailing_blanks = range((7 - (first_weekday + days_in_month) % 7) % 7)
+        year_range      = range(2023, today.year + 1)
+
+        daily_chart = [
+            {
+                'day':     str(d),
+                'impr':    imp_by_day.get(d, {}).get('impr', 0),
+                'clicks':  imp_by_day.get(d, {}).get('clicks', 0),
+                'watched': round((imp_by_day.get(d, {}).get('watched', 0)) / 60, 1),
+            }
+            for d in range(1, days_in_month + 1)
+        ]
+
+        context = {
+            **django_admin.site.each_context(request),
+            'title': '📢 광고 캘린더',
+            'year': year, 'month': month,
+            'prev_year': prev_year, 'prev_month': prev_month,
+            'next_year': next_year, 'next_month': next_month,
+            'year_range': list(year_range),
+            'calendar_cells': calendar_cells,
+            'leading_blanks': leading_blanks,
+            'trailing_blanks': trailing_blanks,
+            'month_total_impr': month_total_impr,
+            'month_total_clicks': month_total_clicks,
+            'month_total_skips': month_total_skips,
+            'month_ctr': month_ctr,
+            'tw_fmt': tw_fmt,
+            'active_days': sum(1 for c in calendar_cells if c['has_data']),
+            'daily_chart_json': json.dumps(daily_chart, ensure_ascii=False),
+            'max_impr': max_impr,
+        }
+        return dj_render(request, self.template_name, context)

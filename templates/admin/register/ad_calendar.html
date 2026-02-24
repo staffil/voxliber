@@ -1,0 +1,458 @@
+{% extends "admin/base_site.html" %}
+{% block title %}📢 광고 캘린더{% endblock %}
+
+{% block extrastyle %}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0d0d1a;
+  --surface:  #16162a;
+  --surface2: #1e1e35;
+  --border:   #2a2a48;
+  --amber:    #f59e0b;
+  --amber2:   #fde68a;
+  --teal:     #2dd4bf;
+  --rose:     #fb7185;
+  --green:    #34d399;
+  --indigo:   #6366f1;
+  --text:     #e8e8f8;
+  --muted:    #7070a0;
+  --radius:   14px;
+  --mono:     'DM Mono', monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg) !important; color: var(--text); font-family: 'Noto Sans KR', sans-serif; }
+#content, .content { background: transparent !important; }
+#content-main { padding: 0 !important; }
+
+.cal-wrap { padding: 28px 24px 80px; max-width: 1100px; }
+
+/* 헤더 */
+.cal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 28px; flex-wrap: wrap; gap: 14px;
+}
+.cal-head h1 { font-size: 1.5rem; font-weight: 900; color: var(--text); letter-spacing: -0.04em; margin: 0; }
+.cal-head h1 em { color: var(--amber2); font-style: normal; }
+
+/* 월 네비 */
+.month-nav {
+  display: flex; align-items: center; gap: 0;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 50px; padding: 4px; box-shadow: 0 2px 12px rgba(245,158,11,0.15);
+}
+.month-nav a, .month-nav .cur-label {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 7px 16px; border-radius: 40px; font-size: 0.86rem; font-weight: 700;
+  text-decoration: none; color: var(--muted); transition: all 0.16s; white-space: nowrap;
+}
+.month-nav a:hover { background: var(--surface2); color: var(--amber2); }
+.month-nav .cur-label {
+  background: var(--amber); color: #000; font-size: 0.92rem;
+  letter-spacing: -0.02em; min-width: 110px; text-align: center;
+}
+.month-nav a.arrow { padding: 7px 13px; font-size: 1.15rem; }
+
+/* 연도 탭 */
+.year-tabs { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+.ytab {
+  padding: 5px 15px; border-radius: 40px; font-size: 0.8rem; font-weight: 700;
+  text-decoration: none; color: var(--muted);
+  background: var(--surface); border: 1.5px solid var(--border); transition: all 0.15s;
+}
+.ytab:hover { border-color: var(--amber); color: var(--amber2); }
+.ytab.active { background: var(--amber); color: #000; border-color: var(--amber); }
+
+/* 요약 필 */
+.summary-strip { display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
+.s-pill {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 50px; padding: 7px 16px;
+  font-size: 0.79rem; font-weight: 700; color: var(--muted);
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.08);
+}
+.s-pill .pval { color: var(--amber2); font-family: var(--mono); font-size: 0.9rem; }
+.s-pill.green .pval { color: var(--green); }
+.s-pill.teal  .pval { color: var(--teal); }
+.s-pill.rose  .pval { color: var(--rose); }
+
+/* 캘린더 박스 */
+.calendar-box {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  box-shadow: 0 4px 24px rgba(245,158,11,0.1);
+}
+.dow-row {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  background: var(--surface2); border-bottom: 1.5px solid var(--border);
+}
+.dow-row div {
+  padding: 11px 0; text-align: center;
+  font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.05em;
+}
+.dow-row div:nth-child(6) { color: #5c9af5; }
+.dow-row div:nth-child(7) { color: var(--rose); }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+
+.cal-cell {
+  min-height: 100px; padding: 10px 10px 8px;
+  border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 4px;
+  transition: background 0.14s; position: relative;
+}
+.cal-cell:nth-child(7n) { border-right: none; }
+.cal-cell.empty { background: #0a0a16; }
+
+/* 히트맵 — 노출 수 기준, 앰버 계열 */
+.cal-cell.lv0 { background: var(--surface); }
+.cal-cell.lv1 { background: #261a07; }
+.cal-cell.lv2 { background: #4d3210; }
+.cal-cell.lv3 { background: #854d0e; }
+.cal-cell.lv4 { background: #b45309; }
+
+.cal-cell.today-cell { outline: 2px solid var(--amber2); outline-offset: -2px; }
+
+.day-num {
+  font-size: 0.8rem; font-weight: 700; color: var(--muted);
+  font-family: var(--mono); width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; flex-shrink: 0;
+}
+.today-cell .day-num { background: var(--amber); color: #000; }
+.cal-cell.sat .day-num { color: #5c9af5; }
+.cal-cell.sun .day-num { color: var(--rose); }
+
+/* 배지 */
+.cell-badges { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
+.cbadge {
+  display: inline-flex; align-items: center; gap: 3px;
+  border-radius: 4px; padding: 2px 6px;
+  font-size: 0.64rem; font-weight: 700; font-family: var(--mono);
+  align-self: flex-start; white-space: nowrap;
+}
+.cbadge.impr  { background: rgba(245,158,11,0.22); color: var(--amber2); }
+.cbadge.click { background: rgba(52,211,153,0.2);  color: var(--green); }
+.cbadge.skip  { background: rgba(251,113,133,0.18); color: var(--rose); }
+.cbadge.watch { background: rgba(45,212,191,0.18);  color: var(--teal); }
+
+.cal-cell.clickable { cursor: pointer; }
+.cal-cell.clickable:hover { filter: brightness(1.15); }
+
+/* 범례 */
+.legend {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 14px; justify-content: flex-end;
+  font-size: 0.72rem; color: var(--muted);
+}
+.lb { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.06); }
+.lb0 { background: var(--surface); }
+.lb1 { background: #261a07; }
+.lb2 { background: #4d3210; }
+.lb3 { background: #854d0e; }
+.lb4 { background: #b45309; }
+
+/* 바 차트 */
+.chart-section { margin-top: 28px; }
+.chart-panel {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 22px 20px 16px;
+}
+.chart-title {
+  font-size: 0.8rem; font-weight: 700; color: var(--muted);
+  letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 16px;
+}
+.bar-chart-wrap { display: flex; align-items: flex-end; gap: 3px; height: 90px; overflow: hidden; }
+.bc { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%; justify-content: flex-end; }
+.bf {
+  width: 100%; border-radius: 3px 3px 0 0; min-height: 2px;
+  position: relative; transition: height 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+.bf:hover::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+  background: #000; color: #fff; font-size: 0.62rem; padding: 3px 7px; border-radius: 5px;
+  white-space: nowrap; pointer-events: none; z-index: 99;
+}
+.bc .lx { font-size: 0.55rem; color: var(--muted); }
+.abar { background: linear-gradient(to top, #92400e, #fde68a); }
+.gbar { background: linear-gradient(to top, #065f46, #34d399); }
+.tbar { background: linear-gradient(to top, #0d9488, #2dd4bf); }
+
+/* 모달 */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(5,5,20,0.7); backdrop-filter: blur(6px);
+  z-index: 9999; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 30px 28px;
+  max-width: 460px; width: 92%;
+  box-shadow: 0 20px 60px rgba(245,158,11,0.25);
+  animation: popIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative;
+}
+@keyframes popIn {
+  from { transform: scale(0.86); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+.modal-close {
+  position: absolute; top: 16px; right: 18px;
+  background: none; border: none; font-size: 1.2rem;
+  color: var(--muted); cursor: pointer; line-height: 1;
+}
+.modal-close:hover { color: var(--text); }
+.modal-date-label { font-size: 1.15rem; font-weight: 900; color: var(--text); margin-bottom: 20px; }
+.modal-stats { display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
+.mstat {
+  flex: 1; min-width: 70px; background: var(--surface2); border-radius: 12px;
+  padding: 14px 10px; text-align: center; border: 1.5px solid var(--border);
+}
+.mstat .mv { font-size: 1.2rem; font-weight: 900; font-family: var(--mono); line-height: 1; }
+.mstat .ml { font-size: 0.68rem; color: var(--muted); margin-top: 4px; }
+.mstat.a .mv { color: var(--amber2); }
+.mstat.g .mv { color: var(--green); }
+.mstat.r .mv { color: var(--rose); }
+.mstat.t .mv { color: var(--teal); }
+
+.ctr-badge {
+  display: inline-block; background: rgba(245,158,11,0.18);
+  color: var(--amber2); padding: 4px 12px; border-radius: 20px;
+  font-family: var(--mono); font-size: 0.88rem; font-weight: 700;
+  margin-bottom: 16px;
+}
+.modal-ads-title { font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.05em; text-transform: uppercase; }
+.modal-ad-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+.mad-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem;
+}
+.mad-title { color: var(--text); font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mad-clicks { color: var(--green); font-family: var(--mono); font-size: 0.76rem; flex-shrink: 0; margin-left: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cal-wrap">
+
+  <!-- 헤더 -->
+  <div class="cal-head">
+    <h1>📢 광고 <em>캘린더</em></h1>
+    <nav class="month-nav">
+      <a class="arrow" href="?year={{ prev_year }}&month={{ prev_month }}">‹</a>
+      <span class="cur-label">{{ year }}년 {{ month }}월</span>
+      <a class="arrow" href="?year={{ next_year }}&month={{ next_month }}">›</a>
+    </nav>
+  </div>
+
+  <!-- 연도 탭 -->
+  <div class="year-tabs">
+    {% for y in year_range %}
+    <a class="ytab {% if y == year %}active{% endif %}"
+       href="?year={{ y }}&month={{ month }}">{{ y }}년</a>
+    {% endfor %}
+  </div>
+
+  <!-- 월 요약 -->
+  <div class="summary-strip">
+    <div class="s-pill">📣 노출 수 <span class="pval">{{ month_total_impr }}</span></div>
+    <div class="s-pill green">👆 클릭 수 <span class="pval">{{ month_total_clicks }}</span></div>
+    <div class="s-pill">📊 CTR <span class="pval">{{ month_ctr }}%</span></div>
+    <div class="s-pill teal">⏱ 시청 시간 <span class="pval">{{ tw_fmt }}</span></div>
+    <div class="s-pill rose">⏭ 스킵 <span class="pval">{{ month_total_skips }}</span></div>
+    <div class="s-pill">📅 활성 일수 <span class="pval">{{ active_days }}일</span></div>
+  </div>
+
+  <!-- 캘린더 본체 -->
+  <div class="calendar-box">
+    <div class="dow-row">
+      <div>월</div><div>화</div><div>수</div><div>목</div><div>금</div>
+      <div>토</div><div>일</div>
+    </div>
+    <div class="cal-grid">
+
+      {% for _ in leading_blanks %}
+      <div class="cal-cell empty"></div>
+      {% endfor %}
+
+      {% for cell in calendar_cells %}
+      <div class="cal-cell
+          lv{{ cell.level }}
+          {% if cell.is_today %}today-cell{% endif %}
+          {% if cell.dow == 5 %}sat{% elif cell.dow == 6 %}sun{% endif %}
+          {% if cell.has_data %}clickable{% endif %}"
+        {% if cell.has_data %}
+        onclick="openModal(
+          '{{ cell.date_str }}',
+          {{ cell.impr }},
+          {{ cell.clicks }},
+          {{ cell.skips }},
+          {{ cell.ctr }},
+          '{{ cell.watched_fmt }}',
+          '{{ cell.tops_json|escapejs }}'
+        )"
+        {% endif %}
+      >
+        <div class="day-num">{{ cell.day }}</div>
+        {% if cell.has_data %}
+        <div class="cell-badges">
+          {% if cell.impr > 0 %}
+          <span class="cbadge impr">📣 {{ cell.impr }}</span>
+          {% endif %}
+          {% if cell.clicks > 0 %}
+          <span class="cbadge click">👆 {{ cell.clicks }}</span>
+          {% endif %}
+          {% if cell.watched > 0 %}
+          <span class="cbadge watch">⏱ {{ cell.watched_fmt }}</span>
+          {% endif %}
+          {% if cell.skips > 0 %}
+          <span class="cbadge skip">⏭ {{ cell.skips }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      {% for _ in trailing_blanks %}
+      <div class="cal-cell empty"></div>
+      {% endfor %}
+
+    </div>
+  </div>
+
+  <!-- 범례 -->
+  <div class="legend">
+    노출 수
+    <div class="lb lb0"></div>
+    <div class="lb lb1"></div>
+    <div class="lb lb2"></div>
+    <div class="lb lb3"></div>
+    <div class="lb lb4"></div>
+    많음
+  </div>
+
+  <!-- 하단 바 차트 -->
+  <div class="chart-section">
+    <div class="chart-panel">
+      <div class="chart-title">📊 이달 일별 노출 / 클릭 / 시청 시간(분)</div>
+      <div id="barChart" class="bar-chart-wrap"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 날짜 상세 모달 -->
+<div class="modal-overlay" id="detailModal" onclick="closeOutside(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-date-label" id="mDate"></div>
+    <div class="modal-stats">
+      <div class="mstat a">
+        <div class="mv" id="mImpr">-</div>
+        <div class="ml">노출</div>
+      </div>
+      <div class="mstat g">
+        <div class="mv" id="mClick">-</div>
+        <div class="ml">클릭</div>
+      </div>
+      <div class="mstat r">
+        <div class="mv" id="mSkip">-</div>
+        <div class="ml">스킵</div>
+      </div>
+      <div class="mstat t">
+        <div class="mv" id="mWatch">-</div>
+        <div class="ml">시청 시간</div>
+      </div>
+    </div>
+    <div class="ctr-badge" id="mCtr">CTR -</div>
+    <div class="modal-ads-title">🏆 당일 클릭 TOP 광고</div>
+    <div class="modal-ad-list" id="mAds"></div>
+  </div>
+</div>
+
+<script>
+function openModal(dateStr, impr, clicks, skips, ctr, watchFmt, topsRaw) {
+  document.getElementById('mDate').textContent  = '📅 ' + dateStr;
+  document.getElementById('mImpr').textContent  = impr;
+  document.getElementById('mClick').textContent = clicks;
+  document.getElementById('mSkip').textContent  = skips;
+  document.getElementById('mWatch').textContent = watchFmt;
+  document.getElementById('mCtr').textContent   = 'CTR ' + ctr + '%';
+
+  let tops = [];
+  try { tops = JSON.parse(topsRaw); } catch(e) {}
+  const el = document.getElementById('mAds');
+  el.innerHTML = tops.length
+    ? tops.map((a, i) =>
+        `<div class="mad-item">
+           <span class="mad-title">${a.icon} ${i+1}. ${a.title}</span>
+           <span class="mad-clicks">클릭 ${a.clicks}</span>
+         </div>`
+      ).join('')
+    : '<div style="color:var(--muted);font-size:0.82rem;padding:8px 0;">클릭 데이터 없음</div>';
+
+  document.getElementById('detailModal').classList.add('open');
+}
+function closeModal()    { document.getElementById('detailModal').classList.remove('open'); }
+function closeOutside(e) { if (e.target.id === 'detailModal') closeModal(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// 바 차트
+(function() {
+  const data      = {{ daily_chart_json|safe }};
+  const maxI      = Math.max(...data.map(d => d.impr),    1);
+  const maxC      = Math.max(...data.map(d => d.clicks),  1);
+  const maxW      = Math.max(...data.map(d => d.watched), 0.1);
+  const container = document.getElementById('barChart');
+  const H = 86;
+
+  data.forEach(d => {
+    const col = document.createElement('div');
+    col.className = 'bc';
+
+    const hI = Math.max(Math.round(d.impr    / maxI * H), d.impr    > 0 ? 2 : 0);
+    const hC = Math.max(Math.round(d.clicks  / maxC * H), d.clicks  > 0 ? 2 : 0);
+    const hW = Math.max(Math.round(d.watched / maxW * H), d.watched > 0 ? 2 : 0);
+
+    const bg = document.createElement('div');
+    bg.style.cssText = 'display:flex;align-items:flex-end;gap:1px;width:100%;justify-content:center;';
+
+    [[hI,'abar',`노출 ${d.impr}`],[hC,'gbar',`클릭 ${d.clicks}`],[hW,'tbar',`시청 ${d.watched}분`]].forEach(([h,cls,tip])=>{
+      if (h > 0) {
+        const b = document.createElement('div');
+        b.className = `bf ${cls}`;
+        b.style.height = h + 'px';
+        if (cls !== 'abar') b.style.cssText += ';width:5px;flex-shrink:0;';
+        b.setAttribute('data-tip', tip);
+        bg.appendChild(b);
+      }
+    });
+
+    if (!d.impr && !d.clicks && !d.watched) {
+      const ph = document.createElement('div');
+      ph.style.cssText = 'height:2px;width:100%;background:var(--border);border-radius:2px;';
+      bg.appendChild(ph);
+    }
+
+    col.appendChild(bg);
+    const lx = document.createElement('div');
+    lx.className = 'lx';
+    lx.textContent = parseInt(d.day) % 5 === 1 ? d.day : '';
+    col.appendChild(lx);
+    container.appendChild(col);
+  });
+
+  const leg = document.createElement('div');
+  leg.style.cssText = 'font-size:0.68rem;color:var(--muted);margin-top:12px;display:flex;gap:14px;flex-wrap:wrap;';
+  leg.innerHTML = `
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#fde68a;margin-right:4px;"></span>노출</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#34d399;margin-right:4px;"></span>클릭</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#2dd4bf;margin-right:4px;"></span>시청(분)</span>
+  `;
+  container.parentElement.appendChild(leg);
+})();
+</script>
+{% endblock %}

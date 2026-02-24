@@ -1,0 +1,371 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}📢 광고 통계{% endblock %}
+
+{% block extrahead %}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#09091a;--card:#17172a;--card2:#1e1e35;--border:#2a2a45;
+  --indigo:#6366f1;--violet:#8b5cf6;--pink:#ec4899;--teal:#14b8a6;
+  --amber:#f59e0b;--green:#22c55e;--red:#ef4444;--text:#e2e8f0;--muted:#94a3b8;
+  --mono:'DM Mono',monospace;
+}
+body,#content{background:var(--bg)!important;color:var(--text)!important;}
+#header{background:linear-gradient(135deg,#1a0533,#0d0d2b)!important;border-bottom:1px solid var(--border);}
+.pg{padding:28px 32px;max-width:1440px;}
+h1.pg-ttl{font-size:1.55rem;font-weight:900;margin:0 0 6px;
+  background:linear-gradient(135deg,var(--amber),var(--pink));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.pg-sub{color:var(--muted);font-size:.84rem;margin-bottom:24px;}
+
+#topnav{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:22px;}
+#topnav a{padding:6px 14px;border-radius:9px;font-size:.8rem;font-weight:600;
+  background:var(--card);color:var(--muted);border:1px solid var(--border);text-decoration:none;transition:.18s;}
+#topnav a:hover{border-color:var(--amber);color:var(--amber);}
+#topnav a.cur{background:var(--amber);color:#000;border-color:var(--amber);}
+
+.period-row{display:flex;gap:8px;margin-bottom:26px;flex-wrap:wrap;}
+.period-row a{padding:7px 20px;border-radius:20px;font-size:.81rem;font-weight:600;
+  background:var(--card);color:var(--muted);border:1px solid var(--border);text-decoration:none;transition:.18s;}
+.period-row a:hover{border-color:var(--amber);color:var(--amber);}
+.period-row a.on{background:var(--amber);color:#000;border-color:var(--amber);}
+
+/* Cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:15px;margin-bottom:26px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0;}
+.c-amber::before{background:linear-gradient(90deg,var(--amber),#f97316);}
+.c-green::before{background:linear-gradient(90deg,var(--green),var(--teal));}
+.c-indigo::before{background:linear-gradient(90deg,var(--indigo),var(--violet));}
+.c-pink::before{background:linear-gradient(90deg,var(--pink),#f97316);}
+.c-teal::before{background:linear-gradient(90deg,var(--teal),var(--green));}
+.c-red::before{background:linear-gradient(90deg,var(--red),var(--pink));}
+.c-violet::before{background:linear-gradient(90deg,var(--violet),var(--indigo));}
+.card-ico{font-size:1.4rem;margin-bottom:7px;}
+.card-val{font-size:1.75rem;font-weight:900;font-family:var(--mono);line-height:1;}
+.card-lbl{font-size:.73rem;color:var(--muted);margin-top:5px;}
+.card-sub{font-size:.69rem;color:var(--muted);margin-top:2px;opacity:.75;}
+
+/* Section */
+.sec{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:20px;}
+.sec-ttl{font-size:.97rem;font-weight:700;margin:0 0 16px;display:flex;align-items:center;gap:7px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:800px){.two-col{grid-template-columns:1fr;}}
+
+/* Chart */
+.chart-area{overflow-x:auto;padding-bottom:6px;}
+.bars{display:flex;align-items:flex-end;gap:5px;height:160px;min-width:500px;}
+.bg{display:flex;flex-direction:column;align-items:center;flex:1;min-width:24px;}
+.b-stack{display:flex;flex-direction:column;align-items:center;width:100%;gap:2px;}
+.b{width:100%;border-radius:4px 4px 0 0;min-height:2px;position:relative;cursor:default;}
+.b:hover::after{content:attr(data-t);position:absolute;bottom:calc(100%+5px);left:50%;transform:translateX(-50%);
+  background:#0d0d1a;color:#fff;padding:3px 8px;border-radius:6px;font-size:.68rem;white-space:nowrap;z-index:9;pointer-events:none;}
+.b-lbl{font-size:.58rem;color:var(--muted);transform:rotate(-30deg);transform-origin:top center;margin-top:4px;white-space:nowrap;}
+.legend{display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap;}
+.leg{display:flex;align-items:center;gap:5px;font-size:.77rem;color:var(--muted);}
+.leg-dot{width:10px;height:10px;border-radius:2px;}
+
+/* Table */
+.twrap{overflow-x:auto;}
+.stbl{width:100%;border-collapse:collapse;font-size:.82rem;}
+.stbl th{padding:9px 11px;text-align:left;color:var(--muted);font-weight:600;
+  border-bottom:1px solid var(--border);white-space:nowrap;}
+.stbl td{padding:9px 11px;border-bottom:1px solid rgba(42,42,69,.45);vertical-align:middle;}
+.stbl tr:hover td{background:rgba(245,158,11,.04);}
+.rk{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.68rem;font-weight:700;font-family:var(--mono);}
+.rk1{background:#fbbf24;color:#000;} .rk2{background:#94a3b8;color:#000;}
+.rk3{background:#cd7c2e;color:#fff;} .rkn{background:var(--card2);color:var(--muted);}
+.chip{background:var(--card2);border-radius:7px;padding:2px 8px;font-family:var(--mono);font-size:.77rem;font-weight:600;}
+.chip.a{color:var(--amber);} .chip.g{color:var(--green);} .chip.i{color:var(--indigo);}
+.chip.p{color:var(--pink);} .chip.t{color:var(--teal);} .chip.r{color:var(--red);}
+
+/* Progress bar for placement */
+.pbar-wrap{background:var(--card2);border-radius:6px;height:8px;overflow:hidden;margin-top:4px;}
+.pbar{height:100%;border-radius:6px;transition:.4s;}
+
+/* Status badge */
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:.72rem;font-weight:700;}
+.badge-pending{background:rgba(245,158,11,.18);color:var(--amber);}
+.badge-approved{background:rgba(34,197,94,.18);color:var(--green);}
+.badge-rejected{background:rgba(239,68,68,.18);color:var(--red);}
+.badge-completed{background:rgba(99,102,241,.18);color:var(--indigo);}
+
+/* Big time display */
+.big-time{font-size:2.4rem;font-weight:900;font-family:var(--mono);
+  background:linear-gradient(135deg,var(--amber),var(--green));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.big-time-lbl{font-size:.78rem;color:var(--muted);margin-top:4px;}
+
+/* Placement grid */
+.place-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+.place-card{background:var(--card2);border-radius:12px;padding:15px 17px;}
+.place-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.place-name{font-size:.92rem;font-weight:700;}
+.place-ctr{font-size:.78rem;font-family:var(--mono);color:var(--amber);font-weight:700;}
+.place-stats{display:flex;gap:10px;flex-wrap:wrap;}
+.pstat{font-size:.75rem;color:var(--muted);}
+.pstat span{color:var(--text);font-weight:700;}
+
+@media(max-width:700px){.pg{padding:14px;} .cards{grid-template-columns:repeat(2,1fr);}}
+</style>
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+{% block content %}
+<div class="pg">
+
+  <div id="topnav">
+    <a href="/admin/book/episode-ranking/">📊 에피소드 랭킹</a>
+    <a href="/admin/book/listening-stats/">🎧 청취 통계</a>
+    <a href="/admin/book/listening-calendar/">📅 청취 캘린더</a>
+    <a href="/admin/book/snap-stats/">📸 스냅 통계</a>
+    <a href="/admin/register/ad-stats/" class="cur">📢 광고 통계</a>
+    <a href="/admin/character/stats/">🤖 캐릭터 통계</a>
+  </div>
+
+  <h1 class="pg-ttl">📢 광고 통계 대시보드</h1>
+  <p class="pg-sub">노출 · 클릭 · 스킵 · 시청 시간 · 비용 청구 현황</p>
+
+  <div class="period-row">
+    {% for v,l in period_choices %}
+      <a href="?period={{ v }}" class="{% if period == v %}on{% endif %}">{{ l }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- 요약 카드 -->
+  <div class="cards">
+    <div class="card c-amber">
+      <div class="card-ico">📣</div>
+      <div class="card-val">{{ total_impressions }}</div>
+      <div class="card-lbl">총 노출 수</div>
+    </div>
+    <div class="card c-green">
+      <div class="card-ico">👆</div>
+      <div class="card-val">{{ total_clicks }}</div>
+      <div class="card-lbl">링크 클릭 수</div>
+      <div class="card-sub">CTR {{ ctr }}%</div>
+    </div>
+    <div class="card c-teal">
+      <div class="card-ico">⏱</div>
+      <div class="card-val">{{ tw_hours }}h {{ tw_minutes }}m</div>
+      <div class="card-lbl">총 시청 시간</div>
+      <div class="card-sub">평균 {{ avg_watched_sec }}초/회</div>
+    </div>
+    <div class="card c-red">
+      <div class="card-ico">⏭</div>
+      <div class="card-val">{{ total_skips }}</div>
+      <div class="card-lbl">스킵 수</div>
+    </div>
+    <div class="card c-indigo">
+      <div class="card-ico">✅</div>
+      <div class="card-val">{{ approved_count }}</div>
+      <div class="card-lbl">승인된 광고 요청</div>
+      <div class="card-sub">예산 합계 ₩{{ total_budget|default:0 }}</div>
+    </div>
+    <div class="card c-violet">
+      <div class="card-ico">⏳</div>
+      <div class="card-val">{{ pending_count }}</div>
+      <div class="card-lbl">검토 대기중 요청</div>
+    </div>
+  </div>
+
+  <!-- 일별 추이 차트 -->
+  <div class="sec">
+    <div class="sec-ttl">📈 일별 노출 · 클릭 · 시청 시간 추이</div>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:rgba(245,158,11,.8)"></div>노출</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(34,197,94,.8)"></div>클릭</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(20,184,166,.6)"></div>시청(분)</div>
+    </div>
+    <div class="chart-area">
+      <div class="bars" id="adChart"></div>
+    </div>
+  </div>
+
+  <!-- 위치별 + 타입별 -->
+  <div class="two-col">
+    <!-- 광고 위치별 성과 -->
+    <div class="sec" style="margin-bottom:0;">
+      <div class="sec-ttl">📍 광고 위치별 성과</div>
+      <div class="place-grid">
+        {% for ps in placement_stats %}
+        <div class="place-card">
+          <div class="place-card-top">
+            <div class="place-name">{{ ps.label }}</div>
+            <div class="place-ctr">CTR {{ ps.ctr }}%</div>
+          </div>
+          <div class="pbar-wrap"><div class="pbar" style="width:{{ ps.ctr }}%;background:linear-gradient(90deg,var(--amber),var(--green));"></div></div>
+          <div class="place-stats" style="margin-top:10px;">
+            <div class="pstat">노출 <span>{{ ps.impr }}</span></div>
+            <div class="pstat">클릭 <span>{{ ps.clicks }}</span></div>
+            <div class="pstat">스킵 <span>{{ ps.skips }}</span></div>
+          </div>
+          <div class="pstat" style="margin-top:5px;">시청 <span>{{ ps.tw_hours }}h {{ ps.tw_min }}m</span></div>
+        </div>
+        {% empty %}
+        <div style="color:var(--muted);font-size:.83rem;">데이터 없음</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 광고 타입별 -->
+    <div class="sec" style="margin-bottom:0;">
+      <div class="sec-ttl">🎞 광고 타입별 성과</div>
+      {% for ts in type_stats %}
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:12px 14px;background:var(--card2);border-radius:10px;margin-bottom:10px;">
+        <div>
+          <div style="font-weight:700;font-size:.9rem;">{{ ts.label }}</div>
+          <div style="font-size:.74rem;color:var(--muted);margin-top:2px;">평균 시청 {{ ts.avg_watch }}초</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div style="text-align:center;">
+            <div style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--amber);">{{ ts.impr }}</div>
+            <div style="font-size:.65rem;color:var(--muted);">노출</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--green);">{{ ts.clicks }}</div>
+            <div style="font-size:.65rem;color:var(--muted);">클릭</div>
+          </div>
+          <div style="background:rgba(245,158,11,.18);color:var(--amber);padding:3px 9px;border-radius:9px;
+            font-family:var(--mono);font-size:.78rem;font-weight:700;">{{ ts.ctr }}%</div>
+        </div>
+      </div>
+      {% empty %}
+      <div style="color:var(--muted);font-size:.83rem;">데이터 없음</div>
+      {% endfor %}
+    </div>
+  </div>
+  <br>
+
+  <!-- 비용 청구 집계 (시청 시간 기반) -->
+  <div class="sec">
+    <div class="sec-ttl">💰 광고별 비용 청구 집계 (시청 시간 기준)</div>
+    <p style="font-size:.78rem;color:var(--muted);margin:-8px 0 16px;">
+      총 시청 시간 = 해당 광고 노출 시 유저가 실제 시청한 시간 합산 (watched_seconds 기반)
+    </p>
+    <div class="twrap"><table class="stbl">
+      <thead><tr>
+        <th>#</th><th>광고명</th><th>타입</th><th>위치</th>
+        <th>총 시청 시간</th><th>노출</th><th>클릭</th><th>CTR</th>
+      </tr></thead>
+      <tbody>
+      {% for row in billing_stats %}
+      <tr>
+        <td><div class="rk {% if forloop.counter == 1 %}rk1{% elif forloop.counter == 2 %}rk2{% elif forloop.counter == 3 %}rk3{% else %}rkn{% endif %}">{{ forloop.counter }}</div></td>
+        <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ row.ad__title }}</td>
+        <td><span class="badge badge-approved" style="font-size:.68rem;">{{ row.type_label }}</span></td>
+        <td><span class="badge badge-pending" style="font-size:.68rem;">{{ row.place_label }}</span></td>
+        <td>
+          <div style="font-family:var(--mono);font-size:.88rem;font-weight:800;color:var(--teal);">{{ row.tw_fmt }}</div>
+          <div style="font-size:.68rem;color:var(--muted);">{{ row.total_watch_sec|default:0 }}초</div>
+        </td>
+        <td><span class="chip a">{{ row.impr }}</span></td>
+        <td><span class="chip g">{{ row.clicks }}</span></td>
+        <td><span style="color:var(--amber);font-family:var(--mono);font-size:.8rem;font-weight:700;">{{ row.ctr }}%</span></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px;">노출 기록 없음</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- 광고별 성과 TOP -->
+  <div class="sec">
+    <div class="sec-ttl">🏆 광고별 성과 TOP 20 (클릭 순)</div>
+    <div class="twrap"><table class="stbl">
+      <thead><tr>
+        <th>#</th><th>광고명</th><th>타입</th><th>노출</th><th>클릭</th><th>CTR</th><th>스킵</th><th>평균시청</th>
+      </tr></thead>
+      <tbody>
+      {% for ad in top_ads %}
+      <tr>
+        <td><div class="rk {% if forloop.counter == 1 %}rk1{% elif forloop.counter == 2 %}rk2{% elif forloop.counter == 3 %}rk3{% else %}rkn{% endif %}">{{ forloop.counter }}</div></td>
+        <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          <a href="/admin/register/advertisement/{{ ad.id }}/change/" target="_blank" style="color:var(--text);text-decoration:none;">{{ ad.title }}</a>
+        </td>
+        <td>
+          {% if ad.ad_type == 'audio' %}<span class="badge badge-pending">🔊 오디오</span>
+          {% elif ad.ad_type == 'image' %}<span class="badge badge-approved">🖼 이미지</span>
+          {% else %}<span class="badge badge-completed">🎬 영상</span>{% endif %}
+        </td>
+        <td><span class="chip a">{{ ad.impr_cnt }}</span></td>
+        <td><span class="chip g" style="font-size:.84rem;font-weight:800;">{{ ad.click_cnt }}</span></td>
+        <td><span style="color:{% if ad.ctr >= 5 %}var(--green){% elif ad.ctr >= 2 %}var(--amber){% else %}var(--muted){% endif %};font-family:var(--mono);font-size:.8rem;font-weight:700;">{{ ad.ctr }}%</span></td>
+        <td><span class="chip r">{{ ad.skip_cnt }}</span></td>
+        <td><span style="font-family:var(--mono);font-size:.78rem;color:var(--teal);">{{ ad.tw_fmt }}</span></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px;">데이터 없음</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- 광고 요청 현황 + 활성 광고 -->
+  <div class="two-col">
+    <div class="sec" style="margin-bottom:0;">
+      <div class="sec-ttl">📋 광고 요청 현황</div>
+      {% for rs in request_stats %}
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:10px 14px;background:var(--card2);border-radius:9px;margin-bottom:8px;">
+        <span style="font-size:.88rem;font-weight:600;">{{ rs.label }}</span>
+        <span class="badge {% if rs.status == 'pending' %}badge-pending{% elif rs.status == 'approved' %}badge-approved{% elif rs.status == 'rejected' %}badge-rejected{% else %}badge-completed{% endif %}"
+              style="font-size:.8rem;">{{ rs.cnt }}건</span>
+      </div>
+      {% empty %}
+      <div style="color:var(--muted);font-size:.83rem;">데이터 없음</div>
+      {% endfor %}
+    </div>
+
+    <div class="sec" style="margin-bottom:0;">
+      <div class="sec-ttl">✅ 활성 광고 목록</div>
+      {% for ad in active_ads %}
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:9px 12px;background:var(--card2);border-radius:9px;margin-bottom:7px;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            <a href="/admin/register/advertisement/{{ ad.id }}/change/" target="_blank"
+               style="color:var(--text);text-decoration:none;">{{ ad.title }}</a>
+          </div>
+          <div style="font-size:.71rem;color:var(--muted);margin-top:2px;">
+            {{ ad.get_placement_display }} · {{ ad.get_ad_type_display }}
+          </div>
+        </div>
+        {% if ad.link_url %}
+        <a href="{{ ad.link_url }}" target="_blank" style="font-size:.68rem;color:var(--teal);
+          background:rgba(20,184,166,.12);padding:2px 8px;border-radius:8px;text-decoration:none;white-space:nowrap;">링크 ↗</a>
+        {% endif %}
+      </div>
+      {% empty %}
+      <div style="color:var(--muted);font-size:.83rem;">활성 광고 없음</div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+<script>
+const raw={{ daily_data|safe }};
+const maxI={{ max_impr }}, maxW={{ max_watch }};
+(function buildChart(){
+  const w=document.getElementById('adChart'); if(!w)return;
+  const maxC=Math.max(...raw.map(d=>d.clicks||0),1);
+  w.innerHTML=raw.map(d=>{
+    const hI=Math.max(2,Math.round((d.impressions/maxI)*140));
+    const hC=Math.max(2,Math.round(((d.clicks||0)/maxC)*140));
+    const hW=Math.max(2,Math.round(((d.watch_min||0)/maxW)*140));
+    return`<div class="bg">
+      <div class="b-stack" style="height:148px;justify-content:flex-end;">
+        <div class="b" style="height:${hI}px;background:rgba(245,158,11,.75);" data-t="노출 ${d.impressions}"></div>
+        <div class="b" style="height:${hC}px;background:rgba(34,197,94,.75);" data-t="클릭 ${d.clicks} (CTR ${d.ctr}%)"></div>
+        <div class="b" style="height:${hW}px;background:rgba(20,184,166,.6);" data-t="시청 ${d.watch_min}분"></div>
+      </div>
+      <div class="b-lbl">${d.date}</div></div>`;
+  }).join('');
+})();
+</script>
+{% endblock %}
