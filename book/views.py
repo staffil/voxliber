@@ -581,20 +581,17 @@ def generate_sound_effect_api(request):
 
         print(f"🎵 사운드 이팩트 생성 요청: {effect_name} - {effect_description} ({duration_seconds}초)")
 
-        # 사운드 이팩트 생성
-        audio_stream = sound_effect(effect_name, effect_description, duration_seconds)
+        # 사운드 이팩트 생성 (utils.sound_effect는 파일 경로를 반환)
+        audio_path = sound_effect(effect_name, effect_description, duration_seconds)
 
-        # 임시 파일로 저장
-        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
-            temp_path = temp_file.name
-            for chunk in audio_stream:
-                temp_file.write(chunk)
+        if not audio_path:
+            return JsonResponse({"success": False, "error": "사운드 이팩트 생성에 실패했습니다."}, status=500)
 
-        print(f"✅ 사운드 이팩트 생성 완료: {temp_path}")
+        print(f"✅ 사운드 이팩트 생성 완료: {audio_path}")
 
         # 라이브러리에 저장
         if save_to_library and request.user.is_authenticated:
-            with open(temp_path, 'rb') as f:
+            with open(audio_path, 'rb') as f:
                 effect = SoundEffectLibrary.objects.create(
                     effect_name=effect_name,
                     effect_description=effect_description,
@@ -604,11 +601,8 @@ def generate_sound_effect_api(request):
             print(f"💾 사운드 이팩트 라이브러리에 저장 완료: {effect.id}")
 
         # 파일 읽어서 반환
-        with open(temp_path, "rb") as f:
+        with open(audio_path, "rb") as f:
             audio_data = f.read()
-
-        # 임시 파일 삭제
-        os.remove(temp_path)
 
         return HttpResponse(audio_data, content_type="audio/mpeg")
 
@@ -641,24 +635,17 @@ def generate_background_music_api(request):
 
         print(f"🎵 배경음 생성 요청: {music_name} - {music_description} ({duration_seconds}초)")
 
-        # 배경음 생성
-        audio_stream = background_music(music_name, music_description, duration_seconds)
+        # 배경음 생성 (utils.background_music는 파일 경로를 반환)
+        audio_path = background_music(music_name, music_description, duration_seconds)
 
-        if not audio_stream:
-            return JsonResponse({"success": False, "error": "배경음 생성 API 호출에 실패했습니다."}, status=500)
+        if not audio_path:
+            return JsonResponse({"success": False, "error": "배경음 생성에 실패했습니다."}, status=500)
 
-        # 임시 파일로 저장
-        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
-            temp_path = temp_file.name
-            for chunk in audio_stream:
-                if chunk:  # chunk가 None이 아닌지 확인
-                    temp_file.write(chunk)
-
-        print(f"✅ 배경음 생성 완료: {temp_path}")
+        print(f"✅ 배경음 생성 완료: {audio_path}")
 
         # 라이브러리에 저장
         if save_to_library and request.user.is_authenticated:
-            with open(temp_path, 'rb') as f:
+            with open(audio_path, 'rb') as f:
                 music = BackgroundMusicLibrary.objects.create(
                     music_name=music_name,
                     music_description=music_description,
@@ -669,11 +656,8 @@ def generate_background_music_api(request):
             print(f"💾 배경음 라이브러리에 저장 완료: {music.id}")
 
         # 파일 읽어서 반환
-        with open(temp_path, "rb") as f:
+        with open(audio_path, "rb") as f:
             audio_data = f.read()
-
-        # 임시 파일 삭제
-        os.remove(temp_path)
 
         return HttpResponse(audio_data, content_type="audio/mpeg")
 

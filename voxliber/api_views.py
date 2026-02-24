@@ -926,6 +926,7 @@ def api_mix_background_music(request):
             })
 
         # 사운드 이펙트 트랙 처리
+        sfx_timestamp_entries = []
         for sfx in sfx_tracks:
             effect_id = sfx.get("effect_id")
             page = sfx.get("page", 1)
@@ -963,6 +964,14 @@ def api_mix_background_music(request):
                 'endTime': end_time,
                 'volume': volume_db,
             })
+            sfx_timestamp_entries.append({
+                'pageIndex': -1,
+                'startTime': int(start_time),
+                'endTime': int(end_time),
+                'text': '',
+                'type': 'sfx',
+                'effectName': sfx_obj.effect_name,
+            })
             print(f"🔊 [API] SFX '{sfx_obj.effect_name}' → {start_time}ms~{end_time}ms ({volume_db:.1f}dB)")
 
         if not background_tracks_info:
@@ -989,6 +998,15 @@ def api_mix_background_music(request):
             # 길이 재계산
             audio_segment = AudioSegment.from_file(mixed_path)
             content.duration_seconds = int(len(audio_segment) / 1000)
+
+            # SFX 타임스탬프 업데이트: 기존 SFX 항목 제거 후 새 항목 추가
+            if sfx_timestamp_entries and timestamps:
+                clean_ts = [t for t in timestamps if t.get('type') != 'sfx']
+                merged_ts = clean_ts + sfx_timestamp_entries
+                merged_ts.sort(key=lambda x: x.get('startTime', 0))
+                content.audio_timestamps = merged_ts
+                print(f"📝 [API] SFX 타임스탬프 {len(sfx_timestamp_entries)}개 추가됨")
+
             content.save()
 
             os.remove(mixed_path)
