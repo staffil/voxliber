@@ -285,49 +285,43 @@ def book_serialization(request):
                     )
                 print(f"💾 최종 오디오 파일 저장 완료: {content.audio_file.url}")
 
-                # 🔥 타임스탬프 정보 생성 (하이라이트 기능용)
-                # 각 페이지 개수 수집 (사운드 이팩트 제외)
-                page_count = 0
-                page_index = 0
-                while True:
-                    page_text = request.POST.get(f'page_text_{page_index}')
-                    if page_text is None:
-                        break
-                    if page_text.strip():  # 빈 텍스트가 아닌 경우만 카운트 (사운드 이팩트 제외)
-                        page_count += 1
-                    page_index += 1
-
-                print(f"📝 타임스탬프 생성 대상: {page_count}개 대사")
-
                 # 오디오 길이 계산 (pydub 사용)
                 from pydub import AudioSegment
                 audio_segment = AudioSegment.from_file(temp_path)
                 total_duration_ms = len(audio_segment)
                 content.duration_seconds = int(total_duration_ms / 1000)
 
-                # 타임스탬프 생성 (대사 텍스트 포함, 사운드 이팩트는 제외) - 간단한 방식
-                if page_count > 0:
-                    dialogue_durations = []
-                    segment_duration = total_duration_ms / page_count
-                    dialogue_index = 0
-
-                    # pages_text를 순회하며 텍스트가 있는 것만 타임스탬프 생성
-                    for page_index, page_text in enumerate(pages_text):
-                        if page_text.strip():  # 텍스트가 있는 경우만 (사운드 이팩트 제외)
-                            # 시작 시간과 끝 시간 계산
-                            start_time = int(dialogue_index * segment_duration)
-                            end_time = int((dialogue_index + 1) * segment_duration)
-
-                            dialogue_durations.append({
-                                'pageIndex': dialogue_index,
-                                'startTime': start_time,  # 시작 시간
-                                'endTime': end_time,  # 끝 시간
-                                'text': page_text  # 대사 텍스트 포함
-                            })
-                            dialogue_index += 1
-
-                    content.audio_timestamps = dialogue_durations
-                    print(f"⏱️ {len(dialogue_durations)}개 대사의 타임스탬프 생성 완료 (startTime, endTime 포함)")
+                # 🔥 타임스탬프: 미리듣기에서 생성된 정확한 값 우선 사용
+                merged_timestamps_json = request.POST.get('merged_timestamps')
+                if merged_timestamps_json:
+                    try:
+                        dialogue_durations = json.loads(merged_timestamps_json)
+                        content.audio_timestamps = dialogue_durations
+                        print(f"⏱️ 미리듣기 타임스탬프 {len(dialogue_durations)}개 사용 (정확)")
+                    except Exception as ts_err:
+                        print(f"⚠️ 타임스탬프 파싱 실패: {ts_err}")
+                        dialogue_durations = []
+                else:
+                    # fallback: 균등 분할 (미리듣기 없이 발행한 경우)
+                    page_count = sum(1 for pt in pages_text if pt.strip())
+                    print(f"📝 타임스탬프 균등 생성: {page_count}개 대사")
+                    if page_count > 0:
+                        dialogue_durations = []
+                        segment_duration = total_duration_ms / page_count
+                        dialogue_index = 0
+                        for page_text in pages_text:
+                            if page_text.strip():
+                                start_time = int(dialogue_index * segment_duration)
+                                end_time = int((dialogue_index + 1) * segment_duration)
+                                dialogue_durations.append({
+                                    'pageIndex': dialogue_index,
+                                    'startTime': start_time,
+                                    'endTime': end_time,
+                                    'text': page_text
+                                })
+                                dialogue_index += 1
+                        content.audio_timestamps = dialogue_durations
+                        print(f"⏱️ {len(dialogue_durations)}개 대사의 타임스탬프 생성 완료 (균등 분할)")
 
                 content.save()
                 print(f"⏱️ 총 길이: {content.duration_seconds}초")
@@ -1466,7 +1460,8 @@ def preview_task_status(request, task_id):
                     'state': task.state,
                     'status': '완료!',
                     'progress': 100,
-                    'audio_data': audio_base64
+                    'audio_data': audio_base64,
+                    'timestamps': result.get('timestamps', [])
                 }
             else:
                 print(f"❌ 파일 없음: {merged_audio_path}")

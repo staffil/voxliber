@@ -266,7 +266,7 @@ async function pollTaskStatus(taskId) {
             const audio = document.getElementById('previewAudio');
             audio.src = previewAudioUrl;
 
-            // IndexedDB에 mergeAudio 저장
+            // IndexedDB에 mergeAudio + timestamps 저장
             const tx = db.transaction(['drafts'], 'readwrite');
             const store = tx.objectStore('drafts');
             const getRequest = store.get(bookId);
@@ -275,6 +275,7 @@ async function pollTaskStatus(taskId) {
                 if (draftData) {
                     draftData.mergedAudioBlob = blob;
                     draftData.mergedAudioTimestamp = new Date().toISOString();
+                    draftData.mergedAudioTimestamps = data.timestamps || [];
                     store.put(draftData);
                 }
             };
@@ -385,6 +386,10 @@ async function publishEpisode() {
             if (draftData.mergedAudioBlob) {
                 formData.append('merged_audio', new File([draftData.mergedAudioBlob], 'merged_final_audio.mp3', {type:'audio/mp3'}));
                 draftData.pages.forEach((page,index)=>formData.append(`page_text_${index}`, page.isSoundEffect?'':(page.content||'')));
+                // 미리듣기에서 생성된 정확한 타임스탬프 전송
+                if (draftData.mergedAudioTimestamps && draftData.mergedAudioTimestamps.length > 0) {
+                    formData.append('merged_timestamps', JSON.stringify(draftData.mergedAudioTimestamps));
+                }
             } else {
                 draftData.pages.forEach((page,index)=>{
                     if (page.audioBlob) formData.append(`audio_${index}`, new File([page.audioBlob], `audio_${index}.mp3`, {type:'audio/mp3'}));
