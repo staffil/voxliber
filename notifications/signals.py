@@ -14,12 +14,12 @@ def notify_new_episode(sender, instance, created, **kwargs):
 
     book = instance.book
 
-    # 팔로워 조회 (mypage 앱의 Follow 모델 참조)
+    # 팔로워 조회 (book 앱의 Follow 모델)
     try:
-        from mypage.models import Follow
+        from book.models import Follow
         follower_users = Follow.objects.filter(
-            following=book.author
-        ).select_related('follower').values_list('follower', flat=True)
+            following=book.user
+        ).values_list('follower', flat=True)
     except Exception:
         return
 
@@ -31,7 +31,7 @@ def notify_new_episode(sender, instance, created, **kwargs):
         Notification(
             user_id=uid,
             type='new_episode',
-            title=f'새 에피소드 — {book.title}',
+            title=f'새 에피소드 — {book.name}',
             message=instance.title,
             link=f'/book/{book.public_uuid}/',
         )
@@ -46,7 +46,7 @@ def notify_new_episode(sender, instance, created, **kwargs):
     if tokens:
         send_push_multicast(
             tokens=tokens,
-            title=f'새 에피소드 — {book.title}',
+            title=f'새 에피소드 — {book.name}',
             body=instance.title,
             data={
                 'type': 'new_episode',
