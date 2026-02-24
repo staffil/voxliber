@@ -1,3 +1,94 @@
+/* 광고 단가 기준 안내 박스 */
+.pricing-info-box {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.pricing-info-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+}
+
+.pricing-info-desc {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 20px;
+}
+
+.pricing-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 600px) {
+    .pricing-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+.pricing-card {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.pricing-icon {
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+
+.pricing-type-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 6px;
+}
+
+.pricing-method {
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pricing-badge {
+    background: #2a2a2a;
+    color: #ccc;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 20px;
+}
+
+.pricing-rules {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pricing-rules li {
+    font-size: 12px;
+    color: #777;
+    padding: 3px 0;
+    padding-left: 14px;
+    position: relative;
+}
+
+.pricing-rules li::before {
+    content: '·';
+    position: absolute;
+    left: 4px;
+    color: #555;
+}
+
   .wrap {
         max-width: 720px;
         margin: 80px auto 60px;

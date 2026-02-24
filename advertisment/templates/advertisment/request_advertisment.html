@@ -21,6 +21,43 @@
 
     <!-- 신청 폼 탭 -->
     <div class="tab-content active" id="tab-form">
+
+        <!-- 광고 단가 기준 안내 -->
+        <div class="pricing-info-box">
+            <div class="pricing-info-title">📊 광고 과금 기준 안내</div>
+            <div class="pricing-info-desc">단가는 검토 후 담당자가 개별 안내드립니다.</div>
+            <div class="pricing-cards">
+                <div class="pricing-card">
+                    <div class="pricing-icon">🖼️</div>
+                    <div class="pricing-type-name">이미지 광고</div>
+                    <div class="pricing-method">CPM <span class="pricing-badge">1,000 노출당</span></div>
+                    <ul class="pricing-rules">
+                        <li>화면에 노출되는 순간 카운트</li>
+                        <li>클릭 시 추가 과금 가능 (옵션)</li>
+                    </ul>
+                </div>
+                <div class="pricing-card">
+                    <div class="pricing-icon">🎬</div>
+                    <div class="pricing-type-name">영상 광고</div>
+                    <div class="pricing-method">CPV <span class="pricing-badge">완시청당</span></div>
+                    <ul class="pricing-rules">
+                        <li>15초 이상 시청 시 카운트</li>
+                        <li>5초간 스킵 불가 (이후 스킵 가능)</li>
+                        <li>스킵 시 카운트 안 됨</li>
+                    </ul>
+                </div>
+                <div class="pricing-card">
+                    <div class="pricing-icon">🎵</div>
+                    <div class="pricing-type-name">오디오 광고</div>
+                    <div class="pricing-method">CPV <span class="pricing-badge">완청당</span></div>
+                    <ul class="pricing-rules">
+                        <li>10초 이상 청취 시 카운트</li>
+                        <li>스킵 시 카운트 안 됨</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
         <div class="form-card">
             <form id="adForm">
                 {% csrf_token %}
@@ -72,18 +109,12 @@
                     </label>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">노출 위치 <span>*</span></label>
-                        <select class="form-select" name="placement" id="placementSelect">
-                            <option value="chat">채팅 중간</option>
-                            <option value="tts">TTS 재생 후</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">예산 (원)</label>
-                        <input type="number" class="form-input" name="budget" placeholder="0" min="0">
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">노출 위치 <span>*</span></label>
+                    <select class="form-select" name="placement" id="placementSelect">
+                        <option value="chat">채팅 중간</option>
+                        <option value="tts">TTS 재생 후</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -139,7 +170,6 @@
                         </span>
                         <span>{{ ad.get_placement_display }}</span>
                         <span>{{ ad.created_at|date:"Y.m.d" }}</span>
-                        {% if ad.budget %}<span>{{ ad.budget|floatformat:0 }}원</span>{% endif %}
                     </div>
                 </div>
 
@@ -153,7 +183,6 @@
                         '{{ ad.phone|default:""| escapejs }}',
                         '{{ ad.title|escapejs }}',
                         '{{ ad.description|default:""|escapejs }}',
-                        {{ ad.budget|default:0 }},
                         '{{ ad.link_url|default:""|escapejs }}'
                     )">수정</button>
                     {% endif %}
@@ -215,15 +244,9 @@
 
             <div class="section-label">광고 내용</div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">광고 제목 <span>*</span></label>
-                    <input type="text" class="form-input" id="edit_title" name="title" maxlength="200">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">예산 (원)</label>
-                    <input type="number" class="form-input" id="edit_budget" name="budget" min="0">
-                </div>
+            <div class="form-group">
+                <label class="form-label">광고 제목 <span>*</span></label>
+                <input type="text" class="form-input" id="edit_title" name="title" maxlength="200">
             </div>
 
             <div class="form-group">
@@ -344,7 +367,7 @@ document.getElementById('adForm').addEventListener('submit', async function(e) {
 });
 
 // 수정 모달
-function openEditModal(id, company, contact, email, phone, title, desc, budget, linkUrl) {
+function openEditModal(id, company, contact, email, phone, title, desc, linkUrl) {
     document.getElementById('editReqId').value         = id;
     document.getElementById('edit_company_name').value = company;
     document.getElementById('edit_contact_name').value = contact;
@@ -352,7 +375,6 @@ function openEditModal(id, company, contact, email, phone, title, desc, budget, 
     document.getElementById('edit_phone').value        = phone;
     document.getElementById('edit_title').value        = title;
     document.getElementById('edit_description').value  = desc;
-    document.getElementById('edit_budget').value       = budget;
     document.getElementById('edit_link_url').value     = linkUrl;
     document.getElementById('editUploadFilename').textContent = '';
     document.getElementById('editUploadArea').classList.remove('has-file');

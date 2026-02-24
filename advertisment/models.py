@@ -39,6 +39,35 @@ class Advertisement(models.Model):
     link_url = models.URLField(null=True, blank=True, verbose_name="클릭 시 이동 URL")
     duration_seconds = models.IntegerField(default=0, verbose_name="광고 길이(초) - 오디오/영상용")
 
+    # 단가 방식
+    PRICING_CHOICES = [
+        ('cpm', 'CPM (1,000 노출당)'),
+        ('cpv', 'CPV (완청/완시청당)'),
+        ('cpc', 'CPC (클릭당)'),
+        ('flat', 'Flat Rate (고정 월정액)'),
+    ]
+    pricing_type = models.CharField(max_length=10, choices=PRICING_CHOICES, default='cpm', verbose_name="단가 방식")
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="단가(원)")
+
+    # CPV 기준 설정
+    min_watch_seconds = models.IntegerField(
+        default=0,
+        verbose_name="CPV 최소 시청/청취 초 (오디오:10, 영상:15, 이미지:0)"
+    )
+    skip_lock_seconds = models.IntegerField(
+        default=0,
+        verbose_name="스킵 불가 구간(초) - 영상광고 YouTube 방식 (예: 5)"
+    )
+    # 이미지/배너 전용: CPM 기본 + 클릭 시 CPC 추가 과금 여부
+    enable_cpc_bonus = models.BooleanField(
+        default=False,
+        verbose_name="클릭 시 CPC 추가 과금 (이미지 광고용)"
+    )
+    cpc_bonus_price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name="CPC 추가 단가(원) - enable_cpc_bonus=True일 때만 사용"
+    )
+
     is_active = models.BooleanField(default=True)
     start_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True, blank=True)
