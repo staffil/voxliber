@@ -5,10 +5,11 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 
 from .models import FCMToken, Notification
+from book.api_utils import require_api_key_secure
 
 
 @csrf_exempt
-@login_required
+@require_api_key_secure
 def register_fcm_token(request):
     """앱에서 FCM 토큰 등록/갱신"""
     if request.method != 'POST':
