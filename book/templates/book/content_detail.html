@@ -484,8 +484,8 @@
             {% if content.episode_image %}
                 <img src="{{ content.episode_image.url }}" alt="{{ content.title }}"
                      class="lm-cover" id="lmCover" data-src="{{ content.episode_image.url }}">
-            {% elif book.cover_image %}
-                <img src="{{ book.cover_image.url }}" alt="{{ book.name }}"
+            {% elif book.cover_img %}
+                <img src="{{ book.cover_img.url }}" alt="{{ book.name }}"
                      class="lm-cover" id="lmCover" data-src="{{ book.cover_image.url }}">
             {% else %}
                 <div class="lm-cover-placeholder" id="lmCover">
