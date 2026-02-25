@@ -10,7 +10,13 @@ def send_push(token: str, title: str, body: str, data: dict = None):
         notification=messaging.Notification(title=title, body=body),
         data={k: str(v) for k, v in (data or {}).items()},
         token=token,
-        android=messaging.AndroidConfig(priority='high'),
+        android=messaging.AndroidConfig(
+            priority='high',
+            notification=messaging.AndroidNotification(
+                channel_id='voxliber_push',
+                sound='default',
+            ),
+        ),
         apns=messaging.APNSConfig(
             payload=messaging.APNSPayload(
                 aps=messaging.Aps(sound='default')
@@ -39,7 +45,13 @@ def send_push_multicast(tokens: list, title: str, body: str, data: dict = None):
             notification=messaging.Notification(title=title, body=body),
             data=data_str,
             tokens=chunk,
-            android=messaging.AndroidConfig(priority='high'),
+            android=messaging.AndroidConfig(
+                priority='high',
+                notification=messaging.AndroidNotification(
+                    channel_id='voxliber_push',
+                    sound='default',
+                ),
+            ),
             apns=messaging.APNSConfig(
                 payload=messaging.APNSPayload(
                     aps=messaging.Aps(sound='default')
