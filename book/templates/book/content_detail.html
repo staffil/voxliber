@@ -795,208 +795,242 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    /* ═══════════════════════════════════════════
-       듣는 모드 (Listen Mode)
-    ═══════════════════════════════════════════ */
-    const overlay   = document.getElementById('listenModeOverlay');
-    const openBtn   = document.getElementById('openListenMode');
-    const closeBtn  = document.getElementById('listenModeClose');
-    const bgEl      = document.getElementById('listenModeBg');
-    const lmCover   = document.getElementById('lmCover');
-    const canvas    = document.getElementById('listenModeCanvas');
+/* ═══════════════════════════════════════════
+   듣는 모드 (Listen Mode)
+═══════════════════════════════════════════ */
+const overlay  = document.getElementById('listenModeOverlay');
+const openBtn  = document.getElementById('openListenMode');
+const closeBtn = document.getElementById('listenModeClose');
+const bgEl     = document.getElementById('listenModeBg');
+const lmCover  = document.getElementById('lmCover');
+const canvas   = document.getElementById('listenModeCanvas');
 
-    if (!overlay) return; // 오디오 없으면 skip
+if (!overlay) return; // 오디오 없으면 skip
 
-    /* 배경 이미지 설정 */
-    const coverSrc = lmCover && lmCover.dataset && lmCover.dataset.src
-        ? lmCover.dataset.src
-        : (lmCover && lmCover.src ? lmCover.src : null);
-    if (coverSrc && bgEl) bgEl.style.backgroundImage = `url('${CSS.escape ? coverSrc : coverSrc}')`;
+/* ── 배경 이미지 설정 ── */
+const coverSrc = lmCover?.dataset?.src || lmCover?.src || null;
+if (coverSrc && bgEl) bgEl.style.backgroundImage = `url('${coverSrc}')`;
 
-    /* 열기/닫기 */
-    function openOverlay() {
-        overlay.classList.add('open');
-        document.body.style.overflow = 'hidden';
-        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        if (!audioCtx) initAudioContext();
-        syncLmState();
-        // lm 총 시간 동기화
-        if (audioPlayer.duration) lmTotalTime.textContent = formatTime(audioPlayer.duration);
+/* ── Web Audio API 변수 (최상단 선언 필수) ── */
+let audioCtx = null;
+let analyser  = null;
+let rafId     = null;
+
+/* ── lm UI 요소 ── */
+const lmPlayBtn        = document.getElementById('lmPlayBtn');
+const lmPlayIcon       = document.getElementById('lmPlayIcon');
+const lmPauseIcon      = document.getElementById('lmPauseIcon');
+const lmSeekBack       = document.getElementById('lmSeekBack');
+const lmSeekFwd        = document.getElementById('lmSeekFwd');
+const lmSpeedBtn       = document.getElementById('lmSpeedBtn');
+const lmProgressFill   = document.getElementById('lmProgressFill');
+const lmProgressSlider = document.getElementById('lmProgressSlider');
+const lmCurrentTime    = document.getElementById('lmCurrentTime');
+const lmTotalTime      = document.getElementById('lmTotalTime');
+
+/* ── 상태 동기화 ── */
+function syncLmState() {
+    const playing = !audioPlayer.paused;
+    if (lmPlayIcon)  lmPlayIcon.style.display  = playing ? 'none'  : 'block';
+    if (lmPauseIcon) lmPauseIcon.style.display = playing ? 'block' : 'none';
+    if (lmCover && lmCover.tagName === 'IMG') lmCover.classList.toggle('playing', playing);
+}
+
+/* ── 열기/닫기 ── */
+function openOverlay() {
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    // AudioContext 초기화 (첫 번째 열기) 또는 resume (브라우저 정책)
+    if (!audioCtx) {
+        initAudioContext();
+    } else if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
     }
-    function closeOverlay() {
-        overlay.classList.remove('open');
-        document.body.style.overflow = '';
-        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+
+    // RAF가 멈춰있으면 재시작
+    if (analyser && !rafId) {
+        startVisualizer();
     }
-    if (openBtn)  openBtn.addEventListener('click',  openOverlay);
-    if (closeBtn) closeBtn.addEventListener('click', closeOverlay);
-    overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeOverlay(); });
 
-    /* lm UI 요소 */
-    const lmPlayBtn         = document.getElementById('lmPlayBtn');
-    const lmPlayIcon        = document.getElementById('lmPlayIcon');
-    const lmPauseIcon       = document.getElementById('lmPauseIcon');
-    const lmSeekBack        = document.getElementById('lmSeekBack');
-    const lmSeekFwd         = document.getElementById('lmSeekFwd');
-    const lmSpeedBtn        = document.getElementById('lmSpeedBtn');
-    const lmProgressFill    = document.getElementById('lmProgressFill');
-    const lmProgressSlider  = document.getElementById('lmProgressSlider');
-    const lmCurrentTime     = document.getElementById('lmCurrentTime');
-    const lmTotalTime       = document.getElementById('lmTotalTime');
-
-    /* 재생 토글 */
-    if (lmPlayBtn) lmPlayBtn.addEventListener('click', () => {
-        if (audioPlayer.paused) audioPlayer.play(); else audioPlayer.pause();
-    });
-
-    /* 상태 동기화 함수 */
-    function syncLmState() {
-        const playing = !audioPlayer.paused;
-        if (lmPlayIcon)  lmPlayIcon.style.display  = playing ? 'none'  : 'block';
-        if (lmPauseIcon) lmPauseIcon.style.display = playing ? 'block' : 'none';
-        if (lmCover && lmCover.tagName === 'IMG') lmCover.classList.toggle('playing', playing);
-    }
-    audioPlayer.addEventListener('play',  syncLmState);
-    audioPlayer.addEventListener('pause', syncLmState);
-    audioPlayer.addEventListener('ended', syncLmState);
-
-    /* timeupdate → lm 진행바 */
-    audioPlayer.addEventListener('timeupdate', () => {
-        if (!overlay.classList.contains('open')) return;
-        const cur = audioPlayer.currentTime, dur = audioPlayer.duration || 0;
-        lmCurrentTime.textContent = formatTime(cur);
-        if (dur) {
-            const pct = (cur / dur) * 100;
-            lmProgressFill.style.width = pct + '%';
-            lmProgressSlider.value = pct;
-        }
-    });
-    audioPlayer.addEventListener('loadedmetadata', () => {
-        lmTotalTime.textContent = formatTime(audioPlayer.duration);
-    });
+    syncLmState();
     if (audioPlayer.duration) lmTotalTime.textContent = formatTime(audioPlayer.duration);
+}
 
-    /* lm 슬라이더 */
-    if (lmProgressSlider) lmProgressSlider.addEventListener('input', () => {
+function closeOverlay() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    // RAF 정지 (닫혀 있을 때 불필요한 연산 방지)
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+}
+
+if (openBtn)  openBtn.addEventListener('click', openOverlay);
+if (closeBtn) closeBtn.addEventListener('click', closeOverlay);
+overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) closeOverlay();
+});
+
+/* ── 재생 토글 ── */
+if (lmPlayBtn) lmPlayBtn.addEventListener('click', () => {
+    if (audioPlayer.paused) audioPlayer.play(); else audioPlayer.pause();
+});
+
+audioPlayer.addEventListener('play',  syncLmState);
+audioPlayer.addEventListener('pause', syncLmState);
+audioPlayer.addEventListener('ended', syncLmState);
+
+/* ── timeupdate → lm 진행바 ── */
+audioPlayer.addEventListener('timeupdate', () => {
+    if (!overlay.classList.contains('open')) return;
+    const cur = audioPlayer.currentTime;
+    const dur = audioPlayer.duration || 0;
+    if (lmCurrentTime) lmCurrentTime.textContent = formatTime(cur);
+    if (dur && lmProgressFill && lmProgressSlider) {
+        const pct = (cur / dur) * 100;
+        lmProgressFill.style.width = pct + '%';
+        lmProgressSlider.value = pct;
+    }
+});
+
+audioPlayer.addEventListener('loadedmetadata', () => {
+    if (lmTotalTime) lmTotalTime.textContent = formatTime(audioPlayer.duration);
+});
+if (audioPlayer.duration && lmTotalTime) {
+    lmTotalTime.textContent = formatTime(audioPlayer.duration);
+}
+
+/* ── lm 슬라이더 ── */
+if (lmProgressSlider) lmProgressSlider.addEventListener('input', () => {
+    if (audioPlayer.duration) {
         audioPlayer.currentTime = (lmProgressSlider.value / 100) * audioPlayer.duration;
-    });
-
-    /* 스킵 */
-    if (lmSeekBack) lmSeekBack.addEventListener('click', () => { audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 10); });
-    if (lmSeekFwd)  lmSeekFwd.addEventListener('click',  () => { audioPlayer.currentTime = Math.min(audioPlayer.duration || 0, audioPlayer.currentTime + 10); });
-
-    /* 속도 (두 버튼 동기화) */
-    let lmSpeedIdx = 1;
-    if (lmSpeedBtn) lmSpeedBtn.addEventListener('click', () => {
-        lmSpeedIdx = (lmSpeedIdx + 1) % speeds.length;
-        const s = speeds[lmSpeedIdx];
-        audioPlayer.playbackRate = s;
-        lmSpeedBtn.textContent = s + 'x';
-        if (playbackSpeedBtn) playbackSpeedBtn.textContent = s + 'x';
-        speedIndex = lmSpeedIdx;
-    });
-
-    /* ══════════════════════════════════
-       Web Audio API — 주파수 파형 시각화
-    ══════════════════════════════════ */
-    let audioCtx = null, analyser = null, rafId = null;
-
-    function initAudioContext() {
-        if (audioCtx) return;
-        try {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 512;
-            analyser.smoothingTimeConstant = 0.82;
-            const src = audioCtx.createMediaElementSource(audioPlayer);
-            src.connect(analyser);
-            analyser.connect(audioCtx.destination);
-            startVisualizer();
-        } catch(e) {
-            console.warn('Web Audio 초기화 실패:', e);
-        }
     }
+});
 
-    function startVisualizer() {
-        if (!canvas || !analyser) return;
-        const ctx = canvas.getContext('2d');
-        const bufLen = analyser.frequencyBinCount;
-        const dataArr = new Uint8Array(bufLen);
+/* ── 스킵 ── */
+if (lmSeekBack) lmSeekBack.addEventListener('click', () => {
+    audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 10);
+});
+if (lmSeekFwd) lmSeekFwd.addEventListener('click', () => {
+    audioPlayer.currentTime = Math.min(audioPlayer.duration || 0, audioPlayer.currentTime + 10);
+});
 
-        function resize() {
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width  = canvas.offsetWidth  * dpr;
-            canvas.height = canvas.offsetHeight * dpr;
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-        resize();
-        window.addEventListener('resize', resize);
+/* ── 속도 (기존 플레이어와 동기화) ── */
+let lmSpeedIdx = 1;
+if (lmSpeedBtn) lmSpeedBtn.addEventListener('click', () => {
+    lmSpeedIdx = (lmSpeedIdx + 1) % speeds.length;
+    const s = speeds[lmSpeedIdx];
+    audioPlayer.playbackRate = s;
+    lmSpeedBtn.textContent = s + 'x';
+    if (playbackSpeedBtn) playbackSpeedBtn.textContent = s + 'x';
+    speedIndex = lmSpeedIdx; // 기존 플레이어 인덱스 동기화
+});
 
-        function draw() {
-            rafId = requestAnimationFrame(draw);
-            analyser.getByteFrequencyData(dataArr);
+/* ══════════════════════════════════════════
+   Web Audio API — 주파수 파형 시각화
+══════════════════════════════════════════ */
+function initAudioContext() {
+    if (audioCtx) return;
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.82;
 
-            const W = canvas.offsetWidth;
-            const H = canvas.offsetHeight;
-            ctx.clearRect(0, 0, W, H);
+        const src = audioCtx.createMediaElementSource(audioPlayer);
+        src.connect(analyser);
+        analyser.connect(audioCtx.destination);
 
-            const BAR_COUNT = 80;
-            const step  = Math.floor(bufLen / BAR_COUNT);
-            const gap   = 2.5;
-            const barW  = (W - gap * (BAR_COUNT - 1)) / BAR_COUNT;
+        startVisualizer();
+    } catch (e) {
+        console.warn('Web Audio 초기화 실패:', e);
+    }
+}
 
-            for (let i = 0; i < BAR_COUNT; i++) {
-                /* 인접 3개 평균으로 부드럽게 */
-                const idx0 = i * step;
-                const val  = ((dataArr[idx0] || 0) + (dataArr[idx0+1] || 0) + (dataArr[idx0+2] || 0)) / 3 / 255;
-                const minH = 3;
-                const barH = minH + val * (H - minH * 2) * 0.95;
-                const x = i * (barW + gap);
-                const y = (H - barH) / 2;
+function startVisualizer() {
+    if (!canvas || !analyser) return;
 
-                /* 음량에 따라 색상 변화 */
-                const hue = 220 + val * 60;  /* 파랑(220) → 보라(280) */
-                const alpha = 0.55 + val * 0.45;
-                const grad = ctx.createLinearGradient(x, y + barH, x, y);
-                grad.addColorStop(0,   `hsla(${hue},     70%, 60%, ${alpha})`);
-                grad.addColorStop(0.5, `hsla(${hue + 20},75%, 75%, ${alpha})`);
-                grad.addColorStop(1,   `hsla(${hue + 40},80%, 88%, ${alpha * 0.7})`);
+    const ctx    = canvas.getContext('2d');
+    const bufLen = analyser.frequencyBinCount;
+    const dataArr = new Uint8Array(bufLen);
 
-                ctx.fillStyle = grad;
+    function resize() {
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width  = canvas.offsetWidth  * dpr;
+        canvas.height = canvas.offsetHeight * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    // 리사이즈 이벤트 중복 등록 방지
+    window.removeEventListener('resize', resize);
+    window.addEventListener('resize', resize);
 
-                /* 반올림 사각형 */
-                const r = Math.min(barW / 2, 3);
-                ctx.beginPath();
-                if (ctx.roundRect) {
-                    ctx.roundRect(x, y, barW, barH, r);
-                } else {
-                    ctx.moveTo(x + r, y);
-                    ctx.lineTo(x + barW - r, y);
-                    ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
-                    ctx.lineTo(x + barW, y + barH - r);
-                    ctx.quadraticCurveTo(x + barW, y + barH, x + barW - r, y + barH);
-                    ctx.lineTo(x + r, y + barH);
-                    ctx.quadraticCurveTo(x, y + barH, x, y + barH - r);
-                    ctx.lineTo(x, y + r);
-                    ctx.quadraticCurveTo(x, y, x + r, y);
-                }
-                ctx.fill();
+    const BAR_COUNT = 80;
+    const gap = 2.5;
 
-                /* 반사(아래쪽 페이드 미러) */
-                ctx.globalAlpha = 0.13;
-                ctx.fillStyle = grad;
-                if (ctx.roundRect) {
-                    ctx.roundRect(x, y + barH + 4, barW, barH * 0.3, r);
-                } else {
-                    ctx.rect(x, y + barH + 4, barW, barH * 0.3);
-                }
-                ctx.fill();
-                ctx.globalAlpha = 1;
+    function draw() {
+        rafId = requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArr);
+
+        const W = canvas.offsetWidth;
+        const H = canvas.offsetHeight;
+        ctx.clearRect(0, 0, W, H);
+
+        const barW = (W - gap * (BAR_COUNT - 1)) / BAR_COUNT;
+
+        for (let i = 0; i < BAR_COUNT; i++) {
+            const idx0 = i * Math.floor(bufLen / BAR_COUNT);
+            // 인접 3개 평균으로 부드럽게
+            const val = ((dataArr[idx0] || 0) + (dataArr[idx0 + 1] || 0) + (dataArr[idx0 + 2] || 0)) / 3 / 255;
+
+            const minH = 3;
+            const barH = minH + val * (H - minH * 2) * 0.95;
+            const x = i * (barW + gap);
+            const y = (H - barH) / 2;
+
+            // 음량에 따라 파랑(220) → 보라(280)
+            const hue   = 220 + val * 60;
+            const alpha = 0.55 + val * 0.45;
+
+            const grad = ctx.createLinearGradient(x, y + barH, x, y);
+            grad.addColorStop(0,   `hsla(${hue},      70%, 60%, ${alpha})`);
+            grad.addColorStop(0.5, `hsla(${hue + 20}, 75%, 75%, ${alpha})`);
+            grad.addColorStop(1,   `hsla(${hue + 40}, 80%, 88%, ${alpha * 0.7})`);
+
+            ctx.fillStyle = grad;
+
+            // 둥근 사각형
+            const r = Math.min(barW / 2, 3);
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(x, y, barW, barH, r);
+            } else {
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + barW - r, y);
+                ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+                ctx.lineTo(x + barW, y + barH - r);
+                ctx.quadraticCurveTo(x + barW, y + barH, x + barW - r, y + barH);
+                ctx.lineTo(x + r, y + barH);
+                ctx.quadraticCurveTo(x, y + barH, x, y + barH - r);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
             }
+            ctx.fill();
+
+            // 아래 반사 효과
+            ctx.globalAlpha = 0.13;
+            if (ctx.roundRect) {
+                ctx.roundRect(x, y + barH + 4, barW, barH * 0.3, r);
+            } else {
+                ctx.rect(x, y + barH + 4, barW, barH * 0.3);
+            }
+            ctx.fill();
+            ctx.globalAlpha = 1;
         }
-        draw();
     }
+
+    draw();
+}
 
 }); // DOMContentLoaded 끝
 </script>
