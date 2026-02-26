@@ -320,179 +320,9 @@
         </div>
       </section>
 
-      <!-- 지금 뜨는 작품 -->
-      {% if trending_books %}
-      <section class="content-section">
-        <div class="section-header">
-          <h2 class="section-title">
-            <span class="title-icon"></span>지금 뜨는 작품
-            <span class="trending-badge">HOT</span>
-          </h2>
-        </div>
-        <div class="books-grid">
-          {% for book in trending_books %}
-          <div class="book-item-wrapper">
-            <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
-              <div class="book-cover-wrapper">
-                {% if book.cover_img %}
-                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
-                {% else %}
-                  <div class="book-placeholder">{{ book.name|slice:":2"|upper }}</div>
-                {% endif %}
-                <div class="book-badge trending">베스트셀러</div>
-              </div>
-              <div class="book-details">
-                <h3 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h3>
-                <p class="book-meta">{{ book.user.nickname }}</p>
-                <div class="card-genres">
-                  {% for genre in book.genres.all %}
-                    <span class="genre-tag" style="background-color:{{ genre.genres_color|default:'#6366f1' }};">{{ genre.name }}</span>
-                  {% endfor %}
-                </div>
-                <div class="card-tags">
-                  {% for tag in book.tags.all %}
-                    <span class="tag-item">#{{ tag.name }}</span>
-                  {% endfor %}
-                </div>
-                <p class="book-stats">⭐ {{ book.book_score|default:"0.0" }}</p>
-              </div>
-            </a>
-          </div>
-          {% endfor %}
-        </div>
-      </section>
-      {% endif %}
 
-      <!-- AI 광고 배너 -->
-      {% with ann=ai_advertismemt_img.0 %}
-      {% if ann %}
-      <a href="{{ ann.link }}" class="hero-announce-link">
-        <section class="hero-section hero-announce">
-          <div class="hero-background">
-            {% if ann.advertisment_img %}
-              <img src="{{ ann.advertisment_img.url }}" alt="{{ ann.title }}">
-            {% else %}
-              <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER">
-            {% endif %}
-          </div>
-          <div class="hero-overlay" style="border-radius:15px;"></div>
-          <div class="hero-content">
-            <p class="hero-announce-label">📣 새로운 소식</p>
-            <h2 class="hero-announce-title">{{ ann.title }}</h2>
-            <span class="hero-announce-cta">자세히 보기 →</span>
-          </div>
-        </section>
-      </a>
-      {% endif %}
-      {% endwith %}
 
-      <!-- 이달의 작가 -->
-      <section class="content-section">
-        <div class="section-header">
-          <h2 class="section-title"><span class="title-icon"></span>이달의 작가</h2>
-        </div>
-        <div class="featured-authors">
-          {% for author in popular_authors %}
-          <a href="{% url 'main:user_info' author.public_uuid %}">
-            <div class="author-item">
-              <div class="author-rank rank-{{ forloop.counter }}">{{ forloop.counter }}</div>
-              <div class="author-photo">
-                {% if author.user_img %}
-                  <img src="{{ author.user_img.url }}" alt="{{ author.nickname }}" loading="lazy">
-                {% else %}
-                  <div class="author-placeholder">{{ author.nickname|slice:":1"|upper }}</div>
-                {% endif %}
-              </div>
-              <div class="author-info">
-                <h3>{{ author.nickname }}</h3>
-                <p>작품 {{ author.book_count }}개</p>
-              </div>
-            </div>
-          </a>
-          {% empty %}
-          <div class="empty-state">아직 등록된 작가가 없습니다</div>
-          {% endfor %}
-        </div>
-      </section>
 
-      <!-- 장르 기반 추천 (로그인 유저) -->
-      {% if user.is_authenticated and recommended_books %}
-      <section class="content-section recommended-section">
-        <div class="section-header">
-          <h2 class="section-title"><span class="title-icon"></span>{{ user.nickname }}님을 위한 장르 추천</h2>
-          <p class="section-subtitle">당신이 좋아할 만한 작품들이에요</p>
-        </div>
-        <div class="books-grid">
-          {% for book in recommended_books %}
-          <div class="book-item-wrapper">
-            <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
-              <div class="book-cover-wrapper">
-                {% if book.cover_img %}
-                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
-                {% else %}
-                  <div class="book-placeholder">{{ book.name|slice:":2"|upper }}</div>
-                {% endif %}
-                <div class="book-badge recommended">추천</div>
-              </div>
-              <div class="book-details">
-                <h3 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h3>
-                <div class="card-genres">
-                  {% for genre in book.genres.all %}
-                    <span class="genre-tag" style="background-color:{{ genre.genres_color|default:'#6366f1' }};">{{ genre.name }}</span>
-                  {% endfor %}
-                </div>
-                <div class="card-tags">
-                  {% for tag in book.tags.all %}<span class="tag-item">#{{ tag.name }}</span>{% endfor %}
-                </div>
-                <p class="book-stats">⭐ {{ book.book_score|default:"0.0" }}</p>
-              </div>
-            </a>
-          </div>
-          {% endfor %}
-        </div>
-      </section>
-      {% endif %}
-
-      <!-- AI 추천 (로그인 유저) -->
-      {% if user.is_authenticated and ai_recommended_books %}
-      <section class="content-section recommended-section">
-        <div class="section-header">
-          <h2 class="section-title"><span class="title-icon"></span>AI가 추천하는 책</h2>
-          <p class="section-subtitle">당신이 좋아할 만한 작품들이에요</p>
-        </div>
-        <div class="books-grid">
-          {% for book in ai_recommended_books %}
-          <div class="book-item-wrapper">
-            <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
-              <div class="book-cover-wrapper">
-                {% if book.cover_img %}
-                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
-                {% else %}
-                  <div class="book-placeholder">{{ book.name|slice:":2"|upper }}</div>
-                {% endif %}
-                <div class="book-badge recommended">추천</div>
-              </div>
-              <div class="book-details">
-                <h3 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h3>
-                <div class="card-genres">
-                  {% for genre in book.genres.all %}
-                    <span class="genre-tag" style="background-color:{{ genre.genres_color|default:'#6366f1' }};">{{ genre.name }}</span>
-                  {% endfor %}
-                </div>
-                <div class="card-tags">
-                  {% for tag in book.tags.all %}<span class="tag-item">#{{ tag.name }}</span>{% endfor %}
-                </div>
-                <p class="book-stats">⭐ {{ book.book_score|default:"0.0" }}</p>
-              </div>
-            </a>
-          </div>
-          {% endfor %}
-        </div>
-      </section>
-      <section class="ai-recommend-section">
-        <a class="ai-recommend-btn" href="ai_recommended/">✨ 추천한 이유 보기</a>
-      </section>
-      {% endif %}
 
       <!-- =====================================================
            🎵 장르별 플레이리스트
@@ -693,6 +523,183 @@
       </section>
 
     </div><!-- /audiobook-tab -->
+
+
+
+      <!-- 지금 뜨는 작품 -->
+      {% if trending_books %}
+      <section class="content-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span class="title-icon"></span>지금 뜨는 작품
+            <span class="trending-badge">HOT</span>
+          </h2>
+        </div>
+        <div class="books-grid">
+          {% for book in trending_books %}
+          <div class="book-item-wrapper">
+            <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
+              <div class="book-cover-wrapper">
+                {% if book.cover_img %}
+                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                {% else %}
+                  <div class="book-placeholder">{{ book.name|slice:":2"|upper }}</div>
+                {% endif %}
+                <div class="book-badge trending">베스트셀러</div>
+              </div>
+              <div class="book-details">
+                <h3 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h3>
+                <p class="book-meta">{{ book.user.nickname }}</p>
+                <div class="card-genres">
+                  {% for genre in book.genres.all %}
+                    <span class="genre-tag" style="background-color:{{ genre.genres_color|default:'#6366f1' }};">{{ genre.name }}</span>
+                  {% endfor %}
+                </div>
+                <div class="card-tags">
+                  {% for tag in book.tags.all %}
+                    <span class="tag-item">#{{ tag.name }}</span>
+                  {% endfor %}
+                </div>
+                <p class="book-stats">⭐ {{ book.book_score|default:"0.0" }}</p>
+              </div>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- AI 광고 배너 -->
+      {% with ann=ai_advertismemt_img.0 %}
+      {% if ann %}
+      <a href="{{ ann.link }}" class="hero-announce-link">
+        <section class="hero-section hero-announce">
+          <div class="hero-background">
+            {% if ann.advertisment_img %}
+              <img src="{{ ann.advertisment_img.url }}" alt="{{ ann.title }}">
+            {% else %}
+              <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER">
+            {% endif %}
+          </div>
+          <div class="hero-overlay" style="border-radius:15px;"></div>
+          <div class="hero-content">
+            <p class="hero-announce-label">📣 새로운 소식</p>
+            <h2 class="hero-announce-title">{{ ann.title }}</h2>
+            <span class="hero-announce-cta">자세히 보기 →</span>
+          </div>
+        </section>
+      </a>
+      {% endif %}
+      {% endwith %}
+
+      <!-- 이달의 작가 -->
+      <section class="content-section">
+        <div class="section-header">
+          <h2 class="section-title"><span class="title-icon"></span>이달의 작가</h2>
+        </div>
+        <div class="featured-authors">
+          {% for author in popular_authors %}
+          <a href="{% url 'main:user_info' author.public_uuid %}">
+            <div class="author-item">
+              <div class="author-rank rank-{{ forloop.counter }}">{{ forloop.counter }}</div>
+              <div class="author-photo">
+                {% if author.user_img %}
+                  <img src="{{ author.user_img.url }}" alt="{{ author.nickname }}" loading="lazy">
+                {% else %}
+                  <div class="author-placeholder">{{ author.nickname|slice:":1"|upper }}</div>
+                {% endif %}
+              </div>
+              <div class="author-info">
+                <h3>{{ author.nickname }}</h3>
+                <p>작품 {{ author.book_count }}개</p>
+              </div>
+            </div>
+          </a>
+          {% empty %}
+          <div class="empty-state">아직 등록된 작가가 없습니다</div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <!-- 장르 기반 추천 (로그인 유저) -->
+      {% if user.is_authenticated and recommended_books %}
+      <section class="content-section recommended-section">
+        <div class="section-header">
+          <h2 class="section-title"><span class="title-icon"></span>{{ user.nickname }}님을 위한 장르 추천</h2>
+          <p class="section-subtitle">당신이 좋아할 만한 작품들이에요</p>
+        </div>
+        <div class="books-grid">
+          {% for book in recommended_books %}
+          <div class="book-item-wrapper">
+            <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
+              <div class="book-cover-wrapper">
+                {% if book.cover_img %}
+                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                {% else %}
+                  <div class="book-placeholder">{{ book.name|slice:":2"|upper }}</div>
+                {% endif %}
+                <div class="book-badge recommended">추천</div>
+              </div>
+              <div class="book-details">
+                <h3 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h3>
+                <div class="card-genres">
+                  {% for genre in book.genres.all %}
+                    <span class="genre-tag" style="background-color:{{ genre.genres_color|default:'#6366f1' }};">{{ genre.name }}</span>
+                  {% endfor %}
+                </div>
+                <div class="card-tags">
+                  {% for tag in book.tags.all %}<span class="tag-item">#{{ tag.name }}</span>{% endfor %}
+                </div>
+                <p class="book-stats">⭐ {{ book.book_score|default:"0.0" }}</p>
+              </div>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- AI 추천 (로그인 유저) -->
+      {% if user.is_authenticated and ai_recommended_books %}
+      <section class="content-section recommended-section">
+        <div class="section-header">
+          <h2 class="section-title"><span class="title-icon"></span>AI가 추천하는 책</h2>
+          <p class="section-subtitle">당신이 좋아할 만한 작품들이에요</p>
+        </div>
+        <div class="books-grid">
+          {% for book in ai_recommended_books %}
+          <div class="book-item-wrapper">
+            <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
+              <div class="book-cover-wrapper">
+                {% if book.cover_img %}
+                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                {% else %}
+                  <div class="book-placeholder">{{ book.name|slice:":2"|upper }}</div>
+                {% endif %}
+                <div class="book-badge recommended">추천</div>
+              </div>
+              <div class="book-details">
+                <h3 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h3>
+                <div class="card-genres">
+                  {% for genre in book.genres.all %}
+                    <span class="genre-tag" style="background-color:{{ genre.genres_color|default:'#6366f1' }};">{{ genre.name }}</span>
+                  {% endfor %}
+                </div>
+                <div class="card-tags">
+                  {% for tag in book.tags.all %}<span class="tag-item">#{{ tag.name }}</span>{% endfor %}
+                </div>
+                <p class="book-stats">⭐ {{ book.book_score|default:"0.0" }}</p>
+              </div>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      <section class="ai-recommend-section">
+        <a class="ai-recommend-btn" href="ai_recommended/">✨ 추천한 이유 보기</a>
+      </section>
+      {% endif %}
+
 
 
     <!-- =====================================================
