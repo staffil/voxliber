@@ -35,6 +35,7 @@ urlpatterns = [
     path('contact/<int:contact_id>/', views.contact_detail, name='contact_detail'), 
     path('faq/', views.faq, name='faq'),
 
+    path('playlist/<int:playlist_id>/', views.playlist_detail, name='playlist_detail'),
 
 
     # api

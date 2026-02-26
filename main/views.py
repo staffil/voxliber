@@ -928,6 +928,19 @@ def shared_novel(request, conv_id):
 
 
 
+
+
+def playlist_detail(request, playlist_id):
+    playlist = get_object_or_404(
+        GenrePlaylist.objects.select_related('genre').prefetch_related(
+            'items__content__book'
+        ),
+        id=playlist_id,
+        is_active=True
+    )
+    return render(request, 'main/playlist_detail.html', {'playlist': playlist})
+
+
 # 에러
 def bad_request(request, exception):
     return render(request, "error/400.html", status=400)

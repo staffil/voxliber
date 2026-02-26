@@ -343,7 +343,7 @@
 
         <div class="playlist-cards-grid" id="playlistCardsGrid">
           {% for playlist in popular_genres %}
-          <div class="playlist-card" data-ptype="{{ playlist.playlist_type }}">
+          <div class="playlist-card" data-ptype="{{ playlist.playlist_type }}"  data-playlist-id="{{ playlist.id }}">
 
             <div class="playlist-card-art">
               <div class="art-collage">
@@ -847,7 +847,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-
+  document.querySelectorAll('.playlist-more-row').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = this.closest('.playlist-card').dataset.playlistId;
+      console.log('playlist id:', id);
+      window.location.href = '/playlist/' + id + '/';
+    });
+  });
   // =====================================================
   // 메인 탭 전환
   // =====================================================
