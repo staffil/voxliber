@@ -1,86 +1,72 @@
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from book.models import Content, Follow, BookmarkBook
-from notifications.models import FCMToken, Notification
-from notifications.fcm import send_push_multicast
+from firebase_admin import messaging
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-@receiver(post_save, sender=Content)
-def notify_new_episode(sender, instance, created, **kwargs):
-    """새 에피소드 업로드 시 해당 책을 서재에 담은 사용자에게 푸시 발송"""
-    if not created:
-        return
-
-    book = instance.book
-
-    # 해당 책을 서재에 담은 사용자 조회
-    bookmarked_users = BookmarkBook.objects.filter(
-        book=book
-    ).values_list('user', flat=True)
-
-    print(f"🔔 새 에피소드: {instance.title}, 서재 담은 사용자 수: {len(bookmarked_users)}")
-
-    if not bookmarked_users:
-        return
-
-    # DB 알림 저장
-    notifications = [
-        Notification(
-            user_id=uid,
-            type='new_episode',
-            title=f'새 에피소드 — {book.name}',
-            message=instance.title,
-            link=f'/book/{book.public_uuid}/',
-        )
-        for uid in bookmarked_users
-    ]
-    Notification.objects.bulk_create(notifications, ignore_conflicts=True)
-
-    # FCM 푸시 발송
-    tokens = list(
-        FCMToken.objects.filter(user_id__in=bookmarked_users).values_list('token', flat=True)
+def send_push(token: str, title: str, body: str, data: dict = None):
+    message = messaging.Message(
+        notification=messaging.Notification(title=title, body=body),
+        data={k: str(v) for k, v in (data or {}).items()},
+        token=token,
+        android=messaging.AndroidConfig(
+            priority='high',
+            notification=messaging.AndroidNotification(
+                channel_id='voxliber_push',
+                sound='default',
+            ),
+        ),
+        apns=messaging.APNSConfig(
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(sound='default')
+            )
+        ),
     )
-    print(f"📱 토큰 수: {len(tokens)}")
-
-    if tokens:
-        send_push_multicast(
-            tokens=tokens,
-            title=f'새 에피소드 — {book.name}',
-            body=instance.title,
-            data={
-                'type': 'new_episode',
-                'book_uuid': str(book.public_uuid),
-                'content_uuid': str(instance.public_uuid),
-            },
-        )
+    try:
+        response = messaging.send(message)
+        print(f'✅ FCM 단일 발송 성공: {response}')
+        return True
+    except Exception as e:
+        print(f'❌ FCM 단일 발송 실패: {type(e).__name__}: {e}')
+        logger.warning(f'FCM 단일 발송 실패: {e}')
+        return False
 
 
-@receiver(post_save, sender=Follow)
-def notify_new_follower(sender, instance, created, **kwargs):
-    """팔로우 시 작가에게 푸시 발송"""
-    if not created:
-        return
-
-    tokens = list(
-        FCMToken.objects.filter(user=instance.following).values_list('token', flat=True)
-    )
-    print(f"👤 팔로우 알림: {instance.follower} → {instance.following}, 토큰 {len(tokens)}개")
-
+def send_push_multicast(tokens: list, title: str, body: str, data: dict = None):
+    print(f'📤 send_push_multicast 호출됨: 토큰 {len(tokens)}개, title={title}')
     if not tokens:
         return
 
-    # DB 알림 저장
-    Notification.objects.create(
-        user=instance.following,
-        type='new_follower',
-        title='새 팔로워',
-        message=f'{instance.follower.username}님이 팔로우했습니다.',
-        link=f'/user/{instance.follower.id}/',
-    )
+    data_str = {k: str(v) for k, v in (data or {}).items()}
 
-    send_push_multicast(
-        tokens=tokens,
-        title='새 팔로워',
-        body=f'{instance.follower.username}님이 팔로우했습니다.',
-        data={'type': 'new_follower'},
-    )
+    for i in range(0, len(tokens), 500):
+        chunk = tokens[i:i + 500]
+        message = messaging.MulticastMessage(
+            notification=messaging.Notification(title=title, body=body),
+            data=data_str,
+            tokens=chunk,
+            android=messaging.AndroidConfig(
+                priority='high',
+                notification=messaging.AndroidNotification(
+                    channel_id='voxliber_push',
+                    sound='default',
+                ),
+            ),
+            apns=messaging.APNSConfig(
+                payload=messaging.APNSPayload(
+                    aps=messaging.Aps(sound='default')
+                )
+            ),
+        )
+        try:
+            response = messaging.send_each_for_multicast(message)
+            print(f'✅ FCM 멀티캐스트: {response.success_count}개 성공, {response.failure_count}개 실패')
+            for idx, result in enumerate(response.responses):
+                if not result.success:
+                    print(f'  ❌ 토큰[{idx}] 실패: {result.exception}')
+                else:
+                    print(f'  ✅ 토큰[{idx}] 성공: {result.message_id}')
+            logger.info(f'FCM 멀티캐스트: 성공 {response.success_count}, 실패 {response.failure_count}')
+        except Exception as e:
+            print(f'❌ FCM 멀티캐스트 예외: {type(e).__name__}: {e}')
+            logger.warning(f'FCM 멀티캐스트 실패: {e}')
