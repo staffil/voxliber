@@ -39,7 +39,6 @@ def send_push(token: str, title: str, body: str, data: dict = None):
 
 
 def send_push_multicast(tokens: list, title: str, body: str, data: dict = None):
-    """여러 기기에 동시 발송 (최대 500개씩)"""
     if not tokens:
         return
 
@@ -72,12 +71,17 @@ def send_push_multicast(tokens: list, title: str, body: str, data: dict = None):
         try:
             response = messaging.send_each_for_multicast(message)
             print(f'✅ FCM 멀티캐스트: {response.success_count}개 성공, {response.failure_count}개 실패')
-            for idx, result in enumerate(response.responses):
-                if not result.success:
-                    print(f'  ❌ 토큰[{idx}] 실패: {result.exception}')
-                else:
-                    print(f'  ✅ 토큰[{idx}] 성공: {result.message_id}')
-            logger.info(f'FCM 멀티캐스트: 성공 {response.success_count}, 실패 {response.failure_count}')
+
+            # 만료된 토큰 자동 삭제
+            invalid_tokens = [
+                chunk[idx] for idx, result in enumerate(response.responses)
+                if not result.success and 'Requested entity was not found' in str(result.exception)
+            ]
+            if invalid_tokens:
+                from notifications.models import FCMToken
+                deleted, _ = FCMToken.objects.filter(token__in=invalid_tokens).delete()
+                print(f'🗑️ 만료 토큰 {deleted}개 삭제')
+
         except Exception as e:
             print(f'❌ FCM 멀티캐스트 예외: {type(e).__name__}: {e}')
             logger.warning(f'FCM 멀티캐스트 실패: {e}')
