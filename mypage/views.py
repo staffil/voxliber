@@ -1,17 +1,17 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse,HttpResponse,HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.utils import timezone
-from book.models import Books, ReadingProgress, Content, MyVoiceList, Books, BackgroundMusicLibrary, VoiceList,ListeningHistory
+from book.models import Books, ReadingProgress, Content, MyVoiceList, BackgroundMusicLibrary, VoiceList, ListeningHistory
 from book.utils import generate_tts, merge_audio_files, mix_audio_with_background
 from django.conf import settings
 from character.models import Story, LLM, LLMSubImage, LoreEntry, Conversation, StoryBookmark, ConversationMessage, ConversationState, HPImageMapping, LastWard, UserLastWard
-import re 
+import re
 from django.db.models import Sum, Count
-from django.db.models.functions import TruncMonth, TruncWeek
+from django.db.models.functions import TruncMonth, TruncWeek, TruncDate, TruncYear
 from datetime import datetime, timedelta
 import json
 from register.decorator import login_required_to_main
