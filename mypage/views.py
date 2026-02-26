@@ -5,11 +5,15 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.utils import timezone
-from book.models import Books, ReadingProgress, Content, MyVoiceList, Books, BackgroundMusicLibrary, VoiceList
+from book.models import Books, ReadingProgress, Content, MyVoiceList, Books, BackgroundMusicLibrary, VoiceList,ListeningHistory
 from book.utils import generate_tts, merge_audio_files, mix_audio_with_background
 from django.conf import settings
 from character.models import Story, LLM, LLMSubImage, LoreEntry, Conversation, StoryBookmark, ConversationMessage, ConversationState, HPImageMapping, LastWard, UserLastWard
 import re 
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncMonth, TruncWeek
+from datetime import datetime, timedelta
+import json
 from register.decorator import login_required_to_main
 from register.models import Users
 
@@ -19,6 +23,52 @@ def my_profile(request):
     user = request.user
     books = Books.objects.filter(user=user).order_by('-created_at')
     books_count = books.count()
+    six_months_ago = datetime.now() - timedelta(days=180)
+
+    # 월별 TTS 생성 시간 (Content 기준 - 내가 만든 에피소드)
+    tts_monthly = (
+        Content.objects
+        .filter(book__user=request.user, created_at__gte=six_months_ago)
+        .annotate(month=TruncMonth('created_at'))
+        .values('month')
+        .annotate(total=Sum('duration_seconds'))
+        .order_by('month')
+    )
+
+    # 월별 청취 시간 (ListeningHistory 기준)
+    listening_monthly = (
+        ListeningHistory.objects
+        .filter(user=request.user, listened_at__gte=six_months_ago)
+        .annotate(month=TruncMonth('listened_at'))
+        .values('month')
+        .annotate(total=Sum('listened_seconds'))
+        .order_by('month')
+    )
+
+    # 주별 청취 시간
+    four_weeks_ago = datetime.now() - timedelta(weeks=8)
+    listening_weekly = (
+        ListeningHistory.objects
+        .filter(user=request.user, listened_at__gte=four_weeks_ago)
+        .annotate(week=TruncWeek('listened_at'))
+        .values('week')
+        .annotate(total=Sum('listened_seconds'))
+        .order_by('week')
+    )
+
+    # JSON으로 변환
+    tts_chart = {
+        'labels': [x['month'].strftime('%m월') for x in tts_monthly],
+        'data': [round((x['total'] or 0) / 60, 1) for x in tts_monthly],  # 분 단위
+    }
+    listening_chart_monthly = {
+        'labels': [x['month'].strftime('%m월') for x in listening_monthly],
+        'data': [round((x['total'] or 0) / 3600, 1) for x in listening_monthly],  # 시간 단위
+    }
+    listening_chart_weekly = {
+        'labels': [x['week'].strftime('%m/%d') for x in listening_weekly],
+        'data': [round((x['total'] or 0) / 60, 1) for x in listening_weekly],
+    }
 
     if request.method == "POST":
         nickname = request.POST.get("nickname", "").strip()
@@ -82,6 +132,7 @@ def my_profile(request):
         user.save()
         messages.success(request, "프로필이 성공적으로 업데이트되었습니다.")
         return redirect("mypage:my_profile")
+        
 
     context = {
         "books_count": books_count,

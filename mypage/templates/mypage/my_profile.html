@@ -27,7 +27,6 @@
 
             <!-- 프로필 헤더 -->
             <div class="profile-header">
-                <!-- 커버 이미지 -->
                 <div class="profile-cover" id="coverImageArea" {% if user.cover_img %}style="background-image: url('{{ user.cover_img.url }}');"{% endif %}>
                     <div class="cover-gradient"></div>
                 </div>
@@ -52,7 +51,7 @@
 
                     <div class="user-details">
                         <a href="{% url 'main:user_info' user.public_uuid %}" style="color: inherit; text-decoration: none; transition: color 0.2s;">
-                        <h1 class="user-nickname">{{ user.nickname|default:"닉네임 없음" }}</h1>
+                            <h1 class="user-nickname">{{ user.nickname|default:"닉네임 없음" }}</h1>
                         </a>
                         <div class="user-stats">
                             <div class="stat-item">
@@ -97,16 +96,9 @@
                         <span class="input-counter"><span id="nicknameCount">{{ user.nickname|length|default:0 }}</span>/20</span>
                     </div>
 
-                    <!-- <div class="form-group">
-                        <label class="form-label">사용자명</label>
-                        <input type="text" name="username" class="form-input"
-                               value="{{ user.username|default:'' }}" placeholder="사용자명을 입력하세요">
-                    </div> -->
-
                     <div class="form-group full-width">
                         <label class="form-label">이메일</label>
-                        <input type="email" class="form-input readonly"
-                               value="{{ user.email }}" readonly disabled>
+                        <input type="email" class="form-input readonly" value="{{ user.email }}" readonly disabled>
                         <span class="input-hint">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="10"/>
@@ -205,9 +197,7 @@
                         <span class="info-label">로그인 방식</span>
                         <span class="info-value">
                             {% if user.oauth_provider %}
-                                <span class="oauth-badge {{ user.oauth_provider }}">
-                                    {{ user.oauth_provider|title }}
-                                </span>
+                                <span class="oauth-badge {{ user.oauth_provider }}">{{ user.oauth_provider|title }}</span>
                             {% else %}
                                 <span class="oauth-badge email">이메일</span>
                             {% endif %}
@@ -221,11 +211,7 @@
                             </span>
                         </span>
                     </div>
-                                <a href="{% url 'register:logout' %}" class="nav-item" style="background-color: rgb(193, 69, 69,); background-color: rgb(167, 60, 60, 0.5);">로그아웃</a>
-
-
-
-
+                    <a href="{% url 'register:logout' %}" class="nav-item" style="background-color: rgb(167, 60, 60, 0.5);">로그아웃</a>
                 </div>
             </div>
 
@@ -242,24 +228,56 @@
             </div>
 
         </form>
+        <!-- /form 끝 -->
 
+        <!-- =====================================================
+             활동 통계 그래프 (form 밖)
+             ===================================================== -->
+        <div class="form-section stats-section" style="margin-top: 32px;">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    나의 활동 통계
+                </h2>
+            </div>
 
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:16px;">
+                <!-- TTS 생성 막대 -->
+                <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:16px;">
+                    <p style="font-size:0.8rem; color:rgba(255,255,255,0.5); margin-bottom:12px;">📝 월별 TTS 생성 (분)</p>
+                    <canvas id="ttsChart" height="180"></canvas>
+                </div>
+                <!-- 청취 막대 -->
+                <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:16px;">
+                    <p style="font-size:0.8rem; color:rgba(255,255,255,0.5); margin-bottom:12px;">🎧 월별 청취 시간 (시간)</p>
+                    <canvas id="listeningMonthlyChart" height="180"></canvas>
+                </div>
+            </div>
 
+            <!-- 주별 청취 라인 차트 -->
+            <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:16px; margin-top:20px;">
+                <p style="font-size:0.8rem; color:rgba(255,255,255,0.5); margin-bottom:12px;">📈 주별 청취 시간 (분)</p>
+                <canvas id="listeningWeeklyChart" height="100"></canvas>
+            </div>
+        </div>
 
-        
-    <!-- 🚨 Danger Zone (form 밖) -->
-    <div class="form-section danger-zone" style="margin-top: 90px;">
-        <h2 class="danger-title">⚠️ 계정 삭제</h2>
-        <p class="danger-text">
-            계정을 탈퇴하면 로그인할 수 없게 되며,<br>
-            계정 복구를 원하시면 <strong>고객센터로 문의</strong>해주세요.
-        </p>
-        <a href="{% url 'mypage:delete_account' %}" class="btn btn-danger-outline">
-            회원 탈퇴
-        </a>
+        <!-- 🚨 Danger Zone -->
+        <div class="form-section danger-zone" style="margin-top: 90px;">
+            <h2 class="danger-title">⚠️ 계정 삭제</h2>
+            <p class="danger-text">
+                계정을 탈퇴하면 로그인할 수 없게 되며,<br>
+                계정 복구를 원하시면 <strong>고객센터로 문의</strong>해주세요.
+            </p>
+            <a href="{% url 'mypage:delete_account' %}" class="btn btn-danger-outline">
+                회원 탈퇴
+            </a>
+        </div>
+
     </div>
-    </div>
-    
 </div>
 
 <!-- 삭제 확인 모달 -->
@@ -282,12 +300,12 @@
             <button type="button" class="btn btn-danger" id="confirmDelete">삭제하기</button>
         </div>
     </div>
-    
 </div>
 
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 // 아바타 이미지 미리보기
 document.getElementById('avatarInput').addEventListener('change', function(e) {
@@ -337,24 +355,19 @@ const deleteBtns = document.querySelectorAll('.btn-delete');
 
 let bookIdToDelete = null;
 
-// 삭제 버튼 클릭
 deleteBtns.forEach(btn => {
     btn.addEventListener('click', function() {
         bookIdToDelete = this.dataset.bookId;
-        const bookName = this.dataset.bookName;
-
-        deleteBookName.textContent = bookName;
+        deleteBookName.textContent = this.dataset.bookName;
         deleteModal.classList.add('active');
     });
 });
 
-// 취소 버튼
 cancelDeleteBtn.addEventListener('click', function() {
     deleteModal.classList.remove('active');
     bookIdToDelete = null;
 });
 
-// 모달 배경 클릭
 deleteModal.addEventListener('click', function(e) {
     if (e.target === deleteModal) {
         deleteModal.classList.remove('active');
@@ -362,36 +375,26 @@ deleteModal.addEventListener('click', function(e) {
     }
 });
 
-// 삭제 확인 버튼
 confirmDeleteBtn.addEventListener('click', async function() {
     if (!bookIdToDelete) return;
-
     try {
         const response = await fetch(`/book/delete/${bookIdToDelete}/`, {
             method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-            }
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
         });
-
         if (response.ok) {
             showNotification('작품이 삭제되었습니다', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
+            setTimeout(() => window.location.reload(), 1000);
         } else {
             showNotification('삭제 중 오류가 발생했습니다', 'error');
         }
     } catch (error) {
-        console.error('Delete error:', error);
         showNotification('삭제 중 오류가 발생했습니다', 'error');
     }
-
     deleteModal.classList.remove('active');
     bookIdToDelete = null;
 });
 
-// CSRF 토큰 가져오기
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -407,60 +410,83 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// 알림 표시 함수
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        padding: 16px 24px;
-        background: ${type === 'success' ? 'rgba(16, 185, 129, 0.9)' : type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(99, 102, 241, 0.9)'};
-        color: white;
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        z-index: 10000;
-        animation: slideInRight 0.3s ease;
-        font-size: 14px;
-        font-weight: 500;
+        position: fixed; top: 100px; right: 20px; padding: 16px 24px;
+        background: ${type === 'success' ? 'rgba(16,185,129,0.9)' : type === 'error' ? 'rgba(239,68,68,0.9)' : 'rgba(99,102,241,0.9)'};
+        color: white; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        z-index: 10000; animation: slideInRight 0.3s ease; font-size: 14px; font-weight: 500;
     `;
     notification.textContent = message;
-
     document.body.appendChild(notification);
-
     setTimeout(() => {
         notification.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
+        setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
 
-// CSS 애니메이션 추가
 const style = document.createElement('style');
 style.textContent = `
-    @keyframes slideInRight {
-        from {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-
-    @keyframes slideOutRight {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-    }
+    @keyframes slideInRight { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(400px); opacity: 0; } }
 `;
 document.head.appendChild(style);
+
+// =====================================================
+// 활동 통계 차트
+// =====================================================
+const chartScaleOpts = {
+    x: { grid: { color: 'rgba(255,255,255,0.07)' }, ticks: { color: 'rgba(255,255,255,0.5)' } },
+    y: { grid: { color: 'rgba(255,255,255,0.07)' }, ticks: { color: 'rgba(255,255,255,0.5)' } }
+};
+
+const ttsData = {{ tts_chart|safe }};
+new Chart(document.getElementById('ttsChart'), {
+    type: 'bar',
+    data: {
+        labels: ttsData.labels,
+        datasets: [{
+            label: 'TTS 생성(분)',
+            data: ttsData.data,
+            backgroundColor: 'rgba(99,102,241,0.7)',
+            borderRadius: 6,
+        }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: chartScaleOpts }
+});
+
+const listeningMonthlyData = {{ listening_chart_monthly|safe }};
+new Chart(document.getElementById('listeningMonthlyChart'), {
+    type: 'bar',
+    data: {
+        labels: listeningMonthlyData.labels,
+        datasets: [{
+            label: '청취(시간)',
+            data: listeningMonthlyData.data,
+            backgroundColor: 'rgba(139,92,246,0.7)',
+            borderRadius: 6,
+        }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: chartScaleOpts }
+});
+
+const listeningWeeklyData = {{ listening_chart_weekly|safe }};
+new Chart(document.getElementById('listeningWeeklyChart'), {
+    type: 'line',
+    data: {
+        labels: listeningWeeklyData.labels,
+        datasets: [{
+            label: '주별 청취(분)',
+            data: listeningWeeklyData.data,
+            borderColor: 'rgba(168,85,247,0.9)',
+            backgroundColor: 'rgba(168,85,247,0.15)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: 'rgba(168,85,247,1)',
+        }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: chartScaleOpts }
+});
 </script>
 {% endblock %}
