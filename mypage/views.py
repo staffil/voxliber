@@ -137,6 +137,9 @@ def my_profile(request):
     context = {
         "books_count": books_count,
         "books": books,
+                'tts_chart': json.dumps(tts_chart),
+        'listening_chart_monthly': json.dumps(listening_chart_monthly),
+        'listening_chart_weekly': json.dumps(listening_chart_weekly),
     }
     return render(request, "mypage/my_profile.html", context)
 
