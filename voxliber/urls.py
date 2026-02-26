@@ -26,7 +26,7 @@ from django.http import FileResponse
 from voxliber import api_views as voxliber_api
 import os
 from book.admin import EpisodeRankingView, ListeningStatsView,ListeningCalendarView,CharacterStatsView,CharacterCalendarView,SnapStatsView,AdStatsView,SnapCalendarView,AdCalendarView
-
+from notifications.admin import SendPushView ,FCMToken
 # Sitemap 설정
 sitemaps = {
     'books': BookSitemap,
@@ -39,6 +39,8 @@ def serve_well_known(request, filename):
     return FileResponse(open(file_path, 'rb'), content_type='application/json')
 
 urlpatterns = [
+    path('admin/send-push/', SendPushView(FCMToken, admin.site).push_view),
+
     path('admin/book/snap-calendar/',   SnapCalendarView.as_view()),
     path('admin/register/ad-calendar/', AdCalendarView.as_view()),
     path('admin/book/snap-stats/',      SnapStatsView.as_view(),  name='snap_stats'),

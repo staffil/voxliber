@@ -290,3 +290,8 @@ class AdRequestAdmin(admin.ModelAdmin):
             reviewed_at=timezone.now(),
         )
         self.message_user(request, f'{updated}건 거절됐습니다.')
+
+
+
+
+

@@ -1,0 +1,65 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div style="max-width:640px;">
+    <h1 style="margin-bottom:20px;">📢 푸시 알림 발송</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div style="padding:12px 16px;margin-bottom:16px;border-radius:6px;
+            background:{% if 'success' in message.tags %}#d4edda;color:#155724
+            {% elif 'error' in message.tags %}#f8d7da;color:#721c24
+            {% else %}#fff3cd;color:#856404{% endif %};">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data"
+          style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.1);">
+        {% csrf_token %}
+
+        <div style="margin-bottom:18px;">
+            <label style="display:block;font-weight:bold;margin-bottom:6px;">📌 수신 대상</label>
+            <select name="target" style="width:100%;padding:9px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+                <option value="all">🌍 전체 사용자</option>
+                {% for user in users %}
+                <option value="{{ user.id }}">{{ user.email }} ({{ user.username }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="margin-bottom:18px;">
+            <label style="display:block;font-weight:bold;margin-bottom:6px;">📝 제목</label>
+            <input type="text" name="title"
+                   style="width:100%;padding:9px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;"
+                   placeholder="알림 제목을 입력하세요" required>
+        </div>
+
+        <div style="margin-bottom:18px;">
+            <label style="display:block;font-weight:bold;margin-bottom:6px;">💬 내용</label>
+            <textarea name="body" rows="4"
+                      style="width:100%;padding:9px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;resize:vertical;"
+                      placeholder="알림 내용을 입력하세요" required></textarea>
+        </div>
+
+        <div style="margin-bottom:18px;">
+            <label style="display:block;font-weight:bold;margin-bottom:6px;">🔗 이미지 URL (선택)</label>
+            <input type="text" name="cover_url"
+                   style="width:100%;padding:9px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;"
+                   placeholder="https://...">
+        </div>
+
+        <div style="margin-bottom:24px;">
+            <label style="display:block;font-weight:bold;margin-bottom:6px;">🖼️ 이미지 업로드 (선택)</label>
+            <input type="file" name="image" accept="image/*"
+                   style="padding:6px;font-size:14px;">
+            <div style="margin-top:4px;color:#888;font-size:12px;">업로드 이미지가 URL보다 우선 적용됩니다.</div>
+        </div>
+
+        <button type="submit"
+                style="background:#007bff;color:#fff;padding:11px 28px;border:none;border-radius:4px;cursor:pointer;font-size:15px;font-weight:bold;">
+            🚀 발송하기
+        </button>
+    </form>
+</div>
+{% endblock %}
