@@ -5,8 +5,14 @@ logger = logging.getLogger(__name__)
 
 
 def send_push(token: str, title: str, body: str, data: dict = None):
+    """단일 기기에 푸시 발송"""
+    cover_url = (data or {}).get('cover_url', '')
     message = messaging.Message(
-        notification=messaging.Notification(title=title, body=body),
+        notification=messaging.Notification(
+            title=title,
+            body=body,
+            image=cover_url if cover_url else None,
+        ),
         data={k: str(v) for k, v in (data or {}).items()},
         token=token,
         android=messaging.AndroidConfig(
@@ -33,16 +39,21 @@ def send_push(token: str, title: str, body: str, data: dict = None):
 
 
 def send_push_multicast(tokens: list, title: str, body: str, data: dict = None):
-    print(f'📤 send_push_multicast 호출됨: 토큰 {len(tokens)}개, title={title}')
+    """여러 기기에 동시 발송 (최대 500개씩)"""
     if not tokens:
         return
 
+    cover_url = (data or {}).get('cover_url', '')
     data_str = {k: str(v) for k, v in (data or {}).items()}
 
     for i in range(0, len(tokens), 500):
         chunk = tokens[i:i + 500]
         message = messaging.MulticastMessage(
-            notification=messaging.Notification(title=title, body=body),
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+                image=cover_url if cover_url else None,
+            ),
             data=data_str,
             tokens=chunk,
             android=messaging.AndroidConfig(
