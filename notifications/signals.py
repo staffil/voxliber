@@ -25,6 +25,7 @@ def notify_new_episode(sender, instance, created, **kwargs):
     cover_url = ''
     if book.cover_img:
         cover_url = f'https://voxliber.ink{book.cover_img.url}'
+    print(f"🖼️ cover_url: {cover_url}")
 
     # DB 알림 저장
     notifications = [
