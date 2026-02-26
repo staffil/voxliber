@@ -23,52 +23,113 @@ def my_profile(request):
     user = request.user
     books = Books.objects.filter(user=user).order_by('-created_at')
     books_count = books.count()
-    six_months_ago = datetime.now() - timedelta(days=180)
 
-    # 월별 TTS 생성 시간 (Content 기준 - 내가 만든 에피소드)
+    # =====================================================
+    # 활동 통계 차트 데이터 (일/월/연도별)
+    # =====================================================
+    now = datetime.now()
+
+    # ── 일별 (최근 30일) ──────────────────────────────
+    thirty_days_ago = now - timedelta(days=30)
+
+    tts_daily = (
+        Content.objects
+        .filter(book__user=user, created_at__gte=thirty_days_ago)
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(total=Sum('duration_seconds'))
+        .order_by('day')
+    )
+    listening_daily = (
+        ListeningHistory.objects
+        .filter(user=user, listened_at__gte=thirty_days_ago)
+        .annotate(day=TruncDate('listened_at'))
+        .values('day')
+        .annotate(total=Sum('listened_seconds'))
+        .order_by('day')
+    )
+
+    # ── 월별 (최근 12개월) ────────────────────────────
+    twelve_months_ago = now - timedelta(days=365)
+
     tts_monthly = (
         Content.objects
-        .filter(book__user=request.user, created_at__gte=six_months_ago)
+        .filter(book__user=user, created_at__gte=twelve_months_ago)
         .annotate(month=TruncMonth('created_at'))
         .values('month')
         .annotate(total=Sum('duration_seconds'))
         .order_by('month')
     )
-
-    # 월별 청취 시간 (ListeningHistory 기준)
     listening_monthly = (
         ListeningHistory.objects
-        .filter(user=request.user, listened_at__gte=six_months_ago)
+        .filter(user=user, listened_at__gte=twelve_months_ago)
         .annotate(month=TruncMonth('listened_at'))
         .values('month')
         .annotate(total=Sum('listened_seconds'))
         .order_by('month')
     )
 
-    # 주별 청취 시간
-    four_weeks_ago = datetime.now() - timedelta(weeks=8)
-    listening_weekly = (
+    # ── 연도별 (전체) ─────────────────────────────────
+    tts_yearly = (
+        Content.objects
+        .filter(book__user=user)
+        .annotate(year=TruncYear('created_at'))
+        .values('year')
+        .annotate(total=Sum('duration_seconds'))
+        .order_by('year')
+    )
+    listening_yearly = (
         ListeningHistory.objects
-        .filter(user=request.user, listened_at__gte=four_weeks_ago)
-        .annotate(week=TruncWeek('listened_at'))
-        .values('week')
+        .filter(user=user)
+        .annotate(year=TruncYear('listened_at'))
+        .values('year')
         .annotate(total=Sum('listened_seconds'))
-        .order_by('week')
+        .order_by('year')
     )
 
-    # JSON으로 변환
-    tts_chart = {
-        'labels': [x['month'].strftime('%m월') for x in tts_monthly],
-        'data': [round((x['total'] or 0) / 60, 1) for x in tts_monthly],  # 분 단위
-    }
-    listening_chart_monthly = {
-        'labels': [x['month'].strftime('%m월') for x in listening_monthly],
-        'data': [round((x['total'] or 0) / 3600, 1) for x in listening_monthly],  # 시간 단위
-    }
-    listening_chart_weekly = {
-        'labels': [x['week'].strftime('%m/%d') for x in listening_weekly],
-        'data': [round((x['total'] or 0) / 60, 1) for x in listening_weekly],
-    }
+    # ── JSON 직렬화 ───────────────────────────────────
+    chart_data = json.dumps({
+        'daily': {
+            'tts': {
+                'labels': [x['day'].strftime('%m/%d') for x in tts_daily],
+                'data':   [round((x['total'] or 0) / 60, 1) for x in tts_daily],
+            },
+            'listening': {
+                'labels': [x['day'].strftime('%m/%d') for x in listening_daily],
+                'data':   [round((x['total'] or 0) / 60, 1) for x in listening_daily],
+            },
+        },
+        'monthly': {
+            'tts': {
+                'labels': [x['month'].strftime('%y.%m') for x in tts_monthly],
+                'data':   [round((x['total'] or 0) / 60, 1) for x in tts_monthly],
+            },
+            'listening': {
+                'labels': [x['month'].strftime('%y.%m') for x in listening_monthly],
+                'data':   [round((x['total'] or 0) / 3600, 1) for x in listening_monthly],
+            },
+        },
+        'yearly': {
+            'tts': {
+                'labels': [str(x['year'].year) for x in tts_yearly],
+                'data':   [round((x['total'] or 0) / 3600, 1) for x in tts_yearly],
+            },
+            'listening': {
+                'labels': [str(x['year'].year) for x in listening_yearly],
+                'data':   [round((x['total'] or 0) / 3600, 1) for x in listening_yearly],
+            },
+        },
+    })
+
+    # =====================================================
+    # POST: 프로필 업데이트
+    # =====================================================
+    def _render(extra=None):
+        return render(request, "mypage/my_profile.html", {
+            "books_count": books_count,
+            "books": books,
+            "chart_data": chart_data,
+        })
 
     if request.method == "POST":
         nickname = request.POST.get("nickname", "").strip()
@@ -79,72 +140,52 @@ def my_profile(request):
         remove_avatar = request.POST.get("remove_avatar") == "true"
         remove_cover = request.POST.get("remove_cover") == "true"
 
-        # 닉네임 업데이트 (필수)
-        if nickname:
-            user.nickname = nickname
-        else:
+        if not nickname:
             messages.error(request, "닉네임을 입력해주세요.")
-            context = {"books_count": books_count}
-            return render(request, "mypage/my_profile.html", context)
-        
-        
+            return _render()
+
         if Users.objects.filter(nickname=nickname).exclude(pk=user.pk).exists():
             messages.error(request, "현재 있는 닉네임입니다. 다른걸 선택해 주세요")
-            context = {"books_count": books_count, "books": books}
-            return render(request, "mypage/my_profile.html", context)
+            return _render()
+
         user.nickname = nickname
 
-
-        # 사용자명 업데이트
         if username:
             user.username = username
-
-        # 성별 업데이트
         if gender in ["M", "F", "O"]:
             user.gender = gender
 
-        # 생년월일 업데이트
         user.birthdate = birthdate
 
-        # 나이 업데이트
         if age:
             try:
                 user.age = int(age)
             except ValueError:
                 pass
 
-        # 프로필 이미지 삭제
         if remove_avatar:
             user.user_img = None
-
-        # 프로필 이미지 업데이트
         if "user_img" in request.FILES:
             user.user_img = request.FILES["user_img"]
 
-        # 커버 이미지 삭제
         if remove_cover:
             user.cover_img = None
-
-        # 커버 이미지 업데이트
         if "cover_img" in request.FILES:
             user.cover_img = request.FILES["cover_img"]
 
         user.save()
         messages.success(request, "프로필이 성공적으로 업데이트되었습니다.")
         return redirect("mypage:my_profile")
-        
 
+    # =====================================================
+    # GET
+    # =====================================================
     context = {
         "books_count": books_count,
         "books": books,
-                'tts_chart': json.dumps(tts_chart),
-        'listening_chart_monthly': json.dumps(listening_chart_monthly),
-        'listening_chart_weekly': json.dumps(listening_chart_weekly),
+        "chart_data": chart_data,
     }
     return render(request, "mypage/my_profile.html", context)
-
-
-
 
 
 @login_required_to_main
