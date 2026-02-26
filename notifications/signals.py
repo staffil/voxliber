@@ -77,7 +77,7 @@ def notify_new_follower(sender, instance, created, **kwargs):
         type='new_follower',
         title='새 팔로워',
         message=f'{instance.follower.username}님이 팔로우했습니다.',
-        link=f'/user/{instance.follower.id}/',
+        link=f'/user/{instance.follower.public_uuid}/',
     )
 
     send_push_multicast(
