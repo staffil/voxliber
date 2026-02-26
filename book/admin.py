@@ -621,7 +621,7 @@ class PlaylistItemInline(admin.TabularInline):
             '</div></div>'
             '<div>💬 댓글 <b style="color:#059669;">{}개</b></div>'
             '</div>',
-            score, listeners, completion, completion,
+            score, listeners, completion, completion, comments,   # ← 여기 추가
             sc=score_color, bar=bar_color,
         )
     stats_cell.short_description = '유저 반응 지표'
