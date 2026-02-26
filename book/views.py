@@ -3110,3 +3110,16 @@ def ad_click(request, uuid):
         clicked_at=timezone.now()
     )
     return JsonResponse({'status': 'ok', 'redirect_url': ad.link_url})
+
+
+def content_youtube_thumbnail(request, content_uuid):
+    from book.models import Content
+
+    content = get_object_or_404(Content, public_uuid=content_uuid, is_deleted=False)
+    book = content.book
+
+    context = {
+        "content": content,
+        "book": book,
+    }
+    return render(request, "book/content_youtube_thumbnail.html", context)

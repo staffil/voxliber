@@ -44,6 +44,10 @@ urlpatterns=[
     path("book/snap/", views.book_snap_list, name="book_snap_list"),
     path("book/snap/<uuid:snap_uuid>/", views.book_snap_detail, name="book_snap_detail"),
 
+    
+    path('content/<uuid:content_uuid>/youtube/',
+     views.content_youtube_thumbnail,
+     name='content_youtube_thumbnail'),
     # API (AJAX)
     path("book/snap/<uuid:snap_uuid>/like/", views.book_snap_like, name="book_snap_like"),
     path("book/snap/<uuid:snap_uuid>/view/", views.book_snap_view_count, name="book_snap_view_count"),
