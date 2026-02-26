@@ -2,7 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from book.models import Content, Follow, BookmarkBook
 from notifications.models import FCMToken, Notification
-from .fcm import send_push_multicast
+from notifications.fcm import send_push_multicast
 
 
 @receiver(post_save, sender=Content)
