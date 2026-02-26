@@ -82,21 +82,3 @@ def send_push_multicast(tokens: list, title: str, body: str, data: dict = None):
             print(f'❌ FCM 멀티캐스트 예외: {type(e).__name__}: {e}')
             logger.warning(f'FCM 멀티캐스트 실패: {e}')
 
-@receiver(post_save, sender=Follow)
-def notify_new_follower(sender, instance, created, **kwargs):
-    """팔로우 시 작가에게 푸시 발송"""
-    if not created:
-        return
-
-    tokens = list(
-        FCMToken.objects.filter(user=instance.following).values_list('token', flat=True)
-    )
-    print(f"👤 팔로우 알림: {instance.follower} → {instance.following}, 토큰 {len(tokens)}개")
-
-    if tokens:
-        send_push_multicast(
-            tokens=tokens,
-            title='새 팔로워',
-            body=f'{instance.follower.username}님이 팔로우했습니다.',
-            data={'type': 'new_follower'},
-        )
