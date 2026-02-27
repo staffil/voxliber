@@ -1,0 +1,1044 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER - 목소리로 듣는 이야기{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home/main/audio.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/banner.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/common.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/main.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/poem.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/ranking.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/recent.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/resume.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/snap.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/snippet.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/spotlight.css' %}">
+<link rel="stylesheet" href="{% static 'css/home/main/genres.css' %}">
+
+{% endblock %}
+
+
+{% block content %}
+<div class="main-container">
+  <div class="main-content-wrapper">
+
+    <!-- =====================================================
+         프로모 배너 슬라이더
+         ===================================================== -->
+    <div class="promo-container-wrapper">
+      <div class="promo-container">
+        {% for advertisment in advertisment_list %}
+        <div class="promo-banner">
+          <a href="{{ advertisment.link }}">
+            <img src="{{ advertisment.advertisment_img.url }}" alt="이벤트" loading="lazy">
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+
+      <button class="promo-nav promo-nav-prev" id="promoPrev" title="이전 광고">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+      </button>
+      <button class="promo-nav promo-nav-next" id="promoNext" title="다음 광고">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      </button>
+
+      <div class="promo-controls">
+        <div class="promo-counter">
+          <span id="currentSlide">1</span> / <span id="totalSlides">{{ advertisment_list|length }}</span>
+        </div>
+        <button class="promo-play-pause" id="promoPlayPause" title="일시정지">
+          <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
+          <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div class="promo-indicators">
+          {% for advertisment in advertisment_list %}<span class="indicator"></span>{% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <br><br><br>
+
+    <!-- =====================================================
+         메인 탭 네비게이션
+         ===================================================== -->
+    <div class="main-tab-wrapper">
+      <div class="main-tab-buttons">
+        <div class="main-tab-btn active" data-main-tab="audiobook-tab">오디오북</div>
+        <div class="main-tab-btn" data-main-tab="ai-novel-tab">AI 소설</div>
+      </div>
+    </div>
+
+
+    <!-- =====================================================
+         오디오북 탭
+         ===================================================== -->
+    <div id="audiobook-tab" class="main-tab-panel active">
+
+      <!-- 최근 본 작품 (로그인 유저) -->
+      {% if request.user.is_authenticated %}
+      <section class="content-section recent-section">
+        <div class="section-header">
+          <h2 class="section-title"><span class="title-icon"></span>최근 본 작품</h2>
+        </div>
+        <div class="recent-books-carousel">
+          {% for progress in recent_books %}
+          <div class="recent-book-card-wrapper">
+            <a href="{% if progress.current_content %}{% url 'book:content_detail' progress.current_content.public_uuid %}{% else %}{% url 'book:book_detail' progress.book.public_uuid %}{% endif %}" class="recent-book-card">
+              <div class="recent-cover">
+                {% if progress.book.cover_img %}
+                  <img src="{{ progress.book.cover_img.url }}" alt="{{ progress.book.name }}" loading="lazy">
+                {% else %}
+                  <div class="recent-placeholder">📖</div>
+                {% endif %}
+              </div>
+              <div class="recent-info">
+                <h4>{{ progress.book.name }}</h4>
+                <p>{{ progress.last_read_content_number }}화 / {{ progress.book.contents.count }}화</p>
+              </div>
+            </a>
+          </div>
+          {% empty %}
+          <div class="empty-state">최근 본 작품이 없습니다</div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- 이어듣기 (로그인 + 기록 있는 경우) -->
+      {% if request.user.is_authenticated and recent_listening %}
+      <section class="content-section continue-listening-section">
+        <div class="section-header">
+          <h2 class="section-title"><span class="title-icon"></span>이어듣기</h2>
+        </div>
+        <div class="continue-listening-grid">
+          {% for history in recent_listening %}
+          <div class="continue-item">
+            <a href="{% url 'book:content_detail' history.content.public_uuid %}"
+               class="continue-cover"
+               data-position="{{ history.last_position }}"
+               data-login-required>
+              {% if history.book.cover_img %}
+                <img src="{{ history.book.cover_img.url }}" alt="{{ history.book.name }}" loading="lazy">
+              {% else %}
+                <div class="continue-placeholder">🎧</div>
+              {% endif %}
+            </a>
+            <div class="continue-info">
+              <div class="continue-info-header">
+                <h3 class="continue-book-title">{{ history.book.name }}</h3>
+                <div class="continue-menu">
+                  <button class="continue-menu-btn" type="button">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+                    </svg>
+                  </button>
+                  <div class="continue-menu-dropdown">
+                    <a href="{% url 'book:content_detail' history.content.public_uuid %}" class="continue-menu-item">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                      </svg>
+                      상세보기
+                    </a>
+                    <a class="continue-menu-item continue-delete-btn"
+                       href="{% url 'main:delete_listening_history' history.book.public_uuid %}"
+                       data-history-id="{{ history.id }}"
+                       onclick="return confirm('청취 기록을 삭제하시겠습니까?')">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                      </svg>
+                      기록 삭제
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <p class="continue-episode">{{ history.content.number }}화 · {{ history.content.title }}</p>
+              <span class="continue-time">{{ history.last_position|floatformat:0 }}초</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- 히어로 배너 -->
+      <section class="hero-section">
+        <div class="hero-background">
+          {% for news in news_list %}
+            {% if news.news_img %}
+              <img src="{{ news.news_img.url }}" alt="VOXLIBER" loading="lazy">
+            {% else %}
+              <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
+            {% endif %}
+          {% empty %}
+            <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER" loading="lazy">
+          {% endfor %}
+        </div>
+        <div class="hero-overlay" style="border-radius:15px;"></div>
+        <div class="hero-content">
+          <h1 class="hero-title">목소리로 듣는 이야기</h1>
+          <p class="hero-subtitle">AI가 만드는 오디오북으로 새로운 독서 경험을 시작하세요</p>
+          {% if user.is_authenticated %}
+            <a href="{% url 'book:book_tos' %}" class="hero-cta" data-login-required>
+              <span>작품 만들기</span><span>→</span>
+            </a>
+          {% else %}
+            <a href="book/book_tos/" class="hero-cta" onclick="openLogin(); return false;">
+              <span>작품 만들기</span><span>→</span>
+            </a>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- 북스냅 미리보기 -->
+      <div class="snap-reels-section">
+        <h3 class="snap-reels-title">북스냅 미리보기</h3>
+        <div class="snap-reels-wrapper">
+          {% for snap in snap_list %}
+          <div class="snap-reels-item">
+            <a href="{% url 'book:book_snap_detail' snap.public_uuid %}" data-login-required>
+              <div class="snap-reels-media" style="position:relative; overflow:hidden;">
+                {% if snap.thumbnail %}
+                  <img class="snap-thumbnail lazy-img" data-src="{{ snap.thumbnail.url }}"
+                       alt="{{ snap.snap_title }}" loading="lazy" style="width:100%; display:block;">
+                {% else %}
+                  <img class="snap-thumbnail lazy-img" data-src="{% static 'images/book_snap_placeholder.png' %}"
+                       alt="{{ snap.snap_title }}" loading="lazy" style="width:100%; display:block;">
+                {% endif %}
+                {% if snap.snap_video %}
+                  <video class="hover-preview-video" muted playsinline preload="none"
+                         data-src="{{ snap.snap_video.url }}"
+                         style="position:absolute; top:0; left:0; width:100%; height:100%; display:none;"></video>
+                {% endif %}
+                <div class="snap-reels-overlay">{{ snap.snap_title|default:"제목 없음" }}</div>
+              </div>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- 오늘의 추천 + 인기 순위 -->
+      <section class="content-section spotlight-section">
+        <div class="section-header">
+          <h2 class="section-title">오늘의 추천</h2>
+        </div>
+        <div class="scroll-container">
+          <div class="spotlight-grid">
+            {% for book in new_books|slice:":8" %}
+            <div class="spotlight-card">
+              <a href="{% url 'book:book_detail' book.public_uuid %}" class="spotlight-link">
+                <div class="spotlight-thumb">
+                  {% if book.cover_img %}
+                    <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                  {% else %}
+                    <div class="spotlight-placeholder">📚</div>
+                  {% endif %}
+                </div>
+                <div class="spotlight-info">
+                  <h3 class="spotlight-name">{{ book.name }}</h3>
+                  <p class="spotlight-writer">{{ book.user.nickname }}</p>
+                </div>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="section-header" style="margin-top:5rem;">
+          <h2 class="section-title">오늘의 인기 오디오북</h2>
+        </div>
+        <div class="ranking-container">
+          {% for book in popular_books|slice:":12" %}
+          <a href="{% url 'book:book_detail' book.public_uuid %}" class="rank-card">
+            <div class="rank-badge">{{ forloop.counter }}</div>
+            <div class="rank-thumb">
+              {% if book.cover_img %}
+                <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+              {% else %}
+                <div class="rank-placeholder">📖</div>
+              {% endif %}
+            </div>
+            <div class="rank-details">
+              <h4 class="rank-title">{{ book.name }}</h4>
+              <p class="rank-author">{{ book.user.nickname }}</p>
+            </div>
+            <div class="rank-meta">
+              <span class="play-count">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
+                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
+                {{ book.view_count|default:"0" }}
+              </span>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+
+      <!-- 실시간 인기 차트 -->
+      <section class="content-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span class="title-icon"></span>실시간 인기 차트
+            <span class="live-indicator">LIVE</span>
+          </h2>
+        </div>
+        <div class="ranking-list">
+          {% for book in popular_books|slice:":5" %}
+          <div class="ranking-item-wrapper">
+            <a href="{% url 'book:book_detail' book.public_uuid %}" class="ranking-item">
+              <div class="rank-number rank-{{ forloop.counter }}">{{ forloop.counter }}</div>
+              <div class="rank-cover">
+                {% if book.cover_img %}
+                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                {% else %}
+                  <div class="rank-placeholder">📖</div>
+                {% endif %}
+              </div>
+              <div class="rank-info">
+                <h4 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h4>
+                <p class="rank-meta">{{ book.user.nickname }} • {{ book.genres.all.0.name }}</p>
+                {% if book.tags.exists %}
+                <p style="margin-top:2px; font-size:0.3em; color:#6366f1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                  {% for tag in book.tags.all|slice:":5" %}#{{ tag.name }}{% if not forloop.last %} {% endif %}{% endfor %}
+                </p>
+                {% endif %}
+              </div>
+              <div class="rank-stats">
+                <span class="rank-score">⭐ {{ book.book_score|default:"0.0" }}</span>
+                <span class="rank-change {% if forloop.counter <= 3 %}up{% else %}down{% endif %}">
+                  {% if forloop.counter <= 3 %}▲{% else %}▼{% endif %}
+                </span>
+              </div>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+
+
+
+
+      <!-- =====================================================
+           🎵 장르별 플레이리스트
+           ===================================================== -->
+      <section class="content-section genre-playlist-section">
+        <div class="playlist-section-header">
+          <h2 class="playlist-section-title">
+            장르별 플레이리스트
+            <span class="title-label">NEW</span>
+          </h2>
+          <div class="playlist-type-tabs" id="playlistTypeTabs">
+            <div class="playlist-type-tab active" data-ptype="popular">🔥 인기</div>
+            <div class="playlist-type-tab" data-ptype="new">🆕 신작</div>
+            <div class="playlist-type-tab" data-ptype="short">⚡ 짧게</div>
+            <div class="playlist-type-tab" data-ptype="rated">⭐ 고평점</div>
+          </div>
+        </div>
+
+        <div class="playlist-cards-grid" id="playlistCardsGrid">
+          {% for playlist in popular_genres %}
+          <div class="playlist-card" data-ptype="{{ playlist.playlist_type }}"  data-playlist-id="{{ playlist.id }}">
+
+            <div class="playlist-card-art">
+              <div class="art-collage">
+                {% for item in playlist.items.all|slice:":3" %}
+                <div class="art-cell">
+                  {% if item.content.book.cover_img %}
+                    <img src="{{ item.content.book.cover_img.url }}" alt="{{ item.content.book.name }}" loading="lazy">
+                  {% else %}
+                    <div class="placeholder">🎧</div>
+                  {% endif %}
+                </div>
+                {% empty %}
+                  <div class="art-cell placeholder">🎵</div>
+                  <div class="art-cell placeholder">🎵</div>
+                  <div class="art-cell placeholder">🎵</div>
+                {% endfor %}
+              </div>
+              <div class="playlist-card-art-overlay"></div>
+              <div class="playlist-genre-badge">{{ playlist.genre.name }}</div>
+              <div class="playlist-play-overlay">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+
+            <div class="playlist-card-body">
+              <div class="playlist-card-title">{{ playlist.title }}</div>
+              {% if playlist.description %}
+              <div class="playlist-card-desc">{{ playlist.description }}</div>
+              {% endif %}
+
+              <div class="playlist-card-meta">
+                <span class="playlist-meta-item">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                  </svg>
+                  {{ playlist.items.count }}화
+                </span>
+                <span class="playlist-meta-item">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/>
+                  </svg>
+                  모아듣기
+                </span>
+                <span class="playlist-meta-item">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                  </svg>
+                  {{ playlist.get_playlist_type_display }}
+                </span>
+              </div>
+
+              <div class="playlist-episode-preview">
+                {% for item in playlist.items.all|slice:":3" %}
+                <a href="{% url 'book:content_detail' item.content.public_uuid %}"
+                   class="playlist-ep-row" data-login-required>
+                  <span class="ep-num">{{ forloop.counter }}</span>
+                  <div class="ep-thumb">
+                    {% if item.content.book.cover_img %}
+                      <img src="{{ item.content.book.cover_img.url }}" alt="" loading="lazy">
+                    {% else %}
+                      <div class="ep-thumb-placeholder">🎧</div>
+                    {% endif %}
+                  </div>
+                  <div class="ep-info">
+                    <div class="ep-title">{{ item.content.title }}</div>
+                    <div class="ep-book">{{ item.content.book.name }}</div>
+                  </div>
+                  <span class="ep-duration">{{ item.content.get_duration_formatted }}</span>
+                </a>
+                {% empty %}
+                <div style="font-size:0.72rem; color:rgba(255,255,255,0.3); text-align:center; padding:8px 0;">
+                  에피소드가 없습니다
+                </div>
+                {% endfor %}
+
+                {% if playlist.items.count > 3 %}
+                <div class="playlist-more-row">
+                  + {{ playlist.items.count|add:"-3" }}개 더 보기
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="playlist-empty-card" style="grid-column:1/-1;">
+            <span style="font-size:2rem;">🎵</span>
+            <p>장르별 플레이리스트를 준비 중이에요</p>
+            <p style="font-size:0.65rem; opacity:0.6;">
+              관리자 페이지에서 추가하거나<br>
+              <code>python manage.py refresh_playlists</code>를 실행해주세요
+            </p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <!-- 장르별 큐레이션 -->
+      {% for item in genres_with_books %}
+      <section class="content-section genre-curation-section">
+        <div class="section-header">
+          <h2 class="section-title"><span class="title-icon"></span>{{ item.genre.name }} 인기작</h2>
+          <a href="{% url 'main:genres_books' item.genre.id %}" class="view-more-link">더보기 →</a>
+        </div>
+        <div class="genre-carousel">
+          {% for book in item.books %}
+          <div class="genre-book-card">
+            <a href="{% url 'book:book_detail' book.public_uuid %}" class="genre-book-link">
+              <div class="genre-book-cover">
+                {% if book.cover_img %}
+                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                {% else %}
+                  <div class="book-placeholder">{{ book.name|slice:":2"|upper }}</div>
+                {% endif %}
+              </div>
+              <div class="genre-book-info">
+                <h4 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h4>
+                <p class="genre-book-author">{{ book.user.nickname }}</p>
+                <div class="genre-book-stats"><span>⭐ {{ book.book_score|default:"0.0" }}</span></div>
+                {% if book.tags.exists %}
+                <div class="card-genres">
+                  {% for genre in book.genres.all %}
+                    <span class="genre-tag" style="background-color:{{ genre.genres_color|default:'#6366f1' }};">{{ genre.name }}</span>
+                  {% endfor %}
+                </div>
+                <div class="card-tags">
+                  {% for tag in book.tags.all %}<span class="tag-item">#{{ tag.name }}</span>{% endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+
+      <!-- 장르별 인기 책 (필터) -->
+      <section class="content-section">
+        <div class="section-header">
+          <h2 class="section-title">장르별 인기 책</h2>
+        </div>
+        <div class="genre-filters">
+          <button class="genre-filter-btn active" data-genre-id="">전체</button>
+          {% for genre in genres_list %}
+          <button class="genre-filter-btn" data-genre-id="{{ genre.id }}">{{ genre.name }}</button>
+          {% endfor %}
+        </div>
+        <div class="books-grid" id="genreBooks" data-filter-url="{% url 'main:filter_books' %}">
+          {% for book in popular_books %}
+          <div class="book-item-wrapper">
+            <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
+              <div class="book-cover-wrapper">
+                {% if book.cover_img %}
+                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                {% else %}
+                  <div class="book-placeholder">{{ book.name|slice:":2"|upper }}</div>
+                {% endif %}
+              </div>
+              <div class="book-details">
+                <h3 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h3>
+                <div class="card-genres">
+                  {% for genre in book.genres.all %}
+                    <span class="genre-tag" style="background-color:{{ genre.genres_color|default:'#6366f1' }};">{{ genre.name }}</span>
+                  {% endfor %}
+                </div>
+                <div class="card-tags">
+                  {% for tag in book.tags.all %}<span class="tag-item">#{{ tag.name }}</span>{% endfor %}
+                </div>
+              </div>
+            </a>
+          </div>
+          {% empty %}
+          <div class="empty-state">아직 등록된 작품이 없습니다</div>
+          {% endfor %}
+        </div>
+      </section>
+
+    </div><!-- /audiobook-tab -->
+
+
+
+      <!-- 지금 뜨는 작품 -->
+      {% if trending_books %}
+      <section class="content-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span class="title-icon"></span>지금 뜨는 작품
+            <span class="trending-badge">HOT</span>
+          </h2>
+        </div>
+        <div class="books-grid">
+          {% for book in trending_books %}
+          <div class="book-item-wrapper">
+            <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
+              <div class="book-cover-wrapper">
+                {% if book.cover_img %}
+                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                {% else %}
+                  <div class="book-placeholder">{{ book.name|slice:":2"|upper }}</div>
+                {% endif %}
+                <div class="book-badge trending">베스트셀러</div>
+              </div>
+              <div class="book-details">
+                <h3 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h3>
+                <p class="book-meta">{{ book.user.nickname }}</p>
+                <div class="card-genres">
+                  {% for genre in book.genres.all %}
+                    <span class="genre-tag" style="background-color:{{ genre.genres_color|default:'#6366f1' }};">{{ genre.name }}</span>
+                  {% endfor %}
+                </div>
+                <div class="card-tags">
+                  {% for tag in book.tags.all %}
+                    <span class="tag-item">#{{ tag.name }}</span>
+                  {% endfor %}
+                </div>
+                <p class="book-stats">⭐ {{ book.book_score|default:"0.0" }}</p>
+              </div>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- AI 광고 배너 -->
+      <!-- {% with ann=ai_advertismemt_img.0 %}
+      {% if ann %}
+      <a href="{{ ann.link }}" class="hero-announce-link">
+        <section class="hero-section hero-announce">
+          <div class="hero-background">
+            {% if ann.advertisment_img %}
+              <img src="{{ ann.advertisment_img.url }}" alt="{{ ann.title }}">
+            {% else %}
+              <img src="{% static 'images/default-banner.jpg' %}" alt="VOXLIBER">
+            {% endif %}
+          </div>
+          <div class="hero-overlay" style="border-radius:15px;"></div>
+          <div class="hero-content">
+            <p class="hero-announce-label">📣 새로운 소식</p>
+            <h2 class="hero-announce-title">{{ ann.title }}</h2>
+            <span class="hero-announce-cta">자세히 보기 →</span>
+          </div>
+        </section>
+      </a>
+      {% endif %}
+      {% endwith %} -->
+
+      <!-- 이달의 작가 -->
+      <section class="content-section">
+        <div class="section-header">
+          <h2 class="section-title"><span class="title-icon"></span>이달의 작가</h2>
+        </div>
+        <div class="featured-authors">
+          {% for author in popular_authors %}
+          <a href="{% url 'main:user_info' author.public_uuid %}">
+            <div class="author-item">
+              <div class="author-rank rank-{{ forloop.counter }}">{{ forloop.counter }}</div>
+              <div class="author-photo">
+                {% if author.user_img %}
+                  <img src="{{ author.user_img.url }}" alt="{{ author.nickname }}" loading="lazy">
+                {% else %}
+                  <div class="author-placeholder">{{ author.nickname|slice:":1"|upper }}</div>
+                {% endif %}
+              </div>
+              <div class="author-info">
+                <h3>{{ author.nickname }}</h3>
+                <p>작품 {{ author.book_count }}개</p>
+              </div>
+            </div>
+          </a>
+          {% empty %}
+          <div class="empty-state">아직 등록된 작가가 없습니다</div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <!-- 장르 기반 추천 (로그인 유저) -->
+      {% if user.is_authenticated and recommended_books %}
+      <section class="content-section recommended-section">
+        <div class="section-header">
+          <h2 class="section-title"><span class="title-icon"></span>{{ user.nickname }}님을 위한 장르 추천</h2>
+          <p class="section-subtitle">당신이 좋아할 만한 작품들이에요</p>
+        </div>
+        <div class="books-grid">
+          {% for book in recommended_books %}
+          <div class="book-item-wrapper">
+            <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
+              <div class="book-cover-wrapper">
+                {% if book.cover_img %}
+                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                {% else %}
+                  <div class="book-placeholder">{{ book.name|slice:":2"|upper }}</div>
+                {% endif %}
+                <div class="book-badge recommended">추천</div>
+              </div>
+              <div class="book-details">
+                <h3 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h3>
+                <div class="card-genres">
+                  {% for genre in book.genres.all %}
+                    <span class="genre-tag" style="background-color:{{ genre.genres_color|default:'#6366f1' }};">{{ genre.name }}</span>
+                  {% endfor %}
+                </div>
+                <div class="card-tags">
+                  {% for tag in book.tags.all %}<span class="tag-item">#{{ tag.name }}</span>{% endfor %}
+                </div>
+                <p class="book-stats">⭐ {{ book.book_score|default:"0.0" }}</p>
+              </div>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- AI 추천 (로그인 유저) -->
+      {% if user.is_authenticated and ai_recommended_books %}
+      <section class="content-section recommended-section">
+        <div class="section-header">
+          <h2 class="section-title"><span class="title-icon"></span>AI가 추천하는 책</h2>
+          <p class="section-subtitle">당신이 좋아할 만한 작품들이에요</p>
+        </div>
+        <div class="books-grid">
+          {% for book in ai_recommended_books %}
+          <div class="book-item-wrapper">
+            <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-item">
+              <div class="book-cover-wrapper">
+                {% if book.cover_img %}
+                  <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                {% else %}
+                  <div class="book-placeholder">{{ book.name|slice:":2"|upper }}</div>
+                {% endif %}
+                <div class="book-badge recommended">추천</div>
+              </div>
+              <div class="book-details">
+                <h3 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ book.name }}</h3>
+                <div class="card-genres">
+                  {% for genre in book.genres.all %}
+                    <span class="genre-tag" style="background-color:{{ genre.genres_color|default:'#6366f1' }};">{{ genre.name }}</span>
+                  {% endfor %}
+                </div>
+                <div class="card-tags">
+                  {% for tag in book.tags.all %}<span class="tag-item">#{{ tag.name }}</span>{% endfor %}
+                </div>
+                <p class="book-stats">⭐ {{ book.book_score|default:"0.0" }}</p>
+              </div>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      <section class="ai-recommend-section">
+        <a class="ai-recommend-btn" href="ai_recommended/">✨ 추천한 이유 보기</a>
+      </section>
+      {% endif %}
+
+
+
+    <!-- =====================================================
+         AI 소설 탭
+         ===================================================== -->
+    <div id="ai-novel-tab" class="main-tab-panel">
+      <div class="ai-novel-tab-content">
+        <div class="ai-sub-tab-buttons">
+          <div class="ai-sub-tab-btn active" data-ai-tab="ai-stories-panel">AI Story</div>
+          <div class="ai-sub-tab-btn" data-ai-tab="shared-stories-panel">공유한 AI</div>
+        </div>
+
+        <!-- AI Story -->
+        <div id="ai-stories-panel" class="ai-sub-panel active">
+          <div class="ai-story-grid">
+            {% for story in ai_stories|slice:":30" %}
+              {% if story.public_uuid %}
+              <div class="ai-story-card">
+                <a href="{% url 'character:story_intro' story.public_uuid %}" class="card-link">
+                  <div class="card-image-box">
+                    {% if story.story_desc_video %}
+                      <video class="card-image lazy-video" autoplay loop muted playsinline preload="none"
+                             data-src="{{ story.story_desc_video.url }}">
+                        <source src="{{ story.story_desc_video.url }}" type="video/mp4">
+                      </video>
+                    {% elif story.cover_image %}
+                      <img src="{{ story.cover_image.url }}" alt="{{ story.title }}" class="card-image" loading="lazy">
+                    {% else %}
+                      <div class="card-placeholder"><span class="placeholder-icon">🌙</span></div>
+                    {% endif %}
+                    <div class="card-gradient-overlay"></div>
+                    <div class="card-content">
+                      <h3 class="card-title">{{ story.title }}</h3>
+                      {% if story.description %}
+                      <p class="card-desc">{{ story.description|truncatewords:20 }}</p>
+                      {% endif %}
+                    </div>
+                  </div>
+                </a>
+              </div>
+              {% endif %}
+            {% empty %}
+            <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:rgba(255,255,255,0.5);">
+              <p>아직 등록된 AI 소설이 없습니다</p>
+              <a href="{% url 'character:make_ai_story' %}" style="display:inline-block; margin-top:16px; padding:12px 28px; background:linear-gradient(135deg,#9f7aea,#7f5af0); color:white; border-radius:50px; text-decoration:none; font-weight:600;">스토리 만들기</a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 공유한 AI -->
+        <div id="shared-stories-panel" class="ai-sub-panel">
+          <div class="ai-story-grid">
+            {% for conv in user_share_list %}
+            <div class="ai-story-card">
+              <a href="{% url 'main:shared_novel' conv.id %}" class="card-link">
+                <div class="card-image-box">
+                  {% if conv.llm.llm_image %}
+                    <img src="{{ conv.llm.llm_image.url }}" alt="{{ conv.llm.name }}" class="card-image" loading="lazy">
+                  {% else %}
+                    <div class="card-placeholder"><span class="placeholder-icon">📖</span></div>
+                  {% endif %}
+                  <div class="card-gradient-overlay">
+                    <div class="user-nickname" style="padding:8px;">
+                      {% if conv.user.user_img %}
+                        <img src="{{ conv.user.user_img.url }}" alt="{{ conv.user.nickname }}">
+                      {% else %}
+                        {{ conv.user.nickname|slice:":1"|upper }}
+                      {% endif %}
+                      <span>{{ conv.user.nickname }}</span>
+                    </div>
+                  </div>
+                  <div class="card-content">
+                    <h3 class="card-title">{{ conv.merged_audio_title|default:conv.llm.name }}</h3>
+                    {% if conv.messages.exists %}
+                      <p class="card-desc">{{ conv.messages.first.content|truncatechars:40|safe }}</p>
+                    {% else %}
+                      <p class="card-desc">아직 대화가 시작되지 않았어요</p>
+                    {% endif %}
+                  </div>
+                </div>
+              </a>
+              <div class="card-meta">공유자: {{ conv.user.nickname|default:'익명' }} | {{ conv.shared_at|date:"m.d H:i" }}</div>
+            </div>
+            {% empty %}
+            <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:rgba(255,255,255,0.5);">
+              <p>아직 공개된 AI 대화가 없어요</p>
+              <a href="{% url 'character:make_ai_story' %}" style="display:inline-block; margin-top:16px; padding:12px 28px; background:linear-gradient(135deg,#9f7aea,#7f5af0); color:white; border-radius:50px; text-decoration:none; font-weight:600;">스토리 만들기</a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div><!-- /ai-novel-tab -->
+
+  </div>
+</div>
+
+
+<!-- =====================================================
+     푸터
+     ===================================================== -->
+<footer class="main-footer">
+  <div class="footer-container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <h2>VOXLIBER</h2>
+        <p>AI 기술로 당신의 이야기를 생생한 오디오북으로 변환합니다. 새로운 독서 경험을 시작하세요.</p>
+      </div>
+      <div class="footer-links">
+        <h3>서비스</h3>
+        <ul>
+          <li><a href="/book/book-snap/" data-login-required>SNAP</a></li>
+          <li><a href="/book/author-dashboard/" data-login-required>작가 센터</a></li>
+          <!-- <li><a href="/advertisment/request/list/" data-login-required>광고 요청</a></li> -->
+          <li><a href="#">요금제</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h3>고객 지원</h3>
+        <ul>
+          <li><a href="faq/">FAQ</a></li>
+          <li><a href="notice/">공지사항</a></li>
+          <li><a href="contact/" data-login-required>문의하기</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h3>법적 정보</h3>
+        <ul>
+          <li><a href="terms/of/service/">이용약관</a></li>
+          <li><a href="privacy/policy/">개인정보처리방침</a></li>
+          <li><a href="copyright/policy/">저작권 정책</a></li>
+          <li><a href="youth/protection/">청소년 보호정책</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="{% static 'js/home/main.js' %}"></script>
+<script src="{% static 'js/common/login_btn.js' %}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.playlist-more-row').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = this.closest('.playlist-card').dataset.playlistId;
+      console.log('playlist id:', id);
+      window.location.href = '/playlist/' + id + '/';
+    });
+  });
+  // =====================================================
+  // 메인 탭 전환
+  // =====================================================
+  var mainTabBtns = document.querySelectorAll('.main-tab-btn');
+  var mainTabPanels = document.querySelectorAll('.main-tab-panel');
+
+  mainTabBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      mainTabBtns.forEach(function(b) { b.classList.remove('active'); });
+      mainTabPanels.forEach(function(p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      var panel = document.getElementById(btn.getAttribute('data-main-tab'));
+      if (panel) panel.classList.add('active');
+    });
+  });
+
+  // =====================================================
+  // AI 서브 탭
+  // =====================================================
+  var aiSubBtns = document.querySelectorAll('.ai-sub-tab-btn');
+  var aiSubPanels = document.querySelectorAll('.ai-sub-panel');
+
+  aiSubBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      aiSubBtns.forEach(function(b) { b.classList.remove('active'); });
+      aiSubPanels.forEach(function(p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      var panel = document.getElementById(btn.getAttribute('data-ai-tab'));
+      if (panel) panel.classList.add('active');
+    });
+  });
+
+  // =====================================================
+  // AI 소설 카드 Lazy Video
+  // =====================================================
+  var lazyVids = document.querySelectorAll('.ai-story-card .lazy-video');
+  if (lazyVids.length > 0) {
+    var vidObs = new IntersectionObserver(function(entries, o) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          var v = e.target;
+          if (v.dataset.src) {
+            v.innerHTML = '<source src="' + v.dataset.src + '" type="video/mp4">';
+            v.load();
+          }
+          o.unobserve(v);
+        }
+      });
+    }, { rootMargin: '200px' });
+    lazyVids.forEach(function(v) { vidObs.observe(v); });
+  }
+
+  // =====================================================
+  // 이어듣기 메뉴 토글
+  // =====================================================
+  var menuButtons = document.querySelectorAll('.continue-menu-btn');
+  menuButtons.forEach(function(button) {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var menu = this.closest('.continue-menu');
+      var isActive = menu.classList.contains('active');
+      document.querySelectorAll('.continue-menu.active').forEach(function(m) {
+        m.classList.remove('active');
+      });
+      if (!isActive) menu.classList.add('active');
+    });
+  });
+  document.addEventListener('click', function() {
+    document.querySelectorAll('.continue-menu.active').forEach(function(m) {
+      m.classList.remove('active');
+    });
+  });
+
+  // =====================================================
+  // 북스냅 Lazy Load + Hover 영상 미리보기
+  // =====================================================
+  var lazyVideos = document.querySelectorAll('video.hover-preview-video');
+  var lazyImages = document.querySelectorAll('img.lazy-img');
+  var mediaObs = new IntersectionObserver(function(entries, obs) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var el = entry.target;
+        if (el.tagName === 'VIDEO' || el.tagName === 'IMG') {
+          el.src = el.dataset.src;
+        }
+        obs.unobserve(el);
+      }
+    });
+  }, { threshold: 0.2 });
+  lazyVideos.forEach(function(v) { mediaObs.observe(v); });
+  lazyImages.forEach(function(i) { mediaObs.observe(i); });
+
+  lazyVideos.forEach(function(video) {
+    var container = video.parentElement;
+    var thumbnail = container.querySelector('.snap-thumbnail');
+    var hoverTimeout;
+    container.addEventListener('mouseenter', function() {
+      if (!video.src) video.src = video.dataset.src;
+      thumbnail.style.display = 'none';
+      video.style.display = 'block';
+      video.currentTime = 0;
+      video.play();
+      hoverTimeout = setTimeout(function() {
+        video.pause();
+        video.style.display = 'none';
+        thumbnail.style.display = 'block';
+      }, 10000);
+    });
+    container.addEventListener('mouseleave', function() {
+      clearTimeout(hoverTimeout);
+      video.pause();
+      video.style.display = 'none';
+      thumbnail.style.display = 'block';
+    });
+  });
+
+  // =====================================================
+  // 이어듣기 재생 위치 포맷
+  // =====================================================
+  document.querySelectorAll('.resume-time').forEach(function(elem) {
+    var seconds = parseFloat(elem.dataset.seconds);
+    if (seconds && !isNaN(seconds)) {
+      elem.textContent = Math.floor(seconds / 60) + '분 ' + Math.floor(seconds % 60) + '초';
+    }
+  });
+
+  document.querySelectorAll('.resume-play-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var contentUrl = this.dataset.contentUrl;
+      var position = parseFloat(this.dataset.position);
+      if (contentUrl && position) {
+        sessionStorage.setItem('resumePosition', position);
+        window.location.href = contentUrl;
+      }
+    });
+  });
+
+  // =====================================================
+  // 플레이리스트 유형 탭 필터
+  // =====================================================
+  var plTabs = document.querySelectorAll('#playlistTypeTabs .playlist-type-tab');
+  var plCards = document.querySelectorAll('#playlistCardsGrid .playlist-card');
+
+  plTabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      var ptype = this.dataset.ptype;
+
+      plTabs.forEach(function(t) { t.classList.remove('active'); });
+      this.classList.add('active');
+
+      var hasVisible = false;
+      plCards.forEach(function(card) {
+        var match = card.dataset.ptype === ptype;
+        if (match) {
+          card.style.display = '';
+          card.style.opacity = '1';
+          card.style.transform = '';
+          hasVisible = true;
+        } else {
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.97)';
+          setTimeout(function() { card.style.display = 'none'; }, 180);
+        }
+      });
+
+      var emptyMsg = document.getElementById('plEmptyMsg');
+      if (!hasVisible) {
+        if (!emptyMsg) {
+          var msg = document.createElement('div');
+          msg.id = 'plEmptyMsg';
+          msg.style.cssText = 'grid-column:1/-1; text-align:center; padding:32px; color:rgba(255,255,255,0.35); font-size:0.85rem;';
+          msg.textContent = '아직 해당 유형의 플레이리스트가 없어요';
+          document.getElementById('playlistCardsGrid').appendChild(msg);
+        } else {
+          emptyMsg.style.display = '';
+        }
+      } else if (emptyMsg) {
+        emptyMsg.style.display = 'none';
+      }
+    });
+  });
+
+});
+</script>
+{% endblock %}
