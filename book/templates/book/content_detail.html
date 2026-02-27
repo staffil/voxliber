@@ -355,7 +355,7 @@
             </div>
 
             <div class="audio-player-controls">
-                <button id="playPauseBtn" class="play-btn" data-login-required>
+                <button id="playPauseBtn" class="play-btn">
                     <svg id="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M8 5v14l11-7z"/>
                     </svg>
@@ -368,15 +368,15 @@
                     <div class="time-display"><span id="currentTime">0:00</span></div>
                     <div class="progress-bar">
                         <div id="progressFill" class="progress-fill"></div>
-                        <input type="range" id="progressSlider" class="progress-slider" min="0" max="100" value="0" data-login-required>
+                        <input type="range" id="progressSlider" class="progress-slider" min="0" max="100" value="0">
                     </div>
                     <div class="time-display"><span id="totalTime">0:00</span></div>
                 </div>
 
-                <button id="playbackSpeedBtn" class="playback-speed-btn" data-login-required>1.0x</button>
+                <button id="playbackSpeedBtn" class="playback-speed-btn">1.0x</button>
 
                 <div class="volume-control">
-                    <button id="volumeBtn" class="volume-btn" data-login-required>
+                    <button id="volumeBtn" class="volume-btn">
                         <svg id="volumeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
                             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
@@ -418,7 +418,7 @@
     <!-- 이전/다음 -->
     <div class="content-navigation">
         {% if prev_content %}
-        <a href="{% url 'book:content_detail' prev_content.public_uuid %}" class="nav-button prev" data-login-required>
+        <a href="{% url 'book:content_detail' prev_content.public_uuid %}" class="nav-button prev">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15 18 9 12 15 6"/>
             </svg>
@@ -440,7 +440,7 @@
         {% endif %}
 
         {% if next_content %}
-        <a href="{% url 'book:content_detail' next_content.public_uuid %}" class="nav-button next" data-login-required>
+        <a href="{% url 'book:content_detail' next_content.public_uuid %}" class="nav-button next">
             <div style="text-align: right;">
                 <div style="font-size: 12px; color: #888;">다음 에피소드</div>
                 <div style="font-weight: 600;">{{ next_content.number }}화. {{ next_content.title }}</div>

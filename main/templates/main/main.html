@@ -1075,6 +1075,108 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
 
   /* 프리뷰 슬라이드 높이 */
   .vm-promo-slide { height: 160px; }
+
+  /* 탭 텍스트 축소 */
+  .vm-tab { padding: 13px 16px; font-size: .84rem; }
+
+  /* 에피소드 카드 너비 축소 */
+  .vm-ep-card { width: 185px; }
+
+  /* 책 메타 텍스트 축소 */
+  .vm-bk-name { font-size: .78rem; }
+  .vm-bk-author { font-size: .65rem; }
+}
+
+/* ── 400px 이하: 소형 모바일 세부 조정 ── */
+@media (max-width: 400px) {
+  .vm-inner { padding: 0 12px; }
+  .vm-section { padding: 36px 0; }
+  .vm-cycle { padding: 38px 0; }
+
+  /* 히어로 헤딩 축소 */
+  .vm-hero-h1 { font-size: clamp(1.85rem, 9.5vw, 2.4rem); }
+  .vm-hero-tagline { font-size: .86rem; margin-bottom: 24px; }
+  .vm-hero-kicker { font-size: .63rem; padding: 5px 12px; margin-bottom: 20px; }
+  .vm-hero-layout { padding: 44px 0 36px; }
+
+  /* 소셜 프루프 축소 */
+  .vm-proof-num { font-size: 1.25rem; }
+  .vm-proof-lbl { font-size: .59rem; }
+  .vm-hero-proof { gap: 10px; padding-top: 20px; }
+  .vm-proof-div { height: 22px; }
+
+  /* 탭바 / 탭 */
+  .vm-tab { padding: 11px 14px; font-size: .8rem; }
+
+  /* 섹션 타이틀 */
+  .vm-title { font-size: clamp(1.35rem, 5.5vw, 1.8rem); }
+  .vm-eyebrow { font-size: .62rem; }
+
+  /* 사이클 스텝 */
+  .vm-cycle-step { padding: 20px 14px 18px; }
+
+  /* 에피소드 카드 */
+  .vm-ep-card { width: 170px; }
+  .vm-ep-thumb { height: 96px; }
+
+  /* 랭킹 */
+  .vm-rthumb { width: 36px; height: 48px; }
+  .vm-rtitle { font-size: .82rem; }
+  .vm-rauthor { font-size: .68rem; }
+  .vm-rscore { font-size: .75rem; }
+
+  /* 이어듣기 카드 */
+  .vm-cont-thumb { width: 44px; height: 58px; }
+  .vm-cont-name { font-size: .76rem; }
+
+  /* 그리드 책 카드 */
+  .vm-grid { gap: 8px; }
+  .vm-bk-name { font-size: .75rem; }
+
+  /* 프로모 */
+  .vm-promo-slide { height: 140px; }
+
+  /* 풋터 */
+  .vm-footer { padding: 40px 0 24px; margin-top: 44px; }
+}
+
+/* ── 360px 이하: 초소형 (갤럭시 S8 등) ── */
+@media (max-width: 360px) {
+  .vm-inner { padding: 0 10px; }
+
+  /* 히어로 */
+  .vm-hero-h1 { font-size: 1.7rem; line-height: 1.12; }
+  .vm-hero-tagline { font-size: .82rem; }
+  .vm-hero-layout { padding: 40px 0 32px; }
+  .vm-hero-btns { gap: 8px; }
+  .vm-btn-cta,
+  .vm-btn-outline { padding: 13px 16px; font-size: .85rem; }
+
+  /* 소셜 프루프: 작아서 가로로 안 들어가면 줄바꿈 */
+  .vm-hero-proof { flex-wrap: wrap; gap: 8px 12px; }
+  .vm-proof-div { display: none; }
+
+  /* 탭 */
+  .vm-tab { padding: 10px 12px; font-size: .78rem; }
+
+  /* 그리드 */
+  .vm-grid { gap: 6px; }
+
+  /* 프로모 */
+  .vm-promo-slide { height: 120px; }
+  .vm-promo-nav { width: 26px; height: 26px; }
+
+  /* 랭킹 */
+  .vm-rank-row { gap: 8px; padding: 9px 6px; }
+  .vm-rthumb { width: 32px; height: 43px; }
+  .vm-rn { font-size: .9rem; width: 22px; }
+
+  /* CTA */
+  .vm-cta { padding: 24px 16px; border-radius: 14px; }
+  .vm-cta-text h2 { font-size: 1.15rem; }
+
+  /* 풋터 */
+  .vm-footer-logo { font-size: 1.3rem; }
 }
 </style>
 {% endblock %}

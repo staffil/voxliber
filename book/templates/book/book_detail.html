@@ -312,7 +312,7 @@
                     </div>
                     {% endif %}
                     <!-- {% url 'book:content_detail' content.public_uuid %} -->
-                    <a href="{% url 'book:content_detail' content.public_uuid %}" class="episode-card" style="flex: 1; text-decoration: none;" data-login-required  onclick="showAppInstallModal()">
+                    <a href="{% url 'book:content_detail' content.public_uuid %}" class="episode-card" style="flex: 1; text-decoration: none;">
                         <div class="episode-number">
                             {% if content.episode_image %}
                             <img src="{{ content.episode_image.url }}" alt="Episode {{ content.number }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" loading="lazy">
@@ -377,13 +377,13 @@
         {% if i == contents.number %}
             <span class="page-btn active">{{ i }}</span>
         {% else %}
-            <a href="?page={{ i }}" class="page-btn" data-login-required>{{ i }}</a>
+            <a href="?page={{ i }}" class="page-btn">{{ i }}</a>
         {% endif %}
     {% endfor %}
 
     {# Next #}
     {% if contents.has_next %}
-        <a href="?page={{ contents.next_page_number }}" class="page-btn" data-login-required>다음</a>
+        <a href="?page={{ contents.next_page_number }}" class="page-btn">다음</a>
     {% else %}
         <span class="page-btn disabled">다음</span>
     {% endif %}
