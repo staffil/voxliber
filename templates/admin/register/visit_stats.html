@@ -16,15 +16,17 @@
   .mini-card { background:#f0f4ff; padding:15px; border-radius:6px; min-width:130px; text-align:center; }
   .mini-card .label { margin:0; color:#555; font-size:12px; }
   .mini-card .num { margin:4px 0 0; font-size:1.8em; font-weight:bold; color:#1a1a2e; }
-  .user-select-box { 
-    width:100%; max-width:500px; height:180px; 
-    border:1px solid #ced4da; border-radius:6px; 
-    font-size:14px; color:#111; background:#fff;
-    padding:4px;
+  .user-select-box {
+    width:100%; max-width:500px; height:180px;
+    border:1px solid #ced4da; border-radius:6px;
+    font-size:14px; color:#111; background:#fff; padding:4px;
   }
   .user-select-box option { padding:6px 10px; }
   .user-select-box option:checked { background:#4e73df; color:#fff; }
+  .chart-box { background:#fff; border-radius:8px; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,0.08); margin-bottom:30px; }
 </style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
 <div class="stat-wrap">
 
@@ -46,50 +48,29 @@
     </div>
 </div>
 
-<!-- 시간대별 -->
+<!-- 시간대별 막대 그래프 -->
 <p class="section-title">⏰ 시간대별 방문 (오늘)</p>
-<table class="stat-table">
-    <tr>
-        <th>시간</th><th>방문 수</th><th>그래프</th>
-    </tr>
-    {% for item in hourly %}
-    <tr>
-        <td>{{ item.hour|date:"H시" }}</td>
-        <td>{{ item.count }}회</td>
-        <td><div style="background:#4e73df; height:16px; width:{{ item.count }}0px; max-width:300px; border-radius:3px;"></div></td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="3" style="text-align:center; color:#888;">오늘 방문 데이터가 없습니다.</td></tr>
-    {% endfor %}
-</table>
+<div class="chart-box">
+    <canvas id="hourlyChart" height="80"></canvas>
+</div>
 
-<!-- 최근 7일 -->
-<p class="section-title">📅 최근 7일 방문</p>
-<table class="stat-table" style="margin-bottom:40px;">
-    <tr><th>날짜</th><th>방문 수</th></tr>
-    {% for item in weekly %}
-    <tr>
-        <td>{{ item.date }}</td>
-        <td>{{ item.count }}회</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="2" style="text-align:center; color:#888;">데이터가 없습니다.</td></tr>
-    {% endfor %}
-</table>
+<!-- 최근 7일 라인 그래프 -->
+<p class="section-title">📅 최근 7일 방문 추이</p>
+<div class="chart-box">
+    <canvas id="weeklyChart" height="80"></canvas>
+</div>
 
 <!-- 유저 재방문율 검색 -->
 <hr style="border:none; border-top:2px solid #dee2e6; margin-bottom:24px;">
 <p class="section-title">🔍 유저 재방문율 조회</p>
 
 <form method="get" style="margin-bottom:24px;">
-  <!-- 검색 필터 -->
   <div style="display:flex; gap:10px; margin-bottom:10px;">
     <input type="text" id="user-search-input" placeholder="이름/이메일로 필터링..."
            style="padding:8px 14px; border:1px solid #ced4da; border-radius:6px; width:300px; font-size:14px; color:#111; background:#fff;">
     <span style="color:#555; font-size:13px; align-self:center;">Ctrl+클릭으로 여러 명 선택</span>
   </div>
 
-  <!-- 다중 선택 select -->
   <select name="users" multiple class="user-select-box" id="user-select">
     {% for user in all_users %}
     <option value="{{ user.user_id }}"
@@ -143,7 +124,6 @@
         &nbsp;|&nbsp;
         마지막 방문: <strong style="color:#222;">{{ stat.last_visit|date:"Y-m-d H:i" }}</strong>
     </p>
-
     <table class="stat-table" style="margin-bottom:0;">
         <tr><th>날짜</th><th>방문 수</th><th>재방문</th></tr>
         {% for item in stat.daily_visits %}
@@ -172,11 +152,67 @@
 </div>
 
 <script>
-// 입력값으로 select option 실시간 필터링
+// 시간대별 데이터
+const hourlyLabels = [{% for item in hourly %}"{{ item.hour|date:'H' }}시"{% if not forloop.last %},{% endif %}{% endfor %}];
+const hourlyCounts = [{% for item in hourly %}{{ item.count }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+new Chart(document.getElementById('hourlyChart'), {
+    type: 'bar',
+    data: {
+        labels: hourlyLabels.length ? hourlyLabels : ['데이터 없음'],
+        datasets: [{
+            label: '방문 수',
+            data: hourlyCounts.length ? hourlyCounts : [0],
+            backgroundColor: 'rgba(78, 115, 223, 0.7)',
+            borderColor: '#4e73df',
+            borderWidth: 1,
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1, color:'#444' }, grid: { color:'#eee' } },
+            x: { ticks: { color:'#444' }, grid: { display: false } }
+        }
+    }
+});
+
+// 최근 7일 데이터 (역순 → 오래된 순으로 뒤집기)
+const weeklyLabels = [{% for item in weekly %}"{{ item.date }}"{% if not forloop.last %},{% endif %}{% endfor %}].reverse();
+const weeklyCounts = [{% for item in weekly %}{{ item.count }}{% if not forloop.last %},{% endif %}{% endfor %}].reverse();
+
+new Chart(document.getElementById('weeklyChart'), {
+    type: 'line',
+    data: {
+        labels: weeklyLabels.length ? weeklyLabels : ['데이터 없음'],
+        datasets: [{
+            label: '방문 수',
+            data: weeklyCounts.length ? weeklyCounts : [0],
+            borderColor: '#1cc88a',
+            backgroundColor: 'rgba(28, 200, 138, 0.1)',
+            borderWidth: 2,
+            pointBackgroundColor: '#1cc88a',
+            pointRadius: 5,
+            fill: true,
+            tension: 0.3,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1, color:'#444' }, grid: { color:'#eee' } },
+            x: { ticks: { color:'#444' }, grid: { display: false } }
+        }
+    }
+});
+
+// 유저 검색 필터
 document.getElementById('user-search-input').addEventListener('input', function() {
     const keyword = this.value.toLowerCase();
-    const options = document.querySelectorAll('#user-select option');
-    options.forEach(opt => {
+    document.querySelectorAll('#user-select option').forEach(opt => {
         opt.style.display = opt.text.toLowerCase().includes(keyword) ? '' : 'none';
     });
 });
