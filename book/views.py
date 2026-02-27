@@ -72,7 +72,6 @@ def add_tags(request):
     tag = Tags.objects.create(name=name, slug=slug)
     return JsonResponse({"id": tag.id, "name": tag.name, "created": True})
 
-
 # 작품 프로필 등록
 @login_required_to_main
 def book_profile(request):
@@ -88,7 +87,8 @@ def book_profile(request):
         genre_ids = request.POST.getlist("genres")
         episode_interval_weeks = request.POST.get("episode_interval_weeks", "1")
         is_adult = request.POST.get("adult_choice") == "on"
-        print(f"[DEBUG] is_adult 값: {is_adult}")        
+        write_mode = request.POST.get("write_mode", "beginner")  # ★ 모드 수신
+        print(f"[DEBUG] is_adult 값: {is_adult}, write_mode: {write_mode}")
 
         if not novel_title:
             context = {
@@ -104,64 +104,60 @@ def book_profile(request):
             book.description = novel_description
             book.episode_interval_weeks = int(episode_interval_weeks)
             book.adult_choice = is_adult
-
-            # 커버 이미지 업데이트
             if "cover-image" in request.FILES:
                 book.cover_img = request.FILES["cover-image"]
             book.save()
         else:
-            # 중복 제목 체크
             existing = Books.objects.filter(name=novel_title).first()
             if existing:
-                # 이미 존재하면 업데이트
                 book = existing
                 book.description = novel_description
                 book.episode_interval_weeks = int(episode_interval_weeks)
                 book.adult_choice = is_adult
-
                 if "cover-image" in request.FILES:
                     book.cover_img = request.FILES["cover-image"]
                 book.save()
             else:
-                # 새 책 생성
                 book = Books.objects.create(
                     user=request.user,
                     name=novel_title,
                     description=novel_description,
                     episode_interval_weeks=int(episode_interval_weeks),
-                    adult_choice = is_adult
-
+                    adult_choice=is_adult,
                 )
                 if "cover-image" in request.FILES:
                     book.cover_img = request.FILES["cover-image"]
                     book.save()
 
-        
-
-        # 장르 처리 (ManyToMany) - 빈 문자열 필터링
+        # 장르 처리
         if genre_ids:
             genre_ids = [int(g) for g in genre_ids if g.strip().isdigit()]
             if genre_ids:
-                genres = Genres.objects.filter(id__in=genre_ids)
-                book.genres.set(genres)
+                book.genres.set(Genres.objects.filter(id__in=genre_ids))
             else:
                 book.genres.clear()
         else:
             book.genres.clear()
 
-        # 태그 처리 - 빈 문자열 필터링
+        # 태그 처리
         tag_ids = request.POST.getlist("tags")
         if tag_ids:
             tag_ids = [int(t) for t in tag_ids if t.strip().isdigit()]
             if tag_ids:
-                tags = Tags.objects.filter(id__in=tag_ids)
-                book.tags.set(tags)
+                book.tags.set(Tags.objects.filter(id__in=tag_ids))
             else:
                 book.tags.clear()
         else:
             book.tags.clear()
 
-        return redirect(f"/book/serialization/fast/{book.public_uuid}/")
+        # ★ 모드별 리다이렉트
+        if write_mode == "expert":
+            return redirect(f"/book/serialization/?public_uuid={book.public_uuid}")
+        elif write_mode == "voice":
+            return redirect(f"/voice/voice/list/")
+        else:  # beginner (기본)
+            return redirect(f"/book/serialization/fast/{book.public_uuid}/")
+
     context = {
         "genres_list": genres_list,
         "tag_list": tag_list,

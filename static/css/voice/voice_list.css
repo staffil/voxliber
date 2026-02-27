@@ -885,3 +885,115 @@ body.light-mode .delete-btn-small {
   .page-header { padding: 14px 24px 10px; }
   .my-voices-section { max-height: calc(100vh - 100px); }
 }
+/* ========================================
+   AI Voice Search Section
+   ======================================== */
+.ai-voice-search-section {
+  margin-bottom: 14px;
+}
+
+.ai-search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.06));
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  padding: 10px 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ai-search-box:focus-within {
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+}
+
+.ai-search-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.ai-voice-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  min-width: 0;
+}
+
+.ai-voice-input::placeholder {
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+.ai-search-btn {
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.ai-search-btn:hover { opacity: 0.88; }
+.ai-search-btn:active { transform: scale(0.97); }
+.ai-search-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.ai-search-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.ai-clear-btn {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  border-radius: 6px;
+  color: #f87171;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.ai-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+/* AI 매칭 카드 하이라이트 */
+.voice-card.ai-matched {
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2), 0 6px 20px rgba(139, 92, 246, 0.12) !important;
+}
+
+/* Light mode */
+body.light-mode .ai-search-box {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.06), rgba(59, 130, 246, 0.04));
+  border-color: rgba(139, 92, 246, 0.25);
+}
+
+body.light-mode .ai-clear-btn {
+  color: #ef4444;
+}
+
+@media (max-width: 640px) {
+  .ai-search-box { padding: 8px 10px; gap: 8px; }
+  .ai-voice-input { font-size: 13px; }
+  .ai-search-btn { padding: 6px 12px; font-size: 12px; }
+}
+
+@media (max-width: 400px) {
+  .ai-search-btn { padding: 6px 10px; font-size: 11px; }
+  .ai-voice-input::placeholder { font-size: 11px; }
+}

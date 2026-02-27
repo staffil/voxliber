@@ -17,7 +17,22 @@
 
 <!-- 검색 & 필터 섹션 -->
 <div class="search-filter-section">
-    <!-- 검색창 -->
+    <!-- AI 목소리 추천 검색 -->
+    <div class="ai-voice-search-section">
+        <div class="ai-search-box">
+            <span class="ai-search-icon">✨</span>
+            <input type="text" id="ai-voice-input" class="ai-voice-input"
+                   placeholder="AI에게 원하는 목소리를 설명해보세요... (예: 차분하고 깊은 남성 목소리, 밝고 에너지 넘치는 여성)"
+                   data-login-required>
+            <button id="ai-search-btn" class="ai-search-btn" onclick="runAiVoiceSearch()">AI 추천</button>
+        </div>
+        <div id="ai-search-result" class="ai-search-result" style="display:none;">
+            <span id="ai-result-text"></span>
+            <button onclick="clearAiFilter()" class="ai-clear-btn">✕ 필터 해제</button>
+        </div>
+    </div>
+
+    <!-- 일반 검색창 -->
     <div class="voice-search-box">
         <input type="text" id="voice-search" class="voice-search-input" placeholder="🔍 목소리 이름으로 검색..." data-login-required>
     </div>
@@ -112,6 +127,7 @@
             {% if voice_lists %}
                 {% for voice in voice_lists %}
                 <div class="voice-card"
+                     data-voice-id="{{ voice.id }}"
                      data-voice-name="{{ voice.voice_name }}"
                      data-voice-types="{% for t in voice.types.all %}{{ t.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                     {% if voice.voice_image %}
@@ -210,32 +226,107 @@ const voiceCards = document.querySelectorAll('.voice-card');
 const voiceSearch = document.getElementById('voice-search');
 const filterBtns = document.querySelectorAll('.filter-btn');
 let selectedTypes = new Set();
+let aiFilteredIds = null; // null = 필터 없음, Set = AI 추천 결과
 
 // 필터 적용 함수
 function applyVoiceFilters() {
     const searchTerm = voiceSearch ? voiceSearch.value.toLowerCase().trim() : '';
+    let visibleCount = 0;
 
     voiceCards.forEach(card => {
         const voiceName = (card.dataset.voiceName || '').toLowerCase();
         const voiceTypes = (card.dataset.voiceTypes || '').split(',').filter(t => t);
+        const voiceId = String(card.dataset.voiceId || '');
 
-        // 검색어 매칭
         const matchesSearch = searchTerm === '' || voiceName.includes(searchTerm);
-
-        // 타입 매칭 (선택된 타입이 없으면 모두 표시)
         const matchesType = selectedTypes.size === 0 ||
             [...selectedTypes].some(typeId => voiceTypes.includes(typeId));
+        const matchesAi = aiFilteredIds === null || aiFilteredIds.has(voiceId);
 
-        card.style.display = (matchesSearch && matchesType) ? '' : 'none';
+        const visible = matchesSearch && matchesType && matchesAi;
+        card.style.display = visible ? '' : 'none';
+
+        // AI 필터 활성화 시 매칭 카드에 하이라이트
+        if (aiFilteredIds !== null) {
+            card.classList.toggle('ai-matched', matchesAi && visible);
+        } else {
+            card.classList.remove('ai-matched');
+        }
+
+        if (visible) visibleCount++;
     });
 
-    // 검색 결과 없음 표시
-    const visibleCards = document.querySelectorAll('.voice-card[style=""], .voice-card:not([style])');
     const noVoices = document.querySelector('.no-voices');
     if (noVoices) {
-        noVoices.style.display = visibleCards.length === 0 ? 'flex' : 'none';
+        noVoices.style.display = visibleCount === 0 ? 'flex' : 'none';
     }
 }
+
+// AI 목소리 추천 검색
+async function runAiVoiceSearch() {
+    const input = document.getElementById('ai-voice-input');
+    const query = (input.value || '').trim();
+    if (!query) {
+        input.focus();
+        return;
+    }
+
+    const btn = document.getElementById('ai-search-btn');
+    btn.textContent = '검색 중...';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/voice/voice/ai-search/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ query })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            alert('AI 검색 오류: ' + data.error);
+            return;
+        }
+
+        aiFilteredIds = new Set((data.matched_ids || []).map(String));
+
+        const resultDiv = document.getElementById('ai-search-result');
+        const resultText = document.getElementById('ai-result-text');
+        const count = data.matched_ids ? data.matched_ids.length : 0;
+        resultText.textContent = `✨ "${query}"에 맞는 목소리 ${count}개를 찾았습니다`;
+        resultDiv.style.display = 'flex';
+
+        applyVoiceFilters();
+
+        // 첫 매칭 카드로 스크롤
+        const firstMatch = document.querySelector('.voice-card.ai-matched');
+        if (firstMatch) {
+            firstMatch.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    } catch (e) {
+        console.error('AI 검색 오류:', e);
+        alert('AI 검색에 실패했습니다.');
+    } finally {
+        btn.textContent = 'AI 추천';
+        btn.disabled = false;
+    }
+}
+
+function clearAiFilter() {
+    aiFilteredIds = null;
+    document.getElementById('ai-search-result').style.display = 'none';
+    document.getElementById('ai-voice-input').value = '';
+    applyVoiceFilters();
+}
+
+// Enter 키로 AI 검색
+document.getElementById('ai-voice-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') runAiVoiceSearch();
+});
 
 // 타입 버튼 클릭 (중복 선택 가능, 페이지 새로고침 없음)
 filterBtns.forEach(btn => {

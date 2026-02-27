@@ -6,6 +6,260 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/book_profile.css' %}">
 
+<style>
+/* ============================================================
+   저장 후 집필 시작 버튼
+   ============================================================ */
+#open-mode-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 17px 32px;
+  margin-top: 28px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 8px 28px rgba(99,102,241,.38);
+  transition: transform .22s, box-shadow .22s, opacity .2s;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 광택 레이어 */
+#open-mode-modal-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -75%;
+  width: 50%; height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,.18), transparent);
+  transform: skewX(-20deg);
+  transition: left .5s;
+}
+#open-mode-modal-btn:hover::before { left: 130%; }
+
+#open-mode-modal-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 36px rgba(99,102,241,.52);
+}
+#open-mode-modal-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(99,102,241,.38);
+}
+
+/* 라이트 모드 */
+body.light-mode #open-mode-modal-btn {
+  box-shadow: 0 8px 24px rgba(99,102,241,.28);
+}
+
+/* ============================================================
+   모드 선택 모달
+   ============================================================ */
+.mode-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+}
+.mode-modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.mode-modal {
+  background: var(--bg-secondary, #1a1a2e);
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 24px;
+  padding: 40px 36px 36px;
+  width: 100%;
+  max-width: 600px;
+  transform: translateY(18px) scale(.97);
+  transition: transform .28s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: 0 32px 80px rgba(0,0,0,.55);
+}
+body.light-mode .mode-modal {
+  background: #fff;
+  border-color: rgba(0,0,0,.07);
+  box-shadow: 0 24px 60px rgba(0,0,0,.14);
+}
+.mode-modal-overlay.open .mode-modal {
+  transform: translateY(0) scale(1);
+}
+
+.mode-modal-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -.03em;
+  color: var(--text-primary, #fff);
+  margin-bottom: 6px;
+}
+body.light-mode .mode-modal-title { color: #0f172a; }
+
+.mode-modal-sub {
+  font-size: .82rem;
+  font-weight: 300;
+  color: rgba(255,255,255,.42);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+body.light-mode .mode-modal-sub { color: #64748b; }
+
+/* 세 개 카드 */
+.mode-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 560px) {
+  .mode-modal { padding: 28px 20px 24px; }
+  .mode-cards { grid-template-columns: 1fr; gap: 10px; }
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 20px 18px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color .2s, background .2s, transform .2s;
+  position: relative;
+  overflow: hidden;
+}
+body.light-mode .mode-card {
+  background: #f8f8ff;
+  border-color: rgba(0,0,0,.07);
+}
+.mode-card:hover {
+  transform: translateY(-3px);
+}
+
+/* 초보자 */
+.mode-card.beginner { border-color: rgba(99,102,241,.22); }
+.mode-card.beginner:hover { background: rgba(99,102,241,.08); border-color: rgba(99,102,241,.4); }
+
+/* 전문가 */
+.mode-card.expert { border-color: rgba(245,158,11,.2); }
+.mode-card.expert:hover { background: rgba(245,158,11,.07); border-color: rgba(245,158,11,.38); }
+
+/* 보이스 */
+.mode-card.voice { border-color: rgba(16,185,129,.2); }
+.mode-card.voice:hover { background: rgba(16,185,129,.07); border-color: rgba(16,185,129,.38); }
+
+.mode-card-icon {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.mode-card-label {
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 99px;
+}
+.beginner .mode-card-label { background: rgba(99,102,241,.16); color: #a5b4fc; }
+.expert   .mode-card-label { background: rgba(245,158,11,.16); color: #fbbf24; }
+.voice    .mode-card-label { background: rgba(16,185,129,.16);  color: #6ee7b7; }
+body.light-mode .beginner .mode-card-label { color: #6366f1; }
+body.light-mode .expert   .mode-card-label { color: #d97706; }
+body.light-mode .voice    .mode-card-label { color: #059669; }
+
+.mode-card-name {
+  font-size: .95rem;
+  font-weight: 800;
+  color: var(--text-primary, #fff);
+  letter-spacing: -.02em;
+  line-height: 1.2;
+}
+body.light-mode .mode-card-name { color: #0f172a; }
+
+.mode-card-desc {
+  font-size: .75rem;
+  font-weight: 300;
+  color: rgba(255,255,255,.4);
+  line-height: 1.55;
+}
+body.light-mode .mode-card-desc { color: #64748b; }
+
+.mode-card-arrow {
+  margin-top: auto;
+  font-size: .78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.beginner .mode-card-arrow { color: #818cf8; }
+.expert   .mode-card-arrow { color: #fbbf24; }
+.voice    .mode-card-arrow { color: #6ee7b7; }
+
+/* 보이스 안내 */
+.mode-voice-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 18px;
+  padding: 13px 16px;
+  background: rgba(16,185,129,.08);
+  border: 1px solid rgba(16,185,129,.22);
+  border-radius: 12px;
+  font-size: .78rem;
+  font-weight: 400;
+  color: rgba(255,255,255,.55);
+  line-height: 1.6;
+}
+body.light-mode .mode-voice-notice {
+  background: rgba(16,185,129,.06);
+  border-color: rgba(16,185,129,.2);
+  color: #374151;
+}
+.mode-voice-notice svg { color: #6ee7b7; }
+body.light-mode .mode-voice-notice svg { color: #059669; }
+.mode-voice-notice strong {
+  color: #6ee7b7;
+  font-weight: 700;
+}
+body.light-mode .mode-voice-notice strong { color: #059669; }
+
+/* 닫기 */
+.mode-modal-close {
+  position: absolute;
+  top: 16px; right: 18px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.28);
+  font-size: 1.3rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  transition: color .18s;
+}
+.mode-modal-close:hover { color: rgba(255,255,255,.7); }
+body.light-mode .mode-modal-close { color: rgba(0,0,0,.25); }
+body.light-mode .mode-modal-close:hover { color: rgba(0,0,0,.6); }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -15,13 +269,13 @@
         <div class="error-msg">{{ error }}</div>
         {% endif %}
 
-        <form action="" method="post" enctype="multipart/form-data" id="book_profile_form" >
+        <form action="" method="post" enctype="multipart/form-data" id="book_profile_form">
             {% csrf_token %}
 
             <!-- 소설 제목 -->
             <div class="title-header">
                 <input type="text" name="novel_title" class="section-title" placeholder="📚 소설 제목을 입력하세요"
-                    value="{{ book.name|default:'' }}" required  data-login-required>
+                    value="{{ book.name|default:'' }}" required data-login-required>
             </div>
 
             <div class="title-content">
@@ -36,64 +290,24 @@
                             {% endif %}
                             <div class="cover-overlay">
                                 <span>표지 선택</span>
-<p style="padding: 8px 12px;">
-  표지를 업로드하지 않으면 제목의 앞 두 글자를 사용한 기본 표지가 자동으로 적용됩니다.
-  더 좋은 작품 인상을 위해 표지 업로드를 권장드려요.
-</p>
-
-
-                      </div>
+                                <p style="padding: 8px 12px;">
+                                  표지를 업로드하지 않으면 제목의 앞 두 글자를 사용한 기본 표지가 자동으로 적용됩니다.
+                                  더 좋은 작품 인상을 위해 표지 업로드를 권장드려요.
+                                </p>
+                            </div>
                         </div>
                         <input type="file" name="cover-image" id="book-cover-image" accept="image/*" style="display: none;" data-login-required>
                     </div>
-                    <div style="
-  display: flex;
-  gap: 16px;
-  margin: 12px 12px 0 12px;
-">
-  <div style="
-    width: 120px;
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  ">
-    <span style="
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      background: rgba(0,0,0,0.6);
-      color: white;
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 4px;
-    ">기본 표지1</span>
-    <img src="/static/img/cover/example.jpg" alt=""
-         style="width: 100%; display: block;">
-  </div>
-
-  <div style="
-    width: 120px;
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  ">
-    <span style="
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      background: #6366f1;
-      color: white;
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 4px;
-    ">기본 표지2</span>
-    <img src="/static/img/cover/example2.jpg" alt=""
-         style="width: 100%; display: block;">
-  </div>
-</div>
-
+                    <div style="display:flex; gap:16px; margin:12px 12px 0 12px;">
+                        <div style="width:120px; position:relative; border-radius:8px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+                            <span style="position:absolute; top:6px; left:6px; background:rgba(0,0,0,0.6); color:white; font-size:11px; padding:2px 6px; border-radius:4px;">기본 표지1</span>
+                            <img src="/static/img/cover/example.jpg" alt="" style="width:100%; display:block;">
+                        </div>
+                        <div style="width:120px; position:relative; border-radius:8px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+                            <span style="position:absolute; top:6px; left:6px; background:#6366f1; color:white; font-size:11px; padding:2px 6px; border-radius:4px;">기본 표지2</span>
+                            <img src="/static/img/cover/example2.jpg" alt="" style="width:100%; display:block;">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 오른쪽: 정보 -->
@@ -101,16 +315,16 @@
                     <div class="info-card">
                         <label class="info-label">📖 소설 줄거리</label>
                         <textarea name="novel_description" placeholder="소설 줄거리를 입력하세요..."
-                            rows="5"  data-login-required>{{ book.description }}</textarea>
+                            rows="5" data-login-required>{{ book.description }}</textarea>
                     </div>
 
                     <div class="info-card">
                         <label class="info-label">🎭 장르 선택 (여러 개 선택 가능)</label>
                         <div class="genre-grid">
                             {% for genre in genres_list %}
-                            <label class="genre-option" >
+                            <label class="genre-option">
                                 <input type="checkbox" name="genres" value="{{ genre.id }}"
-                                    {% if book and genre in book.genres.all %}checked{% endif %}  data-login-required>
+                                    {% if book and genre in book.genres.all %}checked{% endif %} data-login-required>
                                 <span class="genre-box" style="background-color: {{ genre.genres_color|default:'#FFF' }}">
                                     {{ genre.name }}
                                 </span>
@@ -123,23 +337,21 @@
                     <div class="info-card">
                         <label class="info-label">🏷️ 태그 선택</label>
                         <div class="tag-input-wrapper">
-                            <input type="text" id="tag-search" placeholder="태그 검색 또는 추가..."  data-login-required>
+                            <input type="text" id="tag-search" placeholder="태그 검색 또는 추가..." data-login-required>
                             <button type="button" id="add-tag-btn">추가</button>
                         </div>
-
                         <div class="selected-tags" id="selected-tags">
                             {% for tag in book.tags.all %}
-                            <input type="hidden" name="tags" value="{{ tag.id }}"  data-login-required>
-                            <span class="selected-tag"  data-login-required>{{ tag.name }}</span>
+                            <input type="hidden" name="tags" value="{{ tag.id }}" data-login-required>
+                            <span class="selected-tag" data-login-required>{{ tag.name }}</span>
                             {% endfor %}
                         </div>
-
                         <div class="tag-list-wrapper">
                             <div class="tag-grid" id="tag-grid">
                                 {% for tag in tag_list %}
                                 <label class="tag-option">
                                     <input type="checkbox" class="tag-checkbox" value="{{ tag.id }}"
-                                        {% if book and tag in book.tags.all %}checked{% endif %}  data-login-required>
+                                        {% if book and tag in book.tags.all %}checked{% endif %} data-login-required>
                                     <span>{{ tag.name }}</span>
                                 </label>
                                 {% endfor %}
@@ -150,52 +362,148 @@
                     <!-- 연재 주기 선택 -->
                     <div class="info-card">
                         <label class="info-label">📅 연재 주기</label>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display:flex; flex-direction:column; gap:10px;">
                             <select name="episode_interval_weeks" style="
-                                padding: 12px 16px;
-                                background: var(--input-bg);
-                                border: 1px solid var(--border-color);
-                                border-radius: 8px;
-                                color: var(--text-primary);
-                                font-size: 14px;
-                                cursor: pointer;
-                                transition: all var(--transition-base);
-                            " onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border-color)'"  data-login-required>
+                                padding:12px 16px;
+                                background:var(--input-bg);
+                                border:1px solid var(--border-color);
+                                border-radius:8px;
+                                color:var(--text-primary);
+                                font-size:14px;
+                                cursor:pointer;
+                                transition:all var(--transition-base);
+                            " data-login-required>
                                 <option value="1" {% if book.episode_interval_weeks == 1 %}selected{% endif %}>매주 (1주마다)</option>
                                 <option value="2" {% if book.episode_interval_weeks == 2 %}selected{% endif %}>격주 (2주마다)</option>
                                 <option value="3" {% if book.episode_interval_weeks == 3 %}selected{% endif %}>3주마다</option>
                                 <option value="4" {% if book.episode_interval_weeks == 4 %}selected{% endif %}>매월 (4주마다)</option>
                             </select>
-                            <div style="font-size: 12px; color: var(--text-tertiary); padding: 0 4px;">
+                            <div style="font-size:12px; color:var(--text-tertiary); padding:0 4px;">
                                 💡 에피소드를 얼마나 자주 등록할 계획인지 선택하세요
                             </div>
-                                <div class="terms-checkbox-wrapper">
+                            <div class="terms-checkbox-wrapper">
                                 <label class="custom-checkbox">
-<input type="checkbox"
-       id="adult_choice"
-       name="adult_choice"
-       value="on"
-       {% if book and book.adult_choice %}checked{% endif %} data-login-required>
-                                           <span class="checkbox-icon"></span>
+                                    <input type="checkbox" id="adult_choice" name="adult_choice" value="on"
+                                        {% if book and book.adult_choice %}checked{% endif %} data-login-required>
+                                    <span class="checkbox-icon"></span>
                                     <span class="checkbox-text">
-                                    <a href="/terms/of/service/" class="terms-link" target="_blank">잔인성, 선정성이 있는 작품</a>이면 동의를 눌러주세요
+                                        <a href="/terms/of/service/" class="terms-link" target="_blank">잔인성, 선정성이 있는 작품</a>이면 동의를 눌러주세요
                                     </span>
                                 </label>
-                                </div>
+                            </div>
                         </div>
                     </div>
 
                 </div>
             </div>
 
-            <button type="submit">저장</button>
+            <!-- 저장 버튼 → 모달 트리거 -->
+            <button type="button" id="open-mode-modal-btn">저장 후 집필 시작 →</button>
+
         </form>
-        
+
     </div>
+</div>
+
+
+<!-- ============================================================
+     모드 선택 모달
+     ============================================================ -->
+<div class="mode-modal-overlay" id="modeModalOverlay">
+  <div class="mode-modal">
+    <button class="mode-modal-close" id="closeModeModal" aria-label="닫기">✕</button>
+
+    <div class="mode-modal-title">집필 방식을 선택하세요</div>
+    <p class="mode-modal-sub">저장 후 바로 집필을 시작합니다. 나중에 방식을 바꿀 수도 있어요.</p>
+
+    <div class="mode-cards">
+
+      <!-- 보이스 라이브러리 (맨 왼쪽) -->
+      <div class="mode-card voice" id="modeVoiceBtn">
+        <div class="mode-card-icon">🎙️</div>
+        <div class="mode-card-label">보이스 라이브러리</div>
+        <div class="mode-card-name">목소리 먼저<br>골라보기</div>
+        <div class="mode-card-desc">수십 가지 성우<br>직접 비교 청취</div>
+        <div class="mode-card-arrow">둘러보기 →</div>
+      </div>
+
+      <!-- 초보자 모드 -->
+      <div class="mode-card beginner" id="modeBeginnerBtn">
+        <div class="mode-card-icon">🎬</div>
+        <div class="mode-card-label">초보자 모드</div>
+        <div class="mode-card-name">문장만 써도<br>AI가 연출</div>
+        <div class="mode-card-desc">번호만 붙이면<br>AI가 자동 완성</div>
+        <div class="mode-card-arrow">시작하기 →</div>
+      </div>
+
+      <!-- 전문가 모드 -->
+      <div class="mode-card expert" id="modeExpertBtn">
+        <div class="mode-card-icon">🛠️</div>
+        <div class="mode-card-label">전문가 모드</div>
+        <div class="mode-card-name">효과음·감정<br>직접 설계</div>
+        <div class="mode-card-desc">페이지 단위<br>세밀한 제작</div>
+        <div class="mode-card-arrow">시작하기 →</div>
+      </div>
+
+    </div>
+
+    <!-- 보이스 안내 -->
+    <div class="mode-voice-notice">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>
+        <strong>보이스를 선택해야 오디오북을 만들 수 있습니다.</strong>
+        보이스를 아직 선택하지 않으셨다면 왼쪽 보이스 라이브러리에서 먼저 목소리를 골라주세요.
+      </span>
+    </div>
+
+  </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/book/book_profile.js' %}"></script>
 <script src="{% static 'js/register/login.js' %}"></script>
+
+<script>
+(function () {
+  var form     = document.getElementById('book_profile_form');
+  var openBtn  = document.getElementById('open-mode-modal-btn');
+  var overlay  = document.getElementById('modeModalOverlay');
+  var closeBtn = document.getElementById('closeModeModal');
+
+  var btnBeginner = document.getElementById('modeBeginnerBtn');
+  var btnExpert   = document.getElementById('modeExpertBtn');
+  var btnVoice    = document.getElementById('modeVoiceBtn');
+
+  // 저장 버튼 클릭 → 폼 유효성 검사 후 모달 오픈
+  openBtn.addEventListener('click', function () {
+    // HTML5 기본 유효성 검사 트리거
+    if (!form.reportValidity()) return;
+    overlay.classList.add('open');
+  });
+
+  // 모달 닫기
+  closeBtn.addEventListener('click', function () { overlay.classList.remove('open'); });
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+
+  // 폼 제출 + 리다이렉트 목적지 지정
+  function submitWithMode(mode) {
+    // hidden input으로 모드 전달
+    var input = document.createElement('input');
+    input.type  = 'hidden';
+    input.name  = 'write_mode';
+    input.value = mode;
+    form.appendChild(input);
+    form.submit();
+  }
+
+  btnBeginner.addEventListener('click', function () { submitWithMode('beginner'); });
+  btnExpert.addEventListener('click',   function () { submitWithMode('expert');   });
+  btnVoice.addEventListener('click',    function () { submitWithMode('voice');    });
+})();
+</script>
 {% endblock %}

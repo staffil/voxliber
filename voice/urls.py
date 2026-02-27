@@ -8,5 +8,5 @@ app_name = "voice"
 
 urlpatterns = [
     path('voice/list/', views.voice_list, name='voice_list'),
-
+    path('voice/ai-search/', views.ai_voice_search, name='ai_voice_search'),
 ]
