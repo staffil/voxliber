@@ -16,20 +16,28 @@
   .mini-card { background:#f0f4ff; padding:15px; border-radius:6px; min-width:130px; text-align:center; }
   .mini-card .label { margin:0; color:#555; font-size:12px; }
   .mini-card .num { margin:4px 0 0; font-size:1.8em; font-weight:bold; color:#1a1a2e; }
-  .user-select-box {
-    width:100%; max-width:500px; height:180px;
-    border:1px solid #ced4da; border-radius:6px;
-    font-size:14px; color:#111; background:#fff; padding:4px;
-  }
-  .user-select-box option { padding:6px 10px; }
+  .user-select-box { width:100%; max-width:500px; height:180px; border:1px solid #ced4da; border-radius:6px; font-size:14px; color:#111; background:#fff; padding:4px; }
   .user-select-box option:checked { background:#4e73df; color:#fff; }
   .chart-box { background:#fff; border-radius:8px; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,0.08); margin-bottom:30px; }
+  .cal-nav { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .cal-nav a { padding:5px 14px; background:#4e73df; color:#fff; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; }
+  .cal-nav a.gray { background:#6c757d; }
+  .cal-nav span { font-size:1.1rem; font-weight:700; color:#222; }
+  .cal-table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.08); margin-bottom:30px; table-layout:fixed; }
+  .cal-table th { padding:10px; background:#4e73df; color:#fff; text-align:center; font-size:0.85rem; }
+  .cal-table td { padding:8px 6px; border:1px solid #eee; vertical-align:top; height:64px; }
+  .cal-empty { background:#fafafa; }
+  .cal-has-data { background:#eef3ff; }
+  .cal-today { background:#fff8e1 !important; border:2px solid #ffc107 !important; }
+  .cal-day-num { font-size:0.82rem; color:#666; margin-bottom:4px; font-weight:600; }
+  .cal-day-num.is-today { color:#e74a3b; font-weight:800; }
+  .cal-total { font-size:0.78rem; color:#4e73df; font-weight:700; }
+  .cal-unique { font-size:0.75rem; color:#1cc88a; }
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
 <div class="stat-wrap">
-
 <h2 style="color:#111; margin-top:0;">📊 방문자 통계</h2>
 
 <!-- 오늘 요약 -->
@@ -48,29 +56,70 @@
     </div>
 </div>
 
-<!-- 시간대별 막대 그래프 -->
+<!-- 시간대별 막대그래프 -->
 <p class="section-title">⏰ 시간대별 방문 (오늘)</p>
 <div class="chart-box">
     <canvas id="hourlyChart" height="80"></canvas>
 </div>
 
-<!-- 최근 7일 라인 그래프 -->
+<!-- 최근 7일 라인그래프 -->
 <p class="section-title">📅 최근 7일 방문 추이</p>
 <div class="chart-box">
     <canvas id="weeklyChart" height="80"></canvas>
 </div>
+
+<!-- 월별 캘린더 -->
+<hr style="border:none; border-top:2px solid #dee2e6; margin-bottom:24px;">
+<p class="section-title">🗓️ 월별 방문자 캘린더</p>
+<p style="color:#555; font-size:13px; margin-bottom:12px;">
+  <span style="color:#4e73df; font-weight:600;">파란 숫자</span> = 총 방문 &nbsp;|&nbsp;
+  <span style="color:#1cc88a; font-weight:600;">초록 숫자</span> = 순 방문자(IP 기준)
+</p>
+
+<div class="cal-nav">
+    <a href="?year={{ prev_year }}&month={{ prev_month }}{% for uid in selected_user_ids %}&users={{ uid }}{% endfor %}">◀ 이전달</a>
+    <span>{{ month_name }}</span>
+    <a href="?year={{ next_year }}&month={{ next_month }}{% for uid in selected_user_ids %}&users={{ uid }}{% endfor %}">다음달 ▶</a>
+    <a href="?{% for uid in selected_user_ids %}users={{ uid }}&{% endfor %}" class="gray">이번달</a>
+</div>
+
+<table class="cal-table">
+    <tr>
+        <th style="color:#ffb3b3;">일</th>
+        <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
+        <th style="color:#b3d4ff;">토</th>
+    </tr>
+    {% for week in cal_weeks %}
+    <tr>
+        {% for day in week %}
+        {% if day is None %}
+            <td class="cal-empty"></td>
+        {% else %}
+            <td class="{% if day.total > 0 %}cal-has-data{% endif %} {% if day.is_today %}cal-today{% endif %}">
+                <div class="cal-day-num {% if day.is_today %}is-today{% endif %}">{{ day.day }}</div>
+                {% if day.total > 0 %}
+                <div class="cal-total">👥 {{ day.total }}회</div>
+                <div class="cal-unique">👤 {{ day.unique }}명</div>
+                {% endif %}
+            </td>
+        {% endif %}
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
 
 <!-- 유저 재방문율 검색 -->
 <hr style="border:none; border-top:2px solid #dee2e6; margin-bottom:24px;">
 <p class="section-title">🔍 유저 재방문율 조회</p>
 
 <form method="get" style="margin-bottom:24px;">
+  <input type="hidden" name="year" value="{{ year }}">
+  <input type="hidden" name="month" value="{{ month }}">
   <div style="display:flex; gap:10px; margin-bottom:10px;">
     <input type="text" id="user-search-input" placeholder="이름/이메일로 필터링..."
            style="padding:8px 14px; border:1px solid #ced4da; border-radius:6px; width:300px; font-size:14px; color:#111; background:#fff;">
     <span style="color:#555; font-size:13px; align-self:center;">Ctrl+클릭으로 여러 명 선택</span>
   </div>
-
   <select name="users" multiple class="user-select-box" id="user-select">
     {% for user in all_users %}
     <option value="{{ user.user_id }}"
@@ -79,13 +128,11 @@
     </option>
     {% endfor %}
   </select>
-
   <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
-    <button type="submit"
-            style="padding:8px 22px; background:#4e73df; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px; font-weight:600;">
+    <button type="submit" style="padding:8px 22px; background:#4e73df; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px; font-weight:600;">
       📊 통계 조회
     </button>
-    <a href="?" style="padding:8px 16px; background:#6c757d; color:#fff; border-radius:6px; font-size:14px; text-decoration:none;">
+    <a href="?year={{ year }}&month={{ month }}" style="padding:8px 16px; background:#6c757d; color:#fff; border-radius:6px; font-size:14px; text-decoration:none;">
       초기화
     </a>
     {% if selected_user_ids %}
@@ -94,7 +141,6 @@
   </div>
 </form>
 
-<!-- 선택된 유저 통계 -->
 {% for stat in users_stats %}
 <div class="user-card">
     <h4 style="margin:0 0 16px; color:#111;">
@@ -152,7 +198,6 @@
 </div>
 
 <script>
-// 시간대별 데이터
 const hourlyLabels = [{% for item in hourly %}"{{ item.hour|date:'H' }}시"{% if not forloop.last %},{% endif %}{% endfor %}];
 const hourlyCounts = [{% for item in hourly %}{{ item.count }}{% if not forloop.last %},{% endif %}{% endfor %}];
 
@@ -160,26 +205,13 @@ new Chart(document.getElementById('hourlyChart'), {
     type: 'bar',
     data: {
         labels: hourlyLabels.length ? hourlyLabels : ['데이터 없음'],
-        datasets: [{
-            label: '방문 수',
-            data: hourlyCounts.length ? hourlyCounts : [0],
-            backgroundColor: 'rgba(78, 115, 223, 0.7)',
-            borderColor: '#4e73df',
-            borderWidth: 1,
-            borderRadius: 4,
-        }]
+        datasets: [{ label: '방문 수', data: hourlyCounts.length ? hourlyCounts : [0],
+            backgroundColor: 'rgba(78,115,223,0.7)', borderColor: '#4e73df', borderWidth:1, borderRadius:4 }]
     },
-    options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-            y: { beginAtZero: true, ticks: { stepSize: 1, color:'#444' }, grid: { color:'#eee' } },
-            x: { ticks: { color:'#444' }, grid: { display: false } }
-        }
-    }
+    options: { responsive:true, plugins:{legend:{display:false}},
+        scales:{ y:{beginAtZero:true,ticks:{stepSize:1,color:'#444'},grid:{color:'#eee'}}, x:{ticks:{color:'#444'},grid:{display:false}} } }
 });
 
-// 최근 7일 데이터 (역순 → 오래된 순으로 뒤집기)
 const weeklyLabels = [{% for item in weekly %}"{{ item.date }}"{% if not forloop.last %},{% endif %}{% endfor %}].reverse();
 const weeklyCounts = [{% for item in weekly %}{{ item.count }}{% if not forloop.last %},{% endif %}{% endfor %}].reverse();
 
@@ -187,29 +219,14 @@ new Chart(document.getElementById('weeklyChart'), {
     type: 'line',
     data: {
         labels: weeklyLabels.length ? weeklyLabels : ['데이터 없음'],
-        datasets: [{
-            label: '방문 수',
-            data: weeklyCounts.length ? weeklyCounts : [0],
-            borderColor: '#1cc88a',
-            backgroundColor: 'rgba(28, 200, 138, 0.1)',
-            borderWidth: 2,
-            pointBackgroundColor: '#1cc88a',
-            pointRadius: 5,
-            fill: true,
-            tension: 0.3,
-        }]
+        datasets: [{ label: '방문 수', data: weeklyCounts.length ? weeklyCounts : [0],
+            borderColor:'#1cc88a', backgroundColor:'rgba(28,200,138,0.1)', borderWidth:2,
+            pointBackgroundColor:'#1cc88a', pointRadius:5, fill:true, tension:0.3 }]
     },
-    options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-            y: { beginAtZero: true, ticks: { stepSize: 1, color:'#444' }, grid: { color:'#eee' } },
-            x: { ticks: { color:'#444' }, grid: { display: false } }
-        }
-    }
+    options: { responsive:true, plugins:{legend:{display:false}},
+        scales:{ y:{beginAtZero:true,ticks:{stepSize:1,color:'#444'},grid:{color:'#eee'}}, x:{ticks:{color:'#444'},grid:{display:false}} } }
 });
 
-// 유저 검색 필터
 document.getElementById('user-search-input').addEventListener('input', function() {
     const keyword = this.value.toLowerCase();
     document.querySelectorAll('#user-select option').forEach(opt => {
