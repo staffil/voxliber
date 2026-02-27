@@ -1052,3 +1052,208 @@ body.light-mode .btn-icon {
 body.light-mode .modal-content {
     background: rgba(255, 255, 255, 0.95);
 }
+
+/* =====================================================
+   활동 통계 섹션
+   ===================================================== */
+
+/* 섹션 헤더 (타이틀 + 탭 가로 배치) */
+.stats-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px !important;
+}
+
+/* 탭 컨테이너 */
+.chart-period-tabs {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* 탭 버튼 공통 */
+.chart-tab {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.chart-tab.active {
+    background: rgba(99, 102, 241, 0.8);
+    color: #fff;
+    border-color: rgba(99, 102, 241, 0.6);
+}
+
+/* 기간 라벨 */
+.chart-period-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
+    margin: 8px 0 16px;
+}
+
+/* 요약 카드 행 */
+.stats-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.summary-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 16px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.summary-card.tts-card {
+    border-left: 3px solid rgba(99, 102, 241, 0.8);
+}
+
+.summary-card.listening-card {
+    border-left: 3px solid rgba(139, 92, 246, 0.8);
+}
+
+.summary-icon {
+    font-size: 1.6rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.summary-text {
+    min-width: 0;
+}
+
+.summary-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+}
+
+.summary-label {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 차트 2열 그리드 */
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.chart-box {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    padding: 16px;
+    min-width: 0;
+}
+
+.chart-label {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0 0 12px;
+}
+
+/* ── 반응형 (태블릿 이하) ── */
+@media (max-width: 640px) {
+    .stats-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .chart-period-tabs {
+        align-self: stretch;
+    }
+
+    .chart-tab {
+        flex: 1;
+        text-align: center;
+        padding: 7px 8px;
+        font-size: 0.75rem;
+    }
+
+    .summary-card {
+        padding: 12px 14px;
+        gap: 10px;
+    }
+
+    .summary-icon {
+        font-size: 1.3rem;
+    }
+
+    .summary-value {
+        font-size: 1.1rem;
+    }
+
+    /* 모바일에서 차트 1열 */
+    .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}
+
+@media (max-width: 400px) {
+    /* 아주 작은 화면에서 요약 카드도 1열 */
+    .stats-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-card {
+        padding: 12px;
+    }
+}
+
+/* 라이트 모드 통계 */
+body.light-mode .summary-card {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .summary-value {
+    color: #0f172a;
+}
+
+body.light-mode .summary-label {
+    color: #64748b;
+}
+
+body.light-mode .chart-box {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+body.light-mode .chart-label {
+    color: #64748b;
+}
+
+body.light-mode .chart-period-label {
+    color: #94a3b8;
+}
+
+body.light-mode .chart-tab {
+    color: #64748b;
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .chart-tab.active {
+    color: #fff;
+    border-color: rgba(99, 102, 241, 0.6);
+}

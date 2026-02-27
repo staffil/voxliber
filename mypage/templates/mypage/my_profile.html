@@ -210,7 +210,7 @@
              활동 통계 그래프 (form 밖)
              ===================================================== -->
         <div class="form-section stats-section" style="margin-top: 32px;">
-            <div class="section-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+            <div class="section-header stats-header">
                 <h2 class="section-title">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="20" x2="18" y2="10"/>
@@ -221,39 +221,44 @@
                 </h2>
 
                 <!-- 일/월/연도 탭 -->
-                <div class="chart-period-tabs" style="display:flex; gap:6px;">
-                    <button class="chart-tab active" data-period="daily"
-                        style="padding:6px 14px; border-radius:20px; border:1px solid rgba(99,102,241,0.6);
-                               background:rgba(99,102,241,0.8); color:#fff; font-size:0.8rem; cursor:pointer; transition:all 0.2s;">
-                        일별
-                    </button>
-                    <button class="chart-tab" data-period="monthly"
-                        style="padding:6px 14px; border-radius:20px; border:1px solid rgba(255,255,255,0.15);
-                               background:transparent; color:rgba(255,255,255,0.5); font-size:0.8rem; cursor:pointer; transition:all 0.2s;">
-                        월별
-                    </button>
-                    <button class="chart-tab" data-period="yearly"
-                        style="padding:6px 14px; border-radius:20px; border:1px solid rgba(255,255,255,0.15);
-                               background:transparent; color:rgba(255,255,255,0.5); font-size:0.8rem; cursor:pointer; transition:all 0.2s;">
-                        연도별
-                    </button>
+                <div class="chart-period-tabs">
+                    <button class="chart-tab active" data-period="daily">일별</button>
+                    <button class="chart-tab" data-period="monthly">월별</button>
+                    <button class="chart-tab" data-period="yearly">연도별</button>
                 </div>
             </div>
 
             <!-- 기간 설명 텍스트 -->
-            <p id="chartPeriodLabel" style="font-size:0.75rem; color:rgba(255,255,255,0.3); margin: 8px 0 16px;">
-                최근 30일
-            </p>
+            <p id="chartPeriodLabel" class="chart-period-label">최근 30일</p>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <!-- 요약 카드 -->
+            <div class="stats-summary">
+                <div class="summary-card tts-card">
+                    <span class="summary-icon">📝</span>
+                    <div class="summary-text">
+                        <div class="summary-value" id="ttsSummaryValue">0</div>
+                        <div class="summary-label" id="ttsSummaryLabel">TTS 생성 (분)</div>
+                    </div>
+                </div>
+                <div class="summary-card listening-card">
+                    <span class="summary-icon">🎧</span>
+                    <div class="summary-text">
+                        <div class="summary-value" id="listeningSummaryValue">0</div>
+                        <div class="summary-label" id="listeningSummaryLabel">청취 시간 (분)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 차트 그리드 -->
+            <div class="charts-grid">
                 <!-- TTS 차트 -->
-                <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:16px;">
-                    <p id="ttsLabel" style="font-size:0.8rem; color:rgba(255,255,255,0.5); margin-bottom:12px;">📝 TTS 생성 (분)</p>
+                <div class="chart-box">
+                    <p id="ttsLabel" class="chart-label">📝 TTS 생성 (분)</p>
                     <canvas id="ttsChart" height="180"></canvas>
                 </div>
                 <!-- 청취 차트 -->
-                <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:16px;">
-                    <p id="listeningLabel" style="font-size:0.8rem; color:rgba(255,255,255,0.5); margin-bottom:12px;">🎧 청취 시간 (분)</p>
+                <div class="chart-box">
+                    <p id="listeningLabel" class="chart-label">🎧 청취 시간 (분)</p>
                     <canvas id="listeningChart" height="180"></canvas>
                 </div>
             </div>
@@ -386,40 +391,48 @@ document.head.appendChild(animStyle);
 const ALL_DATA = {{ chart_data|safe }};
 
 const PERIOD_META = {
-    daily:   { label: '최근 30일', ttsUnit: '분',  listeningUnit: '분' },
-    monthly: { label: '최근 12개월', ttsUnit: '분', listeningUnit: '시간' },
+    daily:   { label: '최근 30일',   ttsUnit: '분',  listeningUnit: '분' },
+    monthly: { label: '최근 12개월', ttsUnit: '분',  listeningUnit: '시간' },
     yearly:  { label: '전체 연도별', ttsUnit: '시간', listeningUnit: '시간' },
 };
 
 const scaleOpts = {
     x: { grid: { color: 'rgba(255,255,255,0.07)' }, ticks: { color: 'rgba(255,255,255,0.5)', maxRotation: 45, minRotation: 0 } },
-    y: { grid: { color: 'rgba(255,255,255,0.07)' }, ticks: { color: 'rgba(255,255,255,0.5)' } }
+    y: { grid: { color: 'rgba(255,255,255,0.07)' }, ticks: { color: 'rgba(255,255,255,0.5)' }, beginAtZero: true }
 };
 
 // 차트 인스턴스 생성
 const ttsChart = new Chart(document.getElementById('ttsChart'), {
     type: 'bar',
     data: { labels: [], datasets: [{ label: 'TTS', data: [], backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 6 }] },
-    options: { plugins: { legend: { display: false } }, scales: scaleOpts, animation: { duration: 300 } }
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: scaleOpts, animation: { duration: 300 } }
 });
 
 const listeningChart = new Chart(document.getElementById('listeningChart'), {
     type: 'bar',
     data: { labels: [], datasets: [{ label: '청취', data: [], backgroundColor: 'rgba(139,92,246,0.7)', borderRadius: 6 }] },
-    options: { plugins: { legend: { display: false } }, scales: scaleOpts, animation: { duration: 300 } }
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: scaleOpts, animation: { duration: 300 } }
 });
 
 function updateCharts(period) {
     const d = ALL_DATA[period];
     const meta = PERIOD_META[period];
 
-    // TTS
+    // 요약 합계
+    const ttsTotal = d.tts.data.length ? d.tts.data.reduce((a, b) => a + b, 0).toFixed(1) : '0';
+    const listenTotal = d.listening.data.length ? d.listening.data.reduce((a, b) => a + b, 0).toFixed(1) : '0';
+    document.getElementById('ttsSummaryValue').textContent = ttsTotal;
+    document.getElementById('ttsSummaryLabel').textContent = `TTS 생성 (${meta.ttsUnit})`;
+    document.getElementById('listeningSummaryValue').textContent = listenTotal;
+    document.getElementById('listeningSummaryLabel').textContent = `청취 시간 (${meta.listeningUnit})`;
+
+    // TTS 차트
     ttsChart.data.labels = d.tts.labels;
     ttsChart.data.datasets[0].data = d.tts.data;
     ttsChart.update();
     document.getElementById('ttsLabel').textContent = `📝 TTS 생성 (${meta.ttsUnit})`;
 
-    // 청취
+    // 청취 차트
     listeningChart.data.labels = d.listening.labels;
     listeningChart.data.datasets[0].data = d.listening.data;
     listeningChart.update();
@@ -432,15 +445,7 @@ function updateCharts(period) {
 // 탭 클릭 이벤트
 document.querySelectorAll('.chart-tab').forEach(btn => {
     btn.addEventListener('click', function() {
-        document.querySelectorAll('.chart-tab').forEach(b => {
-            b.style.background = 'transparent';
-            b.style.color = 'rgba(255,255,255,0.5)';
-            b.style.borderColor = 'rgba(255,255,255,0.15)';
-            b.classList.remove('active');
-        });
-        this.style.background = 'rgba(99,102,241,0.8)';
-        this.style.color = '#fff';
-        this.style.borderColor = 'rgba(99,102,241,0.6)';
+        document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         updateCharts(this.dataset.period);
     });

@@ -13,9 +13,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from character.models import Story, Conversation, ConversationMessage, LLM, StoryBookmark
 from register.models import Users
-from book.models import Books, BookSnap, Follow, ListeningHistory
+from book.models import Books, BookSnap, Follow, ListeningHistory, Content
 from django.db.models import Sum
-from django.db.models.functions import TruncDate, TruncMonth
+from django.db.models.functions import TruncDate, TruncMonth, TruncYear
 from datetime import datetime, timedelta
 
 @api_view(['GET', 'PATCH'])
@@ -368,14 +368,26 @@ def api_my_story_bookmarks(request):
 def api_listening_stats(request):
     """
     GET /mypage/api/listening-stats/
-    일별(최근 30일) + 월별(최근 12개월) 청취 시간 반환
+    일별(최근 30일) + 월별(최근 12개월) + 연도별 TTS/청취 통계 반환
+    웹 my_profile 통계와 동일한 구조
     """
     user = request.api_user
     now = datetime.now()
 
-    # 일별 (최근 30일)
     thirty_days_ago = now - timedelta(days=30)
-    daily_qs = (
+    twelve_months_ago = now - timedelta(days=365)
+
+    # ── TTS 일별 ──────────────────────────────
+    tts_daily = list(
+        Content.objects
+        .filter(book__user=user, created_at__gte=thirty_days_ago)
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(total=Sum('duration_seconds'))
+        .order_by('day')
+    )
+    # ── 청취 일별 ──────────────────────────────
+    listening_daily = list(
         ListeningHistory.objects
         .filter(user=user, listened_at__gte=thirty_days_ago)
         .annotate(day=TruncDate('listened_at'))
@@ -384,9 +396,17 @@ def api_listening_stats(request):
         .order_by('day')
     )
 
-    # 월별 (최근 12개월)
-    twelve_months_ago = now - timedelta(days=365)
-    monthly_qs = (
+    # ── TTS 월별 ──────────────────────────────
+    tts_monthly = list(
+        Content.objects
+        .filter(book__user=user, created_at__gte=twelve_months_ago)
+        .annotate(month=TruncMonth('created_at'))
+        .values('month')
+        .annotate(total=Sum('duration_seconds'))
+        .order_by('month')
+    )
+    # ── 청취 월별 ──────────────────────────────
+    listening_monthly = list(
         ListeningHistory.objects
         .filter(user=user, listened_at__gte=twelve_months_ago)
         .annotate(month=TruncMonth('listened_at'))
@@ -395,23 +415,71 @@ def api_listening_stats(request):
         .order_by('month')
     )
 
-    daily = [
-        {'label': x['day'].strftime('%m/%d'), 'minutes': round((x['total'] or 0) / 60, 1)}
-        for x in daily_qs
-    ]
-    monthly = [
-        {'label': x['month'].strftime('%y.%m'), 'hours': round((x['total'] or 0) / 3600, 1)}
-        for x in monthly_qs
-    ]
+    # ── TTS 연도별 ──────────────────────────────
+    tts_yearly = list(
+        Content.objects
+        .filter(book__user=user)
+        .annotate(year=TruncYear('created_at'))
+        .values('year')
+        .annotate(total=Sum('duration_seconds'))
+        .order_by('year')
+    )
+    # ── 청취 연도별 ──────────────────────────────
+    listening_yearly = list(
+        ListeningHistory.objects
+        .filter(user=user)
+        .annotate(year=TruncYear('listened_at'))
+        .values('year')
+        .annotate(total=Sum('listened_seconds'))
+        .order_by('year')
+    )
 
-    total_daily_minutes = round(sum(x['minutes'] for x in daily), 1)
-    total_monthly_hours = round(sum(x['hours'] for x in monthly), 1)
+    tts_daily_min   = round(sum((x['total'] or 0) for x in tts_daily) / 60, 1)
+    listen_daily_min = round(sum((x['total'] or 0) for x in listening_daily) / 60, 1)
+    tts_monthly_min  = round(sum((x['total'] or 0) for x in tts_monthly) / 60, 1)
+    listen_monthly_hr = round(sum((x['total'] or 0) for x in listening_monthly) / 3600, 1)
 
     return api_response({
-        'daily': daily,
-        'monthly': monthly,
+        'daily': {
+            'tts': {
+                'labels': [x['day'].strftime('%m/%d') for x in tts_daily],
+                'data':   [round((x['total'] or 0) / 60, 1) for x in tts_daily],
+                'unit': '분',
+            },
+            'listening': {
+                'labels': [x['day'].strftime('%m/%d') for x in listening_daily],
+                'data':   [round((x['total'] or 0) / 60, 1) for x in listening_daily],
+                'unit': '분',
+            },
+        },
+        'monthly': {
+            'tts': {
+                'labels': [x['month'].strftime('%y.%m') for x in tts_monthly],
+                'data':   [round((x['total'] or 0) / 60, 1) for x in tts_monthly],
+                'unit': '분',
+            },
+            'listening': {
+                'labels': [x['month'].strftime('%y.%m') for x in listening_monthly],
+                'data':   [round((x['total'] or 0) / 3600, 1) for x in listening_monthly],
+                'unit': '시간',
+            },
+        },
+        'yearly': {
+            'tts': {
+                'labels': [str(x['year'].year) for x in tts_yearly],
+                'data':   [round((x['total'] or 0) / 3600, 1) for x in tts_yearly],
+                'unit': '시간',
+            },
+            'listening': {
+                'labels': [str(x['year'].year) for x in listening_yearly],
+                'data':   [round((x['total'] or 0) / 3600, 1) for x in listening_yearly],
+                'unit': '시간',
+            },
+        },
         'summary': {
-            'total_30d_minutes': total_daily_minutes,
-            'total_12m_hours': total_monthly_hours,
+            'tts_30d_minutes':      tts_daily_min,
+            'listening_30d_minutes': listen_daily_min,
+            'tts_12m_minutes':      tts_monthly_min,
+            'listening_12m_hours':  listen_monthly_hr,
         }
     })
