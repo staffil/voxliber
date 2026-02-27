@@ -555,7 +555,6 @@ body.light-mode .vm-cycle-step p { color: #64748b; }
   z-index: 90;
   background: var(--bg-secondary, #1a1a2e);
   border-bottom: 1px solid rgba(255,255,255,.07);
-  /* ★ 추가: 모바일에서 탭이 넘칠 때 가로 스크롤 */
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -569,7 +568,6 @@ body.light-mode .vm-tabs-bar {
   margin: 0 auto;
   padding: 0 var(--spacing-lg, 24px);
   display: flex;
-  /* ★ 추가: 탭이 줄바꿈 없이 한 줄 유지 */
   min-width: max-content;
 }
 .vm-tab {
@@ -582,7 +580,7 @@ body.light-mode .vm-tabs-bar {
   border-bottom: 3px solid transparent;
   transition: color .22s, border-color .22s;
   user-select: none;
-  white-space: nowrap; /* ★ 추가 */
+  white-space: nowrap;
 }
 body.light-mode .vm-tab { color: rgba(0,0,0,.35); }
 .vm-tab:hover { color: rgba(255,255,255,.75); }
@@ -601,7 +599,6 @@ body.light-mode .vm-tab.active { color: #0f172a; border-bottom-color: #6366f1; }
   flex-wrap: wrap;
   margin-bottom: 28px;
 }
-/* ★ 추가: 모바일에서 칩이 많으면 가로 스크롤 */
 @media (max-width: 600px) {
   .vm-chips {
     flex-wrap: nowrap;
@@ -622,8 +619,8 @@ body.light-mode .vm-tab.active { color: #0f172a; border-bottom-color: #6366f1; }
   cursor: pointer;
   background: transparent;
   transition: all .18s;
-  white-space: nowrap; /* ★ 추가 */
-  flex-shrink: 0;      /* ★ 추가 */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 body.light-mode .vm-chip { border-color: rgba(0,0,0,.1); color: rgba(0,0,0,.42); }
 .vm-chip:hover, .vm-chip.on {
@@ -635,31 +632,76 @@ body.light-mode .vm-chip:hover,
 body.light-mode .vm-chip.on { background: rgba(99,102,241,.08); border-color: rgba(99,102,241,.28); color: #6366f1; }
 
 /* ============================================================
-   BOOK CARD GRID
+   BOOK CARD — 가로 스크롤 그리드 (핵심 변경)
    ============================================================ */
-.vm-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-  gap: 18px;
-}
-@media (max-width: 480px) { .vm-grid { grid-template-columns: repeat(2,1fr); gap: 12px; } }
 
-.vm-bk { position: relative; cursor: pointer; transition: transform .24s; }
+/* 스크롤 래퍼 */
+.vm-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 16px;
+  /* 스크롤바 스타일 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99,102,241,.35) transparent;
+  /* 좌우 패딩으로 끝 카드가 잘리지 않게 */
+  padding-left: 2px;
+  padding-right: 2px;
+  /* 스냅 스크롤 */
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.vm-grid::-webkit-scrollbar {
+  height: 4px;
+}
+.vm-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+.vm-grid::-webkit-scrollbar-thumb {
+  background: rgba(99,102,241,.35);
+  border-radius: 99px;
+}
+.vm-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(99,102,241,.6);
+}
+
+/* 개별 책 카드 */
+.vm-bk {
+  position: relative;
+  cursor: pointer;
+  transition: transform .24s;
+  /* 고정 너비로 규격 통일 */
+  flex: 0 0 148px;
+  width: 148px;
+  scroll-snap-align: start;
+}
 .vm-bk:hover { transform: translateY(-6px); }
 
+/* 커버: 고정 width + height로 모든 이미지 동일 규격 */
 .vm-bk-cover {
-  aspect-ratio: 3/4;
+  width: 148px;
+  height: 197px; /* 3:4 비율 고정 */
   border-radius: 11px;
   overflow: hidden;
   background: var(--bg-tertiary, #0f0f1a);
   border: 1px solid rgba(255,255,255,.06);
   position: relative;
+  /* aspect-ratio 제거, 명시적 크기로 고정 */
 }
 body.light-mode .vm-bk-cover {
   border-color: rgba(0,0,0,.07);
   box-shadow: 0 3px 12px rgba(0,0,0,.08);
 }
-.vm-bk-cover img { width:100%; height:100%; object-fit:cover; transition: transform .4s; }
+.vm-bk-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 이미지 크기 무관하게 꽉 채워 잘라냄 */
+  object-position: center top; /* 얼굴/주요 요소가 상단에 있는 경우 고려 */
+  transition: transform .4s;
+  display: block;
+}
 .vm-bk:hover .vm-bk-cover img { transform: scale(1.06); }
 
 .vm-bk-empty {
@@ -697,12 +739,14 @@ body.light-mode .vm-bk-cover {
   font-size: .83rem; font-weight: 700;
   color: var(--text-primary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 144px;
 }
 .vm-bk-author {
   font-size: .7rem; font-weight: 400;
   color: rgba(255,255,255,.36);
   margin-top: 2px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 144px;
 }
 body.light-mode .vm-bk-author { color: #94a3b8; }
 .vm-bk-score {
@@ -804,7 +848,6 @@ body.light-mode .vm-ep-b { color:#94a3b8; }
   gap: 12px;
   margin-top: 24px;
 }
-/* ★ 추가: 모바일 1열 */
 @media (max-width: 480px) {
   .vm-cont-grid { grid-template-columns: 1fr; }
 }
@@ -886,7 +929,6 @@ body.light-mode .vm-cta {
 body.light-mode .vm-cta-text p { color: #64748b; }
 
 .vm-cta-action { position: relative; z-index: 1; flex-shrink: 0; }
-/* ★ 추가: 모바일에서 CTA 버튼 전체 너비 */
 @media (max-width: 600px) {
   .vm-cta { flex-direction: column; align-items: flex-start; }
   .vm-cta-action { width: 100%; }
@@ -932,7 +974,9 @@ body.light-mode .vm-auth-cnt { color:#94a3b8; }
 .vm-empty {
   padding: 48px 20px; text-align: center;
   color: rgba(255,255,255,.22); font-size: .86rem;
-  grid-column: 1 / -1;
+  /* grid 아닌 flex 컨텍스트에서도 잘 보이게 */
+  flex: 0 0 auto;
+  min-width: 200px;
 }
 body.light-mode .vm-empty { color: #cbd5e1; }
 
@@ -974,30 +1018,17 @@ body.light-mode .vm-footer-bot { border-top-color: rgba(0,0,0,.05); }
 body.light-mode .vm-footer-copy { color:#94a3b8; }
 
 /* ============================================================
-   ★★★ 반응형 추가 ★★★
+   반응형 — 책 카드 크기 조정
    ============================================================ */
 
-/* ── 1100px 이하: 히어로 우측 카드 숨김, 1컬럼 전환 ── */
-@media (max-width: 1100px) {
-  .vm-hero-layout {
-    grid-template-columns: 1fr;
-    padding: 72px 0 60px;
-  }
-  .vm-hero-right { display: none; }
-}
-
-/* ── 768px 이하: 태블릿 ── */
+/* 768px ~ 480px: 카드 약간 작게 */
 @media (max-width: 768px) {
   .vm-page { padding-top: 64px; }
   .vm-tabs-bar { top: 56px; }
   .vm-section { padding: 48px 0; }
   .vm-cycle { padding: 56px 0; }
   .vm-cycle-intro { margin-bottom: 40px; }
-
-  /* 섹션 여백 축소 */
   .vm-inner { padding: 0 16px; }
-
-  /* CTA 세로 배치 */
   .vm-cta {
     padding: 32px 28px;
     flex-direction: column;
@@ -1005,16 +1036,17 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
   }
   .vm-cta-action { width: 100%; }
   .vm-cta-action .vm-btn-cta { width: 100%; justify-content: center; }
-
-  /* 히어로 증명 수치 간격 */
   .vm-hero-proof { gap: 20px; }
   .vm-hero-btns { margin-bottom: 40px; }
-
-  /* 풋터 */
   .vm-footer { padding: 48px 0 28px; margin-top: 56px; }
+
+  .vm-bk { flex: 0 0 132px; width: 132px; }
+  .vm-bk-cover { width: 132px; height: 176px; }
+  .vm-bk-name { max-width: 128px; }
+  .vm-bk-author { max-width: 128px; }
 }
 
-/* ── 600px 이하: 모바일 중간 ── */
+/* 600px 이하 */
 @media (max-width: 600px) {
   .vm-hero { min-height: auto; }
   .vm-hero-layout { padding: 52px 0 44px; gap: 32px; }
@@ -1031,152 +1063,103 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
     justify-content: center;
     padding: 14px 20px;
   }
-
-  /* 증명 수치 간격 더 줄이기 */
   .vm-hero-proof { gap: 14px; padding-top: 24px; }
   .vm-proof-num { font-size: 1.4rem; }
   .vm-proof-div { height: 28px; }
-
-  /* 사이클 스텝 패딩 */
   .vm-cycle-step { padding: 24px 18px 20px; }
-
-  /* 랭킹 점수 숨기기 (공간 부족 시) */
   .vm-rscore { font-size: .76rem; }
-
-  /* AI 서브탭 버튼 */
   .ai-sub-tab-buttons { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .ai-sub-tab-buttons::-webkit-scrollbar { display: none; }
   .ai-sub-tab-btn { white-space: nowrap; flex-shrink: 0; }
+
+  .vm-bk { flex: 0 0 120px; width: 120px; }
+  .vm-bk-cover { width: 120px; height: 160px; }
+  .vm-bk-name { font-size: .78rem; max-width: 116px; }
+  .vm-bk-author { font-size: .65rem; max-width: 116px; }
 }
 
-/* ── 480px 이하: 모바일 소형 ── */
+/* 480px 이하 */
 @media (max-width: 480px) {
   .vm-tabs-bar { top: 50px; }
   .vm-section { padding: 40px 0; }
   .vm-inner { padding: 0 14px; }
-
-  /* 그리드 2열 고정 */
-  .vm-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
   .vm-cont-grid { grid-template-columns: 1fr; }
-
-  /* 사이클 1열 */
   .vm-cycle-steps { grid-template-columns: 1fr; gap: 10px; }
   .vm-cycle { padding: 44px 0; }
-
-  /* 풋터 1열 */
   .vm-footer-g { grid-template-columns: 1fr; gap: 28px; }
-
-  /* 섹션 헤더 세로 배치 */
   .vm-hdr { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 20px; }
-
-  /* 랭킹 행 패딩 */
   .vm-rank-row { padding: 10px 8px; gap: 10px; }
   .vm-rthumb { width: 40px; height: 54px; }
-
-  /* 프리뷰 슬라이드 높이 */
   .vm-promo-slide { height: 160px; }
-
-  /* 탭 텍스트 축소 */
   .vm-tab { padding: 13px 16px; font-size: .84rem; }
-
-  /* 에피소드 카드 너비 축소 */
   .vm-ep-card { width: 185px; }
 
-  /* 책 메타 텍스트 축소 */
-  .vm-bk-name { font-size: .78rem; }
-  .vm-bk-author { font-size: .65rem; }
+  .vm-bk { flex: 0 0 112px; width: 112px; }
+  .vm-bk-cover { width: 112px; height: 150px; }
+  .vm-bk-name { font-size: .75rem; max-width: 108px; }
+  .vm-bk-author { font-size: .65rem; max-width: 108px; }
+  .vm-grid { gap: 10px; }
 }
 
-/* ── 400px 이하: 소형 모바일 세부 조정 ── */
+/* 400px 이하 */
 @media (max-width: 400px) {
   .vm-inner { padding: 0 12px; }
   .vm-section { padding: 36px 0; }
   .vm-cycle { padding: 38px 0; }
-
-  /* 히어로 헤딩 축소 */
   .vm-hero-h1 { font-size: clamp(1.85rem, 9.5vw, 2.4rem); }
   .vm-hero-tagline { font-size: .86rem; margin-bottom: 24px; }
   .vm-hero-kicker { font-size: .63rem; padding: 5px 12px; margin-bottom: 20px; }
   .vm-hero-layout { padding: 44px 0 36px; }
-
-  /* 소셜 프루프 축소 */
   .vm-proof-num { font-size: 1.25rem; }
   .vm-proof-lbl { font-size: .59rem; }
   .vm-hero-proof { gap: 10px; padding-top: 20px; }
   .vm-proof-div { height: 22px; }
-
-  /* 탭바 / 탭 */
   .vm-tab { padding: 11px 14px; font-size: .8rem; }
-
-  /* 섹션 타이틀 */
   .vm-title { font-size: clamp(1.35rem, 5.5vw, 1.8rem); }
   .vm-eyebrow { font-size: .62rem; }
-
-  /* 사이클 스텝 */
   .vm-cycle-step { padding: 20px 14px 18px; }
-
-  /* 에피소드 카드 */
   .vm-ep-card { width: 170px; }
   .vm-ep-thumb { height: 96px; }
-
-  /* 랭킹 */
   .vm-rthumb { width: 36px; height: 48px; }
   .vm-rtitle { font-size: .82rem; }
   .vm-rauthor { font-size: .68rem; }
   .vm-rscore { font-size: .75rem; }
-
-  /* 이어듣기 카드 */
   .vm-cont-thumb { width: 44px; height: 58px; }
   .vm-cont-name { font-size: .76rem; }
-
-  /* 그리드 책 카드 */
-  .vm-grid { gap: 8px; }
-  .vm-bk-name { font-size: .75rem; }
-
-  /* 프로모 */
   .vm-promo-slide { height: 140px; }
-
-  /* 풋터 */
   .vm-footer { padding: 40px 0 24px; margin-top: 44px; }
+
+  .vm-bk { flex: 0 0 104px; width: 104px; }
+  .vm-bk-cover { width: 104px; height: 139px; }
+  .vm-bk-name { font-size: .73rem; max-width: 100px; }
+  .vm-grid { gap: 8px; }
 }
 
-/* ── 360px 이하: 초소형 (갤럭시 S8 등) ── */
+/* 360px 이하 */
 @media (max-width: 360px) {
   .vm-inner { padding: 0 10px; }
-
-  /* 히어로 */
   .vm-hero-h1 { font-size: 1.7rem; line-height: 1.12; }
   .vm-hero-tagline { font-size: .82rem; }
   .vm-hero-layout { padding: 40px 0 32px; }
   .vm-hero-btns { gap: 8px; }
   .vm-btn-cta,
   .vm-btn-outline { padding: 13px 16px; font-size: .85rem; }
-
-  /* 소셜 프루프: 작아서 가로로 안 들어가면 줄바꿈 */
   .vm-hero-proof { flex-wrap: wrap; gap: 8px 12px; }
   .vm-proof-div { display: none; }
-
-  /* 탭 */
   .vm-tab { padding: 10px 12px; font-size: .78rem; }
-
-  /* 그리드 */
-  .vm-grid { gap: 6px; }
-
-  /* 프로모 */
   .vm-promo-slide { height: 120px; }
   .vm-promo-nav { width: 26px; height: 26px; }
-
-  /* 랭킹 */
   .vm-rank-row { gap: 8px; padding: 9px 6px; }
   .vm-rthumb { width: 32px; height: 43px; }
   .vm-rn { font-size: .9rem; width: 22px; }
-
-  /* CTA */
   .vm-cta { padding: 24px 16px; border-radius: 14px; }
   .vm-cta-text h2 { font-size: 1.15rem; }
-
-  /* 풋터 */
   .vm-footer-logo { font-size: 1.3rem; }
+
+  .vm-bk { flex: 0 0 96px; width: 96px; }
+  .vm-bk-cover { width: 96px; height: 128px; }
+  .vm-bk-name { font-size: .7rem; max-width: 92px; }
+  .vm-grid { gap: 6px; }
 }
 </style>
 {% endblock %}
