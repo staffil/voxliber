@@ -1226,33 +1226,6 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
       </div>
     </div>
 
-    <!-- 최신 에피소드 -->
-    <div class="vm-inner vm-section" style="padding-top:0;">
-      <div class="vm-hdr">
-        <div>
-          <div class="vm-eyebrow">최신 업데이트</div>
-          <h2 class="vm-title">방금 <span class="ac">올라온</span> 에피소드</h2>
-        </div>
-      </div>
-      <div class="vm-ep-strip">
-        {% for ep in latest_episode %}
-        <a href="{% url 'book:content_detail' ep.public_uuid %}" class="vm-ep-card">
-          <div class="vm-ep-thumb">
-            {% if ep.book.cover_img %}<img src="{{ ep.book.cover_img.url }}" alt="" loading="lazy">
-            {% else %}<div class="vm-ep-thumb-empty">🎧</div>{% endif %}
-            <div class="vm-ep-new">NEW</div>
-          </div>
-          <div class="vm-ep-body">
-            <div class="vm-ep-n">{{ ep.number }}화</div>
-            <div class="vm-ep-t">{{ ep.title }}</div>
-            <div class="vm-ep-b">{{ ep.book.name }}</div>
-          </div>
-        </a>
-        {% empty %}<div class="vm-empty">최신 에피소드가 없어요</div>
-        {% endfor %}
-      </div>
-    </div>
-
     <!-- 장르별 큐레이션 -->
     {% for item in genres_with_books %}
     <div class="vm-inner vm-section" style="padding-top:0;">
