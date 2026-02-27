@@ -120,15 +120,27 @@ body.light-mode .mode-modal-title { color: #0f172a; }
 }
 body.light-mode .mode-modal-sub { color: #64748b; }
 
-/* 세 개 카드 */
+/* ── 카드 그리드 기본: 3열 ── */
 .mode-cards {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
 }
+
+/* ── 1200px 이하: 전문가 모드 숨김 + 2열로 전환 ── */
+@media (max-width: 1200px) {
+  .mode-card.expert {
+    display: none;
+  }
+  .mode-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── 560px 이하: 1열 ── */
 @media (max-width: 560px) {
   .mode-modal { padding: 28px 20px 24px; }
-  .mode-cards { grid-template-columns: 1fr; gap: 10px; }
+  .mode-cards { grid-template-columns: 1fr; }
 }
 
 .mode-card {
@@ -436,7 +448,7 @@ body.light-mode .mode-modal-close:hover { color: rgba(0,0,0,.6); }
         <div class="mode-card-arrow">시작하기 →</div>
       </div>
 
-      <!-- 전문가 모드 -->
+      <!-- 전문가 모드 — 1200px 초과(데스크탑)에서만 표시 -->
       <div class="mode-card expert" id="modeExpertBtn">
         <div class="mode-card-icon">🛠️</div>
         <div class="mode-card-label">전문가 모드</div>

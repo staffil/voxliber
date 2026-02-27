@@ -152,7 +152,7 @@ def book_profile(request):
 
         # ★ 모드별 리다이렉트
         if write_mode == "expert":
-            return redirect(f"/book/serialization/?public_uuid={book.public_uuid}")
+            return redirect(f"/book/book/serialization/?public_uuid={book.public_uuid}")
         elif write_mode == "voice":
             return redirect(f"/voice/voice/list/")
         else:  # beginner (기본)
