@@ -1119,35 +1119,6 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
   </div>
 
 
-  <!-- ============================================================
-       PROMO BANNER
-       ============================================================ -->
-  {% if advertisment_list %}
-  <div class="vm-inner" style="padding-top:52px; padding-bottom:0;">
-    <div class="vm-promo">
-      <div class="vm-promo-track" id="vmPromoTrack">
-        {% for ad in advertisment_list %}
-        <div class="vm-promo-slide">
-          <a href="{{ ad.link }}"><img src="{{ ad.advertisment_img.url }}" alt="" loading="lazy"></a>
-        </div>
-        {% endfor %}
-      </div>
-      {% if advertisment_list|length > 1 %}
-      <button class="vm-promo-nav prev" id="vmPromoPrev">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-      </button>
-      <button class="vm-promo-nav next" id="vmPromoNext">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-      </button>
-      <div class="vm-promo-dots">
-        {% for ad in advertisment_list %}
-        <div class="vm-promo-dot {% if forloop.first %}on{% endif %}" data-i="{{ forloop.counter0 }}"></div>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </div>
-  </div>
-  {% endif %}
 
 
   <!-- ============================================================
