@@ -555,7 +555,11 @@ body.light-mode .vm-cycle-step p { color: #64748b; }
   z-index: 90;
   background: var(--bg-secondary, #1a1a2e);
   border-bottom: 1px solid rgba(255,255,255,.07);
+  /* ★ 추가: 모바일에서 탭이 넘칠 때 가로 스크롤 */
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.vm-tabs-bar::-webkit-scrollbar { display: none; }
 body.light-mode .vm-tabs-bar {
   background: #f4f4ff;
   border-bottom-color: rgba(0,0,0,.07);
@@ -565,6 +569,8 @@ body.light-mode .vm-tabs-bar {
   margin: 0 auto;
   padding: 0 var(--spacing-lg, 24px);
   display: flex;
+  /* ★ 추가: 탭이 줄바꿈 없이 한 줄 유지 */
+  min-width: max-content;
 }
 .vm-tab {
   padding: 15px 24px;
@@ -576,6 +582,7 @@ body.light-mode .vm-tabs-bar {
   border-bottom: 3px solid transparent;
   transition: color .22s, border-color .22s;
   user-select: none;
+  white-space: nowrap; /* ★ 추가 */
 }
 body.light-mode .vm-tab { color: rgba(0,0,0,.35); }
 .vm-tab:hover { color: rgba(255,255,255,.75); }
@@ -594,6 +601,16 @@ body.light-mode .vm-tab.active { color: #0f172a; border-bottom-color: #6366f1; }
   flex-wrap: wrap;
   margin-bottom: 28px;
 }
+/* ★ 추가: 모바일에서 칩이 많으면 가로 스크롤 */
+@media (max-width: 600px) {
+  .vm-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+  .vm-chips::-webkit-scrollbar { display: none; }
+}
 .vm-chip {
   padding: 6px 16px;
   border-radius: 99px;
@@ -605,6 +622,8 @@ body.light-mode .vm-tab.active { color: #0f172a; border-bottom-color: #6366f1; }
   cursor: pointer;
   background: transparent;
   transition: all .18s;
+  white-space: nowrap; /* ★ 추가 */
+  flex-shrink: 0;      /* ★ 추가 */
 }
 body.light-mode .vm-chip { border-color: rgba(0,0,0,.1); color: rgba(0,0,0,.42); }
 .vm-chip:hover, .vm-chip.on {
@@ -785,6 +804,10 @@ body.light-mode .vm-ep-b { color:#94a3b8; }
   gap: 12px;
   margin-top: 24px;
 }
+/* ★ 추가: 모바일 1열 */
+@media (max-width: 480px) {
+  .vm-cont-grid { grid-template-columns: 1fr; }
+}
 .vm-cont-card {
   display: flex; align-items: center; gap: 12px; padding: 12px;
   background: rgba(255,255,255,.03);
@@ -863,6 +886,12 @@ body.light-mode .vm-cta {
 body.light-mode .vm-cta-text p { color: #64748b; }
 
 .vm-cta-action { position: relative; z-index: 1; flex-shrink: 0; }
+/* ★ 추가: 모바일에서 CTA 버튼 전체 너비 */
+@media (max-width: 600px) {
+  .vm-cta { flex-direction: column; align-items: flex-start; }
+  .vm-cta-action { width: 100%; }
+  .vm-cta-action .vm-btn-cta { width: 100%; justify-content: center; }
+}
 
 /* ============================================================
    AUTHORS STRIP
@@ -945,17 +974,107 @@ body.light-mode .vm-footer-bot { border-top-color: rgba(0,0,0,.05); }
 body.light-mode .vm-footer-copy { color:#94a3b8; }
 
 /* ============================================================
-   RESPONSIVE
+   ★★★ 반응형 추가 ★★★
    ============================================================ */
-@media (max-width: 768px) {
-  .vm-tabs-bar { top: 56px; }
-  .vm-cta { padding: 28px 24px; }
-  .vm-section { padding: 52px 0; }
+
+/* ── 1100px 이하: 히어로 우측 카드 숨김, 1컬럼 전환 ── */
+@media (max-width: 1100px) {
+  .vm-hero-layout {
+    grid-template-columns: 1fr;
+    padding: 72px 0 60px;
+  }
+  .vm-hero-right { display: none; }
 }
+
+/* ── 768px 이하: 태블릿 ── */
+@media (max-width: 768px) {
+  .vm-page { padding-top: 64px; }
+  .vm-tabs-bar { top: 56px; }
+  .vm-section { padding: 48px 0; }
+  .vm-cycle { padding: 56px 0; }
+  .vm-cycle-intro { margin-bottom: 40px; }
+
+  /* 섹션 여백 축소 */
+  .vm-inner { padding: 0 16px; }
+
+  /* CTA 세로 배치 */
+  .vm-cta {
+    padding: 32px 28px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .vm-cta-action { width: 100%; }
+  .vm-cta-action .vm-btn-cta { width: 100%; justify-content: center; }
+
+  /* 히어로 증명 수치 간격 */
+  .vm-hero-proof { gap: 20px; }
+  .vm-hero-btns { margin-bottom: 40px; }
+
+  /* 풋터 */
+  .vm-footer { padding: 48px 0 28px; margin-top: 56px; }
+}
+
+/* ── 600px 이하: 모바일 중간 ── */
+@media (max-width: 600px) {
+  .vm-hero { min-height: auto; }
+  .vm-hero-layout { padding: 52px 0 44px; gap: 32px; }
+  .vm-hero-h1 { font-size: clamp(2rem, 8vw, 3rem); }
+  .vm-hero-tagline { font-size: .95rem; margin-bottom: 28px; }
+  .vm-hero-btns {
+    gap: 10px;
+    flex-direction: column;
+    margin-bottom: 32px;
+  }
+  .vm-btn-cta,
+  .vm-btn-outline {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 20px;
+  }
+
+  /* 증명 수치 간격 더 줄이기 */
+  .vm-hero-proof { gap: 14px; padding-top: 24px; }
+  .vm-proof-num { font-size: 1.4rem; }
+  .vm-proof-div { height: 28px; }
+
+  /* 사이클 스텝 패딩 */
+  .vm-cycle-step { padding: 24px 18px 20px; }
+
+  /* 랭킹 점수 숨기기 (공간 부족 시) */
+  .vm-rscore { font-size: .76rem; }
+
+  /* AI 서브탭 버튼 */
+  .ai-sub-tab-buttons { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .ai-sub-tab-buttons::-webkit-scrollbar { display: none; }
+  .ai-sub-tab-btn { white-space: nowrap; flex-shrink: 0; }
+}
+
+/* ── 480px 이하: 모바일 소형 ── */
 @media (max-width: 480px) {
   .vm-tabs-bar { top: 50px; }
-  .vm-hero { min-height: auto; }
-  .vm-hero-layout { padding: 48px 0 40px; }
+  .vm-section { padding: 40px 0; }
+  .vm-inner { padding: 0 14px; }
+
+  /* 그리드 2열 고정 */
+  .vm-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .vm-cont-grid { grid-template-columns: 1fr; }
+
+  /* 사이클 1열 */
+  .vm-cycle-steps { grid-template-columns: 1fr; gap: 10px; }
+  .vm-cycle { padding: 44px 0; }
+
+  /* 풋터 1열 */
+  .vm-footer-g { grid-template-columns: 1fr; gap: 28px; }
+
+  /* 섹션 헤더 세로 배치 */
+  .vm-hdr { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 20px; }
+
+  /* 랭킹 행 패딩 */
+  .vm-rank-row { padding: 10px 8px; gap: 10px; }
+  .vm-rthumb { width: 40px; height: 54px; }
+
+  /* 프리뷰 슬라이드 높이 */
+  .vm-promo-slide { height: 160px; }
 }
 </style>
 {% endblock %}
