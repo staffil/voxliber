@@ -9,5 +9,5 @@ app_name = "advertisment"
 urlpatterns = [
     path('request/list/', views.request_ad_list, name='request_ad_view'),
     path('my/', views.my_ad_list, name='my_ad_list'),
-
+    path('settlement/', views.ad_settlement, name='ad_settlement'),
 ]

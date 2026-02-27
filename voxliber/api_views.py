@@ -192,7 +192,7 @@ def api_create_episode(request):
             return api_response(error=f"페이지 {i+1}의 voice_id가 필요합니다.", status=400)
 
     # 책 조회 (본인 소유 확인)
-    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user).first()
+    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user, is_deleted=False).first()
     if not book:
         return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
 
@@ -380,7 +380,7 @@ def api_my_books(request):
     GET /api/v1/my-books/
     Headers: X-API-Key: <your_api_key>
     """
-    books = Books.objects.filter(user=request.api_user).order_by('-created_at')
+    books = Books.objects.filter(user=request.api_user, is_deleted=False).order_by('-created_at')
     book_data = []
     for b in books:
         episodes = Content.objects.filter(book=b, is_deleted=False).count()
@@ -749,7 +749,7 @@ def api_delete_episode(request):
     if not book_uuid or not episode_number:
         return api_response(error="book_uuid와 episode_number는 필수입니다.", status=400)
 
-    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user).first()
+    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user, is_deleted=False).first()
     if not book:
         return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
 
@@ -796,7 +796,7 @@ def api_regenerate_episode(request):
     if not book_uuid or not episode_number:
         return api_response(error="book_uuid와 episode_number는 필수입니다.", status=400)
 
-    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user).first()
+    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user, is_deleted=False).first()
     if not book:
         return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
 
@@ -857,7 +857,7 @@ def api_mix_background_music(request):
     if not bg_tracks and not sfx_tracks:
         return api_response(error="background_tracks 또는 sound_effects 배열이 필요합니다.", status=400)
 
-    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user).first()
+    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user, is_deleted=False).first()
     if not book:
         return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
 
@@ -1052,7 +1052,7 @@ def api_upload_book_cover(request):
     if "cover_image" not in request.FILES:
         return api_response(error="cover_image 파일이 필요합니다.", status=400)
 
-    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user).first()
+    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user, is_deleted=False).first()
     if not book:
         return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
 
@@ -1098,7 +1098,7 @@ def api_upload_episode_image(request):
     if "episode_image" not in request.FILES:
         return api_response(error="episode_image 파일이 필요합니다.", status=400)
 
-    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user).first()
+    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user, is_deleted=False).first()
     if not book:
         return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
 
@@ -1160,7 +1160,7 @@ def api_upload_image_from_url(request):
     if target not in ("book_cover", "episode_image"):
         return api_response(error="target은 'book_cover' 또는 'episode_image'여야 합니다.", status=400)
 
-    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user).first()
+    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user, is_deleted=False).first()
     if not book:
         return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
 
@@ -1275,7 +1275,7 @@ def api_update_book_metadata(request):
     if not book_uuid:
         return api_response(error="book_uuid는 필수입니다.", status=400)
 
-    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user).first()
+    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user, is_deleted=False).first()
     if not book:
         return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
 
@@ -1655,7 +1655,64 @@ def api_ad_skip(request):
     return api_response(data={"message": "스킵 기록 완료"})
 
 
-# ==================== 25. AI 스토리 생성 API ====================
+# ==================== 25. 광고 완료 기록 API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_ad_complete(request):
+    """
+    광고 완료 기록 API
+    - 오디오/영상 광고를 스킵 없이 끝까지 시청/청취했을 때 호출
+    - CPV 단가 방식일 때 min_watch_seconds 이상 시청 시 CPV 카운트
+
+    POST /api/v1/ads/complete/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "ad_uuid": "xxxx-xxxx-xxxx",
+        "watched_seconds": 15
+    }
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    ad_uuid = data.get("ad_uuid", "").strip()
+    watched_seconds = int(data.get("watched_seconds", 0))
+
+    if not ad_uuid:
+        return api_response(error="ad_uuid는 필수입니다.", status=400)
+
+    try:
+        ad = Advertisement.objects.get(public_uuid=ad_uuid)
+    except Advertisement.DoesNotExist:
+        return api_response(error="광고를 찾을 수 없습니다.", status=404)
+
+    impression = (
+        AdImpression.objects.filter(ad=ad, user=request.api_user)
+        .order_by("-created_at")
+        .first()
+    )
+    if impression:
+        impression.is_skipped = False
+        impression.watched_seconds = watched_seconds
+        impression.save(update_fields=["is_skipped", "watched_seconds"])
+
+    # CPV 달성 여부: pricing_type이 cpv이고 min_watch_seconds 이상 시청
+    cpv_counted = (
+        ad.pricing_type == "cpv"
+        and watched_seconds >= ad.min_watch_seconds
+        and ad.min_watch_seconds > 0
+    )
+
+    return api_response(data={
+        "message": "완료 기록 완료",
+        "cpv_counted": cpv_counted,
+    })
+
+
+# ==================== 26. AI 스토리 생성 API ====================
 
 @require_api_key_secure
 @require_http_methods(["POST"])
@@ -2125,7 +2182,7 @@ def api_popular_authors(request):
 
     authors_data = []
     for author in authors:
-        rep_books = Books.objects.filter(user=author).order_by("-book_score", "-created_at")[:3]
+        rep_books = Books.objects.filter(user=author, is_deleted=False).order_by("-book_score", "-created_at")[:3]
         rep_books_data = []
         for b in rep_books:
             rep_books_data.append({

@@ -127,6 +127,7 @@ urlpatterns = [
     path("api/v1/ads/impression/", voxliber_api.api_ad_impression, name="api_ad_impression"),
     path("api/v1/ads/click/", voxliber_api.api_ad_click, name="api_ad_click"),
     path("api/v1/ads/skip/", voxliber_api.api_ad_skip, name="api_ad_skip"),
+    path("api/v1/ads/complete/", voxliber_api.api_ad_complete, name="api_ad_complete"),
 
     # Deep Link Verification Files
     path('.well-known/apple-app-site-association',

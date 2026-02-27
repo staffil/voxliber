@@ -1,0 +1,305 @@
+.settlement-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+}
+
+/* ── 헤더 ─────────────────────────── */
+.settlement-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+}
+
+.settlement-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+}
+
+.nav-link {
+    font-size: 14px;
+    color: #a78bfa;
+    text-decoration: none;
+}
+.nav-link:hover { text-decoration: underline; }
+
+/* ── 기간 선택 ────────────────────── */
+.period-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.period-btn {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: #ccc;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.period-btn:hover,
+.period-btn.active {
+    background: #7c3aed;
+    border-color: #7c3aed;
+    color: #fff;
+}
+
+.custom-range {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    width: 100%;
+}
+.custom-range.open { display: flex; }
+
+.date-input {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.07);
+    color: #fff;
+    font-size: 13px;
+}
+.date-input::-webkit-calendar-picker-indicator { filter: invert(0.8); }
+
+.date-sep { color: #888; }
+
+.date-submit {
+    padding: 6px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #7c3aed;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+}
+.date-submit:hover { background: #6d28d9; }
+
+.period-label {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 24px;
+}
+
+/* ── 요약 카드 ────────────────────── */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 36px;
+}
+
+@media (max-width: 768px) {
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.summary-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 20px 18px;
+    text-align: center;
+}
+.summary-card.highlight {
+    background: rgba(124,58,237,0.15);
+    border-color: rgba(124,58,237,0.35);
+}
+
+.summary-label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 8px;
+}
+.summary-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+.summary-card.highlight .summary-value { color: #a78bfa; }
+.summary-sub {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* ── 테이블 섹션 ──────────────────── */
+.table-section { margin-bottom: 36px; }
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e0e0e0;
+    margin-bottom: 14px;
+}
+
+.table-scroll { overflow-x: auto; }
+
+.settlement-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 900px;
+}
+
+.settlement-table th {
+    padding: 10px 14px;
+    text-align: left;
+    color: #888;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    white-space: nowrap;
+}
+
+.settlement-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: #ddd;
+    vertical-align: middle;
+}
+
+.settlement-table tbody tr:hover td {
+    background: rgba(255,255,255,0.03);
+}
+
+.row-inactive td { opacity: 0.45; }
+
+.td-title { min-width: 160px; }
+.ad-name {
+    font-weight: 500;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+
+.td-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.td-revenue {
+    color: #a78bfa;
+    font-weight: 600;
+}
+
+.num-highlight { color: #34d399; }
+.num-muted { color: #666; }
+
+/* 배지 */
+.type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.type-audio { background: rgba(99,102,241,0.2); color: #818cf8; }
+.type-video { background: rgba(245,158,11,0.2); color: #fbbf24; }
+.type-image { background: rgba(16,185,129,0.2); color: #34d399; }
+
+.pricing-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    background: rgba(255,255,255,0.07);
+    color: #aaa;
+}
+
+/* 상태 표시 */
+.status-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+.status-dot.active { background: #34d399; }
+.status-dot.inactive { background: #555; }
+
+/* 합계 행 */
+.total-row td {
+    border-top: 1px solid rgba(255,255,255,0.12);
+    font-weight: 600;
+    color: #fff;
+    padding-top: 14px;
+}
+.total-revenue {
+    font-size: 15px;
+    color: #a78bfa !important;
+}
+
+/* 빈 상태 */
+.empty-state {
+    text-align: center;
+    padding: 60px 0;
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-text { color: #666; font-size: 15px; }
+
+/* ── 안내 섹션 ────────────────────── */
+.guide-section {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 20px 24px;
+}
+
+.guide-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #aaa;
+    margin: 0 0 14px;
+}
+
+.guide-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+}
+@media (max-width: 600px) {
+    .guide-grid { grid-template-columns: 1fr; }
+}
+
+.guide-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.guide-label {
+    display: inline-block;
+    min-width: 48px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: rgba(124,58,237,0.2);
+    color: #a78bfa;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+}
+.guide-desc {
+    font-size: 12px;
+    color: #888;
+}
+
+.guide-note {
+    font-size: 12px;
+    color: #555;
+    margin: 4px 0 0;
+}

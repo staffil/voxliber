@@ -13,7 +13,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from character.models import Story, Conversation, ConversationMessage, LLM, StoryBookmark
 from register.models import Users
-from book.models import Books, BookSnap, Follow
+from book.models import Books, BookSnap, Follow, ListeningHistory
+from django.db.models import Sum
+from django.db.models.functions import TruncDate, TruncMonth
+from datetime import datetime, timedelta
 
 @api_view(['GET', 'PATCH'])
 def api_user_info(request):
@@ -359,3 +362,56 @@ def api_my_story_bookmarks(request):
         })
 
     return api_response({'bookmarks': data})
+
+
+@require_api_key_secure
+def api_listening_stats(request):
+    """
+    GET /mypage/api/listening-stats/
+    일별(최근 30일) + 월별(최근 12개월) 청취 시간 반환
+    """
+    user = request.api_user
+    now = datetime.now()
+
+    # 일별 (최근 30일)
+    thirty_days_ago = now - timedelta(days=30)
+    daily_qs = (
+        ListeningHistory.objects
+        .filter(user=user, listened_at__gte=thirty_days_ago)
+        .annotate(day=TruncDate('listened_at'))
+        .values('day')
+        .annotate(total=Sum('listened_seconds'))
+        .order_by('day')
+    )
+
+    # 월별 (최근 12개월)
+    twelve_months_ago = now - timedelta(days=365)
+    monthly_qs = (
+        ListeningHistory.objects
+        .filter(user=user, listened_at__gte=twelve_months_ago)
+        .annotate(month=TruncMonth('listened_at'))
+        .values('month')
+        .annotate(total=Sum('listened_seconds'))
+        .order_by('month')
+    )
+
+    daily = [
+        {'label': x['day'].strftime('%m/%d'), 'minutes': round((x['total'] or 0) / 60, 1)}
+        for x in daily_qs
+    ]
+    monthly = [
+        {'label': x['month'].strftime('%y.%m'), 'hours': round((x['total'] or 0) / 3600, 1)}
+        for x in monthly_qs
+    ]
+
+    total_daily_minutes = round(sum(x['minutes'] for x in daily), 1)
+    total_monthly_hours = round(sum(x['hours'] for x in monthly), 1)
+
+    return api_response({
+        'daily': daily,
+        'monthly': monthly,
+        'summary': {
+            'total_30d_minutes': total_daily_minutes,
+            'total_12m_hours': total_monthly_hours,
+        }
+    })

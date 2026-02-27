@@ -21,7 +21,7 @@ from register.models import Users
 @login_required_to_main
 def my_profile(request):
     user = request.user
-    books = Books.objects.filter(user=user).order_by('-created_at')
+    books = Books.objects.filter(user=user, is_deleted=False).order_by('-created_at')
     books_count = books.count()
 
     # =====================================================
@@ -901,7 +901,7 @@ def chat_to_episode(request):
 @login_required_to_main
 def my_book_list(request):
     user = request.user
-    books = Books.objects.filter(user=user).order_by('-created_at')
+    books = Books.objects.filter(user=user, is_deleted=False).order_by('-created_at')
     books_count = books.count()
 
     content ={

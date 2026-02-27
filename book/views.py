@@ -80,7 +80,7 @@ def book_profile(request):
     tag_list = Tags.objects.all()
     voice_list = VoiceList.objects.all()
     book_uuid = request.GET.get("public_uuid")
-    book = Books.objects.filter(public_uuid=book_uuid).first() if book_uuid else None
+    book = Books.objects.filter(public_uuid=book_uuid, is_deleted=False).first() if book_uuid else None
 
     if request.method == "POST":
         novel_title = request.POST.get("novel_title", "").strip()
@@ -852,7 +852,7 @@ def book_detail(request, book_uuid):
 @login_required_to_main
 def my_books(request):
     # ✅ 쿼리 최적화: prefetch_related 적용
-    books = Books.objects.filter(user=request.user).prefetch_related(
+    books = Books.objects.filter(user=request.user, is_deleted=False).prefetch_related(
         'genres',
         'tags'
     ).order_by('-created_at')
@@ -863,15 +863,18 @@ def my_books(request):
     return render(request, "book/my_books.html", context)
 
 
-# 책 삭제
+# 책 소프트 삭제 (DB에는 보존)
 @login_required
 @require_POST
 @login_required_to_main
 def delete_book(request, book_uuid):
-    book = get_object_or_404(Books, public_uuid=book_uuid, user=request.user)
+    from django.utils import timezone as tz
+    book = get_object_or_404(Books, public_uuid=book_uuid, user=request.user, is_deleted=False)
     if book.user != request.user:
         return JsonResponse({"success": False, "error": "권한 없음"}, status=403)
-    book.delete()
+    book.is_deleted = True
+    book.deleted_at = tz.now()
+    book.save(update_fields=['is_deleted', 'deleted_at'])
     return JsonResponse({"success": True})
 
 def content_detail(request, content_uuid):

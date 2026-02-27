@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}광고 정산 - VOXLIBER{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/advertisment/settlement.css' %}">
+{% endblock %}
+
+{% block content %}
+<br><br><br>
+<div class="settlement-wrap">
+
+    <div class="settlement-header">
+        <h1 class="settlement-title">광고 정산</h1>
+        <a href="{% url 'advertisment:request_ad_view' %}" class="nav-link">광고 신청 목록 →</a>
+    </div>
+
+    <!-- 기간 선택 -->
+    <div class="period-bar">
+        <a href="?period=this_month"
+           class="period-btn {% if period == 'this_month' %}active{% endif %}">이번 달</a>
+        <a href="?period=last_month"
+           class="period-btn {% if period == 'last_month' %}active{% endif %}">지난 달</a>
+        <button class="period-btn {% if period == 'custom' %}active{% endif %}"
+                onclick="document.getElementById('custom-range').classList.toggle('open')">
+            기간 직접 선택
+        </button>
+
+        <form id="custom-range" class="custom-range {% if period == 'custom' %}open{% endif %}"
+              method="GET" action="">
+            <input type="hidden" name="period" value="custom">
+            <input type="date" name="start" value="{{ start_str }}" class="date-input">
+            <span class="date-sep">~</span>
+            <input type="date" name="end" value="{{ end_str }}" class="date-input">
+            <button type="submit" class="date-submit">조회</button>
+        </form>
+    </div>
+
+    <div class="period-label">
+        {{ start|date:"Y년 m월 d일" }} ~ {{ end|date:"Y년 m월 d일" }}
+    </div>
+
+    <!-- 요약 카드 -->
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-label">총 노출</div>
+            <div class="summary-value">{{ total_impressions|intcomma }}</div>
+            <div class="summary-sub">회</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">총 CPV 달성</div>
+            <div class="summary-value">{{ total_cpv|intcomma }}</div>
+            <div class="summary-sub">회</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">총 클릭</div>
+            <div class="summary-value">{{ total_clicks|intcomma }}</div>
+            <div class="summary-sub">회</div>
+        </div>
+        <div class="summary-card highlight">
+            <div class="summary-label">총 예상 수익</div>
+            <div class="summary-value">{{ total_revenue|floatformat:0|intcomma }}</div>
+            <div class="summary-sub">원</div>
+        </div>
+    </div>
+
+    <!-- 광고별 상세 테이블 -->
+    <div class="table-section">
+        <h2 class="section-title">광고별 상세</h2>
+
+        {% if ad_stats %}
+        <div class="table-scroll">
+            <table class="settlement-table">
+                <thead>
+                    <tr>
+                        <th>광고명</th>
+                        <th>타입</th>
+                        <th>위치</th>
+                        <th>단가 방식</th>
+                        <th>단가</th>
+                        <th>노출</th>
+                        <th>CPV</th>
+                        <th>클릭</th>
+                        <th>스킵</th>
+                        <th>예상 수익</th>
+                        <th>상태</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in ad_stats %}
+                    <tr class="{% if not stat.ad.is_active %}row-inactive{% endif %}">
+                        <td class="td-title">
+                            <div class="ad-name">{{ stat.ad.title }}</div>
+                        </td>
+                        <td>
+                            <span class="type-badge type-{{ stat.ad.ad_type }}">
+                                {% if stat.ad.ad_type == 'audio' %}오디오
+                                {% elif stat.ad.ad_type == 'video' %}영상
+                                {% else %}이미지{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ stat.ad.get_placement_display }}</td>
+                        <td>
+                            <span class="pricing-badge">{{ stat.ad.get_pricing_type_display }}</span>
+                        </td>
+                        <td class="td-num">{{ stat.ad.unit_price|floatformat:0|intcomma }}원</td>
+                        <td class="td-num">{{ stat.imp_count|intcomma }}</td>
+                        <td class="td-num {% if stat.cpv_count > 0 %}num-highlight{% endif %}">
+                            {% if stat.ad.pricing_type == 'cpv' %}
+                                {{ stat.cpv_count|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="td-num">{{ stat.click_count|intcomma }}</td>
+                        <td class="td-num num-muted">{{ stat.skip_count|intcomma }}</td>
+                        <td class="td-num td-revenue">
+                            {{ stat.revenue|floatformat:0|intcomma }}원
+                        </td>
+                        <td>
+                            {% if stat.ad.is_active %}
+                                <span class="status-dot active"></span> 활성
+                            {% else %}
+                                <span class="status-dot inactive"></span> 비활성
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="5">합계</td>
+                        <td class="td-num">{{ total_impressions|intcomma }}</td>
+                        <td class="td-num">{{ total_cpv|intcomma }}</td>
+                        <td class="td-num">{{ total_clicks|intcomma }}</td>
+                        <td class="td-num">-</td>
+                        <td class="td-num td-revenue total-revenue">
+                            {{ total_revenue|floatformat:0|intcomma }}원
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📊</div>
+            <div class="empty-text">해당 기간에 광고 데이터가 없습니다</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 단가 방식 안내 -->
+    <div class="guide-section">
+        <h3 class="guide-title">단가 방식 안내</h3>
+        <div class="guide-grid">
+            <div class="guide-item">
+                <span class="guide-label">CPM</span>
+                <span class="guide-desc">1,000 노출당 단가 × (노출 수 ÷ 1,000)</span>
+            </div>
+            <div class="guide-item">
+                <span class="guide-label">CPV</span>
+                <span class="guide-desc">완청/완시청 1회당 단가 × CPV 달성 수</span>
+            </div>
+            <div class="guide-item">
+                <span class="guide-label">CPC</span>
+                <span class="guide-desc">클릭 1회당 단가 × 클릭 수</span>
+            </div>
+            <div class="guide-item">
+                <span class="guide-label">Flat</span>
+                <span class="guide-desc">고정 월정액 (단가 그대로)</span>
+            </div>
+        </div>
+        <p class="guide-note">* CPV 달성 기준: 오디오 10초 이상 청취 / 영상 15초 이상 시청 (스킵 없음)</p>
+        <p class="guide-note">* CPC 보너스가 활성화된 광고는 클릭 수 × cpc_bonus_price 가 추가됩니다.</p>
+    </div>
+
+</div>
+{% endblock %}

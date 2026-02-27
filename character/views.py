@@ -1068,14 +1068,19 @@ def delete_conversation(request, conv_id):
             # 아카이브 저장
             archive_conversation(conversation)
 
-            # 메시지/상태 삭제
-            ConversationMessage.objects.filter(conversation=conversation).delete()
+            # 메시지 소프트 삭제 (TTS 오디오 파일은 DB에 보존)
+            now = timezone.now()
+            ConversationMessage.objects.filter(
+                conversation=conversation, is_deleted=False
+            ).update(is_deleted=True, deleted_at=now)
+
+            # 상태만 실제 삭제 (재시작 시 초기화 필요)
             ConversationState.objects.filter(conversation=conversation).delete()
 
             # UserLastWard 업데이트
             UserLastWard.objects.filter(user=request.user, last_ward__llm=llm).update(is_public=False)
 
-            # Conversation 삭제
+            # Conversation 삭제 (새 대화가 새로 생성됨)
             conversation.delete()
     except Exception as e:
         logging.error(f"Conversation 삭제 실패: {e}")

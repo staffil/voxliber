@@ -100,6 +100,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",  # Sitemap 필요
     "django.contrib.sitemaps",  # Sitemap 지원
+    "django.contrib.humanize",  # intcomma 등 숫자 포맷
     "corsheaders",  # CORS 지원
     "testpj",
     "main",
