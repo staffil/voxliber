@@ -163,3 +163,21 @@ class SignupTOS(models.Model):
         return f"{self.title}"
     
 
+
+
+class UserVisitLog(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='visit_logs',
+        null=True, blank=True  # 비로그인 방문자도 기록 가능
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    visited_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = "user_visit_log"
+        verbose_name = "방문 로그"
+    
+    def __str__(self):
+        return f"{self.user} - {self.visited_at.strftime('%Y-%m-%d %H:%M')}"

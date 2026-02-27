@@ -1,0 +1,185 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+
+<style>
+  .stat-wrap { background:#f4f6f9; padding:24px; border-radius:12px; }
+  .stat-card { background:#fff; padding:20px; border-radius:8px; flex:1; box-shadow:0 2px 6px rgba(0,0,0,0.12); }
+  .stat-card h3 { margin:0 0 8px; color:#333; font-size:0.95rem; }
+  .stat-card .val { font-size:2em; font-weight:bold; margin:0; color:#111; }
+  .stat-table { width:100%; border-collapse:collapse; margin-bottom:30px; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+  .stat-table th { padding:10px 12px; background:#e9ecef; color:#222; text-align:left; font-size:0.88rem; border-bottom:2px solid #dee2e6; }
+  .stat-table td { padding:9px 12px; color:#222; border-bottom:1px solid #eee; font-size:0.9rem; }
+  .stat-table tr:last-child td { border-bottom:none; }
+  .stat-table tr:hover td { background:#f8f9fa; }
+  .section-title { color:#222; font-size:1.1rem; margin:24px 0 10px; font-weight:700; }
+  .user-card { background:#fff; padding:20px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+  .mini-card { background:#f0f4ff; padding:15px; border-radius:6px; min-width:130px; text-align:center; }
+  .mini-card .label { margin:0; color:#555; font-size:12px; }
+  .mini-card .num { margin:4px 0 0; font-size:1.8em; font-weight:bold; color:#1a1a2e; }
+  .user-select-box { 
+    width:100%; max-width:500px; height:180px; 
+    border:1px solid #ced4da; border-radius:6px; 
+    font-size:14px; color:#111; background:#fff;
+    padding:4px;
+  }
+  .user-select-box option { padding:6px 10px; }
+  .user-select-box option:checked { background:#4e73df; color:#fff; }
+</style>
+
+<div class="stat-wrap">
+
+<h2 style="color:#111; margin-top:0;">📊 방문자 통계</h2>
+
+<!-- 오늘 요약 -->
+<div style="display:flex; gap:16px; margin-bottom:28px;">
+    <div class="stat-card" style="border-left:4px solid #007bff;">
+        <h3>오늘 총 방문</h3>
+        <p class="val">{{ today_total }}회</p>
+    </div>
+    <div class="stat-card" style="border-left:4px solid #28a745;">
+        <h3>오늘 순 방문자</h3>
+        <p class="val">{{ today_unique }}명</p>
+    </div>
+    <div class="stat-card" style="border-left:4px solid #ffc107;">
+        <h3>오늘 날짜</h3>
+        <p class="val" style="font-size:1.4em;">{{ today }}</p>
+    </div>
+</div>
+
+<!-- 시간대별 -->
+<p class="section-title">⏰ 시간대별 방문 (오늘)</p>
+<table class="stat-table">
+    <tr>
+        <th>시간</th><th>방문 수</th><th>그래프</th>
+    </tr>
+    {% for item in hourly %}
+    <tr>
+        <td>{{ item.hour|date:"H시" }}</td>
+        <td>{{ item.count }}회</td>
+        <td><div style="background:#4e73df; height:16px; width:{{ item.count }}0px; max-width:300px; border-radius:3px;"></div></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3" style="text-align:center; color:#888;">오늘 방문 데이터가 없습니다.</td></tr>
+    {% endfor %}
+</table>
+
+<!-- 최근 7일 -->
+<p class="section-title">📅 최근 7일 방문</p>
+<table class="stat-table" style="margin-bottom:40px;">
+    <tr><th>날짜</th><th>방문 수</th></tr>
+    {% for item in weekly %}
+    <tr>
+        <td>{{ item.date }}</td>
+        <td>{{ item.count }}회</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="2" style="text-align:center; color:#888;">데이터가 없습니다.</td></tr>
+    {% endfor %}
+</table>
+
+<!-- 유저 재방문율 검색 -->
+<hr style="border:none; border-top:2px solid #dee2e6; margin-bottom:24px;">
+<p class="section-title">🔍 유저 재방문율 조회</p>
+
+<form method="get" style="margin-bottom:24px;">
+  <!-- 검색 필터 -->
+  <div style="display:flex; gap:10px; margin-bottom:10px;">
+    <input type="text" id="user-search-input" placeholder="이름/이메일로 필터링..."
+           style="padding:8px 14px; border:1px solid #ced4da; border-radius:6px; width:300px; font-size:14px; color:#111; background:#fff;">
+    <span style="color:#555; font-size:13px; align-self:center;">Ctrl+클릭으로 여러 명 선택</span>
+  </div>
+
+  <!-- 다중 선택 select -->
+  <select name="users" multiple class="user-select-box" id="user-select">
+    {% for user in all_users %}
+    <option value="{{ user.user_id }}"
+      {% if user.user_id|stringformat:"s" in selected_user_ids %}selected{% endif %}>
+      {{ user.nickname }} ({{ user.email }})
+    </option>
+    {% endfor %}
+  </select>
+
+  <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+    <button type="submit"
+            style="padding:8px 22px; background:#4e73df; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px; font-weight:600;">
+      📊 통계 조회
+    </button>
+    <a href="?" style="padding:8px 16px; background:#6c757d; color:#fff; border-radius:6px; font-size:14px; text-decoration:none;">
+      초기화
+    </a>
+    {% if selected_user_ids %}
+    <span style="color:#555; font-size:13px;">{{ users_stats|length }}명 선택됨</span>
+    {% endif %}
+  </div>
+</form>
+
+<!-- 선택된 유저 통계 -->
+{% for stat in users_stats %}
+<div class="user-card">
+    <h4 style="margin:0 0 16px; color:#111;">
+        👤 {{ stat.user.nickname }}
+        <span style="color:#666; font-weight:400; font-size:0.9em;">({{ stat.user.email }})</span>
+    </h4>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px;">
+        <div class="mini-card">
+            <p class="label">총 방문 횟수</p>
+            <p class="num" style="color:#4e73df;">{{ stat.total_visits }}회</p>
+        </div>
+        <div class="mini-card">
+            <p class="label">방문한 날 수</p>
+            <p class="num" style="color:#1cc88a;">{{ stat.total_days }}일</p>
+        </div>
+        <div class="mini-card">
+            <p class="label">재방문 날 수</p>
+            <p class="num" style="color:#f6a31a;">{{ stat.revisit_days }}일</p>
+        </div>
+        <div class="mini-card">
+            <p class="label">재방문율</p>
+            <p class="num" style="color:#e74a3b;">{{ stat.revisit_rate }}%</p>
+        </div>
+    </div>
+    <p style="margin:0 0 14px; color:#555; font-size:13px;">
+        첫 방문: <strong style="color:#222;">{{ stat.first_visit|date:"Y-m-d H:i" }}</strong>
+        &nbsp;|&nbsp;
+        마지막 방문: <strong style="color:#222;">{{ stat.last_visit|date:"Y-m-d H:i" }}</strong>
+    </p>
+
+    <table class="stat-table" style="margin-bottom:0;">
+        <tr><th>날짜</th><th>방문 수</th><th>재방문</th></tr>
+        {% for item in stat.daily_visits %}
+        <tr>
+            <td>{{ item.date }}</td>
+            <td>{{ item.count }}회</td>
+            <td>
+                {% if item.count >= 2 %}
+                    <span style="color:#1cc88a; font-weight:bold;">✅ 재방문</span>
+                {% else %}
+                    <span style="color:#aaa;">-</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" style="text-align:center; color:#888;">방문 기록이 없습니다.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% empty %}
+{% if selected_user_ids %}
+<p style="color:#888;">선택된 유저의 방문 기록이 없습니다.</p>
+{% endif %}
+{% endfor %}
+
+</div>
+
+<script>
+// 입력값으로 select option 실시간 필터링
+document.getElementById('user-search-input').addEventListener('input', function() {
+    const keyword = this.value.toLowerCase();
+    const options = document.querySelectorAll('#user-select option');
+    options.forEach(opt => {
+        opt.style.display = opt.text.toLowerCase().includes(keyword) ? '' : 'none';
+    });
+});
+</script>
+
+{% endblock %}
