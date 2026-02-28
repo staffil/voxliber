@@ -981,6 +981,7 @@ function renderBlockList() {
                         <option value="">목소리 선택</option>${voiceOpts}
                     </select>
                     <div class="block-badges">${effBadge}</div>
+                    <button class="page-remove-btn" onclick="event.stopPropagation(); removePage(${idx})" title="삭제">×</button>
                 </div>
                 <textarea class="block-text-edit" rows="3"
                     onchange="updateBlockText(${idx}, this.value)"
@@ -1014,7 +1015,10 @@ function renderBlockList() {
 }
 
 function sfxInsertRowHTML(afterIdx) {
-    return `<div class="sfx-insert-row"><button class="sfx-insert-btn" onclick="insertSfx(${afterIdx})">+ SFX</button></div>`;
+    return `<div class="sfx-insert-row">
+        <button class="sfx-insert-btn" onclick="insertSfx(${afterIdx})">+ SFX</button>
+        <button class="page-insert-btn" onclick="insertPage(${afterIdx})">+ 대사</button>
+    </div>`;
 }
 
 function escapeHtml(str) {
@@ -1074,6 +1078,26 @@ function insertSfx(atIndex) {
 }
 
 function removeSfx(idx) {
+    _blockItems.splice(idx, 1);
+    if (_selectedBlockIndex === idx) {
+        _selectedBlockIndex = null;
+        const wp = document.getElementById('webAudioPanel');
+        if (wp) wp.style.display = 'none';
+    } else if (_selectedBlockIndex !== null && _selectedBlockIndex > idx) {
+        _selectedBlockIndex--;
+    }
+    renderBlockList();
+    syncBlocksToJSON();
+}
+
+function insertPage(atIndex) {
+    _blockItems.splice(atIndex, 0, {type: 'page', pageData: {text: '', voice_id: '', _effect: ''}});
+    if (_selectedBlockIndex !== null && _selectedBlockIndex >= atIndex) _selectedBlockIndex++;
+    renderBlockList();
+    syncBlocksToJSON();
+}
+
+function removePage(idx) {
     _blockItems.splice(idx, 1);
     if (_selectedBlockIndex === idx) {
         _selectedBlockIndex = null;
