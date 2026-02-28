@@ -879,7 +879,7 @@ function renderBlocks(jsonData) {
     // 페이지 → _blockItems
     _blockItems = epStep.pages.map(p => ({
         type: 'page',
-        pageData: {text: p.text || '', voice_id: p.voice_id || '', _effect: p._effect || ''}
+        pageData: {text: p.text || '', voice_id: p.voice_id || '', _effect: p.webaudio_effect || ''}
     }));
 
     // create_bgm / create_sfx 메타 정보 ($bgm_N, $sfx_N → 이름/설명)
@@ -1222,7 +1222,7 @@ function syncBlocksToJSON() {
         .filter(b => b.type === 'page')
         .map(b => {
             const p = {text: b.pageData.text, voice_id: b.pageData.voice_id};
-            if (b.pageData._effect) p._effect = b.pageData._effect;
+            if (b.pageData._effect) p.webaudio_effect = b.pageData._effect;
             return p;
         });
 
