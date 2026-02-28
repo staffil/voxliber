@@ -760,6 +760,84 @@ def _apply_tremolo(samples, sample_rate, rate, depth):
     return (samples * modulation).astype(np.float32)
 
 
+def generate_silence(duration_seconds):
+    """
+    지정된 길이의 무음 MP3 파일 생성 (44100Hz stereo — TTS 오디오 포맷에 맞춤).
+    silence block이 삽입된 위치에서 BGM은 계속 재생됨 (mix_bgm 단계에서 처리).
+    """
+    from pydub import AudioSegment
+    import tempfile
+
+    ms = int(float(duration_seconds) * 1000)
+    # TTS 오디오와 동일한 포맷(44100Hz stereo)으로 생성해야 merge 시 포맷 충돌 없음
+    silence = AudioSegment.silent(duration=ms, frame_rate=44100)
+    silence = silence.set_channels(2).set_sample_width(2)
+
+    tmp = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
+    tmp_path = tmp.name
+    tmp.close()
+
+    silence.export(tmp_path, format='mp3', bitrate='128k')
+    return tmp_path
+
+
+def merge_duet_audio(audio_paths, mode='alternate'):
+    """
+    두 캐릭터 음성을 하나로 합치는 함수.
+    mode='alternate' : TTS_A → 200ms 침묵 → TTS_B (교차 대화)
+    mode='overlap'   : TTS_A + TTS_B 동시 재생 (합창/동시 대사)
+    """
+    from pydub import AudioSegment
+    import tempfile
+
+    if not audio_paths:
+        return None
+
+    segments = []
+    for p in audio_paths:
+        try:
+            seg = AudioSegment.from_file(p)
+            segments.append(seg)
+        except Exception as e:
+            print(f"⚠️ 듀엣 오디오 로드 실패: {p} — {e}")
+
+    if not segments:
+        return None
+
+    if mode == 'overlap':
+        # 모든 세그먼트를 동일 포맷으로 정규화 (frame_rate, channels)
+        # AudioSegment.silent() 기본 frame_rate=11025Hz → ElevenLabs TTS와 불일치 방지
+        ref = segments[0]
+        normalized = []
+        for seg in segments:
+            if seg.frame_rate != ref.frame_rate or seg.channels != ref.channels:
+                seg = seg.set_frame_rate(ref.frame_rate).set_channels(ref.channels)
+            normalized.append(seg)
+
+        # 가장 긴 세그먼트 기준으로 동일 포맷 무음 패딩
+        max_len = max(len(s) for s in normalized)
+        padded = [
+            s + AudioSegment.silent(duration=max_len - len(s),
+                                    frame_rate=ref.frame_rate).set_channels(ref.channels)
+            for s in normalized
+        ]
+
+        combined = padded[0]
+        for seg in padded[1:]:
+            combined = combined.overlay(seg)
+    else:  # alternate
+        gap = AudioSegment.silent(duration=200)
+        combined = segments[0]
+        for seg in segments[1:]:
+            combined = combined + gap + seg
+
+    tmp = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
+    tmp_path = tmp.name
+    tmp.close()
+    combined.export(tmp_path, format='mp3', bitrate='128k')
+    return tmp_path
+
+
 def apply_webaudio_effect(audio_path, effect_name):
     """
     오디오 파일에 WebAudio 프리셋 효과를 적용하여 새 파일로 저장.

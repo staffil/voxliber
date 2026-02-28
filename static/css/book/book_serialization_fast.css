@@ -1476,6 +1476,142 @@ input:checked + .slider-switch:before {
     word-break: break-all;
 }
 
+/* ==================== 총 재생 시간 요약 ==================== */
+.block-time-summary {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 5px 8px;
+    background: rgba(99, 102, 241, 0.06);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    border-radius: 7px;
+    margin-bottom: 4px;
+    flex-shrink: 0;
+}
+
+.block-time-summary strong {
+    color: #818cf8;
+    font-weight: 700;
+}
+
+/* 블록별 예상 시간 뱃지 */
+.block-duration-badge {
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: rgba(99, 102, 241, 0.1);
+    color: #818cf8;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* ==================== 대사/무음 삽입 버튼 ==================== */
+.page-insert-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.07);
+    border: 1px dashed rgba(99, 102, 241, 0.5);
+    border-radius: 6px;
+    padding: 2px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    opacity: 0.7;
+}
+
+.page-insert-btn:hover {
+    opacity: 1;
+    background: rgba(99, 102, 241, 0.15);
+    border-color: #6366f1;
+}
+
+.silence-insert-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.07);
+    border: 1px dashed rgba(148, 163, 184, 0.5);
+    border-radius: 6px;
+    padding: 2px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    opacity: 0.7;
+}
+
+.silence-insert-btn:hover {
+    opacity: 1;
+    background: rgba(148, 163, 184, 0.15);
+    border-color: #94a3b8;
+}
+
+/* ==================== 무음 블록 ==================== */
+.silence-block {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.silence-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.silence-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.silence-dur-select {
+    font-size: 11px;
+    padding: 2px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.silence-dur-select:focus {
+    outline: none;
+    border-color: #94a3b8;
+}
+
+.silence-hint {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    flex: 1;
+    font-style: italic;
+}
+
+/* 대사 블록 삭제 버튼 */
+.page-remove-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.page-remove-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
 /* SFX 삽입 버튼 (블록 사이) */
 .sfx-insert-row {
     display: flex;
@@ -1892,4 +2028,76 @@ input:checked + .slider-switch:before {
 .bgm-desc-input:focus {
     outline: none;
     border-color: #818cf8;
+}
+
+/* ==================== 2인 대화 블록 ==================== */
+.duet-block {
+    display: block;
+    flex-shrink: 0;
+    background: rgba(139, 92, 246, 0.06);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.duet-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(139, 92, 246, 0.1);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.duet-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: #a78bfa;
+    flex: 1;
+}
+
+.duet-mode-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.duet-voice-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.duet-voice-row:last-child {
+    border-bottom: none;
+}
+
+.duet-text {
+    resize: vertical;
+    min-height: 44px;
+}
+
+/* 2인 대화 삽입 버튼 */
+.duet-insert-btn {
+    font-size: 11px;
+    padding: 3px 8px;
+    border: 1px dashed #a78bfa;
+    border-radius: 6px;
+    background: rgba(139, 92, 246, 0.06);
+    color: #a78bfa;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.duet-insert-btn:hover {
+    background: rgba(139, 92, 246, 0.18);
+    border-style: solid;
 }

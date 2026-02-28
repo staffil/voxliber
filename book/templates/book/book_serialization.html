@@ -44,6 +44,12 @@
             <button type="button" class="add-page-btn" onclick="openBackgroundMusicModal()" style="background: #ec4899;" data-login-required>
                 🎼 배경음 넣기
             </button>
+            <button type="button" class="add-page-btn" onclick="addSilence()" style="background: #475569;" data-login-required>
+                🔇 무음 삽입
+            </button>
+            <button type="button" class="add-page-btn" onclick="addDuet()" style="background: #7c3aed;" data-login-required>
+                🎭 2인 대화
+            </button>
             <button type="button" class="add-page-btn" onclick="loadDraft()" id="loadDraftBtn" style="background: #059669; display: none;" data-login-required>
                 📂 임시저장 불러오기
             </button>
@@ -407,6 +413,14 @@
 
 <script>
 const bookId = "{{ book.public_uuid }}";
+
+// duet 목소리 선택에 사용되는 voiceList
+const voiceList = [
+    {% for voice in voice_list %}
+    { id: "{{ voice.voice.voice_id }}", name: "{{ voice.alias_name }}" }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
 let pages = []; // 대사와 사운드 이팩트만 포함
 let backgroundTracks = []; // 배경음 별도 관리 [{startPage: 0, endPage: 3, audioFile, audioUrl, musicName}]
 let currentPageIndex = 0;
@@ -604,10 +618,27 @@ async function initPages() {
 
 
 
+// 예상 재생 시간 계산 헬퍼
+function calcTotalEstimatedTime() {
+    let sec = 0;
+    pages.forEach(p => {
+        if (p.isSilence) sec += (p.silenceDuration || 1.0);
+        else if (!p.isSoundEffect) sec += (p.charCount || 0) / 4.0;
+    });
+    const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+    return m > 0 ? `${m}분 ${s}초` : `${s}초`;
+}
+
 // 대사 목록 렌더링
 function renderPagesList() {
     const pagesList = document.getElementById('pagesList');
     pagesList.innerHTML = '';
+
+    // 총 예상 재생 시간 표시
+    const timeBar = document.createElement('div');
+    timeBar.style.cssText = 'font-size:11px;color:#818cf8;text-align:center;padding:5px 8px 8px;border-bottom:1px solid #333;margin-bottom:4px;';
+    timeBar.innerHTML = `예상 재생시간 약 <strong>${calcTotalEstimatedTime()}</strong>`;
+    pagesList.appendChild(timeBar);
 
     pages.forEach((page, index) => {
         const pageItem = document.createElement('div');
@@ -624,8 +655,31 @@ function renderPagesList() {
         pageItem.addEventListener('dragenter', handleDragEnter);
         pageItem.addEventListener('dragleave', handleDragLeave);
 
+        // 무음 카드
+        if (page.isSilence) {
+            pageItem.style.background = '#1e293b';
+            pageItem.style.borderLeft = '4px solid #475569';
+            pageItem.innerHTML =
+                '<div class="page-item-header">' +
+                    '<span class="page-number" style="color:#94a3b8;">🔇 무음</span>' +
+                '</div>' +
+                '<div class="page-preview" style="color:#94a3b8;font-weight:600;">' + (page.silenceDuration || 1.0) + '초</div>' +
+                (page.audioFile ? '<div style="font-size:11px;color:#64748b;margin-top:4px;">✓ 준비됨 (BGM 계속 재생)</div>' : '');
+        }
+        // 2인 대화 카드
+        else if (page.isDuet) {
+            pageItem.style.background = '#2d1a47';
+            pageItem.style.borderLeft = '4px solid #7c3aed';
+            const v1preview = (page.duetData && page.duetData[0] && page.duetData[0].text || '').substring(0, 20);
+            pageItem.innerHTML =
+                '<div class="page-item-header">' +
+                    '<span class="page-number" style="color:#a78bfa;">🎭 2인 대화</span>' +
+                '</div>' +
+                '<div class="page-preview" style="color:#a78bfa;">' + (v1preview || '대사 입력...') + '</div>' +
+                (page.audioFile ? '<div style="font-size:11px;color:#7c3aed;margin-top:4px;">🎵 오디오 있음</div>' : '');
+        }
         // 사운드 이팩트 카드인 경우
-        if (page.isSoundEffect) {
+        else if (page.isSoundEffect) {
             pageItem.style.background = '#2d1b4e'; // 보라색 배경
             pageItem.style.borderLeft = '4px solid #8b5cf6';
 
@@ -739,6 +793,18 @@ function saveCurrentPage() {
         pages[currentPageIndex].content = content;
         pages[currentPageIndex].charCount = content.length;
         console.log('💾 saveCurrentPage() 호출 - 페이지', currentPageIndex + 1, '저장됨, 텍스트 길이:', content.length, '자');
+    } else if (pages[currentPageIndex] && pages[currentPageIndex].isDuet) {
+        // 듀엣 페이지: DOM에서 textarea 값을 직접 읽어 duetData 동기화
+        const editorArea = document.getElementById('editorArea');
+        if (editorArea) {
+            const textareas = editorArea.querySelectorAll('textarea');
+            const selects = editorArea.querySelectorAll('select');
+            const d = pages[currentPageIndex].duetData;
+            if (d) {
+                textareas.forEach((ta, vi) => { if (d[vi]) d[vi].text = ta.value; });
+                selects.forEach((sel, vi) => { if (d[vi]) d[vi].voice_id = sel.value; });
+            }
+        }
     } else {
         console.warn('⚠️ saveCurrentPage() - textarea 또는 페이지를 찾을 수 없음');
     }
@@ -838,6 +904,100 @@ function loadPage(index, skipSave = false) {
         console.error('❌ novelDraft textarea를 찾을 수 없습니다');
     }
 
+
+    // N인 대화 카드
+    if (page.isDuet) {
+        const voiceCount = (page.duetData || []).length;
+        document.getElementById('currentPageTitle').textContent = `🎭 ${voiceCount}인 대화 / ` + pages.length;
+        const d = page.duetData || [{voice_id:'', text:''}, {voice_id:'', text:''}];
+        const isAlt = (page.duetMode || 'alternate') === 'alternate';
+        const voiceOpts = (typeof voiceList !== 'undefined' ? voiceList : [])
+            .map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+        const COLORS = ['#ec4899','#60a5fa','#34d399','#f59e0b','#a78bfa','#f87171'];
+
+        const makeVoiceSelect = (vi, val) =>
+            `<select onchange="updateDuetField(${index}, ${vi}, 'voice_id', this.value)"
+                style="width:100%;padding:6px 8px;background:#1a0533;color:#e2e8f0;border:1px solid #6d28d9;border-radius:6px;font-size:13px;margin-bottom:8px;">
+                <option value="">목소리 ${vi+1} 선택</option>${voiceOpts.replace(`value="${val}"`, `value="${val}" selected`)}</select>`;
+        const makeTextarea = (vi) =>
+            `<textarea rows="3" oninput="updateDuetField(${index}, ${vi}, 'text', this.value)" onchange="updateDuetField(${index}, ${vi}, 'text', this.value)"
+                style="width:100%;padding:8px;background:#0f0621;color:#e2e8f0;border:1px solid #6d28d9;border-radius:6px;font-size:13px;resize:vertical;box-sizing:border-box;"
+                placeholder="캐릭터 ${vi+1} 대사">${d[vi] ? d[vi].text || '' : ''}</textarea>`;
+
+        let voiceRows = '';
+        for (let vi = 0; vi < d.length; vi++) {
+            const color = COLORS[vi % COLORS.length];
+            const removeBtnHtml = d.length > 2
+                ? `<button onclick="removeDuetVoiceSerPage(${index}, ${vi})" style="float:right;background:none;border:none;color:#888;font-size:16px;cursor:pointer;padding:0;">×</button>`
+                : '';
+            voiceRows +=
+                `<div style="border-left:3px solid ${color};padding-left:12px;margin-bottom:16px;">` +
+                    `<div style="color:${color};font-size:12px;font-weight:700;margin-bottom:6px;">캐릭터 ${vi+1}${removeBtnHtml}</div>` +
+                    makeVoiceSelect(vi, d[vi] ? d[vi].voice_id || '' : '') +
+                    makeTextarea(vi) +
+                '</div>';
+        }
+
+        editorArea.innerHTML =
+            '<div class="editor-toolbar" style="background:#2d1a47;border-bottom:1px solid #6d28d9;">' +
+                `<span style="color:#a78bfa;font-size:14px;">🎭 ${d.length}인 대화</span>` +
+                `<button onclick="addDuetVoiceSerPage(${index})" style="margin-left:12px;background:#4c1d95;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;">+ 목소리 추가</button>` +
+            '</div>' +
+            '<div class="page-editor" style="background:#0f0621;padding:20px;">' +
+                '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:8px 14px;background:#1a0533;border-radius:8px;border:1px solid #4c1d95;">' +
+                    '<label style="color:#a78bfa;font-size:13px;white-space:nowrap;">재생 방식:</label>' +
+                    '<label style="color:#e2e8f0;font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer;">' +
+                        '<input type="radio" name="duetMode_' + index + '" value="alternate" ' + (isAlt ? 'checked' : '') + ' onchange="updateDuetMode(' + index + ', this.value)"> 교차 (순차)</label>' +
+                    '<label style="color:#e2e8f0;font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer;">' +
+                        '<input type="radio" name="duetMode_' + index + '" value="overlap" ' + (!isAlt ? 'checked' : '') + ' onchange="updateDuetMode(' + index + ', this.value)"> 동시 재생</label>' +
+                '</div>' +
+                voiceRows +
+                (page.audioFile ?
+                    '<audio controls style="width:100%;margin-bottom:12px;"><source src="' + page.audioUrl + '" type="audio/mp3"></audio>' : '') +
+                `<button onclick="generateDuetTTS(event)" style="width:100%;padding:12px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">🎭 ${d.length}인 대화 TTS 생성</button>` +
+            '</div>' +
+            '<div class="editor-footer">' +
+                `<div class="footer-info" style="color:#7c3aed;">${d.length}인 대화 - 각 캐릭터 대사 입력 후 TTS 생성</div>` +
+                '<div class="pagination-controls">' +
+                    '<button class="btn btn-secondary" onclick="prevPage()" ' + (index === 0 ? 'disabled' : '') + '>← 이전</button>' +
+                    '<button class="btn btn-secondary" onclick="nextPage()" ' + (index === pages.length - 1 ? 'disabled' : '') + '>다음 →</button>' +
+                '</div>' +
+            '</div>';
+        return;
+    }
+
+    // 무음 카드인 경우
+    if (page.isSilence) {
+        document.getElementById('currentPageTitle').textContent = '🔇 무음 / ' + pages.length;
+        const dur = page.silenceDuration || 1.0;
+        const opts = [0.5,1.0,1.5,2.0,2.5,3.0].map(v =>
+            `<option value="${v}"${v === dur ? ' selected' : ''}>${v}초</option>`).join('');
+
+        editorArea.innerHTML =
+            '<div class="editor-toolbar" style="background:#1e293b;border-bottom:1px solid #475569;">' +
+                '<span style="color:#94a3b8;font-size:14px;">🔇 무음 구간</span>' +
+            '</div>' +
+            '<div class="page-editor" style="background:#0f172a;text-align:center;padding:60px 30px;">' +
+                '<div style="width:80px;height:80px;margin:0 auto 20px;background:#1e293b;border:2px solid #475569;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;">🔇</div>' +
+                '<h3 style="color:#94a3b8;font-size:20px;margin-bottom:6px;">무음 구간</h3>' +
+                '<p style="color:#64748b;font-size:13px;margin-bottom:24px;">이 구간에서 TTS는 멈추고 BGM은 계속 재생됩니다</p>' +
+                '<div style="display:inline-flex;align-items:center;gap:12px;background:#1e293b;padding:12px 20px;border-radius:12px;border:1px solid #334155;">' +
+                    '<label style="color:#94a3b8;font-size:13px;">무음 길이:</label>' +
+                    '<select id="silenceDurSelect" onchange="updateCurrentSilenceDuration(parseFloat(this.value))" style="background:#0f172a;color:#e2e8f0;border:1px solid #475569;border-radius:6px;padding:4px 8px;font-size:14px;">' +
+                        opts +
+                    '</select>' +
+                '</div>' +
+                (page.audioFile ? '<p style="color:#475569;font-size:12px;margin-top:16px;">✓ 무음 파일 준비됨</p>' : '') +
+            '</div>' +
+            '<div class="editor-footer">' +
+                '<div class="footer-info" style="color:#475569;">무음은 자동으로 오디오 파일로 생성됩니다</div>' +
+                '<div class="pagination-controls">' +
+                    '<button class="btn btn-secondary" onclick="prevPage()" ' + (index === 0 ? 'disabled' : '') + '>← 이전</button>' +
+                    '<button class="btn btn-secondary" onclick="nextPage()" ' + (index === pages.length - 1 ? 'disabled' : '') + '>다음 →</button>' +
+                '</div>' +
+            '</div>';
+        return;
+    }
 
     // 사운드 이팩트 카드인 경우 - 특별한 UI 표시
     if (page.isSoundEffect) {
@@ -1174,6 +1334,163 @@ function addPage() {
     loadPage(currentPageIndex);
 }
 
+// ==================== 무음 삽입 ====================
+// ==================== N인 대화 ====================
+function addDuet() {
+    saveCurrentPage();
+    const page = {
+        id: Date.now() + Math.random(),
+        content: '', charCount: 0,
+        audioFile: null, audioUrl: null,
+        isSoundEffect: false, effectName: '',
+        isSilence: false, silenceDuration: 1.0,
+        isDuet: true,
+        duetMode: 'alternate',
+        duetData: [{voice_id: '', text: ''}, {voice_id: '', text: ''}],
+        novelDraft: ''
+    };
+    pages.splice(currentPageIndex + 1, 0, page);
+    currentPageIndex = currentPageIndex + 1;
+    renderPagesList();
+    loadPage(currentPageIndex);
+}
+
+function addDuetVoiceSerPage(pageIdx) {
+    if (!pages[pageIdx] || !pages[pageIdx].isDuet) return;
+    pages[pageIdx].duetData.push({voice_id: '', text: ''});
+    loadPage(pageIdx);
+}
+
+function removeDuetVoiceSerPage(pageIdx, voiceIdx) {
+    if (!pages[pageIdx] || !pages[pageIdx].isDuet) return;
+    if (pages[pageIdx].duetData.length > 2) {
+        pages[pageIdx].duetData.splice(voiceIdx, 1);
+        loadPage(pageIdx);
+    }
+}
+
+function updateDuetField(pageIdx, voiceIdx, field, value) {
+    if (!pages[pageIdx] || !pages[pageIdx].isDuet) return;
+    if (!pages[pageIdx].duetData) pages[pageIdx].duetData = [{voice_id:'',text:''},{voice_id:'',text:''}];
+    pages[pageIdx].duetData[voiceIdx][field] = value;
+}
+
+function updateDuetMode(pageIdx, mode) {
+    if (pages[pageIdx] && pages[pageIdx].isDuet) {
+        pages[pageIdx].duetMode = mode;
+    }
+}
+
+async function generateDuetTTS(event) {
+    event.preventDefault();
+    const btn = event.target.closest('button');
+    const page = pages[currentPageIndex];
+    if (!page || !page.isDuet) return;
+
+    const d = page.duetData || [];
+    // 모든 캐릭터의 voice_id와 text 검증
+    for (let vi = 0; vi < d.length; vi++) {
+        if (!(d[vi].text || '').trim() || !d[vi].voice_id) {
+            alert(`캐릭터 ${vi + 1}의 목소리와 대사를 모두 입력하세요.`);
+            return;
+        }
+    }
+
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '🔄 생성 중...';
+
+    try {
+        const response = await fetch('/book/tts/duet/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+            body: JSON.stringify({
+                voices: d.map(v => ({voice_id: v.voice_id, text: (v.text || '').trim()})),
+                mode: page.duetMode || 'alternate'
+            })
+        });
+        if (!response.ok) throw new Error('TTS 생성 실패');
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        page.audioFile = new File([blob], `duet_${currentPageIndex + 1}.mp3`, {type: 'audio/mp3'});
+        page.audioUrl = audioUrl;
+        // TTS 생성 시점에 텍스트를 확정 저장 (저장 시 duetData 의존 불필요)
+        page.duetText = d.map(v => (v.text || '').trim()).filter(t => t).join('\n');
+        loadPage(currentPageIndex);
+    } catch (err) {
+        alert(err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+    }
+}
+
+function addSilence() {
+    saveCurrentPage();
+    const page = {
+        id: Date.now() + Math.random(),
+        content: '', charCount: 0,
+        audioFile: null, audioUrl: null,
+        isSoundEffect: false, effectName: '',
+        isSilence: true, silenceDuration: 1.0,
+        novelDraft: ''
+    };
+    pages.splice(currentPageIndex + 1, 0, page);
+    currentPageIndex = currentPageIndex + 1;
+    renderPagesList();
+    loadPage(currentPageIndex);
+    // 무음 오디오 즉시 생성
+    generateSilenceAudioForPage(currentPageIndex);
+}
+
+function updateCurrentSilenceDuration(val) {
+    if (pages[currentPageIndex] && pages[currentPageIndex].isSilence) {
+        pages[currentPageIndex].silenceDuration = val;
+        // 새 길이로 오디오 재생성
+        pages[currentPageIndex].audioFile = null;
+        pages[currentPageIndex].audioUrl = null;
+        generateSilenceAudioForPage(currentPageIndex);
+        renderPagesList();
+    }
+}
+
+async function generateSilenceAudioForPage(pageIdx) {
+    const page = pages[pageIdx];
+    if (!page || !page.isSilence) return;
+    const duration = page.silenceDuration || 1.0;
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const sampleRate = audioCtx.sampleRate;
+        const buffer = audioCtx.createBuffer(1, Math.floor(sampleRate * duration), sampleRate);
+        const wavBlob = _silenceBufferToWav(buffer);
+        audioCtx.close();
+        const file = new File([wavBlob], `silence_${duration}s.wav`, {type: 'audio/wav'});
+        page.audioFile = file;
+        page.audioUrl = URL.createObjectURL(file);
+        renderPagesList();
+    } catch(e) {
+        console.warn('무음 생성 오류:', e);
+    }
+}
+
+function _silenceBufferToWav(buffer) {
+    const numChan = buffer.numberOfChannels;
+    const sr = buffer.sampleRate;
+    const len = buffer.length;
+    const ab = new ArrayBuffer(44 + len * numChan * 2);
+    const view = new DataView(ab);
+    const ws = (o, s) => { for (let i=0;i<s.length;i++) view.setUint8(o+i, s.charCodeAt(i)); };
+    ws(0,'RIFF'); view.setUint32(4, ab.byteLength-8, true);
+    ws(8,'WAVE'); ws(12,'fmt ');
+    view.setUint32(16,16,true); view.setUint16(20,1,true);
+    view.setUint16(22,numChan,true); view.setUint32(24,sr,true);
+    view.setUint32(28,sr*numChan*2,true); view.setUint16(32,numChan*2,true);
+    view.setUint16(34,16,true); ws(36,'data');
+    view.setUint32(40,len*numChan*2,true);
+    // All samples are 0 (silence) — DataView is zero-initialized
+    return new Blob([ab], {type:'audio/wav'});
+}
+
 // 페이지 삭제
 function deletePage() {
     if (pages.length <= 1) {
@@ -1228,7 +1545,13 @@ async function saveEpisode() {
     }
 
     // 모든 페이지 내용을 합침
-    const fullContent = pages.map(page => page.content).join('\n\n---\n\n');
+    const fullContent = pages.map(page => {
+        if (page.isDuet) {
+            // TTS 생성 시 확정된 텍스트 우선, 없으면 duetData에서 추출
+            return page.duetText || (page.duetData || []).map(v => (v.text || '').trim()).filter(t => t).join('\n');
+        }
+        return page.content || '';
+    }).join('\n\n---\n\n');
 
     if (!fullContent.trim()) {
         alert('최소 하나의 페이지에 내용을 작성해주세요.');
@@ -1263,8 +1586,15 @@ async function saveEpisode() {
                 formData.append(`audio_${index}`, page.audioFile);
                 console.log(`📎 대사 ${index + 1}의 오디오 파일 추가됨`);
             }
-            // 페이지 텍스트도 함께 전송 (타임스탬프 매핑용) - 사운드 이팩트는 빈 문자열로 전송
-            formData.append(`page_text_${index}`, page.isSoundEffect ? '' : (page.content || ''));
+            // 페이지 텍스트도 함께 전송 (타임스탬프 매핑용)
+            let pageText = '';
+            if (page.isDuet) {
+                // TTS 생성 시 확정된 텍스트 우선
+                pageText = page.duetText || (page.duetData || []).map(v => (v.text || '').trim()).filter(t => t).join('\n');
+            } else if (!page.isSoundEffect && !page.isSilence) {
+                pageText = page.content || '';
+            }
+            formData.append(`page_text_${index}`, pageText);
         });
 
         // 배경음 정보 추가
@@ -1444,11 +1774,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 페이지 떠날 때 경고 및 자동 저장
 window.addEventListener('beforeunload', function(e) {
-    const hasContent = pages.some(page => page.content.trim() !== '');
+    const hasContent = pages.some(page =>
+        page.content.trim() !== '' ||
+        (page.isDuet && (page.duetData || []).some(v => (v.text || '').trim()))
+    ) || document.getElementById('episodeTitle').value.trim() !== '';
     if (hasContent) {
-        // 떠나기 전 마지막 자동 저장
+        // 떠나기 전 동기 방식으로 IndexedDB에 저장 (navigator.sendBeacon 사용)
+        // saveDraft()는 async라 beforeunload에서 완료 보장이 안 되므로
+        // localStorage에 백업 저장 (빠른 동기 저장)
+        try {
+            const backupKey = 'draft_backup_' + bookId;
+            const backupData = {
+                bookId,
+                episodeTitle: document.getElementById('episodeTitle').value,
+                pagesSimple: pages.map(p => ({
+                    content: p.content,
+                    isDuet: p.isDuet || false,
+                    duetMode: p.duetMode || 'alternate',
+                    duetData: p.duetData ? JSON.parse(JSON.stringify(p.duetData)) : null,
+                    duetText: p.duetText || '',
+                    isSilence: p.isSilence || false,
+                    silenceDuration: p.silenceDuration || 1.0,
+                    isSoundEffect: p.isSoundEffect || false,
+                    effectName: p.effectName || '',
+                    hasAudio: !!p.audioFile
+                })),
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem(backupKey, JSON.stringify(backupData));
+        } catch(ex) {}
         saveDraft();
-
         e.preventDefault();
         e.returnValue = '';
     }
@@ -1676,6 +2031,23 @@ function formatText(type) {
 
 // 키보드 단축키 지원
 document.addEventListener('keydown', function(e) {
+    // Ctrl+Enter: 현재 페이지 TTS 생성 (일반 페이지 + 동시 대화 페이지 모두)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const page = pages[currentPageIndex];
+        if (!page) return;
+        if (page.isDuet) {
+            // 동시 대화 페이지: TTS 생성 버튼 찾아서 클릭
+            const duetBtn = document.querySelector('.page-editor button[onclick="generateDuetTTS(event)"]');
+            if (duetBtn && !duetBtn.disabled) duetBtn.click();
+        } else if (!page.isSilence && !page.isSoundEffect) {
+            // 일반 TTS 페이지: TTS 생성 버튼 찾아서 클릭
+            const ttsBtn = document.querySelector('button[onclick="generatePageTTS(event)"]');
+            if (ttsBtn && !ttsBtn.disabled) ttsBtn.click();
+        }
+        return;
+    }
+
     const textarea = document.getElementById('pageContent');
     if (!textarea || document.activeElement !== textarea) return;
 

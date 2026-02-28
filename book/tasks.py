@@ -1,5 +1,5 @@
 from celery import shared_task
-from book.utils import generate_tts, merge_audio_files, mix_audio_with_background, apply_webaudio_effect, sound_effect, background_music
+from book.utils import generate_tts, merge_audio_files, mix_audio_with_background, apply_webaudio_effect, sound_effect, background_music, merge_duet_audio
 import os
 import json
 import math
@@ -222,6 +222,52 @@ def process_batch_audiobook(self, data, user_id):
                 audio_files = []
                 successful_texts = []  # TTS 성공한 페이지 텍스트 (timestamps 싱크용)
                 for page_idx, page in enumerate(pages):
+                    # 무음 페이지 처리 (BGM은 mix_bgm 단계에서 merged audio 전체에 걸쳐 재생)
+                    silence_seconds = page.get('silence_seconds', 0)
+                    if silence_seconds and float(silence_seconds) > 0:
+                        try:
+                            from book.utils import generate_silence
+                            silence_path = generate_silence(float(silence_seconds))
+                            if silence_path and os.path.exists(silence_path):
+                                audio_files.append(silence_path)
+                                successful_texts.append('')
+                                print(f"🔇 무음 삽입: {silence_seconds}초")
+                        except Exception as e:
+                            print(f"⚠️ 무음 생성 오류: {e}")
+                        continue
+
+                    # 2인 대화(duet) 처리
+                    voices = page.get('voices', [])
+                    if voices:
+                        duet_paths = []
+                        for ve in voices:
+                            v_text = ve.get('text', '')
+                            v_voice_id = ve.get('voice_id', '')
+                            if not v_text or not v_voice_id:
+                                continue
+                            try:
+                                v_tts = generate_tts(v_text, v_voice_id, 'ko', 1.0, 0.0, 0.75)
+                                if not v_tts:
+                                    continue
+                                v_path = v_tts if isinstance(v_tts, str) else v_tts.path
+                                v_effect = ve.get('webaudio_effect', '')
+                                if v_effect and v_effect != 'normal':
+                                    v_path = apply_webaudio_effect(v_path, v_effect) or v_path
+                                duet_paths.append(v_path)
+                            except Exception as e:
+                                print(f"⚠️ 듀엣 TTS 오류: {e}")
+                        if duet_paths:
+                            try:
+                                duet_mp3 = merge_duet_audio(duet_paths, mode=page.get('mode', 'alternate'))
+                                if duet_mp3:
+                                    audio_files.append(duet_mp3)
+                                    combined_text = '\n'.join(v.get('text', '') for v in voices if v.get('text'))
+                                    successful_texts.append(combined_text)
+                                    print(f"🎭 듀엣 페이지 생성 완료 ({page.get('mode','alternate')} 모드)")
+                            except Exception as e:
+                                print(f"⚠️ 듀엣 병합 오류 (페이지 {page_idx+1}): {e}")
+                        continue
+
                     text = page.get('text', '')
                     voice_id = page.get('voice_id', '')
 

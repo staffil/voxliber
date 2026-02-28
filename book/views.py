@@ -222,6 +222,15 @@ def book_serialization(request):
             pages_text.append(page_text)
             page_index += 1
 
+        # page_text_N이 비어있을 경우 content_text 단락에서 복원 (동시 대화 등)
+        import re as _re
+        content_paragraphs = [_re.sub(r'\[[^\]]*\]', '', p).strip()
+                               for p in content_text.split('\n\n---\n\n')] if content_text else []
+        for i in range(len(pages_text)):
+            if not pages_text[i].strip() and i < len(content_paragraphs) and content_paragraphs[i]:
+                pages_text[i] = content_paragraphs[i]
+                print(f"  ℹ️ page_text_{i} 비어있어 content_text 단락으로 복원: {content_paragraphs[i][:40]}")
+
         if not all([content_number, content_title, content_text]):
             return JsonResponse({
                 "success": False,
@@ -331,12 +340,18 @@ def book_serialization(request):
                 # ⚠️ 미리듣기를 하지 않은 경우 - 기존 방식으로 merge 수행
                 print("⚠️ 미리듣기 오디오가 없음 - 개별 파일 merge 수행")
 
-                # 업로드된 오디오 파일들 수집
-                audio_files = []
+                # 업로드된 오디오 파일들 수집 (페이지 인덱스 순서 유지)
+                audio_items = []
                 for key in request.FILES.keys():
                     if key.startswith('audio_'):
-                        audio_files.append(request.FILES[key])
-                        print(f"📎 오디오 파일 수신: {key}")
+                        suffix = key[len('audio_'):]
+                        if suffix.isdigit():
+                            audio_items.append((int(suffix), request.FILES[key]))
+                            print(f"📎 오디오 파일 수신: {key}")
+                audio_items.sort(key=lambda x: x[0])
+                audio_files = [f for _, f in audio_items]
+                # 페이지 인덱스에 맞는 텍스트 정렬 (인덱스 불일치 방지)
+                aligned_pages_text = [pages_text[idx] if idx < len(pages_text) else '' for idx, _ in audio_items]
 
                 # 배경음 정보 수집
                 background_tracks_count = int(request.POST.get('background_tracks_count', 0))
@@ -348,7 +363,7 @@ def book_serialization(request):
                     print(f"🎵 {len(audio_files)}개의 오디오 파일 합치기 시작...")
 
                     # merge_audio_files는 이제 타임스탬프 정보도 함께 반환
-                    merged_audio_path, dialogue_durations = merge_audio_files(audio_files, pages_text)
+                    merged_audio_path, dialogue_durations = merge_audio_files(audio_files, aligned_pages_text)
 
                     if merged_audio_path and dialogue_durations and os.path.exists(merged_audio_path):
                         print(f"✅ 오디오 합치기 완료: {merged_audio_path}")
@@ -546,6 +561,64 @@ def generate_tts_api(request):
 
     except Exception as e:
         print("❌ 오류:", e)
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+# ==================== 2인 대화 TTS 생성 ====================
+def duet_tts_generate(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST 요청만 가능합니다."}, status=405)
+    try:
+        import os
+        data = json.loads(request.body)
+        mode = data.get("mode", "alternate")
+
+        # N명 배열 형식: {"voices": [{"voice_id":..., "text":...}, ...], "mode":...}
+        # 구버전 2인 형식: {"text1":..., "voice_id1":..., "text2":..., "voice_id2":...}
+        voices_raw = data.get("voices")
+        if voices_raw:
+            voice_list_input = [(v.get("voice_id", ""), v.get("text", "").strip()) for v in voices_raw]
+        else:
+            text1 = data.get("text1", "").strip()
+            voice_id1 = data.get("voice_id1", "")
+            text2 = data.get("text2", "").strip()
+            voice_id2 = data.get("voice_id2", "")
+            voice_list_input = [(voice_id1, text1), (voice_id2, text2)]
+
+        if len(voice_list_input) < 2:
+            return JsonResponse({"success": False, "error": "최소 2명의 목소리가 필요합니다."}, status=400)
+        for vid, txt in voice_list_input:
+            if not txt or not vid:
+                return JsonResponse({"success": False, "error": "모든 목소리와 텍스트를 입력하세요."}, status=400)
+
+        from book.utils import generate_tts, merge_duet_audio
+        paths = []
+        for vid, txt in voice_list_input:
+            p = generate_tts(txt, vid, "ko", 1.0, 0.0, 0.75)
+            if p:
+                paths.append(p)
+
+        if len(paths) < 2:
+            return JsonResponse({"success": False, "error": "TTS 생성 실패"}, status=500)
+
+        merged_path = merge_duet_audio(paths, mode=mode)
+
+        for p in paths:
+            try:
+                if p and os.path.exists(p): os.remove(p)
+            except: pass
+
+        if not merged_path or not os.path.exists(merged_path):
+            return JsonResponse({"success": False, "error": "듀엣 병합 실패"}, status=500)
+
+        with open(merged_path, "rb") as f:
+            audio_data = f.read()
+        os.remove(merged_path)
+
+        return HttpResponse(audio_data, content_type="audio/mpeg")
+
+    except Exception as e:
+        print("❌ 듀엣 TTS 오류:", e)
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
@@ -2718,10 +2791,19 @@ def ai_analyze_audiobook(request):
 
     pages = episode_step['pages']
 
-    # 텍스트 목록 생성
+    # 텍스트 목록 생성 (일반 페이지, N인 대화, 무음 모두 처리)
     text_list = []
     for i, page in enumerate(pages):
-        text_list.append(f"[{i+1}] {page['text']}")
+        if 'text' in page:
+            text = page['text']
+        elif 'voices' in page:
+            # N인 대화: 각 목소리 텍스트를 " / "로 연결
+            text = ' / '.join(v.get('text', '') for v in page['voices'] if v.get('text', '').strip())
+        elif 'silence_seconds' in page:
+            text = f'[무음 {page["silence_seconds"]}초]'
+        else:
+            text = ''
+        text_list.append(f"[{i+1}] {text}")
     all_text = "\n".join(text_list)
 
     # Grok API 호출
@@ -2813,8 +2895,8 @@ def ai_analyze_audiobook(request):
     for i, page in enumerate(pages):
         new_page = dict(page)
 
-        # 감정 태그 추가
-        if i < len(emotions) and emotions[i]:
+        # 감정 태그 추가 (일반 텍스트 페이지만 / N인 대화·무음은 건너뜀)
+        if i < len(emotions) and emotions[i] and 'text' in new_page:
             tags = ''.join([f'[{e}]' for e in emotions[i]])
             if not new_page['text'].startswith('['):
                 new_page['text'] = f"{tags} {new_page['text']}"
@@ -2891,16 +2973,42 @@ def ai_assign_speakers(request):
         return JsonResponse({'error': '캐릭터가 등록되지 않았습니다.'}, status=400)
 
     # 캐릭터 목록 문자열 생성
+    sorted_chars = sorted(characters.items(), key=lambda x: int(x[0]))
     char_lines = []
-    for num, name in sorted(characters.items(), key=lambda x: int(x[0])):
+    for num, name in sorted_chars:
         char_lines.append(f"{num}: {name}")
     char_list_str = "\n".join(char_lines)
+
+    # 등록된 번호 목록 (AI에게 명시적으로 전달)
+    valid_nums = [str(num) for num, _ in sorted_chars]
+    valid_nums_str = ", ".join(valid_nums)
+
+    # 동시 발화 예시: 등록된 캐릭터 중 0 제외 첫 두 명으로 동적 생성
+    non_narr = [str(num) for num, _ in sorted_chars if int(num) != 0]
+    if len(non_narr) >= 2:
+        duet_example = f"{non_narr[0]},{non_narr[1]}: \"같이 외쳤다!\""
+    elif len(non_narr) == 1:
+        duet_example = f"0,{non_narr[0]}: \"같이 외쳤다!\""
+    else:
+        duet_example = ""  # 캐릭터 1명뿐이면 동시 발화 예시 없음
+
+    duet_section = ""
+    if duet_example:
+        duet_section = f"""
+=== 동시 발화(2인 대화) 규칙 ===
+- 두 캐릭터가 동시에 같은 말을 외치는 장면에만 사용
+- 반드시 등록된 번호({valid_nums_str})만 쉼표로 나열: 예) {duet_example}
+- 동시 발화가 아닌 일반 대화는 반드시 각자 별도 줄로 처리
+"""
 
     prompt = f"""당신은 한국어 소설/오디오북의 화자 분류 전문가입니다.
 아래 소설 텍스트를 읽고, 각 줄에 적절한 캐릭터 번호를 매겨주세요.
 
-=== 등록된 캐릭터 ===
+=== 등록된 캐릭터 (이 번호들만 사용 가능) ===
 {char_list_str}
+
+⚠️ 절대 규칙: 위 번호({valid_nums_str}) 이외의 번호는 절대 사용 금지!
+등록되지 않은 번호를 출력하면 시스템이 오작동합니다.
 
 === 소설 텍스트 ===
 {text}
@@ -2918,19 +3026,14 @@ def ai_assign_speakers(request):
 4. 대사 앞뒤 문맥(누가 말했는지)으로 화자 판단
 5. 각 줄 앞에 감정 태그 1~2개 추가
 6. 나레이션은 해라체/문어체 유지
-7. 대사는 쌍따옴표로 감싸기
-
-=== 출력 형식 ===
-1: "안녕하세요"
-0: "태아가 와서 말했다. 태아의 반짝이는 눈동자가 나의 마음을 흔들었다. 어떻게 이렇게 이쁠수가 있을까? 정말 가슴이 뛰었다
-2: "아, 안녕하세요"
-0: 내가 말했다.
-3: "오랜만이네요"
-0: 태아가 말했다.
+7. 대사는 쌍따옴표로 감싸기{duet_section}
+=== 출력 형식 (등록된 번호만 사용!) ===
+각 줄 형식: {{번호}}: {{텍스트}}
+사용 가능한 번호: {valid_nums_str}
 
 - 원본 텍스트의 위치와 띄어쓰기, 문장을 변경하지 마세요. 오직 앞에 번호만 붙이세요.
-(문장은 여러개이지만 같은 캐릭터일 경우 하나의 번호만 지정하세요. 나레이션이 말할거 같은 택스트는 무조건 0으로 번호를 지정하세요.
-, 입력과 같은 줄 수 유지, 다른 설명 없이 결과만 출력)"""
+(문장은 여러개이지만 같은 캐릭터일 경우 하나의 번호만 지정하세요. 나레이션이 말할거 같은 텍스트는 무조건 0으로 번호를 지정하세요.
+입력과 같은 줄 수 유지, 다른 설명 없이 결과만 출력)"""
 
     try:
         from book.utils import openai_client

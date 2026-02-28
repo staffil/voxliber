@@ -25,6 +25,7 @@ urlpatterns=[
 
     # tts 생성
     path("tts/generate/", views.generate_tts_api, name="generate_tts_api"),
+    path("tts/duet/", views.duet_tts_generate, name="duet_tts_generate"),
 
     # 사운드 이팩트 생성 및 조회
     path("sound-effect/generate/", views.generate_sound_effect_api, name="generate_sound_effect_api"),

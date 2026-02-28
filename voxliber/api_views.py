@@ -184,8 +184,10 @@ def api_create_episode(request):
     if len(pages) > 200:
         return api_response(error="페이지는 최대 200개까지 가능합니다.", status=400)
 
-    # 각 페이지 검증
+    # 각 페이지 검증 (silence_seconds / voices 페이지는 text/voice_id 불필요)
     for i, page in enumerate(pages):
+        if page.get("silence_seconds") is not None or page.get("voices"):
+            continue
         if not page.get("text", "").strip():
             return api_response(error=f"페이지 {i+1}의 text가 비어있습니다.", status=400)
         if not page.get("voice_id", "").strip():
@@ -204,8 +206,8 @@ def api_create_episode(request):
         )
 
     try:
-        # 전체 텍스트 합치기 (페이지 구분)
-        full_text = "\n\n---\n\n".join([p.get("text", "").strip() for p in pages])
+        # 전체 텍스트 합치기 (silence/voices 페이지는 빈 문자열)
+        full_text = "\n\n---\n\n".join([p.get("text", "").strip() for p in pages if p.get("text")])
 
         # 1. 에피소드 생성
         content = Content.objects.create(
@@ -222,8 +224,58 @@ def api_create_episode(request):
         temp_files = []
 
         for i, page in enumerate(pages):
-            page_text = page["text"].strip()
-            page_voice = page["voice_id"].strip()
+            # ── 무음 페이지 ──────────────────────────────
+            silence_seconds = page.get("silence_seconds")
+            if silence_seconds is not None and float(silence_seconds) > 0:
+                try:
+                    from book.utils import generate_silence
+                    silence_path = generate_silence(float(silence_seconds))
+                    if silence_path and os.path.exists(silence_path):
+                        audio_paths.append(silence_path)
+                        pages_text.append('')
+                        temp_files.append(silence_path)
+                        print(f"  🔇 페이지 {i+1} 무음 {silence_seconds}초")
+                except Exception as e:
+                    print(f"  ⚠️ 페이지 {i+1} 무음 생성 오류: {e}")
+                continue
+
+            # ── 동시 대화(voices) 페이지 ──────────────────
+            voices = page.get("voices", [])
+            if voices:
+                duet_paths = []
+                for ve in voices:
+                    v_text = ve.get("text", "").strip()
+                    v_voice_id = ve.get("voice_id", "").strip()
+                    if not v_text or not v_voice_id:
+                        continue
+                    try:
+                        v_tts = generate_tts(v_text, v_voice_id, "ko", 1.0, 0.0, 0.75)
+                        if v_tts:
+                            v_path = v_tts if isinstance(v_tts, str) else v_tts.path
+                            duet_paths.append(v_path)
+                            temp_files.append(v_path)
+                    except Exception as e:
+                        print(f"  ⚠️ 페이지 {i+1} 듀엣 TTS 오류: {e}")
+                if duet_paths:
+                    try:
+                        from book.utils import merge_duet_audio
+                        duet_mp3 = merge_duet_audio(duet_paths, mode=page.get("mode", "alternate"))
+                        if duet_mp3:
+                            audio_paths.append(duet_mp3)
+                            temp_files.append(duet_mp3)
+                            combined_text = '\n'.join(v.get("text", "") for v in voices if v.get("text"))
+                            pages_text.append(combined_text)
+                            print(f"  🎭 페이지 {i+1} 동시 대화 완료 ({page.get('mode','alternate')} 모드)")
+                    except Exception as e:
+                        print(f"  ⚠️ 페이지 {i+1} 듀엣 병합 오류: {e}")
+                continue
+
+            # ── 일반 TTS 페이지 ───────────────────────────
+            page_text = page.get("text", "").strip()
+            page_voice = page.get("voice_id", "").strip()
+            if not page_text or not page_voice:
+                print(f"  ⚠️ 페이지 {i+1} text/voice_id 없음 - 건너뜀")
+                continue
             page_lang = page.get("language_code", "ko").strip()
             page_speed = page.get("speed_value", 1.0)
             page_style = page.get("style_value", 0.5)

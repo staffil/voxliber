@@ -60,6 +60,12 @@ async function saveDraft() {
                 hasAudio: !!audioBlob,
                 isSoundEffect: page.isSoundEffect || false,
                 effectName: page.effectName || '',
+                isSilence: page.isSilence || false,
+                silenceDuration: page.silenceDuration || 1.0,
+                isDuet: page.isDuet || false,
+                duetMode: page.duetMode || 'alternate',
+                duetData: page.duetData ? JSON.parse(JSON.stringify(page.duetData)) : null,
+                duetText: page.duetText || '',
                 novelDraft: page.novelDraft || ''
             };
         }));
@@ -139,7 +145,41 @@ async function loadDraft() {
         const request = store.get(getDraftKey());
 
         request.onsuccess = async () => {
-            const draftData = request.result;
+            let draftData = request.result;
+
+            // IndexedDB에 없으면 localStorage 백업 확인
+            if (!draftData) {
+                try {
+                    const backupKey = 'draft_backup_' + bookId;
+                    const backupStr = localStorage.getItem(backupKey);
+                    if (backupStr) {
+                        const backup = JSON.parse(backupStr);
+                        // localStorage 백업으로 draftData 구성 (오디오 없음)
+                        draftData = {
+                            bookId: backup.bookId,
+                            episodeTitle: backup.episodeTitle || '',
+                            pages: (backup.pagesSimple || []).map(p => ({
+                                content: p.content || '',
+                                charCount: (p.content || '').length,
+                                hasAudio: false,
+                                audioBlob: null,
+                                isDuet: p.isDuet || false,
+                                duetMode: p.duetMode || 'alternate',
+                                duetData: p.duetData || null,
+                                duetText: p.duetText || '',
+                                isSilence: p.isSilence || false,
+                                silenceDuration: p.silenceDuration || 1.0,
+                                isSoundEffect: p.isSoundEffect || false,
+                                effectName: p.effectName || '',
+                                novelDraft: ''
+                            })),
+                            backgroundTracks: [],
+                            timestamp: backup.timestamp
+                        };
+                        console.log('📂 localStorage 백업으로 복원 (오디오 제외)');
+                    }
+                } catch(ex) {}
+            }
 
             if (!draftData) {
                 alert('임시저장된 내용이 없습니다.');
@@ -159,6 +199,24 @@ async function loadDraft() {
                 // 사운드 이팩트 정보 복원
                 if (pageData.isSoundEffect) {
                     page.effectName = pageData.effectName || '';
+                }
+
+                // 무음 정보 복원
+                if (pageData.isSilence) {
+                    page.isSilence = true;
+                    page.silenceDuration = pageData.silenceDuration || 1.0;
+                    // 무음 오디오 재생성 (Blob은 저장 불가)
+                    if (typeof generateSilenceAudioForPage === 'function') {
+                        setTimeout(() => generateSilenceAudioForPage(index), 100);
+                    }
+                }
+
+                // 2인 대화 정보 복원
+                if (pageData.isDuet) {
+                    page.isDuet = true;
+                    page.duetMode = pageData.duetMode || 'alternate';
+                    page.duetData = pageData.duetData || [{voice_id:'',text:''},{voice_id:'',text:''}];
+                    if (pageData.duetText) page.duetText = pageData.duetText;
                 }
 
                 // 소설 미리쓰기 복원
@@ -258,6 +316,15 @@ async function clearDraft() {
 
 // 임시저장 존재 여부 체크
 async function checkDraftExists() {
+    // localStorage 백업 먼저 확인 (빠른 동기 체크)
+    try {
+        const backupKey = 'draft_backup_' + bookId;
+        if (localStorage.getItem(backupKey)) {
+            document.getElementById('loadDraftBtn').style.display = 'block';
+            console.log('📂 localStorage 백업 발견');
+        }
+    } catch(ex) {}
+
     try {
         if (!db) {
             await initIndexedDB();
@@ -287,12 +354,14 @@ function startAutoSave() {
 
     // 30초마다 자동 저장
     autoSaveInterval = setInterval(() => {
-        const hasContent = pages.some(page => page.content.trim() !== '') ||
-                          document.getElementById('episodeTitle').value.trim() !== '';
+        const hasContent = pages.some(page =>
+                              page.content.trim() !== '' ||
+                              page.isDuet && (page.duetData || []).some(v => (v.text || '').trim())
+                          ) || document.getElementById('episodeTitle').value.trim() !== '';
 
         if (hasContent) {
             saveDraft();
             console.log('🔄 자동 임시저장 실행');
         }
-    }, 30000); // 30초
+    }, 10000); // 10초
 }

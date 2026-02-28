@@ -201,7 +201,15 @@ async function generatePreviewAudio() {
                 const audioFile = new File([page.audioBlob], `audio_${index}.mp3`, { type: 'audio/mp3' });
                 formData.append(`audio_${index}`, audioFile);
             }
-            formData.append(`page_text_${index}`, page.isSoundEffect ? '' : (page.content || ''));
+            let pt = '';
+            if (!page.isSoundEffect && !page.isSilence) {
+                if (page.isDuet) {
+                    pt = page.duetText || (page.duetData || []).map(v => (v.text || '').trim()).filter(t => t).join('\n');
+                } else {
+                    pt = page.content || '';
+                }
+            }
+            formData.append(`page_text_${index}`, pt);
         });
 
         if (bgMusicCount > 0) {
@@ -377,7 +385,10 @@ async function publishEpisode() {
             formData.append('book_id', bookId);
             formData.append('content_number', {{ latest_episode_number|default:0 }} + 1);
             formData.append('content_title', draftData.episodeTitle);
-            formData.append('content_text', draftData.pages.map(p=>p.content).join('\n\n'));
+            formData.append('content_text', draftData.pages.map(p => {
+                if (p.isDuet) return p.duetText || (p.duetData||[]).map(v=>(v.text||'').trim()).filter(t=>t).join('\n');
+                return p.content || '';
+            }).join('\n\n---\n\n'));
             formData.append('voice_id', draftData.selectedVoiceId||'');
             formData.append('language_code', draftData.selectedLanguage||'ko');
 
@@ -385,7 +396,13 @@ async function publishEpisode() {
 
             if (draftData.mergedAudioBlob) {
                 formData.append('merged_audio', new File([draftData.mergedAudioBlob], 'merged_final_audio.mp3', {type:'audio/mp3'}));
-                draftData.pages.forEach((page,index)=>formData.append(`page_text_${index}`, page.isSoundEffect?'':(page.content||'')));
+                draftData.pages.forEach((page,index)=>{
+                    let pt='';
+                    if(!page.isSoundEffect&&!page.isSilence){
+                        pt=page.isDuet?(page.duetText||(page.duetData||[]).map(v=>(v.text||'').trim()).filter(t=>t).join('\n')):(page.content||'');
+                    }
+                    formData.append(`page_text_${index}`,pt);
+                });
                 // 미리듣기에서 생성된 정확한 타임스탬프 전송
                 if (draftData.mergedAudioTimestamps && draftData.mergedAudioTimestamps.length > 0) {
                     formData.append('merged_timestamps', JSON.stringify(draftData.mergedAudioTimestamps));
@@ -393,7 +410,11 @@ async function publishEpisode() {
             } else {
                 draftData.pages.forEach((page,index)=>{
                     if (page.audioBlob) formData.append(`audio_${index}`, new File([page.audioBlob], `audio_${index}.mp3`, {type:'audio/mp3'}));
-                    formData.append(`page_text_${index}`, page.isSoundEffect?'':(page.content||''));
+                    let pt='';
+                    if(!page.isSoundEffect&&!page.isSilence){
+                        pt=page.isDuet?(page.duetText||(page.duetData||[]).map(v=>(v.text||'').trim()).filter(t=>t).join('\n')):(page.content||'');
+                    }
+                    formData.append(`page_text_${index}`, pt);
                 });
 
                 if (draftData.backgroundTracks.length>0) {
@@ -414,8 +435,8 @@ async function publishEpisode() {
             const data = await response.json();
 
             if (data.success) {
-                const deleteTx = db.transaction(['drafts'],'readwrite');
-                deleteTx.objectStore('drafts').delete(bookId);
+                // 발행 후 draft를 삭제하지 않고 유지 → 전문가 모드로 돌아올 때 TTS 오디오 복원 가능
+                // (다음 에피소드 작업 시 임시저장 불러오기 버튼으로 확인 후 사용)
                 alert('✅ 에피소드 발행 성공!');
                 window.location.href = data.redirect_url || `/book/detail/${bookId}/`;
             } else {

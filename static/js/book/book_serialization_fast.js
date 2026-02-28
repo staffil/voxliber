@@ -149,7 +149,7 @@ function collectCharacterMap() {
     return charMap;
 }
 
-// ==================== 텍스트 파싱 (N: 형식) ====================
+// ==================== 텍스트 파싱 (N: 또는 N,M: 형식) ====================
 function parseNovelText(text, charMap) {
     const lines = text.split('\n').filter(l => l.trim());
     const rawPages = [];
@@ -159,6 +159,28 @@ function parseNovelText(text, charMap) {
         const line = lines[i].trim();
         if (!line) continue;
 
+        // N,M,O,...: 형식 (동시 대화) - 예: "1,2: ...", "1,2,3: ...", "1,2,3,4: ..."
+        const duetMatch = line.match(/^(\d+(?:\s*,\s*\d+)+)\s*:\s*(.+)$/);
+        if (duetMatch) {
+            const charNums = duetMatch[1].split(',').map(n => parseInt(n.trim()));
+            const content = duetMatch[2].trim();
+
+            // 미등록 캐릭터도 빈 voice_id로 포함 (블록 에디터에서 나중에 선택 가능)
+            charNums.forEach(cn => {
+                if (!charMap[cn]) {
+                    errors.push(`${i + 1}번째 줄: ${cn}번 캐릭터 미등록 → 빈 목소리로 추가됨`);
+                }
+            });
+
+            rawPages.push({
+                isDuet: true,
+                voices: charNums.map(cn => ({ voice_id: charMap[cn]?.voice_id || '', text: content })),
+                mode: 'overlap'
+            });
+            continue;
+        }
+
+        // N: 형식 (일반 대사)
         const match = line.match(/^(\d+)\s*:\s*(.+)$/);
 
         if (!match) {
@@ -189,26 +211,32 @@ function groupPages(rawPages) {
     if (rawPages.length === 0) return [];
 
     const grouped = [];
-    let current = {
-        text: rawPages[0].text,
-        voice_id: rawPages[0].voice_id
-    };
+    let current = null;
 
-    for (let i = 1; i < rawPages.length; i++) {
+    for (let i = 0; i < rawPages.length; i++) {
         const page = rawPages[i];
+
+        // duet 블록은 합치지 않고 그대로 추가
+        if (page.isDuet) {
+            if (current) { grouped.push({ ...current }); current = null; }
+            grouped.push({ voices: page.voices, mode: page.mode });
+            continue;
+        }
+
+        if (!current) {
+            current = { text: page.text, voice_id: page.voice_id };
+            continue;
+        }
 
         if (page.voice_id === current.voice_id &&
             (current.text.length + page.text.length + 1) <= 300) {
             current.text += ' ' + page.text;
         } else {
             grouped.push({ ...current });
-            current = {
-                text: page.text,
-                voice_id: page.voice_id
-            };
+            current = { text: page.text, voice_id: page.voice_id };
         }
     }
-    grouped.push({ ...current });
+    if (current) grouped.push({ ...current });
 
     return grouped;
 }
@@ -245,15 +273,15 @@ function generateJSONPreview() {
 
     const { rawPages, errors } = parseNovelText(text, charMap);
 
-    if (errors.length > 0) {
-        showStatus(`파싱 오류 ${errors.length}건: ${errors[0]}`, 'error');
-        console.warn('파싱 오류:', errors);
-        return null;
-    }
-
     if (rawPages.length === 0) {
         showStatus('유효한 대사가 없습니다', 'error');
         return null;
+    }
+
+    if (errors.length > 0) {
+        // 경고만 표시하고 계속 진행 (미등록 캐릭터 등 일부 라인 스킵)
+        console.warn('파싱 경고:', errors);
+        showStatus(`⚠️ 경고 ${errors.length}건 (스킵됨) - 나머지로 계속 진행`, 'warning');
     }
 
     const pages = groupPages(rawPages);
@@ -267,10 +295,13 @@ function generateJSONPreview() {
                 book_uuid: bookId || "",
                 episode_number: number,
                 episode_title: title,
-                pages: pages.map(p => ({
-                    text: p.text,
-                    voice_id: p.voice_id
-                }))
+                pages: pages.map(p => {
+                    if (p.voices) {
+                        // duet 블록 (N,M: 형식)
+                        return { voices: p.voices, mode: p.mode || 'overlap' };
+                    }
+                    return { text: p.text, voice_id: p.voice_id };
+                })
             }
         ]
     };
@@ -795,6 +826,36 @@ let _blockJSON = null;
 let _selectedEpStep = 0;
 let _selectedBlockIndex = null;
 
+// ==================== 캐릭터 색상 코딩 ====================
+const VOICE_COLORS = [
+    '#ec4899','#f59e0b','#10b981','#3b82f6',
+    '#8b5cf6','#ef4444','#06b6d4','#84cc16',
+    '#f97316','#14b8a6','#a855f7','#64748b'
+];
+let _voiceColorMap = {};
+let _voiceColorIdx = 0;
+
+function getVoiceColor(voiceId) {
+    if (!voiceId) return '#4b5563';
+    if (!_voiceColorMap[voiceId]) {
+        _voiceColorMap[voiceId] = VOICE_COLORS[_voiceColorIdx % VOICE_COLORS.length];
+        _voiceColorIdx++;
+    }
+    return _voiceColorMap[voiceId];
+}
+
+// ==================== 예상 재생 시간 ====================
+function estimatePageDuration(text) {
+    const clean = (text || '').replace(/\[[^\]]*\]/g, '').trim();
+    return clean.length / 4.0;  // ~4글자/초 (한국어 TTS)
+}
+
+function formatDuration(sec) {
+    const m = Math.floor(sec / 60);
+    const s = Math.round(sec % 60);
+    return m > 0 ? `${m}분 ${s}초` : `${s}초`;
+}
+
 // ==================== WebAudio 효과 프리셋 ====================
 const BLOCK_EFFECTS = [
     {id:'normal',    label:'기본'},    {id:'phone',     label:'전화기'},
@@ -876,11 +937,26 @@ function renderBlocks(jsonData) {
         return;
     }
 
-    // 페이지 → _blockItems
-    _blockItems = epStep.pages.map(p => ({
-        type: 'page',
-        pageData: {text: p.text || '', voice_id: p.voice_id || '', _effect: p.webaudio_effect || ''}
-    }));
+    // 페이지 → _blockItems (silence, duet 포함)
+    _blockItems = epStep.pages.map(p => {
+        if (p.silence_seconds !== undefined) {
+            return {type: 'silence', silenceData: {duration: parseFloat(p.silence_seconds) || 1.0}};
+        } else if (p.voices) {
+            return {
+                type: 'duet',
+                duetData: {
+                    voices: (p.voices || []).map(v => ({
+                        voice_id: v.voice_id || '',
+                        text: v.text || '',
+                        webaudio_effect: v.webaudio_effect || ''
+                    })),
+                    mode: p.mode || 'alternate'
+                }
+            };
+        } else {
+            return {type: 'page', pageData: {text: p.text || '', voice_id: p.voice_id || '', _effect: p.webaudio_effect || ''}};
+        }
+    });
 
     // create_bgm / create_sfx 메타 정보 ($bgm_N, $sfx_N → 이름/설명)
     const bgmMeta = {}, sfxMeta = {};
@@ -910,7 +986,8 @@ function renderBlocks(jsonData) {
             const targetPage = Math.max(1, sfx.page_number || sfx.page || 1);
             let pageCount = 0, insertIdx = _blockItems.length;
             for (let i = 0; i < _blockItems.length; i++) {
-                if (_blockItems[i].type === 'page') {
+                const t = _blockItems[i].type;
+                if (t === 'page' || t === 'duet' || t === 'silence') {
                     pageCount++;
                     if (pageCount === targetPage) { insertIdx = i; break; }
                 }
@@ -943,6 +1020,8 @@ function renderBlocks(jsonData) {
     }
 
     _selectedBlockIndex = null;
+    _voiceColorMap = {};
+    _voiceColorIdx = 0;
     const wp = document.getElementById('webAudioPanel');
     if (wp) wp.style.display = 'none';
     switchRightTab('blocks');
@@ -960,7 +1039,23 @@ function renderBlockList() {
         return;
     }
 
-    let html = sfxInsertRowHTML(0);
+    // 색상 pre-scan (등장 순서대로 색상 배정)
+    _voiceColorMap = {};
+    _voiceColorIdx = 0;
+    _blockItems.forEach(item => {
+        if (item.type === 'page' && item.pageData.voice_id)
+            getVoiceColor(item.pageData.voice_id);
+    });
+
+    // 총 예상 시간 계산
+    let totalSec = 0;
+    _blockItems.forEach(item => {
+        if (item.type === 'page') totalSec += estimatePageDuration(item.pageData.text);
+        else if (item.type === 'silence') totalSec += (item.silenceData.duration || 1.0);
+    });
+
+    let html = `<div class="block-time-summary">예상 재생시간 약 <strong>${formatDuration(totalSec)}</strong></div>`;
+    html += sfxInsertRowHTML(0);
     let pageNum = 0;
 
     _blockItems.forEach((item, idx) => {
@@ -973,14 +1068,19 @@ function renderBlockList() {
                 `<option value="${v.id}"${v.id === item.pageData.voice_id ? ' selected' : ''}>${v.name}</option>`
             ).join('');
             const isSelected = _selectedBlockIndex === idx;
+            const color = getVoiceColor(item.pageData.voice_id);
+            const dur = estimatePageDuration(item.pageData.text);
+            const durLabel = dur > 0 ? `<span class="block-duration-badge">~${formatDuration(dur)}</span>` : '';
 
-            html += `<div class="block-item${isSelected ? ' selected' : ''}" id="block-${idx}" onclick="selectBlock(${idx})">
+            html += `<div class="block-item${isSelected ? ' selected' : ''}" id="block-${idx}"
+                style="border-left: 3px solid ${color};"
+                onclick="selectBlock(${idx})">
                 <div class="block-header">
-                    <span class="block-page-badge">P${pageNum}</span>
+                    <span class="block-page-badge" style="background:${color};">P${pageNum}</span>
                     <select class="block-voice-select" onchange="updateBlockVoice(${idx}, this.value)" onclick="event.stopPropagation()">
                         <option value="">목소리 선택</option>${voiceOpts}
                     </select>
-                    <div class="block-badges">${effBadge}</div>
+                    <div class="block-badges">${effBadge}${durLabel}</div>
                     <button class="page-remove-btn" onclick="event.stopPropagation(); removePage(${idx})" title="삭제">×</button>
                 </div>
                 <textarea class="block-text-edit" rows="3"
@@ -1007,6 +1107,65 @@ function renderBlockList() {
                     value="${escapeAttr(item.sfxData._desc)}"
                     onchange="updateSfxDesc(${idx}, this.value)" onclick="event.stopPropagation()">
             </div>`;
+
+        } else if (item.type === 'silence') {
+            const dur = item.silenceData.duration || 1.0;
+            const opts = [0.5,1.0,1.5,2.0,2.5,3.0].map(v =>
+                `<option value="${v}"${v === dur ? ' selected' : ''}>${v}초</option>`
+            ).join('');
+            html += `<div class="silence-block" id="block-${idx}">
+                <span class="silence-icon">🔇</span>
+                <span class="silence-label">무음</span>
+                <select class="silence-dur-select" onchange="updateSilenceDuration(${idx}, parseFloat(this.value))" onclick="event.stopPropagation()">${opts}</select>
+                <span class="silence-hint">BGM 계속 재생</span>
+                <button class="sfx-remove-btn" onclick="removeSilence(${idx})" title="삭제">×</button>
+            </div>`;
+
+        } else if (item.type === 'duet') {
+            try {
+                pageNum++;
+                const d = item.duetData;
+                if (!d || !d.voices) throw new Error('duetData.voices 없음: ' + JSON.stringify(item));
+                const isAlt = (d.mode || 'alternate') === 'alternate';
+                const voiceCount = d.voices.length;
+
+                let voiceRows = '';
+                d.voices.forEach((v, vi) => {
+                    const vopts = voiceList.map(vl =>
+                        `<option value="${vl.id}"${vl.id === v.voice_id ? ' selected' : ''}>${vl.name}</option>`).join('');
+                    const color = getVoiceColor(v.voice_id);
+                    voiceRows += `<div class="duet-voice-row" style="border-left:3px solid ${color};">
+                        <select class="block-voice-select" onchange="updateDuetVoice(${idx},${vi},this.value)">
+                            <option value="">목소리 ${vi+1}</option>${vopts}
+                        </select>
+                        <textarea class="block-text-edit duet-text" rows="2"
+                            onchange="updateDuetText(${idx},${vi},this.value)"
+                            placeholder="캐릭터 ${vi+1} 대사">${escapeHtml(v.text)}</textarea>
+                        ${voiceCount > 2 ? `<button class="sfx-remove-btn" onclick="removeDuetVoice(${idx},${vi})" title="제거">×</button>` : ''}
+                    </div>`;
+                });
+
+                html += `<div class="duet-block" id="block-${idx}">
+                    <div class="duet-header">
+                        <span class="duet-badge">🎭 P${pageNum} ${voiceCount}인 대화</span>
+                        <label class="duet-mode-label">
+                            <input type="checkbox" ${isAlt ? '' : 'checked'} onchange="updateDuetMode(${idx}, this.checked ? 'overlap' : 'alternate')">
+                            동시 재생
+                        </label>
+                        <button class="sfx-insert-btn" onclick="addDuetVoice(${idx})" style="font-size:11px;padding:2px 6px;margin-left:4px;">+ 목소리</button>
+                        <button class="page-remove-btn" onclick="event.stopPropagation(); removeDuet(${idx})">×</button>
+                    </div>
+                    ${voiceRows}
+                </div>`;
+            } catch (e) {
+                console.error('[renderBlockList] duet 렌더링 오류 (idx=' + idx + '):', e, item);
+                html += `<div style="background:#fee2e2;border:2px solid #f87171;border-radius:8px;padding:8px;margin-bottom:4px;color:#dc2626;font-size:12px;">
+                    ⚠️ 2인 대화 렌더링 오류 (idx=${idx}): ${e.message}
+                    <button onclick="removeDuet(${idx})" style="margin-left:8px;color:#dc2626;border:1px solid #f87171;background:none;cursor:pointer;border-radius:4px;padding:2px 6px;">삭제</button>
+                </div>`;
+            }
+        } else if (item.type !== 'page' && item.type !== 'sfx' && item.type !== 'silence') {
+            console.warn('[renderBlockList] 알 수 없는 블록 타입 (idx=' + idx + '):', item.type, item);
         }
         html += sfxInsertRowHTML(idx + 1);
     });
@@ -1018,6 +1177,8 @@ function sfxInsertRowHTML(afterIdx) {
     return `<div class="sfx-insert-row">
         <button class="sfx-insert-btn" onclick="insertSfx(${afterIdx})">+ SFX</button>
         <button class="page-insert-btn" onclick="insertPage(${afterIdx})">+ 대사</button>
+        <button class="silence-insert-btn" onclick="insertSilence(${afterIdx})">+ 무음</button>
+        <button class="duet-insert-btn" onclick="insertDuet(${afterIdx})">+ 2인 대화</button>
     </div>`;
 }
 
@@ -1107,6 +1268,83 @@ function removePage(idx) {
         _selectedBlockIndex--;
     }
     renderBlockList();
+    syncBlocksToJSON();
+}
+
+function insertSilence(atIndex) {
+    _blockItems.splice(atIndex, 0, {type: 'silence', silenceData: {duration: 1.0}});
+    if (_selectedBlockIndex !== null && _selectedBlockIndex >= atIndex) _selectedBlockIndex++;
+    renderBlockList();
+    syncBlocksToJSON();
+}
+
+function removeSilence(idx) {
+    _blockItems.splice(idx, 1);
+    if (_selectedBlockIndex !== null && _selectedBlockIndex > idx) _selectedBlockIndex--;
+    renderBlockList();
+    syncBlocksToJSON();
+}
+
+function updateSilenceDuration(idx, value) {
+    if (_blockItems[idx]) _blockItems[idx].silenceData.duration = value;
+    syncBlocksToJSON();
+}
+
+// ==================== 2인 대화 ====================
+function insertDuet(atIndex) {
+    _blockItems.splice(atIndex, 0, {
+        type: 'duet',
+        duetData: {
+            voices: [
+                {voice_id: '', text: '', webaudio_effect: ''},
+                {voice_id: '', text: '', webaudio_effect: ''}
+            ],
+            mode: 'alternate'
+        }
+    });
+    if (_selectedBlockIndex !== null && _selectedBlockIndex >= atIndex) _selectedBlockIndex++;
+    renderBlockList();
+    syncBlocksToJSON();
+}
+
+function removeDuet(idx) {
+    _blockItems.splice(idx, 1);
+    if (_selectedBlockIndex !== null && _selectedBlockIndex > idx) _selectedBlockIndex--;
+    renderBlockList();
+    syncBlocksToJSON();
+}
+
+function addDuetVoice(idx) {
+    if (_blockItems[idx] && _blockItems[idx].type === 'duet') {
+        _blockItems[idx].duetData.voices.push({voice_id: '', text: '', webaudio_effect: ''});
+        renderBlockList();
+        syncBlocksToJSON();
+    }
+}
+
+function removeDuetVoice(idx, voiceNum) {
+    if (_blockItems[idx] && _blockItems[idx].type === 'duet') {
+        if (_blockItems[idx].duetData.voices.length > 2) {
+            _blockItems[idx].duetData.voices.splice(voiceNum, 1);
+            renderBlockList();
+            syncBlocksToJSON();
+        }
+    }
+}
+
+function updateDuetVoice(idx, voiceNum, voiceId) {
+    if (_blockItems[idx]) _blockItems[idx].duetData.voices[voiceNum].voice_id = voiceId;
+    renderBlockList();
+    syncBlocksToJSON();
+}
+
+function updateDuetText(idx, voiceNum, text) {
+    if (_blockItems[idx]) _blockItems[idx].duetData.voices[voiceNum].text = text;
+    syncBlocksToJSON();
+}
+
+function updateDuetMode(idx, mode) {
+    if (_blockItems[idx]) _blockItems[idx].duetData.mode = mode;
     syncBlocksToJSON();
 }
 
@@ -1217,14 +1455,25 @@ function updateBlockVoice(idx, voiceId) {
 function syncBlocksToJSON() {
     if (!_blockJSON) return;
 
-    // 1. pages 재구성
-    const pages = _blockItems
-        .filter(b => b.type === 'page')
-        .map(b => {
+    // 1. pages 재구성 (silence, duet 포함 — BGM은 merged audio 전체에 걸쳐 재생됨)
+    const pages = [];
+    for (const b of _blockItems) {
+        if (b.type === 'page') {
             const p = {text: b.pageData.text, voice_id: b.pageData.voice_id};
             if (b.pageData._effect) p.webaudio_effect = b.pageData._effect;
-            return p;
-        });
+            pages.push(p);
+        } else if (b.type === 'silence') {
+            pages.push({silence_seconds: b.silenceData.duration || 1.0});
+        } else if (b.type === 'duet') {
+            const d = b.duetData;
+            const voices = (d.voices || []).map(v => {
+                const entry = {voice_id: v.voice_id || '', text: v.text || ''};
+                if (v.webaudio_effect && v.webaudio_effect !== 'normal') entry.webaudio_effect = v.webaudio_effect;
+                return entry;
+            });
+            pages.push({voices, mode: d.mode || 'alternate'});
+        }
+    }
 
     // 2. SFX 처리: 프롬프트 있으면 create_sfx step 생성
     let sfxIdx = 0;
@@ -1234,7 +1483,7 @@ function syncBlocksToJSON() {
 
     for (let i = 0; i < _blockItems.length; i++) {
         const item = _blockItems[i];
-        if (item.type === 'page') {
+        if (item.type === 'page' || item.type === 'silence' || item.type === 'duet') {
             pageCount++;
         } else if (item.type === 'sfx') {
             const d = item.sfxData;
@@ -1257,7 +1506,7 @@ function syncBlocksToJSON() {
                 let nextPageNum = pageCount + 1;
                 let hasNext = false;
                 for (let j = i + 1; j < _blockItems.length; j++) {
-                    if (_blockItems[j].type === 'page') { hasNext = true; break; }
+                    if (_blockItems[j].type === 'page' || _blockItems[j].type === 'duet') { hasNext = true; break; }
                 }
                 if (!hasNext) nextPageNum = Math.max(1, pageCount);
                 sfxList.push({

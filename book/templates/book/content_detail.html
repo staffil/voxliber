@@ -296,6 +296,7 @@
 
 {% block content %}
 {{ content.audio_timestamps|json_script:"audio-timestamps-data" }}
+{{ content.text|json_script:"content-full-text-data" }}
 <div class="content-detail-wrapper">
 
     <!-- 헤더 -->
@@ -768,14 +769,37 @@ document.addEventListener("DOMContentLoaded", function () {
     const timestampsData = document.getElementById('audio-timestamps-data');
     if (timestampsData) {
         const audioTimestamps = JSON.parse(timestampsData.textContent || '[]');
-        const pages = audioTimestamps.filter(ts => ts.text && ts.text.trim() && ts.startTime !== undefined);
+        const pages = audioTimestamps.filter(ts => ts.startTime !== undefined);
         if (pages.length > 0) {
             const contentTextEl = document.getElementById('contentText');
             if (contentTextEl) {
+                // Content.text 전체 텍스트를 페이지별로 분리 (빈 타임스탬프 fallback용)
+                const fullTextEl = document.getElementById('content-full-text-data');
+                const fullText = fullTextEl ? JSON.parse(fullTextEl.textContent || '""') : '';
+                const textParagraphs = fullText.split('\n\n---\n\n');
+
                 const cleanTag = t => t.replace(/\[[^\]]*\]/g, '').trim();
-                contentTextEl.innerHTML = pages.map((pg, i) =>
-                    `<span class="page-block" data-page="${i}">${escapeHtml(cleanTag(pg.text)).replace(/\n/g,'<br>')}</span>`
-                ).join('');
+                const formatPageText = raw => {
+                    const t = cleanTag(raw || '');
+                    if (!t.trim()) return '';
+                    // ` / ` 구형 또는 `\n` 신형: 동시 대화 들여쓰기 표시
+                    const sep = t.includes(' / ') ? ' / ' : '\n';
+                    const parts = t.split(sep).map(p => p.trim()).filter(p => p);
+                    if (parts.length <= 1) return escapeHtml(t);
+                    return parts.map((p, i) =>
+                        i === 0
+                            ? escapeHtml(p)
+                            : '<br><span style="padding-left:1.2em;color:#a78bfa;font-size:0.92em;">' + escapeHtml(p) + '</span>'
+                    ).join('');
+                };
+                contentTextEl.innerHTML = pages.map((pg, i) => {
+                    let raw = pg.text || '';
+                    // 타임스탬프 텍스트가 비어있으면 Content.text에서 같은 인덱스 단락 사용
+                    if (!cleanTag(raw).trim() && i < textParagraphs.length) {
+                        raw = textParagraphs[i];
+                    }
+                    return `<span class="page-block" data-page="${i}">${formatPageText(raw)}</span>`;
+                }).join('');
             }
             let currentPage = -1;
             function highlightPage(idx) {
