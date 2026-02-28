@@ -241,15 +241,60 @@
                 </svg>
             </button>
 
-            <!-- JSON 편집 영역 -->
-            <div class="panel preview-panel">
-                <div class="panel-header">
-                    <h3>JSON 편집</h3>
-                    <span class="form-hint">직접 수정 가능</span>
+            <!-- 탭 패널 (블록 편집 / JSON) -->
+            <div class="panel preview-panel right-tab-panel">
+                <!-- 탭 헤더 -->
+                <div class="right-tabs">
+                    <button class="right-tab active" id="tabBtnBlocks" onclick="switchRightTab('blocks')">블록 편집</button>
+                    <button class="right-tab" id="tabBtnJson" onclick="switchRightTab('json')">JSON</button>
+                    <label class="json-upload-btn" title="JSON 파일 업로드">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        JSON 업로드
+                        <input type="file" id="jsonFileInput" accept=".json" style="display:none" onchange="loadJSONFile(this)">
+                    </label>
                 </div>
-                <div class="panel-body">
+
+                <!-- 블록 편집 탭 (기본) -->
+                <div id="tabBlocks" class="tab-content-panel">
+                    <!-- TTS / SFX 블록 목록 -->
+                    <div id="blockList" class="block-list">
+                        <div class="block-empty">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <p>미리보기 또는 JSON 업로드로<br>블록을 생성하세요</p>
+                        </div>
+                    </div>
+                    <!-- 배경음악 구간 설정 -->
+                    <div id="bgmSection" class="bgm-edit-section" style="display:none">
+                        <div class="bgm-edit-header">
+                            <span>배경음악 구간</span>
+                            <button class="btn-add-bgm" onclick="addBgmTrack()">+ BGM 추가</button>
+                        </div>
+                        <div id="bgmTrackList" class="bgm-track-list"></div>
+                    </div>
+                </div>
+
+                <!-- JSON 탭 -->
+                <div id="tabJson" class="tab-content-panel" style="display:none">
                     <textarea id="jsonEditor" class="json-editor" placeholder="미리보기를 클릭하면 JSON이 생성됩니다.
 생성된 JSON을 직접 수정할 수 있습니다."></textarea>
+                </div>
+            </div>
+
+            <!-- WebAudio 패널 (블록 클릭 시 표시) -->
+            <div id="webAudioPanel" class="webaudio-panel" style="display:none">
+                <div class="webaudio-header">
+                    <span id="webAudioTitle">페이지 효과음</span>
+                    <button class="webaudio-close" onclick="closeWebAudio()">×</button>
+                </div>
+                <div class="webaudio-effects" id="webAudioEffects">
+                    <!-- JS로 렌더링 -->
                 </div>
             </div>
 
