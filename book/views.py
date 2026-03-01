@@ -2817,16 +2817,17 @@ def ai_analyze_audiobook(request):
 1. **감정 태그 (emotions)**: 각 페이지에 어울리는 감정 태그를 1~3개 선택하세요.
    사용 가능한 태그: calm, excited, sad, angry, scared, whisper, laughing, crying, thinking, curious, serious, trembling, cold, warm, desperate, confused, confident, shy, romantic, mysterious
 
-2. **배경음악 (bgm)**: 에피소드 전체에 어울리는 배경음악 1~2개를 제안하세요.
+2. **배경음악 (bgm)**: 에피소드 전체 분위기에 맞는 배경음악 1개만 제안하세요.
    - name: 한국어 이름
    - description: 영어로 된 음악 설명 (장르, 분위기, 악기 등)
    - start_page: 시작 페이지 번호 (1부터)
    - end_page: 끝 페이지 번호
 
-3. **효과음 (sfx)**: 특정 상황에 맞는 효과음을 제안하세요 (0~5개).
+3. **효과음 (sfx)**: 특정 장면·상황에 꼭 필요한 효과음만 제안하세요 (0~3개).
+   반드시 실제 소리가 날 법한 장면(문 소리, 발소리, 전화 등)에만 배치하고, 각각 다른 페이지에 분산 배치하세요.
    - name: 한국어 이름
    - description: 영어로 된 효과음 설명
-   - page: 적용할 페이지 번호
+   - page: 적용할 페이지 번호 (1부터 시작, 각 sfx는 서로 다른 페이지에 배치)
 
 === 응답 형식 (JSON만, 설명 없이) ===
 {{
@@ -2933,7 +2934,7 @@ def ai_analyze_audiobook(request):
         for idx, sfx_item in enumerate(sfx_list):
             mix_step["sound_effects"].append({
                 "effect_id": f"$sfx_{idx + 1}",
-                "page": (sfx_item.get('page', 1) - 1),
+                "page_number": sfx_item.get('page', 1),
                 "volume": 0.7
             })
 
