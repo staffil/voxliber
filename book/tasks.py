@@ -497,8 +497,11 @@ def process_batch_audiobook(self, data, user_id):
                         'volume': volume_db
                     })
 
-                # SFX 트랙 변환
+                # SFX 트랙 — overlay 대신 삽입 방식으로 처리 (대사 직전 순차 재생)
                 sfx_tracks = step.get('sound_effects', [])
+                sfx_inserts = []  # [(insert_at_ms, sfx_segment)]
+                page_ts = [t for t in (timestamps or []) if t.get('type') != 'sfx']
+
                 for sfx_track in sfx_tracks:
                     eid = sfx_track.get('effect_id', '')
                     if eid.startswith('$') and eid in results:
@@ -508,48 +511,81 @@ def process_batch_audiobook(self, data, user_id):
                     if not sfx_obj or not sfx_obj.audio_file:
                         continue
 
-                    sfx_page = sfx_track.get('page', 0)
-                    sfx_start = page_start_ms(sfx_page)
+                    sfx_page = sfx_track.get('page_number') or sfx_track.get('page') or 1
+                    if page_ts and 0 <= sfx_page - 1 < len(page_ts):
+                        insert_at = int(page_ts[sfx_page - 1].get('startTime', 0))
+                    else:
+                        insert_at = 0
+
                     sfx_volume = sfx_track.get('volume', 0.7)
                     sfx_volume_db = 20 * math.log10(max(sfx_volume, 0.01))
 
                     from pydub import AudioSegment as PydubSegment
-                    sfx_audio = PydubSegment.from_file(sfx_obj.audio_file.path)
-                    sfx_end = sfx_start + len(sfx_audio)
+                    sfx_seg = PydubSegment.from_file(sfx_obj.audio_file.path)
+                    sfx_seg = sfx_seg + sfx_volume_db
 
-                    print(f"✅ 효과음 위치: {sfx_start}ms ({len(sfx_audio)}ms 길이)")
+                    print(f"✅ 효과음 삽입 위치: {insert_at}ms ({len(sfx_seg)}ms 길이)")
+                    sfx_inserts.append((insert_at, sfx_seg))
 
-                    converted_tracks.append({
-                        'audioPath': sfx_obj.audio_file.path,
-                        'startTime': sfx_start,
-                        'endTime': sfx_end,
-                        'volume': sfx_volume_db
-                    })
-
+                # 1단계: BGM overlay
+                current_path = content.audio_file.path
                 if converted_tracks:
                     try:
-                        mixed_file = mix_audio_with_background(
-                            content.audio_file.path,
-                            converted_tracks
-                        )
-
+                        mixed_file = mix_audio_with_background(current_path, converted_tracks)
                         if mixed_file and os.path.exists(mixed_file):
-                            old_path = content.audio_file.path if content.audio_file else None
-                            with open(mixed_file, 'rb') as f:
-                                content.audio_file.save(os.path.basename(mixed_file), File(f), save=True)
-                            # 이전 오디오 파일 삭제
-                            if old_path and os.path.exists(old_path):
-                                os.remove(old_path)
-                            # 임시 믹싱 파일 삭제
-                            if os.path.exists(mixed_file):
-                                os.remove(mixed_file)
-                            print(f"✅ 배경음/효과음 믹싱 완료")
-                        else:
-                            print(f"⚠️ 믹싱 실패, 원본 유지")
-
+                            current_path = mixed_file
                     except Exception as e:
-                        print(f"❌ 믹싱 오류: {e}")
-                        # 믹싱 실패해도 원본 오디오는 유지됨
+                        print(f"❌ BGM 믹싱 오류: {e}")
+
+                # 2단계: SFX 삽입 (나중 위치부터 처리, 앞 삽입이 뒤 위치를 안 밀도록)
+                if sfx_inserts:
+                    try:
+                        from pydub import AudioSegment as PydubSegment
+                        import uuid as _uuid
+                        audio = PydubSegment.from_file(current_path)
+                        # 오름차순 정렬 후 역순 처리
+                        sfx_inserts.sort(key=lambda x: x[0])
+                        for insert_at, sfx_seg in reversed(sfx_inserts):
+                            before = audio[:insert_at]
+                            after  = audio[insert_at:]
+                            audio  = before + sfx_seg + after
+
+                        # 타임스탬프 보정: 각 SFX 삽입 위치 이후의 startTime/endTime을 SFX 길이만큼 밀기
+                        if timestamps:
+                            updated_ts = list(timestamps)
+                            for insert_at, sfx_seg in sfx_inserts:  # 오름차순
+                                shift = len(sfx_seg)
+                                for ts in updated_ts:
+                                    if ts.get('type') == 'sfx':
+                                        continue
+                                    if ts.get('startTime', 0) >= insert_at:
+                                        ts['startTime'] = ts['startTime'] + shift
+                                    if ts.get('endTime', 0) >= insert_at:
+                                        ts['endTime'] = ts['endTime'] + shift
+                            content.audio_timestamps = updated_ts
+                            content.save(update_fields=['audio_timestamps'])
+
+                        out_path = os.path.join(settings.MEDIA_ROOT, 'audio', f'sfx_insert_{_uuid.uuid4().hex}.mp3')
+                        audio.export(out_path, format='mp3', bitrate='128k')
+                        if current_path != content.audio_file.path and os.path.exists(current_path):
+                            os.remove(current_path)
+                        current_path = out_path
+                    except Exception as e:
+                        print(f"❌ SFX 삽입 오류: {e}")
+
+                # 최종 파일 저장
+                if current_path != content.audio_file.path and os.path.exists(current_path):
+                    try:
+                        old_path = content.audio_file.path
+                        with open(current_path, 'rb') as f:
+                            content.audio_file.save(os.path.basename(current_path), File(f), save=True)
+                        if old_path and os.path.exists(old_path):
+                            os.remove(old_path)
+                        if os.path.exists(current_path):
+                            os.remove(current_path)
+                        print(f"✅ 배경음/효과음 처리 완료")
+                    except Exception as e:
+                        print(f"❌ 파일 저장 오류: {e}")
 
         except Exception as e:
             error_msg = f'Step {step_idx + 1} ({action}) 실패: {str(e)}'
