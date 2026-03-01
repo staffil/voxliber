@@ -119,10 +119,25 @@ function addCharacter() {
 
 function removeCharacter(number) {
     const characterItem = document.querySelector(`.character-item[data-number="${number}"]`);
-    if (characterItem) {
-        characterItem.remove();
-        showStatus('캐릭터가 삭제되었습니다', 'success');
-    }
+    if (!characterItem) return;
+    characterItem.remove();
+
+    // 삭제 후 번호 재정렬 (1번부터 순서대로)
+    const items = document.querySelectorAll('.character-item:not([data-number="0"])');
+    items.forEach((item, i) => {
+        const newNum = i + 1;
+        item.dataset.number = newNum;
+        const badge = item.querySelector('.character-number-badge');
+        if (badge) badge.textContent = newNum;
+        const nameInput = item.querySelector('.character-name');
+        if (nameInput) nameInput.dataset.number = newNum;
+        const voiceSelect = item.querySelector('.voice-select');
+        if (voiceSelect) voiceSelect.dataset.number = newNum;
+        const removeBtn = item.querySelector('.btn-remove-char');
+        if (removeBtn) removeBtn.onclick = () => removeCharacter(newNum);
+    });
+    characterCount = items.length;
+    showStatus('캐릭터가 삭제되었습니다', 'success');
 }
 
 // ==================== 캐릭터 맵 수집 ====================
