@@ -1812,18 +1812,21 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
 <div id="voxAutoPlayer" style="display:none;">
     <div class="vap-label">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
-        지금 재생 중
+        지금 재생 중 · <span style="color:#a5b4fc; font-weight:800;">VOXLIBER에서 만든 오디오북</span>
     </div>
     <div class="vap-row">
-        {% if demo_episode.cover_url %}
-        <img class="vap-cover" src="{{ demo_episode.cover_url }}" alt="{{ demo_episode.book_name }}">
-        {% else %}
-        <div class="vap-cover" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:20px;">🎧</div>
-        {% endif %}
-        <div class="vap-info">
-            <div class="vap-book">{{ demo_episode.book_name }}</div>
-            <div class="vap-ep">EP.{{ demo_episode.ep_num }} · {{ demo_episode.ep_title }}</div>
-        </div>
+        <a href="{% url 'book:content_detail' demo_episode.content_uuid %}" style="display:contents; text-decoration:none;" title="에피소드 바로가기">
+            {% if demo_episode.cover_url %}
+            <img class="vap-cover" src="{{ demo_episode.cover_url }}" alt="{{ demo_episode.book_name }}">
+            {% else %}
+            <div class="vap-cover" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:20px;">🎧</div>
+            {% endif %}
+            <div class="vap-info">
+                <div class="vap-book">{{ demo_episode.book_name }}</div>
+                <div class="vap-ep">EP.{{ demo_episode.ep_num }} · {{ demo_episode.ep_title }}</div>
+                <div style="font-size:10px; color:#6366f1; margin-top:3px; font-weight:600;">에피소드 보기 →</div>
+            </div>
+        </a>
         <div class="vap-controls">
             <button class="vap-btn" id="voxPlayBtn" onclick="voxTogglePlay()" title="재생/일시정지">
                 <svg id="voxIconPlay" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>

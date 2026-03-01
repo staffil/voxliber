@@ -179,20 +179,28 @@ def main(request):
         is_public=True
     ).select_related('llm', 'user').order_by('-shared_at')[:30]
 
-    # 🎧 홈 데모 플레이어 — 사랑의 유효기간 EP4
+    # 🎧 홈 데모 플레이어 — 랜덤 에피소드
     demo_episode = None
     try:
-        demo_book = Books.objects.filter(name__contains='사랑의 유효기간').first()
-        if demo_book:
-            demo_content = demo_book.contents.filter(number=4, audio_file__isnull=False).exclude(audio_file='').first()
-            if demo_content and demo_content.audio_file:
-                demo_episode = {
-                    'book_name': demo_book.name,
-                    'ep_num': demo_content.number,
-                    'ep_title': demo_content.title,
-                    'audio_url': demo_content.audio_file.url,
-                    'cover_url': demo_book.cover_img.url if demo_book.cover_img else '',
-                }
+        demo_content = (
+            Content.objects
+            .filter(audio_file__isnull=False)
+            .exclude(audio_file='')
+            .select_related('book')
+            .order_by('?')
+            .first()
+        )
+        if demo_content and demo_content.audio_file:
+            demo_book = demo_content.book
+            demo_episode = {
+                'book_name': demo_book.name,
+                'ep_num': demo_content.number,
+                'ep_title': demo_content.title,
+                'audio_url': demo_content.audio_file.url,
+                'cover_url': demo_book.cover_img.url if demo_book.cover_img else '',
+                'content_uuid': demo_content.public_uuid,
+                'book_uuid': demo_book.public_uuid,
+            }
     except Exception:
         pass
 
