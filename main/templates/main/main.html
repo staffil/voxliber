@@ -1467,6 +1467,22 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
         <div class="vm-cta-text">
           <h2>지금 여기서, 창작자로 데뷔하세요 ✨</h2>
           <p>웹소설 초보도, 브런치 작가 지망생도, 세계관 만드는 사람도 — 당신의 첫 오디오북을 AI가 도와드립니다.</p>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;">
+            <span style="font-size:11px; color:#475569; font-weight:600; letter-spacing:0.05em; text-transform:uppercase;">다운로드 후 바로 업로드</span>
+            <div style="display:flex; gap:7px;">
+              <span style="display:inline-flex; align-items:center; gap:5px; padding:4px 10px; background:rgba(255,0,0,0.1); border:1px solid rgba(255,0,0,0.25); border-radius:99px; font-size:11px; font-weight:700; color:#f87171;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.2 2.8 12 2.8 12 2.8s-4.2 0-6.8.1C4.6 3 3.3 3 2.2 4.2 1.3 5 1 7 1 7S.7 9.3.7 11.5v2.1c0 2.2.3 4.5.3 4.5s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.5 22.2 12 22.2 12 22.2s4.2 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.2.3-4.5v-2C23.3 9.3 23 7 23 7zm-13.5 8.7V8.3l8.2 3.7-8.2 3.7z"/></svg>
+                YouTube
+              </span>
+              <span style="display:inline-flex; align-items:center; gap:5px; padding:4px 10px; background:rgba(217,70,239,0.1); border:1px solid rgba(217,70,239,0.25); border-radius:99px; font-size:11px; font-weight:700; color:#e879f9;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+                Instagram
+              </span>
+              <span style="display:inline-flex; align-items:center; gap:5px; padding:4px 10px; background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.25); border-radius:99px; font-size:11px; font-weight:700; color:#a5b4fc;">
+                🎙 팟캐스트
+              </span>
+            </div>
+          </div>
         </div>
         <div class="vm-cta-action">
           {% if user.is_authenticated %}
@@ -1676,12 +1692,220 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
   </footer>
 
 </div><!-- /vm-page -->
+
+<!-- ── 자동재생 미니 플레이어 ── -->
+<style>
+@keyframes voxSlideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+#voxAutoPlayer {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 500;
+    width: 320px;
+    max-width: calc(100vw - 32px);
+    background: rgba(18, 18, 30, 0.97);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    border-radius: 16px;
+    padding: 14px 16px 12px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+    backdrop-filter: blur(12px);
+    animation: voxSlideUp 0.4s ease forwards;
+}
+#voxAutoPlayer .vap-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6366f1;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+#voxAutoPlayer .vap-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+#voxAutoPlayer .vap-cover {
+    width: 46px;
+    height: 46px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+#voxAutoPlayer .vap-info { flex: 1; min-width: 0; }
+#voxAutoPlayer .vap-book {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e2e8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#voxAutoPlayer .vap-ep {
+    font-size: 11px;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+#voxAutoPlayer .vap-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+#voxAutoPlayer .vap-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(99,102,241,0.4);
+    background: rgba(99,102,241,0.15);
+    color: #a5b4fc;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    line-height: 1;
+}
+#voxAutoPlayer .vap-btn:hover { background: rgba(99,102,241,0.3); }
+#voxAutoPlayer .vap-close {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent;
+    color: #475569;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    line-height: 1;
+}
+#voxAutoPlayer .vap-close:hover { color: #94a3b8; }
+#voxAutoPlayer .vap-progress-wrap {
+    margin-top: 10px;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+}
+#voxAutoPlayer .vap-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    border-radius: 99px;
+    transition: width 0.8s linear;
+}
+</style>
+
+<div id="voxAutoPlayer" style="display:none;">
+    <div class="vap-label">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+        지금 재생 중
+    </div>
+    <div class="vap-row">
+        <img class="vap-cover" src="/media/uploads/book_covers/0_3_640_N_6og1zbv.webp" alt="사랑의 유효기간">
+        <div class="vap-info">
+            <div class="vap-book">사랑의 유효기간</div>
+            <div class="vap-ep">EP.4 · 놓친 순간이 이어주는 것들</div>
+        </div>
+        <div class="vap-controls">
+            <button class="vap-btn" id="voxPlayBtn" onclick="voxTogglePlay()" title="재생/일시정지">
+                <svg id="voxIconPlay" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                <svg id="voxIconPause" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            <button class="vap-close" onclick="voxClosePlayer()" title="닫기">✕</button>
+        </div>
+    </div>
+    <div class="vap-progress-wrap">
+        <div class="vap-progress-bar" id="voxProgressBar"></div>
+    </div>
+    <audio id="voxDemoAudio" src="/media/uploads/audio/merged_a5d13655e081490089427921a2010ecf.mp3" preload="none"></audio>
+</div>
+
 {% endblock %}
 
 
 {% block extra_js %}
 <script src="{% static 'js/home/main.js' %}"></script>
 <script src="{% static 'js/common/login_btn.js' %}"></script>
+
+<script>
+/* ── 자동재생 미니 플레이어 ── */
+(function () {
+    var _timer = null;
+    var _audio = null;
+
+    function _init() {
+        _audio = document.getElementById('voxDemoAudio');
+        if (!_audio) return;
+
+        _audio.addEventListener('timeupdate', function () {
+            if (_audio.duration) {
+                var pct = (_audio.currentTime / _audio.duration * 100).toFixed(2);
+                var bar = document.getElementById('voxProgressBar');
+                if (bar) bar.style.width = pct + '%';
+            }
+        });
+
+        _audio.addEventListener('ended', function () {
+            var play = document.getElementById('voxIconPlay');
+            var pause = document.getElementById('voxIconPause');
+            if (play)  play.style.display  = '';
+            if (pause) pause.style.display = 'none';
+        });
+    }
+
+    window.voxTogglePlay = function () {
+        if (!_audio) return;
+        var play  = document.getElementById('voxIconPlay');
+        var pause = document.getElementById('voxIconPause');
+        if (_audio.paused) {
+            _audio.play().catch(function () {});
+            if (play)  play.style.display  = 'none';
+            if (pause) pause.style.display = '';
+        } else {
+            _audio.pause();
+            if (play)  play.style.display  = '';
+            if (pause) pause.style.display = 'none';
+        }
+    };
+
+    window.voxClosePlayer = function () {
+        if (_audio) _audio.pause();
+        if (_timer) clearTimeout(_timer);
+        var el = document.getElementById('voxAutoPlayer');
+        if (el) el.style.display = 'none';
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        _init();
+        _timer = setTimeout(function () {
+            var el = document.getElementById('voxAutoPlayer');
+            if (!el || !_audio) return;
+            el.style.display = 'block';
+            _audio.play().then(function () {
+                var play  = document.getElementById('voxIconPlay');
+                var pause = document.getElementById('voxIconPause');
+                if (play)  play.style.display  = 'none';
+                if (pause) pause.style.display = '';
+            }).catch(function () {
+                /* autoplay blocked — player 보이지만 수동 재생으로 대기 */
+            });
+        }, 5000);
+    });
+})();
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
