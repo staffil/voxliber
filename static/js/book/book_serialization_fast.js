@@ -1126,7 +1126,6 @@ function renderBlockList() {
                 pageNum++;
                 const d = item.duetData;
                 if (!d || !d.voices) throw new Error('duetData.voices 없음: ' + JSON.stringify(item));
-                const isAlt = (d.mode || 'alternate') === 'alternate';
                 const voiceCount = d.voices.length;
 
                 let voiceRows = '';
@@ -1147,11 +1146,7 @@ function renderBlockList() {
 
                 html += `<div class="duet-block" id="block-${idx}">
                     <div class="duet-header">
-                        <span class="duet-badge">🎭 P${pageNum} ${voiceCount}인 대화</span>
-                        <label class="duet-mode-label">
-                            <input type="checkbox" ${isAlt ? '' : 'checked'} onchange="updateDuetMode(${idx}, this.checked ? 'overlap' : 'alternate')">
-                            동시 재생
-                        </label>
+                        <span class="duet-badge">🎭 P${pageNum} ${voiceCount}인 동시 대화</span>
                         <button class="sfx-insert-btn" onclick="addDuetVoice(${idx})" style="font-size:11px;padding:2px 6px;margin-left:4px;">+ 목소리</button>
                         <button class="page-remove-btn" onclick="event.stopPropagation(); removeDuet(${idx})">×</button>
                     </div>
@@ -1299,7 +1294,7 @@ function insertDuet(atIndex) {
                 {voice_id: '', text: '', webaudio_effect: ''},
                 {voice_id: '', text: '', webaudio_effect: ''}
             ],
-            mode: 'alternate'
+            mode: 'overlap'
         }
     });
     if (_selectedBlockIndex !== null && _selectedBlockIndex >= atIndex) _selectedBlockIndex++;
@@ -1471,7 +1466,7 @@ function syncBlocksToJSON() {
                 if (v.webaudio_effect && v.webaudio_effect !== 'normal') entry.webaudio_effect = v.webaudio_effect;
                 return entry;
             });
-            pages.push({voices, mode: d.mode || 'alternate'});
+            pages.push({voices, mode: 'overlap'});
         }
     }
 

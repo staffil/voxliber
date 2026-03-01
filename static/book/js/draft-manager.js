@@ -63,7 +63,7 @@ async function saveDraft() {
                 isSilence: page.isSilence || false,
                 silenceDuration: page.silenceDuration || 1.0,
                 isDuet: page.isDuet || false,
-                duetMode: page.duetMode || 'alternate',
+                duetMode: page.duetMode || 'overlap',
                 duetData: page.duetData ? JSON.parse(JSON.stringify(page.duetData)) : null,
                 duetText: page.duetText || '',
                 novelDraft: page.novelDraft || ''
@@ -164,7 +164,7 @@ async function loadDraft() {
                                 hasAudio: false,
                                 audioBlob: null,
                                 isDuet: p.isDuet || false,
-                                duetMode: p.duetMode || 'alternate',
+                                duetMode: p.duetMode || 'overlap',
                                 duetData: p.duetData || null,
                                 duetText: p.duetText || '',
                                 isSilence: p.isSilence || false,
@@ -214,7 +214,7 @@ async function loadDraft() {
                 // 2인 대화 정보 복원
                 if (pageData.isDuet) {
                     page.isDuet = true;
-                    page.duetMode = pageData.duetMode || 'alternate';
+                    page.duetMode = pageData.duetMode || 'overlap';
                     page.duetData = pageData.duetData || [{voice_id:'',text:''},{voice_id:'',text:''}];
                     if (pageData.duetText) page.duetText = pageData.duetText;
                 }

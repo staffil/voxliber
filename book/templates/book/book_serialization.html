@@ -910,7 +910,6 @@ function loadPage(index, skipSave = false) {
         const voiceCount = (page.duetData || []).length;
         document.getElementById('currentPageTitle').textContent = `🎭 ${voiceCount}인 대화 / ` + pages.length;
         const d = page.duetData || [{voice_id:'', text:''}, {voice_id:'', text:''}];
-        const isAlt = (page.duetMode || 'alternate') === 'alternate';
         const voiceOpts = (typeof voiceList !== 'undefined' ? voiceList : [])
             .map(v => `<option value="${v.id}">${v.name}</option>`).join('');
         const COLORS = ['#ec4899','#60a5fa','#34d399','#f59e0b','#a78bfa','#f87171'];
@@ -944,13 +943,6 @@ function loadPage(index, skipSave = false) {
                 `<button onclick="addDuetVoiceSerPage(${index})" style="margin-left:12px;background:#4c1d95;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;">+ 목소리 추가</button>` +
             '</div>' +
             '<div class="page-editor" style="background:#0f0621;padding:20px;">' +
-                '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:8px 14px;background:#1a0533;border-radius:8px;border:1px solid #4c1d95;">' +
-                    '<label style="color:#a78bfa;font-size:13px;white-space:nowrap;">재생 방식:</label>' +
-                    '<label style="color:#e2e8f0;font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer;">' +
-                        '<input type="radio" name="duetMode_' + index + '" value="alternate" ' + (isAlt ? 'checked' : '') + ' onchange="updateDuetMode(' + index + ', this.value)"> 교차 (순차)</label>' +
-                    '<label style="color:#e2e8f0;font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer;">' +
-                        '<input type="radio" name="duetMode_' + index + '" value="overlap" ' + (!isAlt ? 'checked' : '') + ' onchange="updateDuetMode(' + index + ', this.value)"> 동시 재생</label>' +
-                '</div>' +
                 voiceRows +
                 (page.audioFile ?
                     '<audio controls style="width:100%;margin-bottom:12px;"><source src="' + page.audioUrl + '" type="audio/mp3"></audio>' : '') +
@@ -1345,7 +1337,7 @@ function addDuet() {
         isSoundEffect: false, effectName: '',
         isSilence: false, silenceDuration: 1.0,
         isDuet: true,
-        duetMode: 'alternate',
+        duetMode: 'overlap',
         duetData: [{voice_id: '', text: ''}, {voice_id: '', text: ''}],
         novelDraft: ''
     };
@@ -1406,7 +1398,7 @@ async function generateDuetTTS(event) {
             headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
             body: JSON.stringify({
                 voices: d.map(v => ({voice_id: v.voice_id, text: (v.text || '').trim()})),
-                mode: page.duetMode || 'alternate'
+                mode: 'overlap'
             })
         });
         if (!response.ok) throw new Error('TTS 생성 실패');
@@ -1628,9 +1620,6 @@ async function saveEpisode() {
         const data = await response.json();
 
         if (data.success) {
-            // 발행 성공 시 임시저장 삭제
-            clearDraft();
-
             alert(data.message || '에피소드가 발행되었습니다!');
             if (data.redirect_url) {
                 window.location.href = data.redirect_url;
@@ -1790,7 +1779,7 @@ window.addEventListener('beforeunload', function(e) {
                 pagesSimple: pages.map(p => ({
                     content: p.content,
                     isDuet: p.isDuet || false,
-                    duetMode: p.duetMode || 'alternate',
+                    duetMode: 'overlap',
                     duetData: p.duetData ? JSON.parse(JSON.stringify(p.duetData)) : null,
                     duetText: p.duetText || '',
                     isSilence: p.isSilence || false,

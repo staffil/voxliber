@@ -2057,15 +2057,6 @@ input:checked + .slider-switch:before {
     flex: 1;
 }
 
-.duet-mode-label {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    user-select: none;
-}
 
 .duet-voice-row {
     display: flex;

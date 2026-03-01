@@ -171,7 +171,7 @@ input, textarea, select { font-family: 'Poppins', sans-serif; }
   box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3);
   transition: height 0.15s ease;
   overflow: hidden;
-  height: 460px;
+  height: 360px;
 }
 
 #pagesResizeHandle {
