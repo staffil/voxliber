@@ -527,30 +527,20 @@ def process_batch_audiobook(self, data, user_id):
                     print(f"✅ 효과음 삽입 위치: {insert_at}ms ({len(sfx_seg)}ms 길이)")
                     sfx_inserts.append((insert_at, sfx_seg))
 
-                # 1단계: BGM overlay
+                # 1단계: SFX 삽입 (BGM 전에 — BGM이 SFX 구간도 끊김 없이 커버하도록)
                 current_path = content.audio_file.path
-                if converted_tracks:
-                    try:
-                        mixed_file = mix_audio_with_background(current_path, converted_tracks)
-                        if mixed_file and os.path.exists(mixed_file):
-                            current_path = mixed_file
-                    except Exception as e:
-                        print(f"❌ BGM 믹싱 오류: {e}")
-
-                # 2단계: SFX 삽입 (나중 위치부터 처리, 앞 삽입이 뒤 위치를 안 밀도록)
                 if sfx_inserts:
                     try:
                         from pydub import AudioSegment as PydubSegment
                         import uuid as _uuid
                         audio = PydubSegment.from_file(current_path)
-                        # 오름차순 정렬 후 역순 처리
                         sfx_inserts.sort(key=lambda x: x[0])
                         for insert_at, sfx_seg in reversed(sfx_inserts):
                             before = audio[:insert_at]
                             after  = audio[insert_at:]
                             audio  = before + sfx_seg + after
 
-                        # 타임스탬프 보정: 각 SFX 삽입 위치 이후의 startTime/endTime을 SFX 길이만큼 밀기
+                        # 타임스탬프 보정
                         if timestamps:
                             updated_ts = list(timestamps)
                             for insert_at, sfx_seg in sfx_inserts:  # 오름차순
@@ -565,13 +555,31 @@ def process_batch_audiobook(self, data, user_id):
                             content.audio_timestamps = updated_ts
                             content.save(update_fields=['audio_timestamps'])
 
+                        # BGM startTime/endTime도 SFX 삽입량만큼 보정
+                        for track in converted_tracks:
+                            for insert_at, sfx_seg in sfx_inserts:
+                                shift = len(sfx_seg)
+                                if track.get('startTime', 0) >= insert_at:
+                                    track['startTime'] += shift
+                                if track.get('endTime', 0) >= insert_at:
+                                    track['endTime'] += shift
+
                         out_path = os.path.join(settings.MEDIA_ROOT, 'audio', f'sfx_insert_{_uuid.uuid4().hex}.mp3')
                         audio.export(out_path, format='mp3', bitrate='128k')
-                        if current_path != content.audio_file.path and os.path.exists(current_path):
-                            os.remove(current_path)
                         current_path = out_path
                     except Exception as e:
                         print(f"❌ SFX 삽입 오류: {e}")
+
+                # 2단계: BGM overlay (SFX 삽입 후 전체 오디오에 덮어씌워 끊김 없이 재생)
+                if converted_tracks:
+                    try:
+                        mixed_file = mix_audio_with_background(current_path, converted_tracks)
+                        if mixed_file and os.path.exists(mixed_file):
+                            if current_path != content.audio_file.path and os.path.exists(current_path):
+                                os.remove(current_path)
+                            current_path = mixed_file
+                    except Exception as e:
+                        print(f"❌ BGM 믹싱 오류: {e}")
 
                 # 최종 파일 저장
                 if current_path != content.audio_file.path and os.path.exists(current_path):
