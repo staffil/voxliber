@@ -650,6 +650,14 @@ document.addEventListener('keydown', function(e) {
             toggleMobileJSON();
         }
     }
+    // Ctrl+위아래: 선택된 블록 순서 이동
+    if (e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        const tag = (document.activeElement?.tagName || '').toUpperCase();
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
+        if (_selectedBlockIndex === null) return;
+        e.preventDefault();
+        moveSelectedBlock(e.key === 'ArrowUp' ? -1 : 1);
+    }
 });
 
 window.addEventListener('resize', function() {
@@ -1054,7 +1062,7 @@ function renderBlockList() {
         else if (item.type === 'silence') totalSec += (item.silenceData.duration || 1.0);
     });
 
-    let html = `<div class="block-time-summary">예상 재생시간 약 <strong>${formatDuration(totalSec)}</strong></div>`;
+    let html = `<div class="block-time-summary">예상 재생시간 약 <strong>${formatDuration(totalSec)}</strong><span class="block-move-hint">블록을 움직이려면 클릭 후 Ctrl+↑↓ 를 누르세요</span></div>`;
     html += sfxInsertRowHTML(0);
     let pageNum = 0;
 
@@ -1090,7 +1098,7 @@ function renderBlockList() {
             </div>`;
 
         } else if (item.type === 'sfx') {
-            html += `<div class="sfx-block" id="block-${idx}">
+            html += `<div class="sfx-block" id="block-${idx}" onclick="selectBlock(${idx})">
                 <div class="sfx-main-row">
                     <span class="sfx-icon">🔊</span>
                     <span class="sfx-label">SFX</span>
@@ -1113,7 +1121,7 @@ function renderBlockList() {
             const opts = [0.5,1.0,1.5,2.0,2.5,3.0].map(v =>
                 `<option value="${v}"${v === dur ? ' selected' : ''}>${v}초</option>`
             ).join('');
-            html += `<div class="silence-block" id="block-${idx}">
+            html += `<div class="silence-block" id="block-${idx}" onclick="selectBlock(${idx})">
                 <span class="silence-icon">🔇</span>
                 <span class="silence-label">무음</span>
                 <select class="silence-dur-select" onchange="updateSilenceDuration(${idx}, parseFloat(this.value))" onclick="event.stopPropagation()">${opts}</select>
@@ -1144,7 +1152,7 @@ function renderBlockList() {
                     </div>`;
                 });
 
-                html += `<div class="duet-block" id="block-${idx}">
+                html += `<div class="duet-block" id="block-${idx}" onclick="selectBlock(${idx})">
                     <div class="duet-header">
                         <span class="duet-badge">🎭 P${pageNum} ${voiceCount}인 동시 대화</span>
                         <button class="sfx-insert-btn" onclick="addDuetVoice(${idx})" style="font-size:11px;padding:2px 6px;margin-left:4px;">+ 목소리</button>
@@ -1166,6 +1174,22 @@ function renderBlockList() {
     });
 
     list.innerHTML = html;
+}
+
+// ==================== 블록 Ctrl+방향키 이동 ====================
+function moveSelectedBlock(dir) {
+    if (_selectedBlockIndex === null) return;
+    const idx = _selectedBlockIndex;
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= _blockItems.length) return;
+    const moved = _blockItems.splice(idx, 1)[0];
+    _blockItems.splice(newIdx, 0, moved);
+    _selectedBlockIndex = newIdx;
+    renderBlockList();
+    syncBlocksToJSON();
+    // 이동된 블록으로 스크롤
+    const el = document.getElementById('block-' + newIdx);
+    if (el) el.scrollIntoView({ block: 'nearest' });
 }
 
 function sfxInsertRowHTML(afterIdx) {
@@ -1397,7 +1421,7 @@ function updateBlockText(idx, value) {
 
 // ==================== 블록 선택 (TTS 페이지 → WebAudio) ====================
 function selectBlock(idx) {
-    if (!_blockItems[idx] || _blockItems[idx].type !== 'page') return;
+    if (!_blockItems[idx]) return;
 
     if (_selectedBlockIndex !== null) {
         const prev = document.getElementById('block-' + _selectedBlockIndex);
@@ -1407,15 +1431,19 @@ function selectBlock(idx) {
     const el = document.getElementById('block-' + idx);
     if (el) el.classList.add('selected');
 
-    let pn = 0;
-    for (let i = 0; i <= idx; i++) if (_blockItems[i].type === 'page') pn++;
-
-    const panel = document.getElementById('webAudioPanel');
-    const titleEl = document.getElementById('webAudioTitle');
-    if (panel) panel.style.display = '';
-    if (titleEl) titleEl.textContent = '페이지 ' + pn + ' 효과음';
-
-    renderWebAudioButtons(idx);
+    // page 타입일 때만 WebAudio 패널 표시
+    if (_blockItems[idx].type === 'page') {
+        let pn = 0;
+        for (let i = 0; i <= idx; i++) if (_blockItems[i].type === 'page') pn++;
+        const panel = document.getElementById('webAudioPanel');
+        const titleEl = document.getElementById('webAudioTitle');
+        if (panel) panel.style.display = '';
+        if (titleEl) titleEl.textContent = '페이지 ' + pn + ' 효과음';
+        renderWebAudioButtons(idx);
+    } else {
+        const panel = document.getElementById('webAudioPanel');
+        if (panel) panel.style.display = 'none';
+    }
 }
 
 // ==================== WebAudio 버튼 렌더링 ====================
