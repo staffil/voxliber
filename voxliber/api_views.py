@@ -981,7 +981,7 @@ def api_mix_background_music(request):
         sfx_timestamp_entries = []
         for sfx in sfx_tracks:
             effect_id = sfx.get("effect_id")
-            page = sfx.get("page", 1)
+            page = sfx.get("page_number") or sfx.get("page") or 1
             volume = sfx.get("volume", 0.7)
 
             sfx_obj = SoundEffectLibrary.objects.filter(
