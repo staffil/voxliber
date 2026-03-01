@@ -6,6 +6,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/book_serialization.css' %}">
 <link rel="stylesheet" href="{% static 'css/book/book_serilizaion.css' %}">
+<link rel="stylesheet" href="{% static 'css/book/onboarding.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -38,10 +39,10 @@
             <button type="button" class="add-page-btn" onclick="addPage()" data-login-required>
                 + 새 대사 추가
             </button>
-            <button type="button" class="add-page-btn" onclick="openSoundEffectModal()" style="background: #8b5cf6;" data-login-required>
+            <button id="btnSFX" type="button" class="add-page-btn" onclick="openSoundEffectModal()" style="background: #8b5cf6;" data-login-required>
                 🎵 사운드 이팩트 넣기
             </button>
-            <button type="button" class="add-page-btn" onclick="openBackgroundMusicModal()" style="background: #ec4899;" data-login-required>
+            <button id="btnBGM" type="button" class="add-page-btn" onclick="openBackgroundMusicModal()" style="background: #ec4899;" data-login-required>
                 🎼 배경음 넣기
             </button>
             <button type="button" class="add-page-btn" onclick="addSilence()" style="background: #475569;" data-login-required>
@@ -182,7 +183,7 @@
         </div>
 
   
-            <div id="webaudioediter">
+            <div id="webaudioediter" style="min-height: 80px;">
 
             </div>
         </div>
@@ -1831,8 +1832,9 @@ function audioBookGuide(selectedCategory) {
     view.style.backdropFilter = "blur(6px)";
     view.style.zIndex = 30;
     view.style.justifyContent = "center";
-    view.style.alignItems = "center";
-    view.style.padding = "20px";
+    view.style.alignItems = "flex-start";
+    view.style.overflowY = "auto";
+    view.style.padding = "30px 20px";
 
     // serialize
     let guides = audioBookGuideData.map(g => ({
@@ -1926,23 +1928,92 @@ function audioBookGuide(selectedCategory) {
         </div>
     `;
 
+    // UI 투어 단계 HTML — startTour() 사용
+    let uiTourHTML = `
+        <div class="expert-ui-tour-wrap" style="margin-bottom:18px;">
+            <div class="expert-ui-tour-label">✨ UI 투어 — 단계를 클릭하면 해당 위치를 안내합니다 (다음 버튼으로 순서대로 이동)</div>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 0)">
+                <span class="ui-tour-step-num">1</span>
+                <span class="ui-tour-step-text">액션 버튼 사이드바</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 1)">
+                <span class="ui-tour-step-num">2</span>
+                <span class="ui-tour-step-text">보이스 사이드바 (오른쪽)</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 2)">
+                <span class="ui-tour-step-num">3</span>
+                <span class="ui-tour-step-text">대사 & 이팩트 목록</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 3)">
+                <span class="ui-tour-step-num">4</span>
+                <span class="ui-tour-step-text">에디터 영역</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 4)">
+                <span class="ui-tour-step-num">5</span>
+                <span class="ui-tour-step-text">소설 작성 버튼</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 5)">
+                <span class="ui-tour-step-num">6</span>
+                <span class="ui-tour-step-text">감정 리스트</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 6)">
+                <span class="ui-tour-step-num">7</span>
+                <span class="ui-tour-step-text">임시저장</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 7)">
+                <span class="ui-tour-step-num">8</span>
+                <span class="ui-tour-step-text">사운드 이팩트</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 8)">
+                <span class="ui-tour-step-num">9</span>
+                <span class="ui-tour-step-text">배경음</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 9)">
+                <span class="ui-tour-step-num">10</span>
+                <span class="ui-tour-step-text">미리듣기</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 10)">
+                <span class="ui-tour-step-num">11</span>
+                <span class="ui-tour-step-text">음성 설정</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+            <button class="expert-ui-tour-step" onclick="VoxTour.startTour(VOX_EXPERT_STEPS, 11)">
+                <span class="ui-tour-step-num">12</span>
+                <span class="ui-tour-step-text">페이지 오디오</span>
+                <span class="ui-tour-step-arrow">›</span>
+            </button>
+        </div>
+    `;
+
     // 최종 렌더링 (중앙 카드 박스)
     view.innerHTML = `
         <div style="
             position: relative;
-            width: 600px;
-            max-width: 95%;
-            background: rgba(20,20,20,0.85);
-            border-radius: 12px;
-            padding: 25px;
-            border: 1px solid rgba(255,255,255,0.15);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-            margin-top: 150px;
+            width: 640px;
+            max-width: 92vw;
+            background: rgba(18,18,28,0.97);
+            border-radius: 14px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            max-height: calc(100vh - 60px);
+            overflow-y: auto;
+            margin: 0;
         ">
             <h2 style="margin-bottom:15px; font-size:20px;">오디오북 가이드</h2>
 
             <!-- 닫기 버튼 -->
-            <button 
+            <button
                 onclick="document.getElementById('audioBookGuideView').style.display='none'"
                 style="
                     position:absolute;
@@ -1959,6 +2030,7 @@ function audioBookGuide(selectedCategory) {
                 "
             >×</button>
 
+            ${uiTourHTML}
             ${categoryTabsHTML}
             ${guideListHTML}
         </div>
@@ -2311,5 +2383,79 @@ document.addEventListener('mouseup', () => {
     document.body.style.userSelect = 'auto';
 });
 
+</script>
+<script src="{% static 'js/book/onboarding.js' %}"></script>
+<script>
+/* ── 전문가 모드 투어 단계 ── */
+var VOX_EXPERT_STEPS = [
+    {
+        sel: '#sidebar',
+        title: '액션 버튼 사이드바',
+        desc: '대사 추가, 사운드 이팩트, 배경음, 무음, 2인 대화를 추가할 수 있는 버튼이 왼쪽 사이드바에 있습니다.'
+    },
+    {
+        sel: '.voice-sidebar',
+        title: '보이스 사이드바 (오른쪽)',
+        desc: '오른쪽 사이드바에서 각 대사에 사용할 목소리를 선택합니다.<br><br>보이스 라이브러리에서 미리 저장한 보이스가 목록에 표시됩니다. 원하는 목소리를 클릭해 선택하세요.'
+    },
+    {
+        sel: '#pagesOverlay',
+        title: '대사 & 이팩트 목록',
+        desc: '대사와 이팩트 목록입니다.<br><br>항목을 클릭해 에디터에서 편집하고, 드래그로 순서를 바꿀 수 있습니다.'
+    },
+    {
+        sel: '#editorArea',
+        title: '에디터 영역',
+        desc: '선택한 대사의 내용을 입력하는 공간입니다.<br><br>감정 태그([calm], [excited] 등)와 텍스트를 작성하세요.'
+    },
+    {
+        sel: '.btn-create',
+        title: '소설 작성',
+        desc: '소설 원고를 붙여넣는 영역을 엽니다.<br><br>AI 화자 분류로 원고를 대사 블록으로 자동 변환할 수 있습니다.'
+    },
+    {
+        sel: '.btn-emotion',
+        title: '감정 리스트',
+        desc: 'TTS에 웃음, 기쁨, 화남, 울음, 한숨, 속삭임 등의 감정을 넣을 수 있습니다.<br><br>감정 태그는 대사의 맨 앞에 <b>[happy]</b>, <b>[sad]</b> 등으로 직접 입력하거나, 이 버튼을 눌러 목록에서 선택하세요.<br><br>효과음 태그([giggle] 등)는 대사 앞에 쓰면 대사 전에, 뒤에 쓰면 대사 후에 재생됩니다.<br>감정 리스트에 없는 경우 [ ] 사이에 단어를 직접 입력해 사용할 수 있습니다.'
+    },
+    {
+        sel: '.btn-save',
+        title: '임시저장',
+        desc: '작업을 임시저장합니다.<br><br>다음 접속 시 왼쪽 사이드바의 <b>임시저장 불러오기</b>로 이어서 작업할 수 있습니다.'
+    },
+    {
+        sel: '#btnSFX',
+        title: '사운드 이팩트',
+        desc: '캐릭터 행동 및 환경 소리를 만드는 기능입니다.<br><br>이펙트 이름, 설명(영어 권장), 길이를 설정해 생성합니다. 생성된 이팩트는 선택한 대사 아래에 배치되며, 대사 재생 후 이팩트가 출력됩니다.<br><br>라이브러리에서 이전에 만든 이팩트를 재사용하거나 오디오 파일을 직접 업로드할 수 있습니다.'
+    },
+    {
+        sel: '#btnBGM',
+        title: '배경음',
+        desc: '오디오북 전체의 배경음을 꾸밀 수 있습니다.<br><br>배경음 이름, 설명, 길이(초)를 입력해 생성합니다. 배경음 생성은 TTS나 이팩트보다 시간이 걸리니 생성 중 기다려 주세요.<br><br>배경음 트랙에서 볼륨 조절 및 구간별 배치가 가능하며, 라이브러리에서 재사용하거나 오디오 파일을 직접 업로드할 수도 있습니다.'
+    },
+    {
+        sel: '.btn-preview',
+        title: '미리듣기',
+        desc: 'TTS, 배경음, 사운드 이팩트를 합친 통합 오디오를 미리 재생합니다.<br><br>오디오의 처음 3초는 묵음으로 처리됩니다. 이상한 부분이 있으면 수정하기 버튼으로 돌아와 수정하세요.<br><br><b>업로드 후에는 수정이 불가능</b>하니 충분히 검토한 뒤 업로드하세요.'
+    },
+    {
+        sel: '.voice-settings',
+        title: '음성 설정',
+        desc: '현재 대사의 음성을 세밀하게 조정합니다.<br><br>· <b>언어</b>: 해당 TTS의 언어 설정<br>· <b>속도</b>: 0.5x ~ 2.0x 배속<br>· <b>유사성</b>: 값이 높을수록 원본 목소리에 가깝지만 억양이 단조로워질 수 있습니다<br>· <b>스타일</b>: 값이 높을수록 선택한 목소리의 고유한 톤이 과장됩니다'
+    },
+    {
+        sel: '#webaudioediter',
+        title: '페이지 오디오',
+        desc: 'TTS에 다양한 오디오 효과를 적용하는 공간입니다. 대사 공간 밑에 있습니다.<br><br>전화, 라디오 등 상황에 맞는 버튼을 누르거나 필터를 직접 조절할 수 있습니다. 마음에 들면 <b>[현재 효과로 오디오 저장]</b>을 누르세요.<br><br>필터 종류:<br>· <b>LPF(로우패스)</b>: 저음 통과 — 소리가 부드럽고 따뜻하게<br>· <b>HPF(하이패스)</b>: 고음 통과 — 저음 노이즈 제거<br>· <b>BPF(밴드패스)</b>: 특정 대역만 통과 (전화기/라디오 효과)<br>· <b>Notch(노치)</b>: 특정 주파수만 차단 (전원 험 제거)<br>· <b>All-pass(올패스)</b>: 위상만 변경, 공간감 조절'
+    }
+];
+
+/* ── 첫 방문 시 자동 가이드 열기 ── */
+document.addEventListener('DOMContentLoaded', function () {
+    if (!localStorage.getItem('vox_guide_seen_expert')) {
+        setTimeout(function () { audioBookGuide(); }, 600);
+        localStorage.setItem('vox_guide_seen_expert', '1');
+    }
+});
 </script>
 {% endblock %}

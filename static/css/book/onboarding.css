@@ -1,0 +1,386 @@
+/* ================================================
+   VoxTour - Spotlight Onboarding Guide System
+   ================================================ */
+
+/* ---- Spotlight overlay (click to close) ---- */
+.vox-tour-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9997;
+    cursor: default;
+}
+
+/* ---- Spotlight hole (box-shadow darkness trick) ---- */
+.vox-tour-spotlight {
+    position: fixed;
+    border-radius: 10px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.72);
+    z-index: 9998;
+    pointer-events: none;
+    outline: 2px solid rgba(99, 102, 241, 0.7);
+    outline-offset: 0;
+}
+
+/* ---- Tooltip card ---- */
+.vox-tour-tooltip {
+    position: fixed;
+    background: #16162a;
+    border-radius: 14px;
+    padding: 20px 22px 16px;
+    width: 340px;
+    max-width: calc(100vw - 32px);
+    z-index: 9999;
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.04);
+    color: #e2e8f0;
+    pointer-events: all;
+}
+
+.vox-tour-tooltip-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #a5b4fc;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vox-tour-step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: #6366f1;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+}
+
+.vox-tour-progress {
+    margin-left: auto;
+    font-size: 11px;
+    color: #475569;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.vox-tour-tooltip-desc {
+    font-size: 13px;
+    line-height: 1.68;
+    color: #cbd5e1;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.vox-tour-tooltip-footer {
+    margin-top: 16px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* 닫기 — subtle */
+.vox-tour-btn-close {
+    padding: 7px 16px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    outline: none;
+}
+.vox-tour-btn-close:hover { border-color: rgba(255,255,255,0.25); color: #94a3b8; }
+
+/* 다음 — accent */
+.vox-tour-btn-next {
+    padding: 7px 18px;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    border-radius: 8px;
+    color: #a5b4fc;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+    outline: none;
+}
+.vox-tour-btn-next:hover { background: rgba(99, 102, 241, 0.35); }
+
+/* 완료 — green */
+.vox-tour-btn-finish {
+    padding: 7px 18px;
+    background: rgba(16, 185, 129, 0.16);
+    border: 1px solid rgba(16, 185, 129, 0.38);
+    border-radius: 8px;
+    color: #6ee7b7;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+    outline: none;
+}
+.vox-tour-btn-finish:hover { background: rgba(16, 185, 129, 0.28); }
+
+/* ---- UI Tour Steps section (inside guide modals) ---- */
+.ui-tour-section {
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ui-tour-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6366f1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.ui-tour-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.ui-tour-step-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(99, 102, 241, 0.07);
+    border: 1px solid rgba(99, 102, 241, 0.18);
+    border-radius: 9px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.18s, border-color 0.18s;
+    width: 100%;
+    font-size: 13px;
+    color: inherit;
+}
+
+.ui-tour-step-btn:hover {
+    background: rgba(99, 102, 241, 0.16);
+    border-color: rgba(99, 102, 241, 0.36);
+}
+
+.ui-tour-step-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #6366f1;
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ui-tour-step-text {
+    font-weight: 500;
+    line-height: 1.4;
+    flex: 1;
+}
+
+.ui-tour-step-arrow {
+    color: #6366f1;
+    font-size: 16px;
+    opacity: 0.55;
+}
+
+/* ---- Expert mode inline tour panel ---- */
+.expert-ui-tour-wrap {
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid rgba(99,102,241,0.2);
+    margin-bottom: 18px;
+}
+
+.expert-ui-tour-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6366f1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.expert-ui-tour-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: rgba(99,102,241,0.08);
+    border: 1px solid rgba(99,102,241,0.16);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    font-size: 13px;
+    color: #e2e8f0;
+    margin-bottom: 5px;
+    transition: background 0.18s;
+}
+
+.expert-ui-tour-step:hover {
+    background: rgba(99,102,241,0.18);
+}
+
+/* ---- Voice library page header guide button ---- */
+.vox-voice-guide-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    border-radius: 10px;
+    color: #a5b4fc;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.vox-voice-guide-btn:hover {
+    background: rgba(99, 102, 241, 0.22);
+    border-color: rgba(99, 102, 241, 0.55);
+}
+
+/* ---- Standalone floating guide button (fallback) ---- */
+.vox-guide-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 200;
+    padding: 10px 18px;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.45);
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    transition: transform 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+}
+
+.vox-guide-fab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(99, 102, 241, 0.6);
+}
+
+/* Standalone guide panel overlay */
+.vox-guide-panel-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 9996;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.vox-guide-panel {
+    background: #1e1e2e;
+    border-radius: 16px;
+    width: min(460px, 100%);
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.vox-guide-panel-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: #1e1e2e;
+    border-radius: 16px 16px 0 0;
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+.vox-guide-panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+
+.vox-guide-panel-close {
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.15s;
+}
+
+.vox-guide-panel-close:hover {
+    color: #e2e8f0;
+}
+
+.vox-guide-panel-body {
+    padding: 16px 18px 20px;
+}
+
+/* ---- Responsive (mobile) ---- */
+@media (max-width: 640px) {
+    /* Tooltip becomes bottom sheet on mobile */
+    .vox-tour-tooltip {
+        position: fixed !important;
+        bottom: 0 !important;
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 16px 16px 0 0;
+        padding: 20px 20px 36px;
+    }
+
+    /* FAB stays in corner but smaller */
+    .vox-guide-fab {
+        bottom: 16px;
+        right: 16px;
+        padding: 10px 14px;
+        font-size: 12px;
+    }
+
+    /* Guide panel full screen on mobile */
+    .vox-guide-panel-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .vox-guide-panel {
+        width: 100%;
+        max-height: 80vh;
+        border-radius: 16px 16px 0 0;
+    }
+}

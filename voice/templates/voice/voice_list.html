@@ -7,12 +7,23 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/voice/voice_list.css' %}">
+<link rel="stylesheet" href="{% static 'css/book/onboarding.css' %}">
 {% endblock %}
 
 <!-- 페이지 헤더 -->
-<div class="page-header">
-    <h1 class="page-title">🎤 보이스 라이브러리</h1>
-    <p class="page-subtitle">나만의 오디오북을 위한 완벽한 목소리를 찾아보세요</p>
+<div class="page-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+    <div>
+        <h1 class="page-title">🎤 보이스 라이브러리</h1>
+        <p class="page-subtitle">나만의 오디오북을 위한 완벽한 목소리를 찾아보세요</p>
+    </div>
+    <button class="vox-voice-guide-btn" onclick="document.getElementById('voxGuidePanelOverlay').style.display='flex'" aria-label="가이드 열기">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        가이드북
+    </button>
 </div>
 
 <!-- 검색 & 필터 섹션 -->
@@ -189,9 +200,43 @@
 </div>
 
 <div id="voice_name" style="display: none;"></div>
-<div class="desktop-only">
-    
+<div class="desktop-only"></div>
+
+<!-- 보이스 라이브러리 가이드 패널 -->
+<div id="voxGuidePanelOverlay" style="display:none;" class="vox-guide-panel-overlay" onclick="if(event.target===this)this.style.display='none'">
+    <div class="vox-guide-panel">
+        <div class="vox-guide-panel-header">
+            <span class="vox-guide-panel-title">보이스 라이브러리 가이드</span>
+            <button class="vox-guide-panel-close" onclick="document.getElementById('voxGuidePanelOverlay').style.display='none'" aria-label="닫기">&times;</button>
+        </div>
+        <div class="vox-guide-panel-body">
+            <div class="ui-tour-label" style="margin-bottom:12px;">✨ 단계를 클릭하면 해당 위치를 안내합니다 (다음 버튼으로 순서대로 이동)</div>
+            <div class="ui-tour-steps">
+                <button class="ui-tour-step-btn" onclick="VoxTour.startTour(VOX_VOICE_STEPS, 0)">
+                    <span class="ui-tour-step-num">1</span>
+                    <span class="ui-tour-step-text">AI 목소리 추천 검색</span>
+                    <span class="ui-tour-step-arrow">›</span>
+                </button>
+                <button class="ui-tour-step-btn" onclick="VoxTour.startTour(VOX_VOICE_STEPS, 1)">
+                    <span class="ui-tour-step-num">2</span>
+                    <span class="ui-tour-step-text">음성 태그 선택</span>
+                    <span class="ui-tour-step-arrow">›</span>
+                </button>
+                <button class="ui-tour-step-btn" onclick="VoxTour.startTour(VOX_VOICE_STEPS, 2)">
+                    <span class="ui-tour-step-num">3</span>
+                    <span class="ui-tour-step-text">보이스 선택 &amp; 별칭</span>
+                    <span class="ui-tour-step-arrow">›</span>
+                </button>
+                <button class="ui-tour-step-btn" onclick="VoxTour.startTour(VOX_VOICE_STEPS, 3)">
+                    <span class="ui-tour-step-num">4</span>
+                    <span class="ui-tour-step-text">내 보이스 컬렉션</span>
+                    <span class="ui-tour-step-arrow">›</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -201,6 +246,40 @@
     window.location.href = '/';
 })();
 </script> -->
+<script src="{% static 'js/book/onboarding.js' %}"></script>
+<script>
+/* ── 첫 방문 시 자동 가이드 열기 ── */
+document.addEventListener('DOMContentLoaded', function () {
+    if (!localStorage.getItem('vox_guide_seen_voice')) {
+        document.getElementById('voxGuidePanelOverlay').style.display = 'flex';
+        localStorage.setItem('vox_guide_seen_voice', '1');
+    }
+});
+
+/* ── 보이스 라이브러리 투어 단계 ── */
+var VOX_VOICE_STEPS = [
+    {
+        sel: '.ai-voice-search-section',
+        title: 'AI 목소리 추천 검색',
+        desc: '원하는 목소리를 직접 글로 설명하면 AI가 어울리는 보이스를 추천해 드립니다.<br><br>예시:<br>· <i>"차분하고 깊은 남성 목소리"</i><br>· <i>"밝고 에너지 넘치는 여성 목소리"</i><br>· <i>"노인 남성, 중후한 느낌"</i><br><br>설명을 입력한 뒤 <b>AI 추천</b> 버튼을 클릭하면 해당 설명에 맞는 보이스만 필터링됩니다.'
+    },
+    {
+        sel: '.filter-buttons',
+        title: '음성 태그 선택',
+        desc: '태그 버튼으로 카테고리별 목소리를 빠르게 찾을 수 있습니다.<br><br>태그를 선택하면 해당 유형의 보이스만 표시됩니다. AI 추천과 함께 사용하면 더 정확한 목소리를 찾을 수 있습니다.'
+    },
+    {
+        sel: '.voice-list-section',
+        title: '보이스 선택 & 별칭',
+        desc: '마음에 드는 목소리 아래의 <b>선택</b> 버튼을 누릅니다.<br><br>별칭을 입력하면 왼쪽 내 보이스 컬렉션에 저장됩니다.<br>이후 집필 중인 책을 해당 보이스에 지정하고, 자주 사용할 보이스는 별(★) 버튼으로 즐겨찾기에 등록하세요.'
+    },
+    {
+        sel: '.my-voices-section',
+        title: '내 보이스 컬렉션',
+        desc: '저장한 보이스는 이 컬렉션에서 확인할 수 있습니다.<br><br>마이페이지에서 집필 중인 책에 보이스를 연결할 수 있으며, 오른쪽에 있는 재생 버튼으로 저장된 목소리를 미리 들어볼 수 있습니다.'
+    }
+];
+</script>
 <script src="{% static 'js/voice/voice_list.js' %}"></script>
 <script>
 // CSRF 토큰 가져오기
