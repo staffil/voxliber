@@ -1808,16 +1808,21 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
 }
 </style>
 
+{% if demo_episode %}
 <div id="voxAutoPlayer" style="display:none;">
     <div class="vap-label">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
         지금 재생 중
     </div>
     <div class="vap-row">
-        <img class="vap-cover" src="/media/uploads/book_covers/0_3_640_N_6og1zbv.webp" alt="사랑의 유효기간">
+        {% if demo_episode.cover_url %}
+        <img class="vap-cover" src="{{ demo_episode.cover_url }}" alt="{{ demo_episode.book_name }}">
+        {% else %}
+        <div class="vap-cover" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:20px;">🎧</div>
+        {% endif %}
         <div class="vap-info">
-            <div class="vap-book">사랑의 유효기간</div>
-            <div class="vap-ep">EP.4 · 놓친 순간이 이어주는 것들</div>
+            <div class="vap-book">{{ demo_episode.book_name }}</div>
+            <div class="vap-ep">EP.{{ demo_episode.ep_num }} · {{ demo_episode.ep_title }}</div>
         </div>
         <div class="vap-controls">
             <button class="vap-btn" id="voxPlayBtn" onclick="voxTogglePlay()" title="재생/일시정지">
@@ -1830,8 +1835,9 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
     <div class="vap-progress-wrap">
         <div class="vap-progress-bar" id="voxProgressBar"></div>
     </div>
-    <audio id="voxDemoAudio" src="/media/uploads/audio/merged_a5d13655e081490089427921a2010ecf.mp3" preload="none"></audio>
+    <audio id="voxDemoAudio" src="{{ demo_episode.audio_url }}" preload="none"></audio>
 </div>
+{% endif %}
 
 {% endblock %}
 

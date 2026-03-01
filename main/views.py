@@ -179,6 +179,23 @@ def main(request):
         is_public=True
     ).select_related('llm', 'user').order_by('-shared_at')[:30]
 
+    # 🎧 홈 데모 플레이어 — 사랑의 유효기간 EP4
+    demo_episode = None
+    try:
+        demo_book = Books.objects.filter(name__contains='사랑의 유효기간').first()
+        if demo_book:
+            demo_content = demo_book.contents.filter(number=4, audio_file__isnull=False).exclude(audio_file='').first()
+            if demo_content and demo_content.audio_file:
+                demo_episode = {
+                    'book_name': demo_book.name,
+                    'ep_num': demo_content.number,
+                    'ep_title': demo_content.title,
+                    'audio_url': demo_content.audio_file.url,
+                    'cover_url': demo_book.cover_img.url if demo_book.cover_img else '',
+                }
+    except Exception:
+        pass
+
     context = {
         "news_list": news_list,
         "new_books": new_books,
@@ -201,7 +218,8 @@ def main(request):
         "ai_stories":story_list,
         "ai_advertismemt_img":ai_advertismemt_img,
         "user_share_list":user_share_list,
-        "popular_genres":popular_genres
+        "popular_genres":popular_genres,
+        "demo_episode": demo_episode,
     }
     return render(request, "main/main.html", context)
 
