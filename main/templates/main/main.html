@@ -1835,7 +1835,7 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
     <div class="vap-progress-wrap">
         <div class="vap-progress-bar" id="voxProgressBar"></div>
     </div>
-    <audio id="voxDemoAudio" src="{{ demo_episode.audio_url }}" preload="none"></audio>
+    <audio id="voxDemoAudio" src="{{ demo_episode.audio_url }}" preload="auto" muted></audio>
 </div>
 {% endif %}
 
@@ -1900,14 +1900,23 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
             var el = document.getElementById('voxAutoPlayer');
             if (!el || !_audio) return;
             el.style.display = 'block';
-            _audio.play().then(function () {
-                var play  = document.getElementById('voxIconPlay');
-                var pause = document.getElementById('voxIconPause');
-                if (play)  play.style.display  = 'none';
-                if (pause) pause.style.display = '';
-            }).catch(function () {
-                /* autoplay blocked — player 보이지만 수동 재생으로 대기 */
-            });
+
+            /* muted 상태로 먼저 재생 시작 (브라우저 autoplay 정책 우회) */
+            _audio.muted = true;
+            var playPromise = _audio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(function () {
+                    /* 재생 시작 성공 → 즉시 소리 켜기 */
+                    _audio.muted = false;
+                    var play  = document.getElementById('voxIconPlay');
+                    var pause = document.getElementById('voxIconPause');
+                    if (play)  play.style.display  = 'none';
+                    if (pause) pause.style.display = '';
+                }).catch(function () {
+                    /* 완전히 차단된 경우: 음소거 해제 후 수동 재생 대기 */
+                    _audio.muted = false;
+                });
+            }
         }, 5000);
     });
 })();
