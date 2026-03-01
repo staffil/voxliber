@@ -992,10 +992,10 @@ def api_mix_background_music(request):
                 print(f"⚠️ [API] SFX {effect_id} 없음, 건너뜀")
                 continue
 
-            # SFX 시작 시간 = 해당 페이지 시작 타임스탬프
+            # SFX 시작 시간 = 해당 페이지의 실제 startTime
             start_time = 0
-            if timestamps and page > 1 and page - 2 < len(timestamps):
-                start_time = timestamps[page - 2].get("endTime", 0)
+            if timestamps and 0 <= page - 1 < len(timestamps):
+                start_time = timestamps[page - 1].get("startTime", 0)
 
             # SFX 오디오 길이로 종료 시간 계산
             with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp:
