@@ -87,6 +87,7 @@
             document.body.appendChild(_spotlight);
 
             /* --- Tooltip --- */
+            var isFirst = _idx === 0;
             _tooltip = document.createElement('div');
             _tooltip.className = 'vox-tour-tooltip';
             _tooltip.innerHTML =
@@ -98,6 +99,7 @@
                 '<div class="vox-tour-tooltip-desc">' + descHTML + '</div>' +
                 '<div class="vox-tour-tooltip-footer">' +
                     '<button class="vox-tour-btn-close" id="_vClose">닫기</button>' +
+                    (!isFirst ? '<button class="vox-tour-btn-prev" id="_vPrev">← 이전</button>' : '') +
                     (isLast
                         ? '<button class="vox-tour-btn-finish" id="_vFinish">완료 ✓</button>'
                         : '<button class="vox-tour-btn-next"  id="_vNext">다음 →</button>'
@@ -107,6 +109,13 @@
 
             /* Button events */
             document.getElementById('_vClose').addEventListener('click', close);
+            if (!isFirst) {
+                document.getElementById('_vPrev').addEventListener('click', function () {
+                    _closeUI();
+                    _idx--;
+                    _showCurrent();
+                });
+            }
             if (isLast) {
                 document.getElementById('_vFinish').addEventListener('click', close);
             } else {

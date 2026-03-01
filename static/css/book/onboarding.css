@@ -98,6 +98,21 @@
 }
 .vox-tour-btn-close:hover { border-color: rgba(255,255,255,0.25); color: #94a3b8; }
 
+/* 이전 — muted accent */
+.vox-tour-btn-prev {
+    padding: 7px 16px;
+    background: transparent;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 8px;
+    color: #6366f1;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    outline: none;
+}
+.vox-tour-btn-prev:hover { background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.5); }
+
 /* 다음 — accent */
 .vox-tour-btn-next {
     padding: 7px 18px;
