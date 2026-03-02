@@ -21,8 +21,10 @@
     <div class="stat-card"><div class="stat-label">전체 책</div><div class="stat-value">{{ stats.total }}</div></div>
     <div class="stat-card"><div class="stat-label">읽는 중</div><div class="stat-value">{{ stats.reading }}</div></div>
     <div class="stat-card"><div class="stat-label">완독</div><div class="stat-value">{{ stats.completed }}</div></div>
+    {% comment %}AI 통계 비활성화
     <div class="stat-card"><div class="stat-label">AI 스토리</div><div class="stat-value">{{ stats.ai_stories }}</div></div>
     <div class="stat-card"><div class="stat-label">대화한 AI들</div><div class="stat-value">{{ stats.llms }}</div></div>
+    {% endcomment %}
   </div>
 
   <!-- 필터 -->
@@ -30,8 +32,10 @@
     <a href="?status=all" class="filter-tab {% if filter_status == 'all' %}active{% endif %}">전체</a>
     <a href="?status=reading" class="filter-tab {% if filter_status == 'reading' %}active{% endif %}">읽는 중</a>
     <a href="?status=completed" class="filter-tab {% if filter_status == 'completed' %}active{% endif %}">완독</a>
+    {% comment %}AI 필터 비활성화
     <a href="?status=ai" class="filter-tab {% if filter_status == 'ai' %}active{% endif %}">AI 스토리</a>
     <a href="?status=llms" class="filter-tab {% if filter_status == 'llms' %}active{% endif %}">대화한 AI들</a>
+    {% endcomment %}
     <a href="{% url 'book:my_bookmarks' %}" class="filter-tab">북마크 →</a>
   </div>
 
@@ -107,6 +111,7 @@
 
   {% endif %}
 
+  {% comment %}AI 스토리 및 LLM 목록 비활성화
   <!-- AI 스토리 목록 -->
 {% if filter_status == 'ai' or filter_status == 'all' %}
   {% if chatted_stories %}
@@ -125,7 +130,7 @@
     <!-- 커버 이미지 -->
         {% if story.cover_image %}
           <img src="{{ story.cover_image.url }}" alt="{{ story.title }}">
-        
+
         {% elif story.story_desc_video %}
           <video
             src="{{ story.story_desc_video.url }}"
@@ -304,6 +309,7 @@
 
   {% endif %}
 {% endif %}
+  {% endcomment %}
 
 
 </div>

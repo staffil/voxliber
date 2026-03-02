@@ -19,9 +19,11 @@
         <button class="tab-btn active" data-tab="audiobook">
             📚 오디오북 소설
         </button>
+        <!-- AI 소설 탭 비활성화
         <button class="tab-btn" data-tab="ai">
             🤖 AI 소설
         </button>
+        -->
     </div>
 
     <!-- ===================== -->
@@ -131,6 +133,7 @@
         {% endif %}
     </div>
 
+{% comment %}AI 소설 탭 비활성화
     <!-- ===================== -->
     <!-- AI 소설 탭 -->
     <!-- ===================== -->
@@ -184,7 +187,7 @@
     </div>
 
 </div>
-    
+
     <div class="book-stats-section">
         <h2 class="section-title">AI 소설 통계</h2>
 
@@ -229,6 +232,7 @@
     </div>
     {% endif %}
 </div>
+{% endcomment %}
 
 </div>
 {% endblock %}

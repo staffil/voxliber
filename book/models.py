@@ -798,3 +798,23 @@ class PlaylistItem(models.Model):
 
     def __str__(self):
         return f"{self.playlist.title} - {self.order}. {self.content.title}"
+
+
+# TTS 사용량 쿼터 테이블 (한도 적용 준비용 — 현재는 제한 없음)
+class UserTTSQuota(models.Model):
+    user             = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tts_quota')
+    used_chars       = models.IntegerField(default=0, verbose_name='이번 달 사용 글자 수')
+    total_chars      = models.IntegerField(default=0, verbose_name='누적 총 사용 글자 수')
+    monthly_limit    = models.IntegerField(default=0, verbose_name='월 한도 (0=무제한)')
+    is_premium       = models.BooleanField(default=False, verbose_name='프리미엄 여부')
+    reset_date       = models.DateField(null=True, blank=True, verbose_name='다음 리셋 날짜')
+    last_used_at     = models.DateTimeField(null=True, blank=True, verbose_name='마지막 TTS 생성 시각')
+    created_at       = models.DateTimeField(auto_now_add=True)
+    updated_at       = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'user_tts_quota'
+        verbose_name = 'TTS 사용량 쿼터'
+
+    def __str__(self):
+        return f"{self.user.username} | {self.used_chars}자 사용 / 한도 {'무제한' if self.monthly_limit == 0 else self.monthly_limit}"

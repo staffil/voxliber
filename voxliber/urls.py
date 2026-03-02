@@ -109,9 +109,9 @@ urlpatterns = [
     # 스냅
     path("api/v1/create-snap/", voxliber_api.api_create_snap, name="api_create_snap"),
 
-    # AI 스토리 생성
-    path("api/v1/create-ai-story/", voxliber_api.api_create_ai_story, name="api_create_ai_story"),
-    path("api/v1/create-ai-llm/", voxliber_api.api_create_ai_llm, name="api_create_ai_llm"),
+    # AI 스토리 생성 — 비활성화
+    # path("api/v1/create-ai-story/", voxliber_api.api_create_ai_story, name="api_create_ai_story"),
+    # path("api/v1/create-ai-llm/", voxliber_api.api_create_ai_llm, name="api_create_ai_llm"),
 
     # 로어북
     path("api/v1/lore-entry/", voxliber_api.api_lore_entry_list, name="api_lore_entry_list"),

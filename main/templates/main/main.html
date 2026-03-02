@@ -1325,15 +1325,6 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
 
 
 
-  <!-- ============================================================
-       MAIN TABS
-       ============================================================ -->
-  <div class="vm-tabs-bar">
-    <div class="vm-tabs-inner">
-      <div class="vm-tab active" data-p="vm-ab">🎧 오디오북</div>
-      <div class="vm-tab" data-p="vm-ai">🌙 AI 소설</div>
-    </div>
-  </div>
 
 
   <!-- ============================================================
@@ -1569,84 +1560,12 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
 
 
   <!-- ============================================================
-       PANEL: AI 소설
+       PANEL: AI 소설 비활성화
        ============================================================ -->
   <div id="vm-ai" class="vm-panel">
-    <div class="vm-inner vm-section">
-      <div class="vm-eyebrow">AI Interactive Story</div>
-      <h2 class="vm-title">AI와 함께 쓰는 <span class="ac">이야기</span></h2>
+    ...
+  </div>
 
-      <div class="ai-sub-tab-buttons" style="margin-top:24px;">
-        <div class="ai-sub-tab-btn active" data-ai-tab="vm-ai-s">🌙 AI Story</div>
-        <div class="ai-sub-tab-btn" data-ai-tab="vm-shared-s">📖 공유한 AI 소설</div>
-      </div>
-
-      <div id="vm-ai-s" class="ai-sub-panel active" style="margin-top:20px;">
-        <div class="ai-story-grid">
-          {% for story in ai_stories|slice:":30" %}
-            {% if story.public_uuid %}
-            <div class="ai-story-card">
-              <a href="{% url 'character:story_intro' story.public_uuid %}" class="card-link">
-                <div class="card-image-box">
-                  {% if story.story_desc_video %}
-                    <video class="card-image" autoplay loop muted playsinline preload="none" data-src="{{ story.story_desc_video.url }}"></video>
-                  {% elif story.cover_image %}
-                    <img src="{{ story.cover_image.url }}" alt="{{ story.title }}" class="card-image" loading="lazy">
-                  {% else %}
-                    <div class="card-placeholder"><span class="placeholder-icon">🌙</span></div>
-                  {% endif %}
-                  <div class="card-gradient-overlay"></div>
-                  <div class="card-content">
-                    <div class="card-title">{{ story.title }}</div>
-                    {% if story.description %}<div class="card-desc">{{ story.description|truncatewords:15 }}</div>{% endif %}
-                  </div>
-                </div>
-              </a>
-            </div>
-            {% endif %}
-          {% empty %}
-          <div class="empty-card" style="grid-column:1/-1;">
-            <p>아직 등록된 AI 소설이 없어요</p>
-            <a href="{% url 'character:make_ai_story' %}" class="empty-btn">스토리 만들기</a>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-
-      <div id="vm-shared-s" class="ai-sub-panel" style="margin-top:20px;">
-        <div class="ai-story-grid">
-          {% for conv in user_share_list %}
-          <div class="ai-story-card">
-            <a href="{% url 'main:shared_novel' conv.id %}" class="card-link">
-              <div class="card-image-box">
-                {% if conv.llm.llm_image %}<img src="{{ conv.llm.llm_image.url }}" alt="{{ conv.llm.name }}" class="card-image" loading="lazy">
-                {% else %}<div class="card-placeholder"><span class="placeholder-icon">📖</span></div>{% endif %}
-                <div class="card-gradient-overlay">
-                  <div class="user-nickname">
-                    {% if conv.user.user_img %}<img src="{{ conv.user.user_img.url }}" alt="{{ conv.user.nickname }}">
-                    {% else %}{{ conv.user.nickname|slice:":1"|upper }}{% endif %}
-                    <span>{{ conv.user.nickname }}</span>
-                  </div>
-                </div>
-                <div class="card-content">
-                  <div class="card-title">{{ conv.merged_audio_title|default:conv.llm.name }}</div>
-                  {% if conv.messages.exists %}<div class="card-desc">{{ conv.messages.first.content|truncatechars:40|safe }}</div>
-                  {% else %}<div class="card-desc">아직 대화가 시작되지 않았어요</div>{% endif %}
-                </div>
-              </div>
-            </a>
-            <div class="card-meta">{{ conv.user.nickname|default:'익명' }} · {{ conv.shared_at|date:"m.d H:i" }}</div>
-          </div>
-          {% empty %}
-          <div class="empty-card" style="grid-column:1/-1;">
-            <p>아직 공개된 AI 대화가 없어요</p>
-            <a href="{% url 'character:make_ai_story' %}" class="empty-btn">스토리 만들기</a>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-  </div><!-- /vm-ai -->
 
 
   <!-- ============================================================

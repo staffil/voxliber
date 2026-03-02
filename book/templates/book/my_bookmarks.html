@@ -12,9 +12,10 @@
 <div style="max-width: 1200px; margin: 120px auto 40px; padding: 0 20px;">
     <div style="margin-bottom: 32px;">
         <h1 class="page-title" style="font-size: 32px; font-weight: 700; margin-bottom: 8px; color: #fff;">📚 내 북마크</h1>
-        <p class="page-subtitle" style="color: rgba(255, 255, 255, 0.6);">나중에 읽고 싶은 책과 AI 스토리를 모아보세요</p>
+        <p class="page-subtitle" style="color: rgba(255, 255, 255, 0.6);">나중에 읽고 싶은 책을 모아보세요</p>
     </div>
 
+    {% comment %}AI 스토리 북마크 섹션 비활성화
     <!-- AI 스토리 북마크 섹션 -->
     {% if story_bookmarks %}
     <div style="margin-bottom: 48px;">
@@ -31,7 +32,7 @@
                         <img src="{{ sb.story.cover_image.url }}" alt="{{ sb.story.title }}" style="width: 100%; height: 100%; object-fit: cover;">
                     {% else %}
                         <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 64px;">
-                            
+
                         </div>
                     {% endif %}
 
@@ -66,6 +67,7 @@
         </div>
     </div>
     {% endif %}
+    {% endcomment %}
 
     <!-- 책 북마크 섹션 -->
     {% if bookmarks %}
@@ -144,18 +146,16 @@
         </div>
         {% endif %}
     {% else %}
-        {% if not story_bookmarks %}
         <div class="empty-state">
             <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
             </svg>
             <h2 style="font-size: 24px; margin-bottom: 12px;">북마크가 없습니다</h2>
-            <p style="margin-bottom: 24px;">나중에 읽고 싶은 책이나 AI 스토리를 북마크해보세요!</p>
+            <p style="margin-bottom: 24px;">나중에 읽고 싶은 책을 북마크해보세요!</p>
             <a href="{% url 'main:main' %}" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; text-decoration: none; font-weight: 600;" data-login-required>
                 둘러보기
             </a>
         </div>
-        {% endif %}
     {% endif %}
 </div>
 
@@ -186,6 +186,7 @@ async function removeBookmark(bookId) {
     }
 }
 
+/* AI 스토리 북마크 제거 (비활성화)
 async function removeStoryBookmark(storyUuid) {
     if (!confirm('AI 스토리 북마크를 제거하시겠습니까?')) {
         return;
@@ -211,6 +212,7 @@ async function removeStoryBookmark(storyUuid) {
         alert('북마크 제거에 실패했습니다');
     }
 }
+*/
 
 function getCookie(name) {
     let cookieValue = null;
