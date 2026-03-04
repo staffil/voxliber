@@ -232,7 +232,304 @@
     text-align: right;
     flex-shrink: 0;
 }
+/* ===========================================
+   독자 통계 — 라이트 모드 글래스모피즘 차트
+   (기존 #bookView, .charts-grid, .chart-container 교체)
+   =========================================== */
 
+/* 전체 통계 섹션 */
+.stats-section,
+#bookView {
+    margin: 40px 0;
+    padding: 28px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border-radius: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.07);
+}
+
+/* 통계 섹션 타이틀 */
+.stats-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e1b4b;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stats-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, transparent 100%);
+}
+
+/* 차트 그리드 */
+.stats-grid,
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* 글래스 카드 (라이트) */
+.glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(99, 102, 241, 0.12);
+    border-radius: 20px;
+    padding: 24px 24px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: fadeInUp 0.6s ease both;
+    box-shadow: 0 2px 20px rgba(99, 102, 241, 0.08);
+}
+
+.glass-card:nth-child(2) { animation-delay: 0.1s; }
+
+.glass-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.15);
+}
+
+/* 카드 상단 하이라이트 라인 */
+.glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 20px 20px 0 0;
+    pointer-events: none;
+}
+
+.glass-card.tint-violet::before {
+    background: linear-gradient(90deg, #6d28d9, #a78bfa);
+}
+
+.glass-card.tint-cyan::before {
+    background: linear-gradient(90deg, #0891b2, #67e8f9);
+}
+
+/* 우하단 컬러 번짐 */
+.glass-card.tint-violet::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; right: -40px;
+    width: 150px; height: 150px;
+    background: radial-gradient(circle, rgba(109, 40, 217, 0.07) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.glass-card.tint-cyan::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; right: -40px;
+    width: 150px; height: 150px;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.07) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* 카드 레이블 */
+.card-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(30, 27, 75, 0.4);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-label-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* 기존 chart-container 호환 */
+.chart-container {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(99, 102, 241, 0.12);
+    border-radius: 20px;
+    padding: 24px;
+    position: relative;
+    box-shadow: 0 2px 20px rgba(99, 102, 241, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-container:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.15);
+}
+
+.chart-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(30, 27, 75, 0.45);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chart-container canvas {
+    width: 100% !important;
+    height: 240px !important;
+}
+
+/* ── 도넛 차트 ── */
+.donut-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.donut-svg-wrap { position: relative; flex-shrink: 0; }
+
+.donut-center-label {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.donut-center-label .big-num {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1e1b4b;
+    display: block;
+    line-height: 1;
+}
+
+.donut-center-label .small-txt {
+    font-size: 10px;
+    color: rgba(30, 27, 75, 0.4);
+    letter-spacing: 0.08em;
+    display: block;
+    margin-top: 4px;
+}
+
+.donut-legend { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+
+.donut-legend-item { display: flex; align-items: center; gap: 10px; }
+
+.legend-swatch {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.legend-text {
+    font-size: 13px;
+    color: rgba(30, 27, 75, 0.6);
+    flex: 1;
+}
+
+.legend-pct {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e1b4b;
+}
+
+/* ── 바 차트 ── */
+.bar-chart-wrap { display: flex; flex-direction: column; gap: 12px; }
+
+.bar-row { display: flex; align-items: center; gap: 10px; }
+
+.bar-row-label {
+    font-size: 12px;
+    color: rgba(30, 27, 75, 0.45);
+    width: 52px;
+    flex-shrink: 0;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.bar-track {
+    flex: 1;
+    height: 8px;
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 99px;
+    overflow: visible;
+    position: relative;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    width: 0%;
+    transition: width 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+/* 바 끝 닷 */
+.bar-fill::after {
+    content: '';
+    position: absolute;
+    right: -3px; top: 50%;
+    transform: translateY(-50%);
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: inherit;
+    filter: brightness(0.9);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    opacity: 0;
+    transition: opacity 0.4s ease 0.9s;
+}
+
+.bar-fill.loaded::after { opacity: 1; }
+
+.bar-row-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e1b4b;
+    width: 30px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* 애니메이션 */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 모바일 */
+@media (max-width: 768px) {
+    .stats-section,
+    #bookView {
+        padding: 16px;
+    }
+
+    .stats-grid,
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .glass-card {
+        padding: 20px 16px 16px;
+    }
+
+    .chart-container canvas {
+        height: 200px !important;
+    }
+}
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
