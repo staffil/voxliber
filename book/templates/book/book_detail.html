@@ -4,7 +4,6 @@
 {% block title %}{{ book.name }} - VOXLIBER{% endblock %}
 
 {% block extra_head %}
-<!-- Open Graph 메타 태그 (소셜 미디어 공유용) -->
 <meta property="og:title" content="{{ book.name }}">
 <meta property="og:description" content="{{ book.description|default:'VoxLiber에서 오디오북을 즐겨보세요'|truncatewords:30 }}">
 {% if book.cover_img %}
@@ -20,8 +19,6 @@
 <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{% url 'book:book_detail' book.public_uuid %}">
 <meta property="og:type" content="book">
 <meta property="og:site_name" content="VoxLiber">
-
-<!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ book.name }}">
 <meta name="twitter:description" content="{{ book.description|default:'VoxLiber에서 오디오북을 즐겨보세요'|truncatewords:30 }}">
@@ -35,32 +32,229 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/blur.css' %}">
     <link rel="stylesheet" href="{% static 'css/common/appWarning.css' %}">
+    <link rel="stylesheet" href="{% static 'css/book/book_detail.css' %}">
 
-<link rel="stylesheet" href="{% static 'css/book/book_detail.css' %}">
+<style>
+/* ══════════════════════════════════════════
+   독자 통계 — 다크 글래스모피즘 SVG 차트
+══════════════════════════════════════════ */
+.stats-section {
+    margin: 48px 0;
+}
 
+.stats-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
+.stats-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 640px) {
+    .stats-grid { grid-template-columns: 1fr; }
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 24px;
+    padding: 28px 28px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: fadeInUp 0.6s ease both;
+}
+
+.glass-card:nth-child(2) { animation-delay: 0.1s; }
+
+.glass-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+}
+
+.glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+.glass-card.tint-violet::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; right: -40px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(109,40,217,0.18) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.glass-card.tint-cyan::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; right: -40px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.card-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-label-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ── 도넛 ── */
+.donut-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+}
+
+.donut-svg-wrap { position: relative; flex-shrink: 0; }
+
+.donut-center-label {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.donut-center-label .big-num {
+    font-size: 22px;
+    font-weight: 800;
+    color: rgba(255,255,255,0.9);
+    display: block;
+    line-height: 1;
+}
+
+.donut-center-label .small-txt {
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.08em;
+    display: block;
+    margin-top: 4px;
+}
+
+.donut-legend { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+
+.donut-legend-item { display: flex; align-items: center; gap: 10px; }
+
+.legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+.legend-text { font-size: 13px; color: rgba(255,255,255,0.65); flex: 1; }
+
+.legend-pct { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.88); }
+
+/* ── 바 차트 ── */
+.bar-chart-wrap { display: flex; flex-direction: column; gap: 13px; }
+
+.bar-row { display: flex; align-items: center; gap: 10px; }
+
+.bar-row-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    width: 52px;
+    flex-shrink: 0;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.bar-track {
+    flex: 1;
+    height: 8px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 99px;
+    overflow: visible;
+    position: relative;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    width: 0%;
+    transition: width 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+.bar-fill::after {
+    content: '';
+    position: absolute;
+    right: -3px; top: 50%;
+    transform: translateY(-50%);
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: inherit;
+    filter: brightness(1.5);
+    box-shadow: 0 0 10px currentColor;
+    opacity: 0;
+    transition: opacity 0.4s ease 0.9s;
+}
+
+.bar-fill.loaded::after { opacity: 1; }
+
+.bar-row-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.75);
+    width: 30px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+</style>
 {% endblock %}
 
 {% block content %}
 
-<!-- 성인 콘텐츠 블러 오버레이 -->
-  {% if show_blur %}
-  <div class="adult-blur-overlay">
+{% if show_blur %}
+<div class="adult-blur-overlay">
     <div class="blur-message-box">
-      <div class="blur-icon">🔞</div>
-      <h2 class="blur-title">성인 콘텐츠입니다</h2>
-      <p class="blur-subtitle">이 콘텐츠는 19세 이상만 이용 가능합니다.</p>
-
-
-
-      <a href="/" class="blur-btn secondary">홈으로 돌아가기</a>
+        <div class="blur-icon">🔞</div>
+        <h2 class="blur-title">성인 콘텐츠입니다</h2>
+        <p class="blur-subtitle">이 콘텐츠는 19세 이상만 이용 가능합니다.</p>
+        <a href="/" class="blur-btn secondary">홈으로 돌아가기</a>
     </div>
-  </div>
-  {% endif %}
+</div>
+{% endif %}
 
 <div class="book-detail-wrapper">
     <div class="book-header">
-        <!-- 3D 책 커버 -->
         <div class="book-cover-wrapper">
             {% if book.cover_img %}
                 <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
@@ -81,7 +275,7 @@
                         <span id="bookmarkText">북마크</span>
                     </button>
                     {% endif %}
-                    <button onclick="shareBook()" class="share-btn" title="공유하기" >
+                    <button onclick="shareBook()" class="share-btn" title="공유하기">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="18" cy="5" r="3"/>
                             <circle cx="6" cy="12" r="3"/>
@@ -143,78 +337,19 @@
                     <span class="stat-value" style="font-size: 18px;">{{ book.created_at|date:"Y.m.d" }}</span>
                 </div>
             </div>
-<div class="book-status">
-    {% if book.status == "ongoing" %}
-        <span class="status-badge ongoing">연재 중</span>
-    {% elif book.status == "paused" %}
-        <span class="status-badge paused">휴재</span>
-    {% else %}
-        <span class="status-badge ended">연재 종료</span>
-    {% endif %}
-</div>
 
+            <div class="book-status">
+                {% if book.status == "ongoing" %}
+                    <span class="status-badge ongoing">연재 중</span>
+                {% elif book.status == "paused" %}
+                    <span class="status-badge paused">휴재</span>
+                {% else %}
+                    <span class="status-badge ended">연재 종료</span>
+                {% endif %}
+            </div>
         </div>
     </div>
 
-
-        <!-- 소개 오디오 업로드 -->
-        <!-- {% if first_episode %}
-            <div class="intro-audio-wrapper">
-                <div class="intro-audio-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                    </svg>
-                    <span>미리듣기 (1화)</span>
-                </div>
-
-                {% if first_episode.audio_file %}
-                    <div class="intro-audio-player-box">
-                        <div class="custom-audio-player">
-                            <audio id="introAudio" style="display: none;" loading="lazy">
-                                <source src="{{ first_episode.audio_file.url }}" type="audio/mpeg">
-                            </audio>
-
-                            <div class="audio-controls-row">
-                                <button class="audio-play-btn" id="introPlayBtn" onclick="toggleIntroAudio()">
-                                    ▶
-                                </button>
-
-                                <div class="audio-progress-wrapper">
-                                    <div class="audio-progress-container" id="introProgressContainer">
-                                        <div class="audio-progress-bar" id="introProgressBar" style="width: 0%"></div>
-                                    </div>
-                                </div>
-
-                                <div class="audio-time-info">
-                                    <span id="introCurrentTime">0:00</span>
-                                    <span>/</span>
-                                    <span id="introDuration">0:00</span>
-                                </div>
-
-                                <div class="audio-volume-control">
-                                    <button class="audio-volume-btn" id="introVolumeBtn" onclick="toggleIntroMute()">
-                                        🔊
-                                    </button>
-                                    <input type="range" class="audio-volume-slider" id="introVolumeSlider" min="0" max="100" value="100">
-                                </div>
-                            </div>
-                        </div>
-                        <a href="{% url 'book:content_detail' first_episode.public_uuid %}" class="listen-full-btn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            전체 듣기
-                        </a>
-                    </div>
-
-                {% else %}
-                    <p class="no-audio-message">1화 오디오가 아직 준비되지 않았습니다.</p>
-                {% endif %}
-
-            </div>
-        {% endif %} -->
 <br>
 
     <div class="content-section book-description">
@@ -224,7 +359,6 @@
         </div>
     </div>
 
-    <!-- 작가 공지사항 -->
     {% if announcements or request.user == book.user %}
     <div class="announcements-section" style="margin: 40px 0; padding: 24px; background: var(--bg-secondary); border-radius: 16px; border: 1px solid var(--border-color);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -236,7 +370,6 @@
             {% endif %}
         </div>
 
-        <!-- 공지사항 작성 폼 (작가만) -->
         {% if request.user == book.user %}
         <div id="announcementForm" style="display: none; margin-bottom: 24px; padding: 20px; background: var(--bg-primary); border-radius: 12px; border: 1px solid var(--border-color);">
             <form method="post" action="{% url 'book:create_announcement' book.public_uuid %}">
@@ -263,7 +396,6 @@
         </div>
         {% endif %}
 
-        <!-- 공지사항 목록 -->
         {% if announcements %}
             {% for announcement in announcements %}
             <div class="announcement-card" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px; {% if announcement.is_pinned %}border-color: var(--primary); background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);{% endif %}">
@@ -311,7 +443,6 @@
                         </svg>
                     </div>
                     {% endif %}
-                    <!-- {% url 'book:content_detail' content.public_uuid %} -->
                     <a href="{% url 'book:content_detail' content.public_uuid %}" class="episode-card" style="flex: 1; text-decoration: none;">
                         <div class="episode-number">
                             {% if content.episode_image %}
@@ -352,7 +483,6 @@
                 </div>
             {% endfor %}
             </div>
-            
         {% else %}
         <p style="text-align: center; color: rgba(255,255,255,0.5); padding: 60px 0; font-size: 16px;">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 16px; display: block; margin-left: auto; margin-right: auto;">
@@ -362,34 +492,30 @@
             아직 작성된 에피소드가 없습니다.
         </p>
         {% endif %}
+
         {% if contents.has_other_pages %}
-<div class="pagination" style="display: flex; justify-content: center; gap: 6px; margin-top: 32px;">
-
-    {# Previous #}
-    {% if contents.has_previous %}
-        <a href="?page={{ contents.previous_page_number }}" class="page-btn">이전</a>
-    {% else %}
-        <span class="page-btn disabled">이전</span>
-    {% endif %}
-
-    {# Page numbers #}
-    {% for i in contents.paginator.page_range %}
-        {% if i == contents.number %}
-            <span class="page-btn active">{{ i }}</span>
-        {% else %}
-            <a href="?page={{ i }}" class="page-btn">{{ i }}</a>
+        <div class="pagination" style="display: flex; justify-content: center; gap: 6px; margin-top: 32px;">
+            {% if contents.has_previous %}
+                <a href="?page={{ contents.previous_page_number }}" class="page-btn">이전</a>
+            {% else %}
+                <span class="page-btn disabled">이전</span>
+            {% endif %}
+            {% for i in contents.paginator.page_range %}
+                {% if i == contents.number %}
+                    <span class="page-btn active">{{ i }}</span>
+                {% else %}
+                    <a href="?page={{ i }}" class="page-btn">{{ i }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if contents.has_next %}
+                <a href="?page={{ contents.next_page_number }}" class="page-btn">다음</a>
+            {% else %}
+                <span class="page-btn disabled">다음</span>
+            {% endif %}
+        </div>
         {% endif %}
-    {% endfor %}
-
-    {# Next #}
-    {% if contents.has_next %}
-        <a href="?page={{ contents.next_page_number }}" class="page-btn">다음</a>
-    {% else %}
-        <span class="page-btn disabled">다음</span>
-    {% endif %}
-</div>
-{% endif %}
     </div>
+
     {% if request.user.is_authenticated and request.user != book.user %}
     <div class="review-write-section">
         <h3 style="margin-bottom: 16px; color: #fff;">⭐ 이 작품을 평가해주세요</h3>
@@ -426,27 +552,58 @@
     {% endif %}
 
 
-{% if book_stats %}
-<!-- 책 통계 뷰 -->
-<div id="bookView">
-    <div class="charts-grid">
-        <div class="chart-container">
-            <div class="chart-title">성별 분포</div>
-            <canvas id="genderChart"></canvas>
-        </div>
+    <!-- ══════════════════════════════════════════
+         독자 통계 — 다크 글래스모피즘 + 커스텀 SVG 차트
+         데이터 구조 (book_detail.js 와 동일):
+           stats[0].gender_data = { "M": n, "F": n, "O": n }
+           stats[0].age_data    = { "어린이": n, "10대": n, "20대": n,
+                                    "30대": n, "40대": n, "50대 이상": n }
+    ══════════════════════════════════════════ -->
+    {% if book_stats %}
+    <div class="stats-section" id="bookView">
+        <h2 class="stats-section-title">📊 독자 통계</h2>
+        <div class="stats-grid">
 
-        <div class="chart-container">
-            <div class="chart-title">연령대 분포</div>
-            <canvas id="ageChart"></canvas>
+            <!-- ① 성별 도넛 -->
+            <div class="glass-card tint-violet">
+                <div class="card-label">
+                    <span class="card-label-dot" style="background:#a78bfa;"></span>
+                    성별 분포
+                </div>
+                <div class="donut-wrapper">
+                    <div class="donut-svg-wrap">
+                        <svg id="donutSvg" width="140" height="140" viewBox="0 0 140 140">
+                            <!-- 배경 트랙 -->
+                            <circle cx="70" cy="70" r="52"
+                                fill="none"
+                                stroke="rgba(255,255,255,0.06)"
+                                stroke-width="18"/>
+                            <!-- 아크는 JS로 삽입 -->
+                        </svg>
+                        <div class="donut-center-label">
+                            <span class="big-num" id="donutTotal">0</span>
+                            <span class="small-txt">총 독자</span>
+                        </div>
+                    </div>
+                    <div class="donut-legend" id="donutLegend"></div>
+                </div>
+            </div>
+
+            <!-- ② 연령대 바 차트 -->
+            <div class="glass-card tint-cyan">
+                <div class="card-label">
+                    <span class="card-label-dot" style="background:#67e8f9;"></span>
+                    연령대 분포
+                </div>
+                <div class="bar-chart-wrap" id="ageBarChart"></div>
+            </div>
+
         </div>
     </div>
-</div>
 
-<!-- JSON 데이터 -->
-<script id="book-stats-data" type="application/json">
-    {{ book_stats_json|safe }}
-</script>
-{% endif %}
+    <!-- JSON 데이터 — 딱 한 번만 선언 -->
+    <script id="book-stats-data" type="application/json">{{ book_stats_json|safe }}</script>
+    {% endif %}
 
 
     <div class="content-section comments-section">
@@ -465,13 +622,7 @@
                     <span class="comment-date">{{ comment.created_at|date:"Y.m.d H:i" }}</span>
                 </div>
                 <div class="comment-text">{{ comment.comment }}</div>
-                <!-- {% if request.user.is_authenticated %}
-                    <button class="reply-btn" onclick="toggleReplyForm('{{ comment.public_uuid }}')" data-login-required>답글</button>
-                {% endif %} -->
-                <div class="reply-form" id="replyForm{{ comment.public_uuid }}">
-                    <!-- <textarea class="comment-input" id="replyInput{{ comment.public_uuid }}" placeholder="답글을 입력하세요..." style="min-height: 100px; margin-top: 12px;" data-login-required></textarea> -->
-                    <!-- <button class="submit-comment-btn" onclick="submitReply('{{ comment.public_uuid }}')" style="margin-top: 12px;" data-login-required>답글 작성</button> -->
-                </div>
+                <div class="reply-form" id="replyForm{{ comment.public_uuid }}"></div>
                 {% for reply in comment.replies.all %}
                 <div class="comment-reply">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
@@ -491,26 +642,188 @@
             </p>
             {% endfor %}
         </div>
-        
     </div>
 
- 
-
-
 </div>
-
-    <script id="book-stats-data" type="application/json">
-        {{ book_stats_json|safe }}
-    </script>
 
 {% endblock %}
 
 {% block extra_js %}
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<!-- <script src="{% static 'js/common/appWarning.js' %}"></script> -->
-
-
+{# Chart.js 불필요 — 순수 SVG 렌더링으로 교체 #}
 <script src="{% static 'js/book/book_detail.js' %}"></script>
 
+<script>
+/* ══════════════════════════════════════════
+   커스텀 SVG 통계 차트 렌더러
+   - 데이터: stats[0].gender_data { M, F, O }
+             stats[0].age_data    { 어린이, 10대, 20대, 30대, 40대, 50대 이상 }
+   - book_detail.js 의 renderCharts() 와 충돌하지 않도록
+     canvas#genderChart / canvas#ageChart 가 없으므로 해당 함수는 조용히 무시됨
+══════════════════════════════════════════ */
+(function () {
+    const el = document.getElementById('book-stats-data');
+    if (!el) return;
+
+    let statsArr;
+    try { statsArr = JSON.parse(el.textContent); }
+    catch (e) { console.warn('통계 JSON 파싱 오류', e); return; }
+
+    if (!statsArr || !statsArr.length) return;
+
+    const stat       = statsArr[0];
+    const genderData = stat.gender_data || {};
+    const ageData    = stat.age_data    || {};
+
+    /* ─── 팔레트 ─── */
+    const GENDER_PALETTE = [
+        { key: 'M', label: '남성', color: '#818cf8' },
+        { key: 'F', label: '여성', color: '#f472b6' },
+        { key: 'O', label: '기타', color: '#34d399' },
+    ];
+
+    /* JS 파일과 동일한 연령대 순서 */
+    const AGE_ORDER = ['어린이', '10대', '20대', '30대', '40대', '50대 이상'];
+
+    /* ─── 1. 도넛 차트 (성별) ─── */
+    function renderDonut() {
+        const svg      = document.getElementById('donutSvg');
+        const legendEl = document.getElementById('donutLegend');
+        const totalEl  = document.getElementById('donutTotal');
+        if (!svg || !legendEl || !totalEl) return;
+
+        const values = GENDER_PALETTE.map(p => Number(genderData[p.key]) || 0);
+        const total  = values.reduce((a, b) => a + b, 0);
+
+        animateCount(totalEl, total, 900);
+        if (total === 0) return;
+
+        const CX = 70, CY = 70, R = 52, SW = 18;
+        const CIRC = 2 * Math.PI * R;
+        let cumPct = 0;
+
+        GENDER_PALETTE.forEach(({ label, color }, i) => {
+            const val = values[i];
+            if (val === 0) return;
+
+            const pct  = val / total;
+            const dash = pct * CIRC;
+            const gap  = CIRC - dash;
+            const rotDeg = cumPct * 360 - 90;
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', CX);
+            circle.setAttribute('cy', CY);
+            circle.setAttribute('r', R);
+            circle.setAttribute('fill', 'none');
+            circle.setAttribute('stroke', color);
+            circle.setAttribute('stroke-width', SW);
+            circle.setAttribute('stroke-linecap', 'round');
+            circle.setAttribute('transform', `rotate(${rotDeg} ${CX} ${CY})`);
+            /* 시작: 전부 숨김 */
+            circle.style.strokeDasharray = `0 ${CIRC}`;
+            circle.style.transition = `stroke-dasharray 1.1s cubic-bezier(0.16,1,0.3,1) ${i * 0.18}s`;
+            svg.appendChild(circle);
+
+            /* 다음 프레임에 실제 값 → CSS transition 발동 */
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                circle.style.strokeDasharray = `${dash} ${gap}`;
+            }));
+
+            cumPct += pct;
+
+            /* 범례 항목 */
+            const item = document.createElement('div');
+            item.className = 'donut-legend-item';
+            item.innerHTML = `
+                <span class="legend-swatch" style="background:${color};"></span>
+                <span class="legend-text">${label}</span>
+                <span class="legend-pct">
+                    ${Math.round(pct * 100)}%
+                    <span style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.4);">(${val}명)</span>
+                </span>
+            `;
+            legendEl.appendChild(item);
+        });
+    }
+
+    /* ─── 2. 가로 바 차트 (연령대) ─── */
+    function renderAgeBars() {
+        const wrap = document.getElementById('ageBarChart');
+        if (!wrap) return;
+
+        /* AGE_ORDER 순서대로, 없으면 0 */
+        const values = AGE_ORDER.map(k => Number(ageData[k]) || 0);
+        const max    = Math.max(...values, 1);
+
+        AGE_ORDER.forEach((label, i) => {
+            const val   = values[i];
+            const pct   = (val / max) * 100;
+            /* 청록 → 인디고 그라디언트 */
+            const t     = AGE_ORDER.length > 1 ? i / (AGE_ORDER.length - 1) : 0;
+            const color = lerpColor('#67e8f9', '#818cf8', t);
+
+            const row = document.createElement('div');
+            row.className = 'bar-row';
+            row.innerHTML = `
+                <span class="bar-row-label">${label}</span>
+                <div class="bar-track">
+                    <div class="bar-fill" id="svgBar_${i}"
+                         style="background: linear-gradient(90deg, ${color}77, ${color}); width: 0%;">
+                    </div>
+                </div>
+                <span class="bar-row-value">${val}</span>
+            `;
+            wrap.appendChild(row);
+
+            /* 딜레이 후 width 적용 → CSS transition 발동 */
+            setTimeout(() => {
+                const fill = document.getElementById(`svgBar_${i}`);
+                if (!fill) return;
+                fill.style.width = pct + '%';
+                /* 글로우 닷 등장 */
+                setTimeout(() => fill.classList.add('loaded'), 950);
+            }, 80 + i * 90);
+        });
+    }
+
+    /* ─── 유틸: 숫자 카운트업 ─── */
+    function animateCount(el, target, duration) {
+        const start = performance.now();
+        (function step(now) {
+            const p = Math.min((now - start) / duration, 1);
+            el.textContent = Math.round(p * target);
+            if (p < 1) requestAnimationFrame(step);
+        })(performance.now());
+    }
+
+    /* ─── 유틸: 색상 보간 (hex) ─── */
+    function lerpColor(a, b, t) {
+        const ah = parseInt(a.replace('#',''), 16);
+        const bh = parseInt(b.replace('#',''), 16);
+        const ar=(ah>>16)&0xff, ag=(ah>>8)&0xff, ab=ah&0xff;
+        const br=(bh>>16)&0xff, bg=(bh>>8)&0xff, bb=bh&0xff;
+        return '#' + [
+            Math.round(ar+(br-ar)*t),
+            Math.round(ag+(bg-ag)*t),
+            Math.round(ab+(bb-ab)*t)
+        ].map(v => v.toString(16).padStart(2,'0')).join('');
+    }
+
+    /* ─── IntersectionObserver: 화면에 진입할 때 차트 렌더 ─── */
+    const section = document.getElementById('bookView');
+    if (section && 'IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) {
+                renderDonut();
+                renderAgeBars();
+                observer.disconnect();
+            }
+        }, { threshold: 0.15 });
+        observer.observe(section);
+    } else {
+        renderDonut();
+        renderAgeBars();
+    }
+})();
+</script>
 {% endblock %}
