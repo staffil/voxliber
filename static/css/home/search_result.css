@@ -49,12 +49,15 @@
 .search-page-input::placeholder {
     color: rgba(255, 255, 255, 0.5);
 }
-
+.search{
+    width: 25px;
+    height: 25px;
+}
 .search-page-btn {
     width: 44px;
     height: 44px;
     min-width: 44px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #3b3b3b 100%);
     border: none;
     border-radius: 50%;
     cursor: pointer;
