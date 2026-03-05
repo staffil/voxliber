@@ -371,7 +371,7 @@ body:not(.light-mode) .modal-content {
         .theme-toggle {
             width: 44px;
             height: 44px;
-            border-radius: 12px;
+            border-radius: 50%;
             background: var(--glass);
             border: 1px solid var(--border);
             color: var(--text);
