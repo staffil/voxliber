@@ -184,7 +184,7 @@ def main(request):
     try:
         demo_content = (
             Content.objects
-            .filter(audio_file__isnull=False)
+            .filter(audio_file__isnull=False,is_deleted=False)
             .exclude(audio_file='')
             .select_related('book')
             .order_by('?')
