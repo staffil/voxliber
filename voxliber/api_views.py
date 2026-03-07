@@ -2481,7 +2481,7 @@ def api_webnovel_generate_episode(request):
         "gpt":       (None,                              "gpt-4o",                    "OPENAI_API_KEY"),
         "grok":      ("https://api.x.ai/v1",             "grok-3",                    "GROK_API_KEY"),
         "gemini":    ("https://generativelanguage.googleapis.com/v1beta/openai/",
-                                                         "gemini-1.5-pro",            "GEMINI_API_KEY"),
+                                                         "gemini-2.0-flash",          "GEMINI_API_KEY"),
         "qwen":      ("https://dashscope.aliyuncs.com/compatible-mode/v1",
                                                          "qwen-max",                  "QWEN_API_KEY"),
         "deepseek":  ("https://api.groq.com/openai/v1",   "deepseek-r1-distill-llama-70b", "GROQ_API_KEY"),
