@@ -159,6 +159,18 @@ body.light-mode .wn-section-count { color: rgba(0,0,0,.35); }
   border-radius: 4px;
   letter-spacing: .04em;
 }
+.wn-adult-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #7C3AED;
+  color: #fff;
+  font-size: .62rem;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 4px;
+  letter-spacing: .02em;
+}
 .wn-card-title {
   font-size: .82rem;
   font-weight: 600;
@@ -299,6 +311,7 @@ body.light-mode .wn-cs-desc { color: rgba(0,0,0,.5); }
               <div class="wn-cover-empty">📖</div>
             {% endif %}
             <div class="wn-ai-badge">AI</div>
+            {% if novel.adult_choice %}<div class="wn-adult-badge">19+</div>{% endif %}
           </div>
           <div class="wn-card-title">{{ novel.name }}</div>
           <div class="wn-card-meta">

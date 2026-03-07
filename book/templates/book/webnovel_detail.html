@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/webnovel_detail.css' %}">
+<link rel="stylesheet" href="{% static 'css/blur.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -34,6 +35,7 @@
     </div>
     <div class="wn-info">
       <div class="wn-type-badge">✨ AI 웹소설</div>
+      {% if book.adult_choice %}<div class="wn-type-badge" style="background:#7C3AED;margin-left:6px;">🔞 19+</div>{% endif %}
       <h1 class="wn-title">{{ book.name }}</h1>
       <div class="wn-author">✍️ {{ book.author_name|default:book.user.nickname }}</div>
       <div class="wn-genres">
