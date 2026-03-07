@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ book.name }} - VOXLIBER 웹소설{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/book/webnovel_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="wn-detail-page">
+<br><br><br>
+  <!-- 헤더 -->
+  <div class="wn-header">
+    <div class="wn-cover-wrap">
+      {% if book.cover_img %}
+        <img src="{{ book.cover_img.url }}" alt="{{ book.name }}">
+      {% else %}
+        <div class="wn-cover-empty">📖</div>
+      {% endif %}
+    </div>
+    <div class="wn-info">
+      <div class="wn-type-badge">✨ AI 웹소설</div>
+      <h1 class="wn-title">{{ book.name }}</h1>
+      <div class="wn-author">✍️ {{ book.author_name|default:book.user.nickname }}</div>
+      <div class="wn-genres">
+        {% for g in book.genres.all %}
+          <span class="wn-genre-tag">{{ g.name }}</span>
+        {% endfor %}
+        {% if not book.genres.all %}
+          <span class="wn-genre-tag">웹소설</span>
+        {% endif %}
+      </div>
+      {% if book.tags.all %}
+      <div class="wn-tags">
+        {% for t in book.tags.all %}
+          <span class="wn-tag">#{{ t.name }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="wn-rating-row">
+        <span class="wn-stars">
+          {% for i in "12345" %}
+            {% if avg_rating >= forloop.counter %}⭐{% else %}☆{% endif %}
+          {% endfor %}
+        </span>
+        <span class="wn-rating-num">{{ avg_rating }}</span>
+        <span class="wn-review-cnt">({{ review_count }}개 리뷰)</span>
+      </div>
+      {% if book.description %}
+        <p class="wn-desc">{{ book.description }}</p>
+      {% endif %}
+      <div class="wn-meta-row">
+        <span>📚 총 <strong>{{ contents.count }}</strong>화</span>
+        <span>연재 <strong>{{ book.get_status_display }}</strong></span>
+        {% if reader_count %}<span>👥 독자 <strong>{{ reader_count }}</strong>명</span>{% endif %}
+      </div>
+      {% if request.user.is_authenticated %}
+      <div style="margin-top:16px;">
+        <button class="wn-bookmark-btn {% if is_bookmarked %}active{% endif %}" id="bookmarkBtn"
+          data-url="{% url 'book:toggle_bookmark' book_uuid=book.public_uuid %}">
+          {% if is_bookmarked %}🔖 북마크됨{% else %}🔖 북마크{% endif %}
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 탭 -->
+  <div class="wn-tabs">
+    <div class="wn-tab-btn active" data-wntab="episodes">에피소드</div>
+    <div class="wn-tab-btn" data-wntab="announce">작가 공지</div>
+    <div class="wn-tab-btn" data-wntab="stats">독자 통계</div>
+    <div class="wn-tab-btn" data-wntab="reviews">리뷰</div>
+    <div class="wn-tab-btn" data-wntab="comments">댓글</div>
+  </div>
+
+  <!-- 에피소드 탭 -->
+  <div id="wn-episodes" class="wn-tab-panel active">
+    <div class="wn-ep-list">
+      {% for ep in contents %}
+      <a href="{% url 'book:webnovel_episode' ep.public_uuid %}" class="wn-ep-item">
+        <span class="wn-ep-num">{{ ep.number }}화</span>
+        <span class="wn-ep-title">{{ ep.title }}</span>
+        {% if forloop.counter <= 3 %}<span class="wn-ep-new">NEW</span>{% endif %}
+        <span class="wn-ep-date">{{ ep.created_at|date:"Y.m.d" }}</span>
+      </a>
+      {% empty %}
+      <div style="text-align:center;padding:60px 0;color:rgba(255,255,255,.3);">
+        아직 등록된 에피소드가 없습니다
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 공지사항 탭 -->
+  <div id="wn-announce" class="wn-tab-panel">
+    {% for ann in announcements %}
+    <div class="wn-announce-item {% if ann.is_pinned %}pinned{% endif %}">
+      <div class="wn-announce-title">
+        {% if ann.is_pinned %}<span class="wn-announce-pin">📌 고정</span>{% endif %}
+        {{ ann.title }}
+      </div>
+      <div class="wn-announce-date">{{ ann.created_at|date:"Y.m.d H:i" }}</div>
+      {% if ann.content %}<p style="margin-top:8px;font-size:.88rem;color:rgba(255,255,255,.6);">{{ ann.content }}</p>{% endif %}
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:60px 0;color:rgba(255,255,255,.3);">등록된 공지사항이 없습니다</div>
+    {% endfor %}
+  </div>
+
+  <!-- 통계 탭 -->
+  <div id="wn-stats" class="wn-tab-panel">
+    <div class="wn-stats-grid">
+      <div class="wn-stat-card">
+        <h4>총 독자 수</h4>
+        <div class="wn-reader-count">{{ reader_count }}</div>
+        <div class="wn-reader-label">명이 이 작품을 읽었어요</div>
+      </div>
+      <div class="wn-stat-card">
+        <h4>성별 분포</h4>
+        <div class="wn-bar-row">
+          <span class="wn-bar-label">남성</span>
+          <div class="wn-bar-track"><div class="wn-bar-fill" style="width:{% if reader_count %}{% widthratio gender_data.M reader_count 100 %}{% else %}0{% endif %}%;background:#6366f1;"></div></div>
+          <span class="wn-bar-val">{{ gender_data.M }}</span>
+        </div>
+        <div class="wn-bar-row">
+          <span class="wn-bar-label">여성</span>
+          <div class="wn-bar-track"><div class="wn-bar-fill" style="width:{% if reader_count %}{% widthratio gender_data.F reader_count 100 %}{% else %}0{% endif %}%;background:#ec4899;"></div></div>
+          <span class="wn-bar-val">{{ gender_data.F }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="wn-stat-card">
+      <h4>연령대 분포</h4>
+      {% for age_label, age_cnt in age_data.items %}
+      <div class="wn-bar-row">
+        <span class="wn-bar-label">{{ age_label }}</span>
+        <div class="wn-bar-track"><div class="wn-bar-fill" style="width:{% if reader_count %}{% widthratio age_cnt reader_count 100 %}{% else %}0{% endif %}%;"></div></div>
+        <span class="wn-bar-val">{{ age_cnt }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 리뷰 탭 -->
+  <div id="wn-reviews" class="wn-tab-panel">
+    {% if request.user.is_authenticated %}
+    {% if not user_review %}
+    <div class="wn-review-form">
+      <h4>리뷰 작성</h4>
+      <form method="post" action="{% url 'book:submit_review' book.public_uuid %}">
+        {% csrf_token %}
+        <div class="wn-star-select" id="starSelect">
+          <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span>
+          <span data-v="4">☆</span><span data-v="5">☆</span>
+        </div>
+        <input type="hidden" name="rating" id="ratingInput" value="0">
+        <textarea name="review_text" class="wn-textarea" placeholder="이 작품에 대한 솔직한 리뷰를 남겨주세요..." required></textarea>
+        <div style="margin-top:10px;"><button type="submit" class="wn-btn-primary">리뷰 등록</button></div>
+      </form>
+    </div>
+    {% endif %}
+    {% endif %}
+    {% for review in recent_reviews %}
+    <div class="wn-review-item">
+      <div class="wn-review-user">{{ review.user.nickname }} &nbsp; <span style="color:#fbbf24;">{{ "⭐"|make_list|slice:review.rating|join:"" }}</span></div>
+      <div class="wn-review-text">{{ review.review_text }}</div>
+      <div style="font-size:.73rem;color:rgba(255,255,255,.3);margin-top:6px;">{{ review.created_at|date:"Y.m.d" }}</div>
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:60px 0;color:rgba(255,255,255,.3);">첫 번째 리뷰를 남겨보세요</div>
+    {% endfor %}
+  </div>
+
+  <!-- 댓글 탭 -->
+  <div id="wn-comments" class="wn-tab-panel">
+    {% if request.user.is_authenticated %}
+    <div class="wn-comment-form">
+      <form method="post" action="{% url 'book:submit_book_comment' book.public_uuid %}">
+        {% csrf_token %}
+        <textarea name="content" class="wn-textarea" placeholder="댓글을 작성하세요..." required></textarea>
+        <div style="margin-top:10px;"><button type="submit" class="wn-btn-primary">댓글 등록</button></div>
+      </form>
+    </div>
+    {% endif %}
+    {% for comment in comments %}
+    <div class="wn-comment-item">
+      <div class="wn-comment-user">{{ comment.user.nickname }}</div>
+      <div class="wn-comment-text">{{ comment.content }}</div>
+      <div style="font-size:.73rem;color:rgba(255,255,255,.3);margin-top:6px;">{{ comment.created_at|date:"Y.m.d H:i" }}</div>
+      {% for reply in comment.replies.all %}
+      <div class="wn-reply">
+        <strong>{{ reply.user.nickname }}</strong> &nbsp; {{ reply.content }}
+      </div>
+      {% endfor %}
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:60px 0;color:rgba(255,255,255,.3);">첫 번째 댓글을 남겨보세요</div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 탭 전환
+document.querySelectorAll('.wn-tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.wn-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.wn-tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById('wn-' + btn.dataset.wntab);
+    if (panel) panel.classList.add('active');
+  });
+});
+
+// 별점 선택
+var stars = document.querySelectorAll('#starSelect span');
+stars.forEach(function(s) {
+  s.addEventListener('click', function() {
+    var v = parseInt(this.dataset.v);
+    document.getElementById('ratingInput').value = v;
+    stars.forEach(function(st, i) { st.textContent = i < v ? '⭐' : '☆'; });
+  });
+});
+
+// 북마크 토글
+var bookmarkBtn = document.getElementById('bookmarkBtn');
+if (bookmarkBtn) {
+  bookmarkBtn.addEventListener('click', function() {
+    var url = this.dataset.url;
+    fetch(url, {method:'POST', headers:{'X-CSRFToken': '{{ csrf_token }}', 'Content-Type':'application/json'}})
+      .then(function(r){return r.json();})
+      .then(function(data){
+        if (data.success) {
+          if (data.is_bookmarked) {
+            bookmarkBtn.textContent = '🔖 북마크됨';
+            bookmarkBtn.classList.add('active');
+          } else {
+            bookmarkBtn.textContent = '🔖 북마크';
+            bookmarkBtn.classList.remove('active');
+          }
+        }
+      });
+  });
+}
+</script>
+{% endblock %}

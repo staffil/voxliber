@@ -8,6 +8,7 @@ app_name = "main"
 urlpatterns = [
     path("", views.main, name="main"),
     path("ai/novel/main/", views.ai_novel_main, name="ai_novel_main"),
+    path('webnovel/', views.webnovel, name='webnovel'),
     path('filter-books/', views.filter_books_by_genre, name='filter_books'),
     path('search/', views.search_books, name='search_books'),
     path('tts/health/', views.health_check, name='health_check'),

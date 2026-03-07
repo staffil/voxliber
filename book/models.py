@@ -70,6 +70,18 @@ class Books(models.Model):
     is_deleted = models.BooleanField(default=False, db_index=True, help_text="소프트 삭제 여부 (데이터는 보존)")
     deleted_at = models.DateTimeField(null=True, blank=True)
 
+    BOOK_TYPE_CHOICES = [
+        ('audiobook', '오디오북'),
+        ('webnovel', '웹소설'),
+    ]
+    book_type = models.CharField(
+        max_length=20,
+        choices=BOOK_TYPE_CHOICES,
+        default='audiobook',
+        db_index=True,
+        help_text="콘텐츠 유형 (오디오북 / 웹소설)"
+    )
+
     class Meta:
         db_table = 'book'
         verbose_name = '책 정보'

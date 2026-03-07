@@ -204,7 +204,10 @@ def main(request):
     except Exception:
         pass
 
+    webnovel_list = Books.objects.filter(book_type='webnovel', is_deleted=False).prefetch_related('genres').order_by('-id')[:40]
+
     context = {
+        "webnovel_list": webnovel_list,
         "news_list": news_list,
         "new_books": new_books,
         "popular_books": popular_books,
@@ -382,15 +385,14 @@ def search_books(request):
         })
 
     # 📚 책 검색 (제목, 설명, 태그로 검색)
-    books = Books.objects.filter(
+    book_qs = Books.objects.filter(
         Q(name__icontains=query) |
         Q(description__icontains=query) |
         Q(tags__name__icontains=query)
-    ).select_related('user').prefetch_related('genres', 'tags').distinct()[:20]
+    ).select_related('user').prefetch_related('genres', 'tags').filter(is_deleted=False).distinct()
 
-    books_data = []
-    for book in books:
-        books_data.append({
+    def _book_dict(book):
+        return {
             'id': book.id,
             'public_uuid': str(book.public_uuid),
             'name': book.name,
@@ -402,7 +404,12 @@ def search_books(request):
             'tags': [{'name': t.name} for t in book.tags.all()],
             'contents_count': book.contents.count(),
             'score': float(book.book_score),
-        })
+            'book_type': book.book_type,
+        }
+
+    audiobooks_data = [_book_dict(b) for b in book_qs.filter(book_type='audiobook')[:20]]
+    webnovels_data  = [_book_dict(b) for b in book_qs.filter(book_type='webnovel')[:20]]
+    books_data = audiobooks_data + webnovels_data
 
     # 👤 작가 검색 (닉네임으로 검색)
     authors = Users.objects.filter(
@@ -475,11 +482,15 @@ def search_books(request):
 
     return render(request, "main/search_result.html", {
         'books': books_data,
+        'audiobooks': audiobooks_data,
+        'webnovels': webnovels_data,
         'authors': authors_data,
         'ai_stories': ai_stories_data,
-        'snap_result':snap_result,
+        'snap_result': snap_result,
         'query': query,
         'books_count': len(books_data),
+        'audiobooks_count': len(audiobooks_data),
+        'webnovels_count': len(webnovels_data),
         'authors_count': len(authors_data),
         'ai_stories_count': len(ai_stories_data),
         'snap_result_count': len(snap_result)
@@ -802,7 +813,14 @@ def ai_novel_main(request):
     return render(request, "main/ai_novel_main.html", content)
 
 
-# snap list 
+# AI 웹소설 페이지
+def webnovel(request):
+    from book.models import Books
+    novels = Books.objects.filter(book_type='webnovel', is_deleted=False).order_by('-id')[:40]
+    return render(request, "main/webnovel.html", {"novels": novels})
+
+
+# snap list
 def snap_list(request):
     snap_list = BookSnap.objects.order_by("?")[:15]  # 랜덤 15개
 

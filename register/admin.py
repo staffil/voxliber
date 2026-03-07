@@ -20,7 +20,10 @@ class VisitStatsView(View):
         year = int(request.GET.get('year', today.year))
         month = int(request.GET.get('month', today.month))
 
-        today_qs = UserVisitLog.objects.filter(visited_at__date=today)
+        # superuser 제외 base queryset
+        base_qs = UserVisitLog.objects.exclude(user__is_superuser=True)
+
+        today_qs = base_qs.filter(visited_at__date=today)
         today_total = today_qs.count()
         today_unique = today_qs.values('ip_address').distinct().count()
 
@@ -33,7 +36,7 @@ class VisitStatsView(View):
         )
 
         weekly = (
-            UserVisitLog.objects
+            base_qs
             .annotate(date=TruncDate('visited_at'))
             .values('date')
             .annotate(count=Count('id'))
@@ -47,7 +50,7 @@ class VisitStatsView(View):
         last_day = date(year, month, cal.monthrange(year, month)[1])
 
         monthly_visits = (
-            UserVisitLog.objects
+            base_qs
             .filter(visited_at__date__gte=first_day, visited_at__date__lte=last_day)
             .annotate(date=TruncDate('visited_at'))
             .values('date')
@@ -72,7 +75,7 @@ class VisitStatsView(View):
         # 캘린더 주 단위 구성
         cal_matrix = cal.monthcalendar(year, month)
 
-        all_users = Users.objects.filter(is_active=True).order_by('nickname')
+        all_users = Users.objects.filter(is_active=True, is_superuser=False).order_by('nickname')
         cal_weeks = []
         for week in cal_matrix:
             week_days = []

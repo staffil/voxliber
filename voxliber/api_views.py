@@ -2373,3 +2373,164 @@ def api_announcement(request):
             "image_url": image_url,
         }
     })
+
+
+# ==================== 웹소설 자동 생성 API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_webnovel_generate_episode(request):
+    """
+    AI 웹소설 에피소드 자동 생성 API
+
+    POST /api/v1/webnovel/generate-episode/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "book_uuid": "...",          // 대상 웹소설 UUID
+        "episode_number": 2,         // 생성할 화 번호 (없으면 다음 번호 자동)
+        "episode_title": "제목",     // 선택 (없으면 AI가 결정)
+        "writing_style": "판타지 로맨스, 섬세한 감정 묘사 위주"  // 선택
+    }
+    """
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, Exception):
+        return api_response(success=False, message="JSON 파싱 오류", status_code=400)
+
+    book_uuid = data.get("book_uuid")
+    if not book_uuid:
+        return api_response(success=False, message="book_uuid 필요", status_code=400)
+
+    try:
+        book = Books.objects.get(public_uuid=book_uuid, book_type='webnovel', is_deleted=False)
+    except Books.DoesNotExist:
+        return api_response(success=False, message="웹소설을 찾을 수 없습니다", status_code=404)
+
+    # 다음 에피소드 번호 결정
+    last_ep = Content.objects.filter(book=book, is_deleted=False).order_by('-number').first()
+    next_number = (last_ep.number + 1) if last_ep else 1
+    episode_number = data.get("episode_number", next_number)
+
+    # 이미 존재하면 충돌
+    if Content.objects.filter(book=book, number=episode_number, is_deleted=False).exists():
+        return api_response(success=False, message=f"{episode_number}화가 이미 존재합니다", status_code=409)
+
+    # provider 결정: "claude"(기본), "gpt", "grok"
+    provider = data.get("provider", "claude")
+
+    # 이전 에피소드 컨텍스트
+    # gpt/grok: 큰 컨텍스트 윈도우 활용 → 최근 5화 전체 텍스트
+    # claude: 최근 3화 요약 (600자)
+    if provider in ("gpt", "grok"):
+        prev_episodes = Content.objects.filter(book=book, is_deleted=False).order_by('-number')[:5]
+        prev_context = ""
+        for ep in reversed(list(prev_episodes)):
+            prev_context += f"\n\n[{ep.number}화: {ep.title}]\n{ep.text}"
+    else:
+        prev_episodes = Content.objects.filter(book=book, is_deleted=False).order_by('-number')[:3]
+        prev_context = ""
+        for ep in reversed(list(prev_episodes)):
+            prev_context += f"\n\n[{ep.number}화: {ep.title}]\n{ep.text[:600]}..."
+
+    writing_style = data.get("writing_style", "한국 웹소설 스타일, 감정 묘사 풍부, 대화와 서술 균형")
+    episode_title_hint = data.get("episode_title", "")
+
+    title_instruction = f"제목: {episode_title_hint}" if episode_title_hint else "적절한 제목을 직접 결정하세요."
+
+    prompt = f"""당신은 한국 웹소설 작가입니다.
+
+작품 정보:
+- 제목: {book.name}
+- 설명: {book.description or '없음'}
+- 문체: {writing_style}
+
+이전 스토리 흐름:
+{prev_context if prev_context else "(첫 번째 화입니다)"}
+
+---
+{episode_number}화를 작성하세요.
+{title_instruction}
+
+출력 형식 (JSON):
+{{
+  "title": "화 제목",
+  "text": "본문 전체 내용 (줄바꿈으로 단락 구분, 최소 800자 이상)"
+}}
+
+규칙:
+- 나레이션과 대화를 자연스럽게 섞어 쓰세요
+- 대화문은 "" 안에 작성
+- 단락은 빈 줄로 구분
+- 감정 태그([calm], [excited] 등)는 넣지 마세요
+- 반드시 유효한 JSON만 출력하세요"""
+
+    try:
+        # provider별 AI 호출
+        if provider in ("gpt", "grok"):
+            from openai import OpenAI as _OpenAI
+            if provider == "gpt":
+                _key = os.environ.get("OPENAI_API_KEY", "")
+                if not _key:
+                    return api_response(success=False, message="OPENAI_API_KEY 환경변수가 설정되지 않았습니다", status_code=500)
+                _ai = _OpenAI(api_key=_key)
+                _model = "gpt-4o"
+            else:  # grok
+                _key = os.environ.get("GROK_API_KEY", "")
+                if not _key:
+                    return api_response(success=False, message="GROK_API_KEY 환경변수가 설정되지 않았습니다", status_code=500)
+                _ai = _OpenAI(api_key=_key, base_url="https://api.x.ai/v1")
+                _model = "grok-3"
+            completion = _ai.chat.completions.create(
+                model=_model,
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            response_text = completion.choices[0].message.content.strip()
+        else:
+            # Claude (기본)
+            import anthropic
+            anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+            if not anthropic_api_key:
+                return api_response(success=False, message="ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다", status_code=500)
+            _client = anthropic.Anthropic(api_key=anthropic_api_key)
+            message = _client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            response_text = message.content[0].text.strip()
+
+        # JSON 파싱
+        import re
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if not json_match:
+            return api_response(success=False, message="AI 응답 파싱 실패", status_code=500)
+
+        ep_data = json.loads(json_match.group())
+        ep_title = ep_data.get("title", f"제{episode_number}화")
+        ep_text = ep_data.get("text", "")
+
+        if not ep_text:
+            return api_response(success=False, message="AI가 본문을 생성하지 못했습니다", status_code=500)
+
+        # Content 저장
+        episode = Content.objects.create(
+            book=book,
+            number=episode_number,
+            title=ep_title,
+            text=ep_text,
+        )
+
+        return api_response(data={
+            "episode_number": episode.number,
+            "episode_title": episode.title,
+            "content_uuid": str(episode.public_uuid),
+            "text_length": len(ep_text),
+            "url": f"/book/webnovel/episode/{episode.public_uuid}/",
+        })
+
+    except json.JSONDecodeError as e:
+        return api_response(success=False, message=f"AI 응답 JSON 파싱 오류: {str(e)}", status_code=500)
+    except Exception as e:
+        return api_response(success=False, message=f"에피소드 생성 오류: {str(e)}", status_code=500)

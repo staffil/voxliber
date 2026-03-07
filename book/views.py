@@ -916,6 +916,115 @@ def book_detail(request, book_uuid):
     return render(request, "book/book_detail.html", context)
 
 
+# ==================== 웹소설 전용 뷰 ====================
+
+def webnovel_detail(request, book_uuid):
+    from book.models import BookReview, BookComment, ReadingProgress, AuthorAnnouncement, BookmarkBook
+    from django.db.models import Avg, Count
+    from register.models import Users
+
+    book = get_object_or_404(
+        Books.objects.select_related('user').prefetch_related('genres', 'tags'),
+        public_uuid=book_uuid,
+        book_type='webnovel'
+    )
+
+    contents = Content.objects.filter(book=book, is_deleted=False).order_by('number')
+
+    avg_rating = book.reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+    review_count = book.reviews.count()
+    user_review = None
+    reading_progress = None
+    is_bookmarked = False
+    if request.user.is_authenticated:
+        user_review = BookReview.objects.filter(user=request.user, book=book).first()
+        reading_progress = ReadingProgress.objects.filter(user=request.user, book=book).first()
+        is_bookmarked = BookmarkBook.objects.filter(user=request.user, book=book).exists()
+
+    recent_reviews = book.reviews.select_related('user').order_by('-created_at')[:5]
+    comments = book.book_comments.filter(parent=None).select_related('user').prefetch_related('replies__user').order_by('-created_at')
+    announcements = AuthorAnnouncement.objects.filter(book=book).select_related('author').order_by('-is_pinned', '-created_at')
+
+    # 독자 통계
+    readers = ReadingProgress.objects.filter(book=book)
+    reader_count = readers.values('user').distinct().count()
+    reader_user_ids = readers.values_list('user_id', flat=True).distinct()
+    gender_stats = Users.objects.filter(user_id__in=reader_user_ids).values('gender').annotate(count=Count('user_id'))
+    gender_data = {'M': 0, 'F': 0, 'O': 0}
+    for g in gender_stats:
+        gender_data[g['gender'] or 'O'] = g['count']
+
+    ages = Users.objects.filter(user_id__in=reader_user_ids, age__gt=0).values_list('age', flat=True)
+    age_data = {"10대": 0, "20대": 0, "30대": 0, "40대": 0, "50대 이상": 0}
+    for age in ages:
+        if 10 <= age < 20: age_data["10대"] += 1
+        elif 20 <= age < 30: age_data["20대"] += 1
+        elif 30 <= age < 40: age_data["30대"] += 1
+        elif 40 <= age < 50: age_data["40대"] += 1
+        elif age >= 50: age_data["50대 이상"] += 1
+
+    context = {
+        "book": book,
+        "contents": contents,
+        "avg_rating": round(avg_rating, 1),
+        "review_count": review_count,
+        "user_review": user_review,
+        "recent_reviews": recent_reviews,
+        "comments": comments,
+        "reading_progress": reading_progress,
+        "announcements": announcements,
+        "reader_count": reader_count,
+        "gender_data": gender_data,
+        "age_data": age_data,
+        "is_bookmarked": is_bookmarked,
+    }
+    return render(request, "book/webnovel_detail.html", context)
+
+
+def webnovel_episode(request, content_uuid):
+    import re
+    from book.models import Content, ReadingProgress
+    from django.utils import timezone
+
+    content = get_object_or_404(Content, public_uuid=content_uuid, is_deleted=False)
+    book = content.book
+
+    if book.book_type != 'webnovel':
+        from django.shortcuts import redirect
+        return redirect('book:content_detail', content_uuid=content_uuid)
+
+    prev_content = Content.objects.filter(book=book, number__lt=content.number, is_deleted=False).order_by('-number').first()
+    next_content = Content.objects.filter(book=book, number__gt=content.number, is_deleted=False).order_by('number').first()
+
+    # 감정 태그 제거 후 단락 분리
+    raw_text = content.text or ''
+    clean_text = re.sub(r'\[[^\]]+\]', '', raw_text).strip()
+    paragraphs = [p.strip() for p in clean_text.split('\n') if p.strip()]
+
+    if request.user.is_authenticated:
+        progress, _ = ReadingProgress.objects.get_or_create(
+            user=request.user,
+            book=book,
+            defaults={'status': 'reading', 'last_read_content_number': content.number, 'current_content': content}
+        )
+        if content.number >= progress.last_read_content_number:
+            progress.last_read_content_number = content.number
+            progress.current_content = content
+            progress.last_read_at = timezone.now()
+            total = book.contents.filter(is_deleted=False).count()
+            progress.status = 'completed' if content.number >= total else 'reading'
+            progress.save()
+
+    context = {
+        "content": content,
+        "book": book,
+        "paragraphs": paragraphs,
+        "prev_content": prev_content,
+        "next_content": next_content,
+    }
+    return render(request, "book/webnovel_episode.html", context)
+
+
 # 내 작품 관리
 @login_required
 @login_required_to_main
@@ -1195,15 +1304,12 @@ def submit_review(request, book_uuid):
 
         print(f"📊 평균 평점 업데이트: {book.book_score} (총 {book.reviews.count()}개 리뷰)")
 
-        return JsonResponse({
-            'success': True,
-            'message': '리뷰가 등록되었습니다.' if created else '리뷰가 수정되었습니다.',
-            'avg_rating': float(book.book_score),
-            'review_count': book.reviews.count()
-        })
+        referer = request.META.get('HTTP_REFERER', '/')
+        return redirect(referer)
     except Exception as e:
         print(f"❌ 리뷰 제출 오류: {str(e)}")
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        referer = request.META.get('HTTP_REFERER', '/')
+        return redirect(referer)
 
 
 # 책 댓글 작성
@@ -1213,33 +1319,28 @@ def submit_book_comment(request, book_uuid):
     from book.models import BookComment
 
     book = get_object_or_404(Books, public_uuid=book_uuid)
-    comment_text = request.POST.get('comment', '').strip()
+    comment_text = (request.POST.get('content') or request.POST.get('comment', '')).strip()
     parent_id = request.POST.get('parent_id', None)
 
+    referer = request.META.get('HTTP_REFERER', '/')
     if not comment_text:
-        return JsonResponse({'error': '댓글 내용을 입력해주세요.'}, status=400)
+        return redirect(referer)
 
     parent = None
     if parent_id:
-        parent = BookComment.objects.get(id=parent_id)
+        try:
+            parent = BookComment.objects.get(id=parent_id)
+        except BookComment.DoesNotExist:
+            pass
 
-    comment = BookComment.objects.create(
+    BookComment.objects.create(
         user=request.user,
         book=book,
         comment=comment_text,
         parent=parent
     )
 
-    return JsonResponse({
-        'success': True,
-        'comment': {
-            'id': comment.id,
-            'user': comment.user.nickname,
-            'comment': comment.comment,
-            'created_at': comment.created_at.strftime('%Y.%m.%d %H:%M'),
-            'is_reply': parent is not None
-        }
-    })
+    return redirect(referer)
 
 
 # 미리듣기 페이지
@@ -2582,14 +2683,17 @@ def my_bookmarks(request):
     from character.models import StoryBookmark, Story
     from django.core.paginator import Paginator
 
-    # 책 북마크
-    bookmarks = BookmarkBook.objects.filter(
+    all_bookmarks = BookmarkBook.objects.filter(
         user=request.user
     ).select_related('book', 'book__user').prefetch_related(
         'book__genres', 'book__tags'
     ).order_by('-created_at')
 
-    paginator = Paginator(bookmarks, 20)
+    # 오디오북 / 웹소설 분리
+    audiobook_bms = [bm for bm in all_bookmarks if getattr(bm.book, 'book_type', 'audiobook') == 'audiobook']
+    webnovel_bms  = [bm for bm in all_bookmarks if getattr(bm.book, 'book_type', 'audiobook') == 'webnovel']
+
+    paginator = Paginator(audiobook_bms, 20)
     page = request.GET.get('page')
     bookmarks_page = paginator.get_page(page)
 
@@ -2602,6 +2706,7 @@ def my_bookmarks(request):
 
     context = {
         'bookmarks': bookmarks_page,
+        'webnovel_bookmarks': webnovel_bms,
         'story_bookmarks': story_bookmarks,
     }
 

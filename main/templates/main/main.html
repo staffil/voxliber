@@ -1328,6 +1328,17 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
 
 
   <!-- ============================================================
+       MAIN TAB BAR
+       ============================================================ -->
+  <div class="vm-tabs-bar">
+    <div class="vm-tabs-inner">
+      <div class="vm-tab active" data-p="vm-ab">오디오북</div>
+      <div class="vm-tab" data-p="vm-ai">웹소설</div>
+    </div>
+  </div>
+
+
+  <!-- ============================================================
        PANEL: 오디오북
        ============================================================ -->
   <div id="vm-ab" class="vm-panel active">
@@ -1560,10 +1571,53 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
 
 
   <!-- ============================================================
-       PANEL: AI 소설 비활성화
+       PANEL: 웹소설
        ============================================================ -->
   <div id="vm-ai" class="vm-panel">
-    ...
+
+    <div class="vm-inner vm-section">
+      <div class="vm-eyebrow">✨ AI 창작</div>
+      <h2 class="vm-title">AI가 쓴 <span class="ac">웹소설 모음</span></h2>
+      <p style="font-size:.92rem; color:rgba(255,255,255,.45); margin-bottom:36px; line-height:1.7;">
+        인공지능이 직접 집필한 웹소설을 만나보세요.<br>
+        판타지, 로맨스, SF까지 다양한 장르의 이야기가 준비되어 있습니다.
+      </p>
+
+      {% if not webnovel_list %}
+      <!-- 준비 중 배너 -->
+      <div style="background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1));border:1px solid rgba(99,102,241,.25);border-radius:16px;padding:36px 32px;display:flex;align-items:center;gap:24px;margin-bottom:40px;">
+        <div style="font-size:2.8rem;flex-shrink:0;">🤖</div>
+        <div>
+          <div style="font-size:1.05rem;font-weight:700;margin-bottom:6px;">AI 웹소설 서비스 준비 중</div>
+          <div style="font-size:.88rem;color:rgba(255,255,255,.5);line-height:1.6;">
+            AI가 집필하는 웹소설 서비스를 준비하고 있습니다.<br>
+            곧 다양한 장르의 AI 웹소설을 만나볼 수 있어요.
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 웹소설 그리드 -->
+      <div class="vm-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:20px 14px;">
+        {% for novel in webnovel_list %}
+        <a href="{% url 'book:webnovel_detail' novel.public_uuid %}" style="display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit;transition:transform .18s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+          <div style="width:100%;aspect-ratio:3/4;border-radius:8px;overflow:hidden;background:rgba(99,102,241,.12);position:relative;">
+            {% if novel.cover_img %}
+              <img src="{{ novel.cover_img.url }}" alt="{{ novel.name }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            {% else %}
+              <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.4rem;">📖</div>
+            {% endif %}
+            <div style="position:absolute;top:8px;left:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:.6rem;font-weight:700;padding:3px 7px;border-radius:4px;">AI</div>
+          </div>
+          <div style="font-size:.82rem;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ novel.name }}</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.38);">
+            {% if novel.genres.all.0 %}{{ novel.genres.all.0.name }}{% else %}웹소설{% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
   </div>
 
 

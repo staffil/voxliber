@@ -14,6 +14,8 @@ urlpatterns=[
     path("book/serialization/", views.book_serialization, name="book_serialization"),
     path("detail/<uuid:book_uuid>/", views.book_detail, name="book_detail"),
     path("content/<uuid:content_uuid>/", views.content_detail, name="content_detail"),
+    path("webnovel/<uuid:book_uuid>/", views.webnovel_detail, name="webnovel_detail"),
+    path("webnovel/episode/<uuid:content_uuid>/", views.webnovel_episode, name="webnovel_episode"),
     path("content/<uuid:content_uuid>/save-listening/", views.save_listening_history, name="save_listening_history"),
 
     path("review/<uuid:book_uuid>/", views.submit_review, name="submit_review"),
@@ -174,5 +176,10 @@ urlpatterns=[
     path("api/books/<uuid:book_uuid>/bookmark/", api_views.api_bookmark_toggle, name="api_bookmark_toggle"),
     path("api/books/<uuid:book_uuid>/bookmark/note/", api_views.api_bookmark_update_note, name="api_bookmark_update_note"),
     path("api/bookmarks/", api_views.api_user_bookmarks, name="api_user_bookmarks"),
+
+    # 📖 Webnovel API
+    path("api/webnovels/", api_views.api_webnovel_list, name="api_webnovel_list"),
+    path("api/webnovels/<uuid:book_uuid>/", api_views.api_webnovel_detail, name="api_webnovel_detail"),
+    path("api/webnovel/episode/<uuid:content_uuid>/", api_views.api_webnovel_episode, name="api_webnovel_episode"),
 
 ]

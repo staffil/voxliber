@@ -15,7 +15,7 @@
         <h2> "{{ query }}" 검색 결과</h2>
         <div class="search-stats">
             총 {{ books_count|add:authors_count }}개 결과
-            (책 {{ books_count }}개, 작가 {{ authors_count }}명)
+            (오디오북 {{ audiobooks_count }}개 · 웹소설 {{ webnovels_count }}개 · 작가 {{ authors_count }}명)
         </div>
     </div>
 
@@ -130,30 +130,31 @@
 
     <!-- 탭 네비게이션 -->
     <div class="search-tabs">
-        <button class="search-tab active" data-tab="books">
-            책
-            <span class="search-tab-count">{{ books_count }}</span>
+        <button class="search-tab active" data-tab="audiobooks">
+            오디오북
+            <span class="search-tab-count">{{ audiobooks_count }}</span>
+        </button>
+
+        <button class="search-tab" data-tab="webnovels">
+            웹소설
+            <span class="search-tab-count">{{ webnovels_count }}</span>
         </button>
 
         <button class="search-tab" data-tab="authors">
             작가
             <span class="search-tab-count">{{ authors_count }}</span>
         </button>
-        <!-- <button class="search-tab" data-tab="ai-stories">
-            AI 스토리
-            <span class="search-tab-count">{{ ai_stories_count }}</span>
-        </button> -->
         <button class="search-tab" data-tab="snap_result">
             SNAP
             <span class="search-tab-count">{{ snap_result_count }}</span>
         </button>
     </div>
 
-    <!-- ================= 책 탭 ================= -->
-    <div id="books-tab" class="tab-content active">
-        {% if books %}
+    <!-- ================= 오디오북 탭 ================= -->
+    <div id="audiobooks-tab" class="tab-content active">
+        {% if audiobooks %}
         <div class="books-grid">
-            {% for book in books %}
+            {% for book in audiobooks %}
             <a href="/book/detail/{{ book.public_uuid }}/" class="book-item">
                 <div class="book-cover-wrapper">
                     {% if book.cover_img %}
@@ -164,18 +165,12 @@
                     </div>
                     {% endif %}
                 </div>
-
                 <div class="book-details">
                     <h3>{{ book.name }}</h3>
-                    <p class="book-meta">
-                        {{ book.author }} • {{ book.contents_count }}화
-                    </p>
-
+                    <p class="book-meta">{{ book.author }} • {{ book.contents_count }}화</p>
                     <div class="book-genres">
                         {% for g in book.genres|slice:":2" %}
-                        <span class="genre-tag" style="background: {{ g.color }}22; color: {{ g.color }}">
-                            {{ g.name }}
-                        </span>
+                        <span class="genre-tag" style="background: {{ g.color }}22; color: {{ g.color }}">{{ g.name }}</span>
                         {% endfor %}
                     </div>
                 </div>
@@ -223,8 +218,43 @@
 </svg>
             </div>
             <p class="no-results-text">
-                "{{ query }}"와 일치하는 책을 찾을 수 없습니다.
+                "{{ query }}"와 일치하는 오디오북을 찾을 수 없습니다.
             </p>
+            <p class="no-results-hint">다른 검색어를 시도해보세요.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ================= 웹소설 탭 ================= -->
+    <div id="webnovels-tab" class="tab-content">
+        {% if webnovels %}
+        <div class="books-grid">
+            {% for book in webnovels %}
+            <a href="/book/webnovel/{{ book.public_uuid }}/" class="book-item">
+                <div class="book-cover-wrapper">
+                    {% if book.cover_img %}
+                    <img src="{{ book.cover_img }}" alt="{{ book.name }}" loading="lazy">
+                    {% else %}
+                    <div class="book-placeholder">
+                        {{ book.name|slice:":2"|upper }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="book-details">
+                    <h3>{{ book.name }}</h3>
+                    <p class="book-meta">{{ book.author }} • {{ book.contents_count }}화</p>
+                    <div class="book-genres">
+                        {% for g in book.genres|slice:":2" %}
+                        <span class="genre-tag" style="background: {{ g.color }}22; color: {{ g.color }}">{{ g.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-results">
+            <p class="no-results-text">"{{ query }}"와 일치하는 웹소설을 찾을 수 없습니다.</p>
             <p class="no-results-hint">다른 검색어를 시도해보세요.</p>
         </div>
         {% endif %}

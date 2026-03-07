@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ content.title }} - {{ book.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/book/webnovel_episode.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="wnr-page">
+<br><br><br>
+  <!-- 상단 바 -->
+  <div class="wnr-topbar">
+    <a href="{% url 'book:webnovel_detail' book.public_uuid %}" class="wnr-back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      목차
+    </a>
+    <div class="wnr-ep-info">{{ content.number }}화</div>
+    <div class="wnr-font-ctrl">
+      <button class="wnr-font-btn" id="fontDn">A-</button>
+      <button class="wnr-font-btn" id="fontUp">A+</button>
+    </div>
+  </div>
+
+  <!-- 본문 -->
+  <div class="wnr-inner">
+    <div class="wnr-ep-header">
+      <div class="wnr-book-name">{{ book.name }}</div>
+      <div class="wnr-ep-num">제{{ content.number }}화</div>
+      <h1 class="wnr-ep-title">{{ content.title }}</h1>
+    </div>
+
+    <div class="wnr-body" id="wnrBody">
+      {% for para in paragraphs %}
+        {% if '"' in para or "'" in para %}
+          <p class="wnr-para dialogue">{{ para }}</p>
+        {% else %}
+          <p class="wnr-para">{{ para }}</p>
+        {% endif %}
+      {% empty %}
+        <p class="wnr-para" style="opacity:.4;">본문이 없습니다.</p>
+      {% endfor %}
+    </div>
+
+    <!-- 이전/다음 -->
+    <div class="wnr-nav">
+      {% if prev_content %}
+      <a href="{% url 'book:webnovel_episode' prev_content.public_uuid %}" class="wnr-nav-btn prev">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        <div>
+          <div class="wnr-nav-sub">이전화</div>
+          <div class="wnr-nav-ep">{{ prev_content.title }}</div>
+        </div>
+      </a>
+      {% else %}
+      <div class="wnr-nav-btn disabled prev">처음 화입니다</div>
+      {% endif %}
+
+      {% if next_content %}
+      <a href="{% url 'book:webnovel_episode' next_content.public_uuid %}" class="wnr-nav-btn next">
+        <div>
+          <div class="wnr-nav-sub">다음화</div>
+          <div class="wnr-nav-ep">{{ next_content.title }}</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      {% else %}
+      <div class="wnr-nav-btn disabled next">마지막 화입니다</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- 목차 버튼 -->
+<button class="wnr-toc-btn" id="tocBtn">☰</button>
+
+<!-- 목차 드로어 -->
+<div class="wnr-toc-overlay" id="tocOverlay"></div>
+
+<div class="wnr-toc-drawer" id="tocDrawer">
+  <div class="wnr-toc-title">📚 {{ book.name }}</div>
+  {% for ep in book.contents.all %}
+    <a href="{% url 'book:webnovel_episode' ep.public_uuid %}"
+       class="wnr-toc-item {% if ep.public_uuid == content.public_uuid %}current{% endif %}">
+      {{ ep.number }}화 &nbsp; {{ ep.title }}
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 폰트 크기 조절
+var fs = parseFloat(localStorage.getItem('wnrFs') || '1');
+function applyFs() {
+  document.getElementById('wnrBody').style.setProperty('--wnr-fs', fs + 'rem');
+  document.querySelectorAll('.wnr-para').forEach(function(p) { p.style.fontSize = fs + 'rem'; });
+  localStorage.setItem('wnrFs', fs);
+}
+applyFs();
+document.getElementById('fontUp').addEventListener('click', function() { if (fs < 1.5) { fs += 0.1; applyFs(); } });
+document.getElementById('fontDn').addEventListener('click', function() { if (fs > 0.8) { fs -= 0.1; applyFs(); } });
+
+// 목차 드로어
+var tocBtn = document.getElementById('tocBtn');
+var tocDrawer = document.getElementById('tocDrawer');
+var tocOverlay = document.getElementById('tocOverlay');
+tocBtn.addEventListener('click', function() {
+  tocDrawer.classList.add('open');
+  tocOverlay.classList.add('open');
+});
+tocOverlay.addEventListener('click', function() {
+  tocDrawer.classList.remove('open');
+  tocOverlay.classList.remove('open');
+});
+</script>
+{% endblock %}

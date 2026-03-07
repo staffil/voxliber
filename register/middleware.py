@@ -18,6 +18,10 @@ class VisitLogMiddleware:
             is_bot = any(bot in ua for bot in BOT_AGENTS)
 
             if not is_bot:
+                # superuser 방문은 기록하지 않음
+                if request.user.is_authenticated and request.user.is_superuser:
+                    return self.get_response(request)
+
                 user = request.user if request.user.is_authenticated else None
                 ip = (request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
                       or request.META.get('REMOTE_ADDR'))

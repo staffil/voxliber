@@ -122,6 +122,9 @@ urlpatterns = [
     path("api/v1/realtime-chart/", voxliber_api.api_realtime_chart, name="api_realtime_chart"),
     path("api/v1/announcement/", voxliber_api.api_announcement, name="api_announcement"),
 
+    # 웹소설 자동 생성
+    path("api/v1/webnovel/generate-episode/", voxliber_api.api_webnovel_generate_episode, name="api_webnovel_generate_episode"),
+
     # 알림 API (앱용)
     path("api/v1/notifications/", include("notifications.urls")),
 

@@ -36,6 +36,7 @@ def api_books_list(request):
     genre_id = request.GET.get('genre')
     status = request.GET.get('status')
     search = request.GET.get('search')
+    book_type = request.GET.get('book_type', '')  # 'audiobook' or 'webnovel'
 
     # 기본 쿼리
     books = Books.objects.select_related('user').prefetch_related('genres', 'tags').annotate(
@@ -50,6 +51,8 @@ def api_books_list(request):
         books = books.filter(status=status)
     if search:
         books = books.filter(name__icontains=search) | books.filter(user__nickname__icontains=search)
+    if book_type in ('audiobook', 'webnovel'):
+        books = books.filter(book_type=book_type)
 
     # 정렬
     books = books.order_by('-created_at')
@@ -85,6 +88,7 @@ def api_books_list(request):
                 for t in book.tags.all()
             ],
             'adult_choice': book.adult_choice,
+            'book_type': getattr(book, 'book_type', 'audiobook'),
         })
 
     return api_response({
@@ -815,7 +819,8 @@ def _serialize_book(book, request):
             {'id': t.id, 'name': t.name}
             for t in book.tags.all()
         ],
-        'episode_count': book.contents.count()
+        'episode_count': book.contents.count(),
+        'book_type': getattr(book, 'book_type', 'audiobook'),
     }
 
 
@@ -906,6 +911,16 @@ def api_home_sections(request):
                 'books': [_serialize_book(book, request) for book in genre_books]
             })
 
+    # 웹소설 섹션
+    popular_webnovels = Books.objects.filter(
+        book_type='webnovel', is_deleted=False
+    ).select_related('user').prefetch_related('genres', 'tags').order_by('-book_score', '-created_at')[:20]
+
+    new_webnovels = Books.objects.filter(
+        book_type='webnovel', is_deleted=False,
+        created_at__gte=thirty_days_ago
+    ).select_related('user').prefetch_related('genres', 'tags').order_by('-created_at')[:20]
+
     return api_response({
         'banners': [_serialize_banner(banner, request) for banner in banners],
         'popular_books': [_serialize_book(book, request) for book in popular_books],
@@ -913,6 +928,8 @@ def api_home_sections(request):
         'new_books': [_serialize_book(book, request) for book in new_books],
         'top_rated_books': [_serialize_book(book, request) for book in top_rated_books],
         'genres_with_books': genres_data,
+        'popular_webnovels': [_serialize_book(book, request) for book in popular_webnovels],
+        'new_webnovels': [_serialize_book(book, request) for book in new_webnovels],
     })
 
 
@@ -1075,6 +1092,7 @@ def api_search_books(request):
     from django.db.models import Q
 
     query = request.GET.get('q', '').strip()
+    book_type = request.GET.get('book_type', '')  # 'audiobook' or 'webnovel' or ''
 
     if not query:
         return api_response([])
@@ -1086,9 +1104,12 @@ def api_search_books(request):
         Q(user__nickname__icontains=query) |
         Q(tags__name__icontains=query) |
         Q(genres__name__icontains=query)
-    ).select_related('user').prefetch_related('genres', 'tags').distinct()[:50]
+    ).select_related('user').prefetch_related('genres', 'tags').filter(is_deleted=False).distinct()
 
-    return api_response([_serialize_book(book, request) for book in books])
+    if book_type in ('audiobook', 'webnovel'):
+        books = books.filter(book_type=book_type)
+
+    return api_response([_serialize_book(book, request) for book in books[:50]])
 
 
 # ==================== 📸 Book Snap API ====================
@@ -1453,7 +1474,7 @@ def api_search(request):
         return JsonResponse({'success': True, 'results': [], 'counts': {}})
 
     results = []
-    counts = {'book': 0, 'story': 0, 'snap': 0, 'user': 0}
+    counts = {'book': 0, 'audiobook': 0, 'webnovel': 0, 'story': 0, 'snap': 0, 'user': 0}
 
     added_book_ids = set()
     added_story_ids = set()
@@ -1556,20 +1577,28 @@ def api_search(request):
                         })
                         counts['snap'] += 1
 
-    # ========== 책 검색 ========== 
-    if filter_type in ['all', 'book']:
-        for book in Books.objects.filter(
+    # ========== 책 검색 ==========
+    if filter_type in ['all', 'book', 'audiobook', 'webnovel']:
+        book_qs = Books.objects.filter(
             Q(name__icontains=query) |
             Q(description__icontains=query) |
             Q(user__nickname__icontains=query) |
             Q(tags__name__icontains=query) |
             Q(genres__name__icontains=query)
-        ).select_related('user').prefetch_related('genres', 'tags').distinct()[:30]:
+        ).select_related('user').prefetch_related('genres', 'tags').filter(is_deleted=False).distinct()
+
+        if filter_type == 'audiobook':
+            book_qs = book_qs.filter(book_type='audiobook')
+        elif filter_type == 'webnovel':
+            book_qs = book_qs.filter(book_type='webnovel')
+
+        for book in book_qs[:30]:
             if str(book.public_uuid) not in added_book_ids:
                 added_book_ids.add(str(book.public_uuid))
                 genres = ', '.join([g.name for g in book.genres.all()[:2]]) or '기타'
+                btype = getattr(book, 'book_type', 'audiobook')
                 results.append({
-                    'type': 'book',
+                    'type': btype,  # 'audiobook' or 'webnovel'
                     'id': str(book.public_uuid),
                     'title': book.name,
                     'description': book.description[:100] if book.description else '',
@@ -1581,6 +1610,10 @@ def api_search(request):
                     'adult_choice': getattr(book, 'adult_choice', False),
                 })
                 counts['book'] += 1
+                if btype == 'webnovel':
+                    counts['webnovel'] += 1
+                else:
+                    counts['audiobook'] += 1
 
     # ========== 스토리 검색 ========== 
     if filter_type in ['all', 'story']:
@@ -2396,4 +2429,164 @@ def api_user_bookmarks(request):
     return api_response({
         'bookmarks': bookmarks_data,
         'pagination': result['pagination']
+    })
+
+
+# ==================== 📖 Webnovel API ====================
+
+@require_api_key
+def api_webnovel_list(request):
+    """
+    웹소설 목록 API
+
+    Query Parameters:
+        - page: 페이지 번호 (기본: 1)
+        - per_page: 페이지당 아이템 수 (기본: 20)
+        - genre: 장르 ID (선택)
+        - search: 검색어 (선택)
+    """
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 20))
+    genre_id = request.GET.get('genre')
+    search = request.GET.get('search', '').strip()
+
+    novels = Books.objects.filter(
+        book_type='webnovel', is_deleted=False
+    ).select_related('user').prefetch_related('genres', 'tags')
+
+    if genre_id:
+        novels = novels.filter(genres__id=genre_id)
+    if search:
+        from django.db.models import Q
+        novels = novels.filter(
+            Q(name__icontains=search) |
+            Q(description__icontains=search) |
+            Q(user__nickname__icontains=search) |
+            Q(tags__name__icontains=search)
+        ).distinct()
+
+    novels = novels.order_by('-created_at')
+    result = paginate(novels, page, per_page)
+
+    data = []
+    for novel in result['items']:
+        data.append({
+            'id': str(novel.public_uuid),
+            'name': novel.name,
+            'description': novel.description or '',
+            'cover_img': request.build_absolute_uri(novel.cover_img.url) if novel.cover_img else None,
+            'book_type': 'webnovel',
+            'book_score': float(novel.book_score) if novel.book_score else 0.0,
+            'episode_count': novel.contents.count(),
+            'status': novel.status,
+            'status_display': novel.get_status_display(),
+            'created_at': novel.created_at.isoformat(),
+            'author': {
+                'id': novel.user.user_id,
+                'nickname': novel.author_name or novel.user.nickname,
+            },
+            'genres': [{'id': g.id, 'name': g.name, 'color': g.genres_color} for g in novel.genres.all()],
+            'tags': [{'id': t.id, 'name': t.name} for t in novel.tags.all()],
+        })
+
+    return api_response({'novels': data, 'pagination': result['pagination']})
+
+
+@require_api_key
+def api_webnovel_episode(request, content_uuid):
+    """
+    웹소설 에피소드 본문 API (감정 태그 제거된 순수 텍스트 반환)
+
+    Example:
+        GET /book/api/webnovel/episode/<uuid>/
+    """
+    import re
+    from book.models import Content
+    content = get_object_or_404(Content, public_uuid=content_uuid)
+    book = content.book
+
+    raw_text = content.text or ''
+    clean_text = re.sub(r'\[[^\]]+\]', '', raw_text)
+    paragraphs = [p.strip() for p in clean_text.split('\n') if p.strip()]
+
+    # 이전/다음 에피소드
+    prev_ep = Content.objects.filter(book=book, number=content.number - 1).first()
+    next_ep = Content.objects.filter(book=book, number=content.number + 1).first()
+
+    return api_response({
+        'episode': {
+            'id': str(content.public_uuid),
+            'title': content.title,
+            'number': content.number,
+            'paragraphs': paragraphs,
+            'created_at': content.created_at.isoformat(),
+        },
+        'book': {
+            'id': str(book.public_uuid),
+            'name': book.name,
+            'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
+        },
+        'prev_episode': {'id': str(prev_ep.public_uuid), 'title': prev_ep.title, 'number': prev_ep.number} if prev_ep else None,
+        'next_episode': {'id': str(next_ep.public_uuid), 'title': next_ep.title, 'number': next_ep.number} if next_ep else None,
+    })
+
+
+@require_api_key
+def api_webnovel_detail(request, book_uuid):
+    """
+    웹소설 상세 API (에피소드 목록 포함)
+
+    Example:
+        GET /book/api/webnovels/<uuid>/
+    """
+    from django.db.models import Avg, Count as DCount
+    from book.models import BookReview, ReadingProgress
+
+    book = get_object_or_404(
+        Books.objects.select_related('user').prefetch_related('genres', 'tags'),
+        public_uuid=book_uuid,
+        book_type='webnovel',
+        is_deleted=False
+    )
+
+    avg_rating = book.reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+    review_count = book.reviews.count()
+    episode_count = book.contents.filter(is_deleted=False).count()
+
+    episodes = []
+    for ep in book.contents.filter(is_deleted=False).order_by('number'):
+        episodes.append({
+            'id': str(ep.public_uuid),
+            'number': ep.number,
+            'title': ep.title,
+            'created_at': ep.created_at.isoformat(),
+        })
+
+    is_bookmarked = False
+    if request.user and request.user.is_authenticated:
+        from book.models import BookmarkBook
+        is_bookmarked = BookmarkBook.objects.filter(user=request.user, book=book).exists()
+
+    return api_response({
+        'id': str(book.public_uuid),
+        'name': book.name,
+        'description': book.description or '',
+        'cover_img': request.build_absolute_uri(book.cover_img.url) if book.cover_img else None,
+        'book_type': 'webnovel',
+        'status': book.status,
+        'status_display': book.get_status_display(),
+        'book_score': float(book.book_score) if book.book_score else 0.0,
+        'avg_rating': round(float(avg_rating), 1),
+        'review_count': review_count,
+        'episode_count': episode_count,
+        'created_at': book.created_at.isoformat(),
+        'author': {
+            'id': book.user.user_id,
+            'nickname': book.author_name or book.user.nickname,
+            'profile_img': request.build_absolute_uri(book.user.user_img.url) if book.user.user_img else None,
+        },
+        'genres': [{'id': g.id, 'name': g.name, 'color': g.genres_color} for g in book.genres.all()],
+        'tags': [{'id': t.id, 'name': t.name} for t in book.tags.all()],
+        'episodes': episodes,
+        'is_bookmarked': is_bookmarked,
     })
