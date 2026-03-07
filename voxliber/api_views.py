@@ -2521,13 +2521,20 @@ def api_webnovel_generate_episode(request):
             )
             response_text = message.content[0].text.strip()
 
-        # JSON 파싱
+        # JSON 파싱 (마크다운 코드블록 제거 후 시도)
         import re
-        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        clean_text = re.sub(r'```(?:json)?\s*', '', response_text).replace('```', '').strip()
+        json_match = re.search(r'\{[\s\S]*\}', clean_text)
         if not json_match:
-            return api_response(error="AI 응답 파싱 실패", status=500)
+            return api_response(error=f"AI 응답 파싱 실패: {clean_text[:200]}", status=500)
 
-        ep_data = json.loads(json_match.group())
+        try:
+            ep_data = json.loads(json_match.group())
+        except json.JSONDecodeError:
+            # 마지막 } 위치 기준으로 재시도
+            text_fragment = clean_text[json_match.start():]
+            last_brace = text_fragment.rfind('}')
+            ep_data = json.loads(text_fragment[:last_brace + 1])
         ep_title = ep_data.get("title", f"제{episode_number}화")
         ep_text = ep_data.get("text", "")
 
