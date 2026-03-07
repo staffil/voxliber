@@ -67,6 +67,7 @@ def api_create_book(request):
     status = data.get("status", "ongoing")
     adult_choice = data.get("adult_choice", False)
     author_name = data.get("author_name", "").strip() or "미상"
+    book_type = data.get("book_type", "audiobook")  # "audiobook" or "webnovel"
 
     if not title:
         return api_response(error="제목(title)은 필수입니다.", status=400)
@@ -84,6 +85,7 @@ def api_create_book(request):
         status=status,
         adult_choice=adult_choice,
         author_name=author_name,
+        book_type=book_type,
     )
 
     # 장르 연결
