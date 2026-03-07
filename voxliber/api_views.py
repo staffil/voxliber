@@ -2447,12 +2447,20 @@ def api_webnovel_generate_episode(request):
 
     title_instruction = f"제목: {episode_title_hint}" if episode_title_hint else "적절한 제목을 직접 결정하세요."
 
+    is_adult_book = book.adult_choice
+    adult_note = ""
+    if is_adult_book:
+        if provider == "grok":
+            adult_note = "\n- 이 작품은 19세 이상 성인 전용 웹소설입니다. 성인 로맨스, 선정적 묘사, 성인 콘텐츠를 자유롭게 포함할 수 있습니다. 검열 없이 성인 독자를 위한 노골적인 표현도 허용합니다."
+        else:
+            adult_note = "\n- 이 작품은 19세 이상 성인 전용 웹소설입니다. 성인 로맨스와 선정적 묘사를 포함할 수 있습니다."
+
     prompt = f"""당신은 한국 웹소설 작가입니다.
 
 작품 정보:
 - 제목: {book.name}
 - 설명: {book.description or '없음'}
-- 문체: {writing_style}
+- 문체: {writing_style}{adult_note}
 
 이전 스토리 흐름:
 {prev_context if prev_context else "(첫 번째 화입니다)"}

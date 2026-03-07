@@ -963,6 +963,10 @@ def webnovel_detail(request, book_uuid):
         elif 40 <= age < 50: age_data["40대"] += 1
         elif age >= 50: age_data["50대 이상"] += 1
 
+    is_adult_content = book.adult_choice
+    is_authorized = request.user.is_authenticated and request.user.is_adult()
+    show_blur = is_adult_content and not is_authorized
+
     context = {
         "book": book,
         "contents": contents,
@@ -977,6 +981,7 @@ def webnovel_detail(request, book_uuid):
         "gender_data": gender_data,
         "age_data": age_data,
         "is_bookmarked": is_bookmarked,
+        "show_blur": show_blur,
     }
     return render(request, "book/webnovel_detail.html", context)
 

@@ -2616,4 +2616,5 @@ def api_webnovel_detail(request, book_uuid):
         'tags': [{'id': t.id, 'name': t.name} for t in book.tags.all()],
         'episodes': episodes,
         'is_bookmarked': is_bookmarked,
+        'adult_choice': book.adult_choice,
     })
