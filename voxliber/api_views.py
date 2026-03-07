@@ -2461,11 +2461,12 @@ def api_webnovel_generate_episode(request):
 {episode_number}화를 작성하세요.
 {title_instruction}
 
-출력 형식 (JSON):
-{{
-  "title": "화 제목",
-  "text": "본문 전체 내용 (줄바꿈으로 단락 구분, 반드시 3000자 이상 5000자 내외)"
-}}
+출력 형식 (아래 구분자를 그대로 사용하세요):
+---TITLE---
+화 제목
+---TEXT---
+본문 전체 내용 (줄바꿈으로 단락 구분, 반드시 3000자 이상 5000자 내외)
+---END---
 
 규칙:
 - 나레이션과 대화를 자연스럽게 섞어 쓰세요 (대화 비중 40% 이상)
@@ -2475,7 +2476,7 @@ def api_webnovel_generate_episode(request):
 - 각 장면을 풍부하게 묘사하고 인물의 내면 감정을 세밀하게 표현하세요
 - 긴장감과 설렘을 교차하며 다음 화가 궁금해지는 결말로 끝내세요
 - 감정 태그([calm], [excited] 등)는 넣지 마세요
-- 반드시 유효한 JSON만 출력하세요. text 안에 큰따옴표는 반드시 \\\" 로 이스케이프하세요"""
+- 반드시 위 구분자 형식만 출력하세요. JSON, 마크다운, 코드블록 사용 금지"""
 
     # OpenAI 호환 provider 설정 (base_url, model, env_key)
     _OPENAI_COMPAT = {
@@ -2522,26 +2523,14 @@ def api_webnovel_generate_episode(request):
             )
             response_text = message.content[0].text.strip()
 
-        # JSON 파싱 (마크다운 코드블록 제거 후 시도)
+        # 구분자 기반 파싱 (JSON 파싱 오류 방지)
         import re
-        clean_text = re.sub(r'```(?:json)?\s*', '', response_text).replace('```', '').strip()
-        json_match = re.search(r'\{[\s\S]*\}', clean_text)
-        if not json_match:
-            return api_response(error=f"AI 응답 파싱 실패: {clean_text[:200]}", status=500)
-
-        try:
-            json_str = json_match.group()
-            # 무효 제어문자 제거 (llama 등이 JSON 안에 raw 제어문자 포함하는 경우)
-            json_str = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', json_str)
-            ep_data = json.loads(json_str)
-        except json.JSONDecodeError:
-            # 마지막 } 위치 기준으로 재시도
-            text_fragment = clean_text[json_match.start():]
-            last_brace = text_fragment.rfind('}')
-            json_str = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', text_fragment[:last_brace + 1])
-            ep_data = json.loads(json_str)
-        ep_title = ep_data.get("title", f"제{episode_number}화")
-        ep_text = ep_data.get("text", "")
+        title_match = re.search(r'---TITLE---\s*(.*?)\s*---TEXT---', response_text, re.DOTALL)
+        text_match = re.search(r'---TEXT---\s*([\s\S]+?)\s*---END---', response_text)
+        if not title_match or not text_match:
+            return api_response(error=f"AI 응답 파싱 실패: {response_text[:300]}", status=500)
+        ep_title = title_match.group(1).strip()
+        ep_text = text_match.group(1).strip()
 
         if not ep_text:
             return api_response(error="AI가 본문을 생성하지 못했습니다", status=500)
