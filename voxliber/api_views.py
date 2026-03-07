@@ -2405,9 +2405,14 @@ def api_webnovel_generate_episode(request):
         return api_response(error="book_uuid 필요", status=400)
 
     try:
-        book = Books.objects.get(public_uuid=book_uuid, book_type='webnovel', is_deleted=False)
+        book = Books.objects.get(public_uuid=book_uuid, is_deleted=False)
     except Books.DoesNotExist:
-        return api_response(error="웹소설을 찾을 수 없습니다", status=404)
+        return api_response(error="책을 찾을 수 없습니다", status=404)
+
+    # book_type이 webnovel이 아니면 자동 업데이트
+    if book.book_type != 'webnovel':
+        book.book_type = 'webnovel'
+        book.save(update_fields=['book_type'])
 
     # 다음 에피소드 번호 결정
     last_ep = Content.objects.filter(book=book, is_deleted=False).order_by('-number').first()
