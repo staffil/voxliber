@@ -981,6 +981,26 @@ def webnovel_detail(request, book_uuid):
     return render(request, "book/webnovel_detail.html", context)
 
 
+def webnovel_upload_cover(request, book_uuid):
+    """관리자 전용: 웹소설 표지 이미지 업로드"""
+    from django.contrib.auth.decorators import login_required
+    from django.http import HttpResponseForbidden
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+    if request.method != 'POST':
+        from django.shortcuts import redirect
+        return redirect('book:webnovel_detail', book_uuid=book_uuid)
+    book = get_object_or_404(Books, public_uuid=book_uuid)
+    img = request.FILES.get('cover_img')
+    if img:
+        book.cover_img = img
+        book.save(update_fields=['cover_img'])
+    from django.contrib import messages
+    messages.success(request, '표지가 업데이트되었습니다.')
+    from django.shortcuts import redirect
+    return redirect('book:webnovel_detail', book_uuid=book_uuid)
+
+
 def webnovel_episode(request, content_uuid):
     import re
     from book.models import Content, ReadingProgress

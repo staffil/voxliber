@@ -15,6 +15,7 @@ urlpatterns=[
     path("detail/<uuid:book_uuid>/", views.book_detail, name="book_detail"),
     path("content/<uuid:content_uuid>/", views.content_detail, name="content_detail"),
     path("webnovel/<uuid:book_uuid>/", views.webnovel_detail, name="webnovel_detail"),
+    path("webnovel/<uuid:book_uuid>/upload-cover/", views.webnovel_upload_cover, name="webnovel_upload_cover"),
     path("webnovel/episode/<uuid:content_uuid>/", views.webnovel_episode, name="webnovel_episode"),
     path("content/<uuid:content_uuid>/save-listening/", views.save_listening_history, name="save_listening_history"),
 

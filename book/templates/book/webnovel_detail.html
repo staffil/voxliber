@@ -63,6 +63,17 @@
         </button>
       </div>
       {% endif %}
+      {% if request.user.is_staff %}
+      <div style="margin-top:10px;">
+        <form method="post" action="{% url 'book:webnovel_upload_cover' book_uuid=book.public_uuid %}" enctype="multipart/form-data" style="display:inline-flex;align-items:center;gap:8px;">
+          {% csrf_token %}
+          <label style="cursor:pointer;background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.5);color:#a78bfa;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;">
+            🖼️ 표지 선택
+            <input type="file" name="cover_img" accept="image/*" style="display:none;" onchange="this.closest('form').submit()">
+          </label>
+        </form>
+      </div>
+      {% endif %}
     </div>
   </div>
 
