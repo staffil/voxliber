@@ -2462,15 +2462,17 @@ def api_webnovel_generate_episode(request):
 출력 형식 (JSON):
 {{
   "title": "화 제목",
-  "text": "본문 전체 내용 (줄바꿈으로 단락 구분, 최소 800자 이상)"
+  "text": "본문 전체 내용 (줄바꿈으로 단락 구분, 반드시 3000자 이상 5000자 내외)"
 }}
 
 규칙:
-- 나레이션과 대화를 자연스럽게 섞어 쓰세요
+- 나레이션과 대화를 자연스럽게 섞어 쓰세요 (대화 비중 40% 이상)
 - 대화문은 "" 안에 작성
 - 단락은 빈 줄로 구분
+- 각 장면을 풍부하게 묘사하고 인물의 내면 감정을 세밀하게 표현하세요
+- 긴장감과 설렘을 교차하며 다음 화가 궁금해지는 결말로 끝내세요
 - 감정 태그([calm], [excited] 등)는 넣지 마세요
-- 반드시 유효한 JSON만 출력하세요"""
+- 반드시 유효한 JSON만 출력하세요. text 안에 큰따옴표는 반드시 \\\" 로 이스케이프하세요"""
 
     try:
         # provider별 AI 호출
@@ -2490,7 +2492,7 @@ def api_webnovel_generate_episode(request):
                 _model = "grok-3"
             completion = _ai.chat.completions.create(
                 model=_model,
-                max_tokens=2000,
+                max_tokens=4096,
                 messages=[{"role": "user", "content": prompt}]
             )
             response_text = completion.choices[0].message.content.strip()
@@ -2503,7 +2505,7 @@ def api_webnovel_generate_episode(request):
             _client = anthropic.Anthropic(api_key=anthropic_api_key)
             message = _client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=2000,
+                max_tokens=4096,
                 messages=[{"role": "user", "content": prompt}]
             )
             response_text = message.content[0].text.strip()

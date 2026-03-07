@@ -45,35 +45,40 @@ def main(request):
 
     # 📌 신작 (최근 30일 이내 생성된 책, 최신 콘텐츠 기준 정렬)
     thirty_days_ago = timezone.now() - timedelta(days=30)
-    new_books = Books.objects.filter(
-        created_at__gte=thirty_days_ago
+    _new_books_pool = list(Books.objects.filter(
+        book_type='audiobook', is_deleted=False, created_at__gte=thirty_days_ago
     ).annotate(
         last_content_time=Max('contents__created_at')
-    ).select_related('user').prefetch_related('genres').order_by('-last_content_time')[:20]
+    ).select_related('user').prefetch_related('genres').order_by('-last_content_time')[:50])
+    random.shuffle(_new_books_pool)
+    new_books = _new_books_pool[:20]
 
     # 🔥 인기 작품 (평점과 에피소드 수를 고려한 종합 점수)
-    popular_books = (
-        Books.objects
-        .select_related('user')
-        .prefetch_related('genres')
-        .annotate(
-            total_listened=Sum('listening_stats__listened_seconds'),
-            listener_count=Count('listening_stats__user', distinct=True),
-        )
-        .order_by('-listener_count', '-total_listened')[:12]
-    )
+    _popular_pool = list(Books.objects.filter(
+        book_type='audiobook', is_deleted=False
+    ).select_related('user').prefetch_related('genres').annotate(
+        total_listened=Sum('listening_stats__listened_seconds'),
+        listener_count=Count('listening_stats__user', distinct=True),
+    ).order_by('-listener_count', '-total_listened')[:40])
+    random.shuffle(_popular_pool)
+    popular_books = _popular_pool[:12]
+
     # 🏆 최고 평점 작품 (리뷰가 최소 1개 이상)
-    top_rated_books = Books.objects.filter(
-        book_score__gt=0
-    ).select_related('user').prefetch_related('genres').order_by('-book_score')[:8]
+    _top_pool = list(Books.objects.filter(
+        book_type='audiobook', is_deleted=False, book_score__gt=0
+    ).select_related('user').prefetch_related('genres').order_by('-book_score')[:30])
+    random.shuffle(_top_pool)
+    top_rated_books = _top_pool[:8]
 
     # ⚡ 트렌딩 작품 (최근 인기작 - 평점과 에피소드 수 기준)
     seven_days_ago = timezone.now() - timedelta(days=7)
-    trending_books = Books.objects.filter(
-        created_at__lte=seven_days_ago  # 신작 제외
+    _trending_pool = list(Books.objects.filter(
+        book_type='audiobook', is_deleted=False, created_at__lte=seven_days_ago
     ).select_related('user').prefetch_related('genres').annotate(
         episode_count=Count('contents')
-    ).order_by('-book_score', '-episode_count')[:8]
+    ).order_by('-book_score', '-episode_count')[:30])
+    random.shuffle(_trending_pool)
+    trending_books = _trending_pool[:8]
 
     # 👑 인기 작가 (작품 수와 평균 평점 고려)
     popular_authors = Users.objects.annotate(
@@ -204,7 +209,8 @@ def main(request):
     except Exception:
         pass
 
-    webnovel_list = Books.objects.filter(book_type='webnovel', is_deleted=False).prefetch_related('genres').order_by('-id')[:40]
+    webnovel_list = list(Books.objects.filter(book_type='webnovel', is_deleted=False).prefetch_related('genres').order_by('-id')[:40])
+    random.shuffle(webnovel_list)
 
     context = {
         "webnovel_list": webnovel_list,
@@ -816,7 +822,8 @@ def ai_novel_main(request):
 # AI 웹소설 페이지
 def webnovel(request):
     from book.models import Books
-    novels = Books.objects.filter(book_type='webnovel', is_deleted=False).order_by('-id')[:40]
+    novels = list(Books.objects.filter(book_type='webnovel', is_deleted=False).order_by('-id')[:40])
+    random.shuffle(novels)
     return render(request, "main/webnovel.html", {"novels": novels})
 
 

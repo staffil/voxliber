@@ -863,33 +863,36 @@ def api_home_sections(request):
     thirty_days_ago = timezone.now() - timedelta(days=30)
     seven_days_ago = timezone.now() - timedelta(days=7)
 
+    # 오디오북만 필터링 (webnovel 제외)
+    audiobook_qs = Books.objects.filter(book_type='audiobook', is_deleted=False)
+
     # 인기 작품 (평점과 에피소드 수를 고려한 종합 점수) - 랜덤 정렬
-    popular_books = Books.objects.select_related('user').prefetch_related('genres').annotate(
+    popular_books = audiobook_qs.select_related('user').prefetch_related('genres').annotate(
         total_score=Count('contents') * 0.1 + Count('reviews') * 0.3
-    ).order_by('-book_score', '-total_score')[:50]  # 상위 50개 가져온 후
-    popular_books = sorted(list(popular_books), key=lambda x: __import__('random').random())[:12]  # 랜덤 12개
+    ).order_by('-book_score', '-total_score')[:50]
+    popular_books = sorted(list(popular_books), key=lambda x: __import__('random').random())[:12]
 
     # 트렌딩 작품 (최근 인기작 - 신작 제외) - 랜덤 정렬
-    trending_books = Books.objects.filter(
+    trending_books = audiobook_qs.filter(
         created_at__lte=seven_days_ago
     ).select_related('user').prefetch_related('genres').annotate(
         episode_count=Count('contents')
-    ).order_by('-book_score', '-episode_count')[:30]  # 상위 30개 가져온 후
-    trending_books = sorted(list(trending_books), key=lambda x: __import__('random').random())[:8]  # 랜덤 8개
+    ).order_by('-book_score', '-episode_count')[:30]
+    trending_books = sorted(list(trending_books), key=lambda x: __import__('random').random())[:8]
 
     # 신작 (최근 30일) - 랜덤 정렬
-    new_books = Books.objects.filter(
+    new_books = audiobook_qs.filter(
         created_at__gte=thirty_days_ago
     ).annotate(
         last_content_time=Max('contents__created_at')
-    ).select_related('user').prefetch_related('genres').order_by('-last_content_time')[:50]  # 상위 50개 가져온 후
-    new_books = sorted(list(new_books), key=lambda x: __import__('random').random())[:20]  # 랜덤 20개
+    ).select_related('user').prefetch_related('genres').order_by('-last_content_time')[:50]
+    new_books = sorted(list(new_books), key=lambda x: __import__('random').random())[:20]
 
     # 최고 평점 - 랜덤 정렬
-    top_rated_books = Books.objects.filter(
+    top_rated_books = audiobook_qs.filter(
         book_score__gt=0
-    ).select_related('user').prefetch_related('genres').order_by('-book_score')[:30]  # 상위 30개 가져온 후
-    top_rated_books = sorted(list(top_rated_books), key=lambda x: __import__('random').random())[:8]  # 랜덤 8개
+    ).select_related('user').prefetch_related('genres').order_by('-book_score')[:30]
+    top_rated_books = sorted(list(top_rated_books), key=lambda x: __import__('random').random())[:8]
 
     # 배너
     banners = Advertisment.objects.all()[:5]
@@ -898,7 +901,7 @@ def api_home_sections(request):
     all_genres = Genres.objects.all()[:6]
     genres_data = []
     for genre in all_genres:
-        genre_books = Books.objects.filter(
+        genre_books = audiobook_qs.filter(
             genres=genre
         ).select_related('user').prefetch_related('genres').order_by('-book_score')[:6]
         if genre_books.exists():
@@ -911,15 +914,20 @@ def api_home_sections(request):
                 'books': [_serialize_book(book, request) for book in genre_books]
             })
 
-    # 웹소설 섹션
-    popular_webnovels = Books.objects.filter(
+    # 웹소설 섹션 (랜덤 정렬)
+    import random as _random
+    _webnovel_pool = list(Books.objects.filter(
         book_type='webnovel', is_deleted=False
-    ).select_related('user').prefetch_related('genres', 'tags').order_by('-book_score', '-created_at')[:20]
+    ).select_related('user').prefetch_related('genres', 'tags').order_by('-created_at')[:40])
+    _random.shuffle(_webnovel_pool)
+    popular_webnovels = _webnovel_pool[:20]
 
-    new_webnovels = Books.objects.filter(
+    _new_webnovel_pool = list(Books.objects.filter(
         book_type='webnovel', is_deleted=False,
         created_at__gte=thirty_days_ago
-    ).select_related('user').prefetch_related('genres', 'tags').order_by('-created_at')[:20]
+    ).select_related('user').prefetch_related('genres', 'tags').order_by('-created_at')[:40])
+    _random.shuffle(_new_webnovel_pool)
+    new_webnovels = _new_webnovel_pool[:20]
 
     return api_response({
         'banners': [_serialize_banner(banner, request) for banner in banners],
@@ -945,7 +953,7 @@ def api_popular_books(request):
         GET /book/api/books/popular/?limit=12
     """
     limit = int(request.GET.get('limit', 12))
-    books = Books.objects.select_related('user').prefetch_related('genres').annotate(
+    books = Books.objects.filter(book_type='audiobook', is_deleted=False).select_related('user').prefetch_related('genres').annotate(
         total_score=Count('contents') * 0.1 + Count('reviews') * 0.3
     ).order_by('-book_score', '-total_score')[:limit]
 
@@ -970,7 +978,7 @@ def api_trending_books(request):
     seven_days_ago = timezone.now() - timedelta(days=7)
 
     books = Books.objects.filter(
-        created_at__lte=seven_days_ago
+        book_type='audiobook', is_deleted=False, created_at__lte=seven_days_ago
     ).select_related('user').prefetch_related('genres').annotate(
         episode_count=Count('contents')
     ).order_by('-book_score', '-episode_count')[:limit]
@@ -996,7 +1004,7 @@ def api_new_books(request):
     thirty_days_ago = timezone.now() - timedelta(days=30)
 
     books = Books.objects.filter(
-        created_at__gte=thirty_days_ago
+        book_type='audiobook', is_deleted=False, created_at__gte=thirty_days_ago
     ).annotate(
         last_content_time=Max('contents__created_at')
     ).select_related('user').prefetch_related('genres').order_by('-last_content_time')[:limit]
@@ -1017,7 +1025,7 @@ def api_top_rated_books(request):
     """
     limit = int(request.GET.get('limit', 8))
     books = Books.objects.filter(
-        book_score__gt=0
+        book_type='audiobook', is_deleted=False, book_score__gt=0
     ).select_related('user').prefetch_related('genres').order_by('-book_score')[:limit]
 
     return api_response([_serialize_book(book, request) for book in books])

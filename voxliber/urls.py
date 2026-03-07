@@ -27,6 +27,7 @@ from voxliber import api_views as voxliber_api
 import os
 from book.admin import EpisodeRankingView, ListeningStatsView,ListeningCalendarView,CharacterStatsView,CharacterCalendarView,SnapStatsView,AdStatsView,SnapCalendarView,AdCalendarView
 from register.admin import VisitStatsView
+from book.admin_cover import CoverGenerateView
 from notifications.admin import SendPushView ,FCMToken
 # Sitemap 설정
 sitemaps = {
@@ -41,6 +42,7 @@ def serve_well_known(request, filename):
 
 urlpatterns = [
     path('admin/register/visit-stats/', VisitStatsView.as_view(), name='visit_stats'),
+    path('admin/book/cover-generate/', CoverGenerateView.as_view(), name='cover_generate'),
 
     path('admin/send-push/', SendPushView(FCMToken, admin.site).push_view),
 
