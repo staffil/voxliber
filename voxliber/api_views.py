@@ -2398,16 +2398,16 @@ def api_webnovel_generate_episode(request):
     try:
         data = json.loads(request.body)
     except (json.JSONDecodeError, Exception):
-        return api_response(success=False, message="JSON 파싱 오류", status_code=400)
+        return api_response(error="JSON 파싱 오류", status=400)
 
     book_uuid = data.get("book_uuid")
     if not book_uuid:
-        return api_response(success=False, message="book_uuid 필요", status_code=400)
+        return api_response(error="book_uuid 필요", status=400)
 
     try:
         book = Books.objects.get(public_uuid=book_uuid, book_type='webnovel', is_deleted=False)
     except Books.DoesNotExist:
-        return api_response(success=False, message="웹소설을 찾을 수 없습니다", status_code=404)
+        return api_response(error="웹소설을 찾을 수 없습니다", status=404)
 
     # 다음 에피소드 번호 결정
     last_ep = Content.objects.filter(book=book, is_deleted=False).order_by('-number').first()
@@ -2416,7 +2416,7 @@ def api_webnovel_generate_episode(request):
 
     # 이미 존재하면 충돌
     if Content.objects.filter(book=book, number=episode_number, is_deleted=False).exists():
-        return api_response(success=False, message=f"{episode_number}화가 이미 존재합니다", status_code=409)
+        return api_response(error=f"{episode_number}화가 이미 존재합니다", status=409)
 
     # provider 결정: "claude"(기본), "gpt", "grok"
     provider = data.get("provider", "claude")
@@ -2474,13 +2474,13 @@ def api_webnovel_generate_episode(request):
             if provider == "gpt":
                 _key = os.environ.get("OPENAI_API_KEY", "")
                 if not _key:
-                    return api_response(success=False, message="OPENAI_API_KEY 환경변수가 설정되지 않았습니다", status_code=500)
+                    return api_response(error="OPENAI_API_KEY 환경변수가 설정되지 않았습니다", status=500)
                 _ai = _OpenAI(api_key=_key)
                 _model = "gpt-4o"
             else:  # grok
                 _key = os.environ.get("GROK_API_KEY", "")
                 if not _key:
-                    return api_response(success=False, message="GROK_API_KEY 환경변수가 설정되지 않았습니다", status_code=500)
+                    return api_response(error="GROK_API_KEY 환경변수가 설정되지 않았습니다", status=500)
                 _ai = _OpenAI(api_key=_key, base_url="https://api.x.ai/v1")
                 _model = "grok-3"
             completion = _ai.chat.completions.create(
@@ -2494,7 +2494,7 @@ def api_webnovel_generate_episode(request):
             import anthropic
             anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY", "")
             if not anthropic_api_key:
-                return api_response(success=False, message="ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다", status_code=500)
+                return api_response(error="ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다", status=500)
             _client = anthropic.Anthropic(api_key=anthropic_api_key)
             message = _client.messages.create(
                 model="claude-sonnet-4-6",
@@ -2507,14 +2507,14 @@ def api_webnovel_generate_episode(request):
         import re
         json_match = re.search(r'\{[\s\S]*\}', response_text)
         if not json_match:
-            return api_response(success=False, message="AI 응답 파싱 실패", status_code=500)
+            return api_response(error="AI 응답 파싱 실패", status=500)
 
         ep_data = json.loads(json_match.group())
         ep_title = ep_data.get("title", f"제{episode_number}화")
         ep_text = ep_data.get("text", "")
 
         if not ep_text:
-            return api_response(success=False, message="AI가 본문을 생성하지 못했습니다", status_code=500)
+            return api_response(error="AI가 본문을 생성하지 못했습니다", status=500)
 
         # Content 저장
         episode = Content.objects.create(
@@ -2533,6 +2533,6 @@ def api_webnovel_generate_episode(request):
         })
 
     except json.JSONDecodeError as e:
-        return api_response(success=False, message=f"AI 응답 JSON 파싱 오류: {str(e)}", status_code=500)
+        return api_response(error=f"AI 응답 JSON 파싱 오류: {str(e)}", status=500)
     except Exception as e:
-        return api_response(success=False, message=f"에피소드 생성 오류: {str(e)}", status_code=500)
+        return api_response(error=f"에피소드 생성 오류: {str(e)}", status=500)
