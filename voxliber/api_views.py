@@ -2485,7 +2485,7 @@ def api_webnovel_generate_episode(request):
                                                          "gemini-2.5-flash",          "GEMINI_API_KEY"),
         "qwen":      ("https://dashscope.aliyuncs.com/compatible-mode/v1",
                                                          "qwen-max",                  "QWEN_API_KEY"),
-        "deepseek":  ("https://api.groq.com/openai/v1",   "deepseek-r1-distill-llama-70b", "GROQ_API_KEY"),
+        "deepseek":  ("https://api.deepseek.com/v1",        "deepseek-chat",                 "DEEPSEEK_API_KEY"),
         "mistral":   ("https://api.mistral.ai/v1",       "mistral-large-latest",      "MISTRAL_API_KEY"),
         "llama":     ("https://api.groq.com/openai/v1",  "llama-3.3-70b-versatile",   "GROQ_API_KEY"),
         "hyperclova":("https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003",
@@ -2530,12 +2530,16 @@ def api_webnovel_generate_episode(request):
             return api_response(error=f"AI 응답 파싱 실패: {clean_text[:200]}", status=500)
 
         try:
-            ep_data = json.loads(json_match.group())
+            json_str = json_match.group()
+            # 무효 제어문자 제거 (llama 등이 JSON 안에 raw 제어문자 포함하는 경우)
+            json_str = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', json_str)
+            ep_data = json.loads(json_str)
         except json.JSONDecodeError:
             # 마지막 } 위치 기준으로 재시도
             text_fragment = clean_text[json_match.start():]
             last_brace = text_fragment.rfind('}')
-            ep_data = json.loads(text_fragment[:last_brace + 1])
+            json_str = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', text_fragment[:last_brace + 1])
+            ep_data = json.loads(json_str)
         ep_title = ep_data.get("title", f"제{episode_number}화")
         ep_text = ep_data.get("text", "")
 
