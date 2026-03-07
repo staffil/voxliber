@@ -2544,6 +2544,7 @@ def api_webnovel_episode(request, content_uuid):
             'title': content.title,
             'number': content.number,
             'paragraphs': paragraphs,
+            'llm_provider': content.llm_provider or '',
             'created_at': content.created_at.isoformat(),
         },
         'book': {
@@ -2585,6 +2586,7 @@ def api_webnovel_detail(request, book_uuid):
             'number': ep.number,
             'title': ep.title,
             'created_at': ep.created_at.isoformat(),
+            'llm_provider': ep.llm_provider or '',
         })
 
     is_bookmarked = False

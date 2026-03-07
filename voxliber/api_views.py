@@ -2423,13 +2423,15 @@ def api_webnovel_generate_episode(request):
     if Content.objects.filter(book=book, number=episode_number, is_deleted=False).exists():
         return api_response(error=f"{episode_number}화가 이미 존재합니다", status=409)
 
-    # provider 결정: "claude"(기본), "gpt", "grok"
+    # provider 결정
+    # OpenAI 호환 (큰 컨텍스트): gpt, grok, gemini, qwen, deepseek, mistral, llama
+    # Anthropic: claude (기본)
+    # 한국 모델: hyperclova, exaone
+    LARGE_CONTEXT_PROVIDERS = {"gpt", "grok", "gemini", "qwen", "deepseek", "mistral", "llama"}
     provider = data.get("provider", "claude")
 
     # 이전 에피소드 컨텍스트
-    # gpt/grok: 큰 컨텍스트 윈도우 활용 → 최근 5화 전체 텍스트
-    # claude: 최근 3화 요약 (600자)
-    if provider in ("gpt", "grok"):
+    if provider in LARGE_CONTEXT_PROVIDERS:
         prev_episodes = Content.objects.filter(book=book, is_deleted=False).order_by('-number')[:5]
         prev_context = ""
         for ep in reversed(list(prev_episodes)):
@@ -2474,30 +2476,39 @@ def api_webnovel_generate_episode(request):
 - 감정 태그([calm], [excited] 등)는 넣지 마세요
 - 반드시 유효한 JSON만 출력하세요. text 안에 큰따옴표는 반드시 \\\" 로 이스케이프하세요"""
 
+    # OpenAI 호환 provider 설정 (base_url, model, env_key)
+    _OPENAI_COMPAT = {
+        "gpt":       (None,                              "gpt-4o",                    "OPENAI_API_KEY"),
+        "grok":      ("https://api.x.ai/v1",             "grok-3",                    "GROK_API_KEY"),
+        "gemini":    ("https://generativelanguage.googleapis.com/v1beta/openai/",
+                                                         "gemini-2.0-flash",          "GEMINI_API_KEY"),
+        "qwen":      ("https://dashscope.aliyuncs.com/compatible-mode/v1",
+                                                         "qwen-max",                  "QWEN_API_KEY"),
+        "deepseek":  ("https://api.deepseek.com/v1",     "deepseek-chat",             "DEEPSEEK_API_KEY"),
+        "mistral":   ("https://api.mistral.ai/v1",       "mistral-large-latest",      "MISTRAL_API_KEY"),
+        "llama":     ("https://api.llama-api.com",       "llama3.3-70b",              "LLAMA_API_KEY"),
+        "hyperclova":("https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003",
+                                                         "HCX-003",                   "HYPERCLOVA_API_KEY"),
+        "exaone":    ("https://api.lgresearch.ai/v1",    "EXAONE-4.0-32B",            "EXAONE_API_KEY"),
+    }
+
     try:
         # provider별 AI 호출
-        if provider in ("gpt", "grok"):
+        if provider in _OPENAI_COMPAT:
             from openai import OpenAI as _OpenAI
-            if provider == "gpt":
-                _key = os.environ.get("OPENAI_API_KEY", "")
-                if not _key:
-                    return api_response(error="OPENAI_API_KEY 환경변수가 설정되지 않았습니다", status=500)
-                _ai = _OpenAI(api_key=_key)
-                _model = "gpt-4o"
-            else:  # grok
-                _key = os.environ.get("GROK_API_KEY", "")
-                if not _key:
-                    return api_response(error="GROK_API_KEY 환경변수가 설정되지 않았습니다", status=500)
-                _ai = _OpenAI(api_key=_key, base_url="https://api.x.ai/v1")
-                _model = "grok-3"
+            base_url, model_name, env_key = _OPENAI_COMPAT[provider]
+            _key = os.environ.get(env_key, "")
+            if not _key:
+                return api_response(error=f"{env_key} 환경변수가 설정되지 않았습니다", status=500)
+            _ai = _OpenAI(api_key=_key, **({"base_url": base_url} if base_url else {}))
             completion = _ai.chat.completions.create(
-                model=_model,
+                model=model_name,
                 max_tokens=4096,
                 messages=[{"role": "user", "content": prompt}]
             )
             response_text = completion.choices[0].message.content.strip()
         else:
-            # Claude (기본)
+            # Claude (기본) 또는 알 수 없는 provider → claude로 폴백
             import anthropic
             anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY", "")
             if not anthropic_api_key:
@@ -2529,6 +2540,7 @@ def api_webnovel_generate_episode(request):
             number=episode_number,
             title=ep_title,
             text=ep_text,
+            llm_provider=provider,
         )
 
         return api_response(data={

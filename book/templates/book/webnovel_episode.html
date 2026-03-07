@@ -43,6 +43,32 @@
       {% endfor %}
     </div>
 
+    <!-- AI 작성 뱃지 -->
+    <div class="wnr-ai-footer">
+      {% if content.llm_provider %}
+        {% with p=content.llm_provider|lower %}
+        <hr class="wnr-divider">
+        <div class="wnr-ai-badge wnr-ai-{{ p }}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+          {% if p == "gpt" %}GPT-4o
+          {% elif p == "grok" %}Grok-3
+          {% elif p == "claude" %}Claude
+          {% elif p == "gemini" %}Gemini
+          {% elif p == "qwen" %}Qwen
+          {% elif p == "llama" %}Llama
+          {% elif p == "deepseek" %}DeepSeek
+          {% elif p == "hyperclova" %}HyperCLOVA
+          {% elif p == "exaone" %}EXAONE
+          {% elif p == "mistral" %}Mistral
+          {% else %}{{ content.llm_provider|upper }}
+          {% endif %}
+          작성
+        </div>
+        {% endwith %}
+      {% endif %}
+      <div class="wnr-end-mark">— 끝 —</div>
+    </div>
+
     <!-- 이전/다음 -->
     <div class="wnr-nav">
       {% if prev_content %}

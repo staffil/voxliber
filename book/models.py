@@ -134,6 +134,7 @@ class Content(models.Model):
     audio_file = models.FileField(upload_to="uploads/audio/", null=True, blank=True, max_length=1000)
     audio_timestamps = models.JSONField(null=True, blank=True)  # 각 대사의 시작/종료 시간 저장
     duration_seconds = models.IntegerField(default=0, help_text="오디오 길이(초)")  # 오디오 길이 (초 단위)
+    llm_provider = models.CharField(max_length=20, blank=True, null=True, help_text="에피소드 작성 AI (gpt/grok/claude)")
     created_at  = models.DateTimeField(default=timezone.now)
     is_deleted = models.BooleanField(default=False, help_text="소프트 삭제 여부")  # Soft delete
     deleted_at = models.DateTimeField(null=True, blank=True, help_text="삭제 시간")
