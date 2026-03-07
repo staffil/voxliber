@@ -212,8 +212,28 @@ def main(request):
     webnovel_list = list(Books.objects.filter(book_type='webnovel', is_deleted=False).prefetch_related('genres').order_by('-id')[:40])
     random.shuffle(webnovel_list)
 
+    # 인기 웹소설
+    from book.models import Genres as _Genres
+    _popular_wn_pool = list(Books.objects.filter(
+        book_type='webnovel', is_deleted=False
+    ).select_related('user').prefetch_related('genres').order_by('-book_score', '-created_at')[:40])
+    random.shuffle(_popular_wn_pool)
+    popular_webnovels = _popular_wn_pool[:12]
+
+    # 장르별 웹소설
+    genre_webnovels = []
+    for g in _Genres.objects.filter(books__book_type='webnovel', books__is_deleted=False).distinct()[:8]:
+        g_novels = list(Books.objects.filter(
+            book_type='webnovel', is_deleted=False, genres=g
+        ).select_related('user').prefetch_related('genres').order_by('-created_at')[:20])
+        random.shuffle(g_novels)
+        if g_novels:
+            genre_webnovels.append({'genre': g, 'books': g_novels[:8]})
+
     context = {
         "webnovel_list": webnovel_list,
+        "popular_webnovels": popular_webnovels,
+        "genre_webnovels": genre_webnovels,
         "news_list": news_list,
         "new_books": new_books,
         "popular_books": popular_books,

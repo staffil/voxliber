@@ -918,7 +918,7 @@ def api_home_sections(request):
     import random as _random
     _webnovel_pool = list(Books.objects.filter(
         book_type='webnovel', is_deleted=False
-    ).select_related('user').prefetch_related('genres', 'tags').order_by('-created_at')[:40])
+    ).select_related('user').prefetch_related('genres', 'tags').order_by('-book_score', '-created_at')[:40])
     _random.shuffle(_webnovel_pool)
     popular_webnovels = _webnovel_pool[:20]
 
@@ -929,6 +929,22 @@ def api_home_sections(request):
     _random.shuffle(_new_webnovel_pool)
     new_webnovels = _new_webnovel_pool[:20]
 
+    # 장르별 웹소설
+    genre_webnovels = []
+    wn_genres = Genres.objects.filter(
+        books__book_type='webnovel', books__is_deleted=False
+    ).distinct()[:8]
+    for g in wn_genres:
+        g_novels = list(Books.objects.filter(
+            book_type='webnovel', is_deleted=False, genres=g
+        ).select_related('user').prefetch_related('genres', 'tags').order_by('-created_at')[:20])
+        _random.shuffle(g_novels)
+        if g_novels:
+            genre_webnovels.append({
+                'genre': {'id': g.id, 'name': g.name, 'color': g.genres_color or '#7C3AED'},
+                'books': [_serialize_book(b, request) for b in g_novels[:10]],
+            })
+
     return api_response({
         'banners': [_serialize_banner(banner, request) for banner in banners],
         'popular_books': [_serialize_book(book, request) for book in popular_books],
@@ -938,6 +954,7 @@ def api_home_sections(request):
         'genres_with_books': genres_data,
         'popular_webnovels': [_serialize_book(book, request) for book in popular_webnovels],
         'new_webnovels': [_serialize_book(book, request) for book in new_webnovels],
+        'genre_webnovels': genre_webnovels,
     })
 
 
