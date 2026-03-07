@@ -93,6 +93,24 @@
       <a href="{% url 'book:webnovel_episode' ep.public_uuid %}" class="wn-ep-item">
         <span class="wn-ep-num">{{ ep.number }}화</span>
         <span class="wn-ep-title">{{ ep.title }}</span>
+        {% if ep.llm_provider %}
+          {% with p=ep.llm_provider|lower %}
+          <span class="wn-ep-ai wn-ai-{{ p }}">
+            {% if p == "gpt" %}GPT-4o
+            {% elif p == "grok" %}Grok-3
+            {% elif p == "claude" %}Claude
+            {% elif p == "gemini" %}Gemini
+            {% elif p == "qwen" %}Qwen
+            {% elif p == "llama" %}Llama
+            {% elif p == "deepseek" %}DeepSeek
+            {% elif p == "hyperclova" %}HyperCLOVA
+            {% elif p == "exaone" %}EXAONE
+            {% elif p == "mistral" %}Mistral
+            {% else %}{{ ep.llm_provider|upper }}
+            {% endif %}
+          </span>
+          {% endwith %}
+        {% endif %}
         {% if forloop.counter <= 3 %}<span class="wn-ep-new">NEW</span>{% endif %}
         <span class="wn-ep-date">{{ ep.created_at|date:"Y.m.d" }}</span>
       </a>

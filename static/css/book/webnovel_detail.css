@@ -197,6 +197,24 @@ body.light-mode .wn-ep-date { color: rgba(0, 0, 0, .35); }
   padding: 2px 6px;
   border-radius: 4px;
 }
+.wn-ep-ai {
+  font-size: .62rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+/* provider colors */
+.wn-ep-ai.wn-ai-gpt        { background: #1A1A1A; color: #fff; }
+.wn-ep-ai.wn-ai-grok       { background: #6B7280; color: #fff; }
+.wn-ep-ai.wn-ai-claude     { background: #F97316; color: #fff; }
+.wn-ep-ai.wn-ai-gemini     { background: #38BDF8; color: #fff; }
+.wn-ep-ai.wn-ai-qwen       { background: #7C3AED; color: #fff; }
+.wn-ep-ai.wn-ai-llama      { background: #F5F5F5; color: #1a1a1a; }
+.wn-ep-ai.wn-ai-deepseek   { background: #3B82F6; color: #fff; }
+.wn-ep-ai.wn-ai-hyperclova { background: #22C55E; color: #fff; }
+.wn-ep-ai.wn-ai-exaone     { background: #EC4899; color: #fff; }
+.wn-ep-ai.wn-ai-mistral    { background: #EF4444; color: #fff; }
 .wn-ep-empty {
   text-align: center;
   padding: 60px 0;

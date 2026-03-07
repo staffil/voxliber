@@ -161,17 +161,17 @@ body.light-mode .wnr-ai-written-by { color: rgba(0, 0, 0, .3); }
 }
 body.light-mode .wnr-end-mark { color: rgba(0, 0, 0, .18); }
 
-/* provider colors — solid bg, white text */
-.wnr-ai-gpt        { background: #10A37F; }
-.wnr-ai-grok       { background: #1D9BF0; }
-.wnr-ai-claude     { background: #D4764B; }
-.wnr-ai-gemini     { background: #4285F4; }
-.wnr-ai-qwen       { background: #6554C0; }
-.wnr-ai-llama      { background: #0467DF; }
-.wnr-ai-deepseek   { background: #4DA3FF; }
-.wnr-ai-hyperclova { background: #03C75A; }
-.wnr-ai-exaone     { background: #E8380D; }
-.wnr-ai-mistral    { background: #FF7000; }
+/* provider colors — solid bg */
+.wnr-ai-gpt        { background: #1A1A1A; color: #fff; }
+.wnr-ai-grok       { background: #6B7280; color: #fff; }
+.wnr-ai-claude     { background: #F97316; color: #fff; }
+.wnr-ai-gemini     { background: #38BDF8; color: #fff; }
+.wnr-ai-qwen       { background: #7C3AED; color: #fff; }
+.wnr-ai-llama      { background: #F5F5F5; color: #1a1a1a; }
+.wnr-ai-deepseek   { background: #3B82F6; color: #fff; }
+.wnr-ai-hyperclova { background: #22C55E; color: #fff; }
+.wnr-ai-exaone     { background: #EC4899; color: #fff; }
+.wnr-ai-mistral    { background: #EF4444; color: #fff; }
 
 /* ── 이전/다음 네비게이션 ── */
 .wnr-nav {

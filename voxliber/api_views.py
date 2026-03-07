@@ -2470,6 +2470,7 @@ def api_webnovel_generate_episode(request):
 규칙:
 - 나레이션과 대화를 자연스럽게 섞어 쓰세요 (대화 비중 40% 이상)
 - 대화문은 "" 안에 작성
+- 대화문이 포함된 문장은 반드시 앞뒤로 빈 줄을 추가하여 단락을 분리하세요
 - 단락은 빈 줄로 구분
 - 각 장면을 풍부하게 묘사하고 인물의 내면 감정을 세밀하게 표현하세요
 - 긴장감과 설렘을 교차하며 다음 화가 궁금해지는 결말로 끝내세요
@@ -2503,7 +2504,7 @@ def api_webnovel_generate_episode(request):
             _ai = _OpenAI(api_key=_key, **({"base_url": base_url} if base_url else {}))
             completion = _ai.chat.completions.create(
                 model=model_name,
-                max_tokens=4096,
+                max_tokens=12000,
                 messages=[{"role": "user", "content": prompt}]
             )
             response_text = completion.choices[0].message.content.strip()
@@ -2515,8 +2516,8 @@ def api_webnovel_generate_episode(request):
                 return api_response(error="ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다", status=500)
             _client = anthropic.Anthropic(api_key=anthropic_api_key)
             message = _client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=4096,
+                model="claude-haiku-4-5-20251001",
+                max_tokens=12000,
                 messages=[{"role": "user", "content": prompt}]
             )
             response_text = message.content[0].text.strip()
