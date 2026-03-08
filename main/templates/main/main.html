@@ -1160,7 +1160,113 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
   .vm-bk-cover { width: 96px; height: 128px; }
   .vm-bk-name { font-size: .7rem; max-width: 92px; }
   .vm-grid { gap: 6px; }
+  .wn-bk { flex: 0 0 96px; width: 96px; }
+  .wn-cover { width: 96px !important; height: 160px !important; }
+  .wn-bk .vm-bk-name { max-width: 92px; }
 }
+
+/* ============================================================
+   WEBNOVEL CARDS — 웹소설 전용 카드 (세로형 포트레이트)
+   ============================================================ */
+.wn-section { margin-bottom: 48px; }
+.wn-section:last-child { margin-bottom: 0; }
+
+.wn-sec-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 4px 0 0;
+  letter-spacing: -.025em;
+}
+
+/* 웹소설 카드: 세로 포트레이트 비율 */
+.wn-bk {
+  flex: 0 0 130px;
+  width: 130px;
+}
+.wn-cover {
+  width: 130px !important;
+  height: 195px !important; /* 2:3 비율 */
+  border-radius: 10px !important;
+}
+.wn-bk .vm-bk-name { max-width: 126px; }
+.wn-bk .vm-bk-author { max-width: 126px; }
+
+/* HOT 배지 */
+.wn-badge-hot {
+  position: absolute; top: 8px; right: 8px;
+  background: linear-gradient(135deg, #f43f5e, #ec4899);
+  color: #fff;
+  font-size: .52rem; font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+/* NEW 배지 */
+.wn-badge-new {
+  position: absolute; top: 8px; right: 8px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  font-size: .52rem; font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+/* 읽기 버튼 (hover시) */
+.wn-read-btn {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-size: .72rem; font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 99px;
+  box-shadow: 0 4px 14px rgba(99,102,241,.48);
+  white-space: nowrap;
+}
+
+/* 태그 칩 */
+.wn-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 5px;
+}
+.wn-tag {
+  font-size: .58rem;
+  font-weight: 600;
+  color: rgba(167,139,250,.9);
+  background: rgba(99,102,241,.12);
+  border: 1px solid rgba(99,102,241,.2);
+  border-radius: 99px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+body.light-mode .wn-tag {
+  color: #6366f1;
+  background: rgba(99,102,241,.07);
+  border-color: rgba(99,102,241,.18);
+}
+
+/* 에피소드 수 */
+.wn-ep-count {
+  font-size: .62rem;
+  font-weight: 600;
+  color: rgba(255,255,255,.32);
+  margin-top: 3px;
+}
+body.light-mode .wn-ep-count { color: #94a3b8; }
+
+/* 웹소설 상단 소개 */
+.wn-intro {
+  font-size: .92rem;
+  color: rgba(255,255,255,.45);
+  margin-bottom: 36px;
+  line-height: 1.7;
+}
+body.light-mode .wn-intro { color: #64748b; }
 </style>
 {% endblock %}
 
@@ -1578,7 +1684,7 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
     <div class="vm-inner vm-section">
       <div class="vm-eyebrow">✨ AI 창작</div>
       <h2 class="vm-title">AI가 쓴 <span class="ac">웹소설 모음</span></h2>
-      <p style="font-size:.92rem; color:rgba(255,255,255,.45); margin-bottom:36px; line-height:1.7;">
+      <p class="wn-intro">
         인공지능이 직접 집필한 웹소설을 만나보세요.<br>
         판타지, 로맨스, SF까지 다양한 장르의 이야기가 준비되어 있습니다.
       </p>
@@ -1595,23 +1701,44 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
 
       <!-- 인기 웹소설 -->
       {% if popular_webnovels %}
-      <div style="margin-bottom:32px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <div style="width:3px;height:18px;background:linear-gradient(#667EEA,#A78BFA);border-radius:2px;"></div>
-          <span style="font-size:1.05rem;font-weight:800;">인기 웹소설</span>
-          <span style="background:linear-gradient(135deg,#667EEA,#A78BFA);color:#fff;font-size:.6rem;font-weight:700;padding:3px 8px;border-radius:5px;">HOT</span>
+      <div class="wn-section">
+        <div class="vm-hdr">
+          <div>
+            <div class="vm-eyebrow">🔥 실시간 인기</div>
+            <h3 class="wn-sec-title">인기 웹소설</h3>
+          </div>
+          <a href="/book/webnovel/" class="vm-more">전체 보기 →</a>
         </div>
-        <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;">
+        <div class="vm-grid">
           {% for novel in popular_webnovels %}
-          <a href="{% url 'book:webnovel_detail' novel.public_uuid %}" style="flex-shrink:0;width:120px;display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit;">
-            <div style="width:120px;aspect-ratio:9/16;border-radius:8px;overflow:hidden;background:rgba(99,102,241,.12);position:relative;">
-              {% if novel.cover_img %}<img src="{{ novel.cover_img.url }}" alt="{{ novel.name }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
-              {% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2rem;">📖</div>{% endif %}
-              <div style="position:absolute;top:6px;left:6px;background:linear-gradient(135deg,#667EEA,#A78BFA);color:#fff;font-size:.55rem;font-weight:700;padding:2px 6px;border-radius:4px;">HOT</div>
-            </div>
-            <div style="font-size:.78rem;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ novel.name }}</div>
-            <div style="font-size:.68rem;color:rgba(255,255,255,.4);">{% if novel.genres.all.0 %}{{ novel.genres.all.0.name }}{% else %}웹소설{% endif %}</div>
-          </a>
+          <div class="vm-bk wn-bk">
+            <a href="{% url 'book:webnovel_detail' novel.public_uuid %}">
+              <div class="vm-bk-cover wn-cover">
+                {% if novel.cover_img %}
+                <img src="{{ novel.cover_img.url }}" alt="{{ novel.name }}" loading="lazy">
+                {% else %}<div class="vm-bk-empty">📖</div>{% endif %}
+                {% if novel.genres.all.0 %}
+                <div class="vm-bk-genre">{{ novel.genres.all.0.name }}</div>
+                {% endif %}
+                <div class="wn-badge-hot">HOT</div>
+                <div class="vm-bk-hover">
+                  <div class="wn-read-btn">읽기</div>
+                </div>
+              </div>
+              <div class="vm-bk-meta">
+                <div class="vm-bk-name">{{ novel.name }}</div>
+                <div class="vm-bk-author">{{ novel.user.nickname|default:"AI작가" }}</div>
+                <div class="wn-tags">
+                  {% for tag in novel.tags.all|slice:":3" %}
+                  <span class="wn-tag"># {{ tag.name }}</span>
+                  {% endfor %}
+                  {% if not novel.tags.all %}
+                  {% if novel.genres.all.0 %}<span class="wn-tag">{{ novel.genres.all.0.name }}</span>{% endif %}
+                  {% endif %}
+                </div>
+              </div>
+            </a>
+          </div>
           {% endfor %}
         </div>
       </div>
@@ -1619,25 +1746,48 @@ body.light-mode .vm-footer-copy { color:#94a3b8; }
 
       <!-- 장르별 웹소설 -->
       {% for section in genre_webnovels %}
-      <div style="margin-bottom:32px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <div style="width:3px;height:18px;background:linear-gradient(#667EEA,#A78BFA);border-radius:2px;"></div>
-          <span style="font-size:1.05rem;font-weight:800;">{{ section.genre.name }}</span>
+      <div class="wn-section">
+        <div class="vm-hdr">
+          <div>
+            <div class="vm-eyebrow">장르 큐레이션</div>
+            <h3 class="wn-sec-title"><span class="ac">{{ section.genre.name }}</span> 웹소설</h3>
+          </div>
+          <a href="/book/webnovel/?genre={{ section.genre.id }}" class="vm-more">더보기 →</a>
         </div>
-        <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;">
+        <div class="vm-grid">
           {% for novel in section.books %}
-          <a href="{% url 'book:webnovel_detail' novel.public_uuid %}" style="flex-shrink:0;width:120px;display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit;">
-            <div style="width:120px;aspect-ratio:9/16;border-radius:8px;overflow:hidden;background:rgba(99,102,241,.12);position:relative;">
-              {% if novel.cover_img %}<img src="{{ novel.cover_img.url }}" alt="{{ novel.name }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
-              {% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2rem;">📖</div>{% endif %}
-            </div>
-            <div style="font-size:.78rem;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ novel.name }}</div>
-            <div style="font-size:.68rem;color:rgba(255,255,255,.4);">{{ novel.user.nickname|default:"AI작가" }}</div>
-          </a>
+          <div class="vm-bk wn-bk">
+            <a href="{% url 'book:webnovel_detail' novel.public_uuid %}">
+              <div class="vm-bk-cover wn-cover">
+                {% if novel.cover_img %}
+                <img src="{{ novel.cover_img.url }}" alt="{{ novel.name }}" loading="lazy">
+                {% else %}<div class="vm-bk-empty">📖</div>{% endif %}
+                {% if novel.genres.all.0 %}
+                <div class="vm-bk-genre">{{ novel.genres.all.0.name }}</div>
+                {% endif %}
+                <div class="vm-bk-hover">
+                  <div class="wn-read-btn">읽기</div>
+                </div>
+              </div>
+              <div class="vm-bk-meta">
+                <div class="vm-bk-name">{{ novel.name }}</div>
+                <div class="vm-bk-author">{{ novel.user.nickname|default:"AI작가" }}</div>
+                <div class="wn-tags">
+                  {% for tag in novel.tags.all|slice:":3" %}
+                  <span class="wn-tag"># {{ tag.name }}</span>
+                  {% endfor %}
+                  {% if not novel.tags.all %}
+                  {% if novel.genres.all.0 %}<span class="wn-tag">{{ novel.genres.all.0.name }}</span>{% endif %}
+                  {% endif %}
+                </div>
+              </div>
+            </a>
+          </div>
           {% endfor %}
         </div>
       </div>
       {% endfor %}
+
     </div>
 
   </div>
