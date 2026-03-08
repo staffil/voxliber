@@ -332,8 +332,10 @@ def api_my_library(request):
 
     filter_status = request.GET.get('status', 'all')
 
-    # 모든 읽기 진행 상황 가져오기
-    all_progress = ReadingProgress.objects.filter(user=user).select_related(
+    # 오디오북만 가져오기 (웹소설 제외)
+    all_progress = ReadingProgress.objects.filter(
+        user=user, book__book_type='audiobook'
+    ).select_related(
         'book', 'current_content'
     ).prefetch_related('book__contents', 'book__genres', 'book__user').order_by('-last_read_at')
 
@@ -370,7 +372,8 @@ def api_my_library(request):
                 'nickname': book.user.nickname,
                 'email': book.user.email,
             } if book.user else None,
-            'genres': [{'id': g.id, 'name': g.name} for g in book.genres.all()],
+            'book_type': book.book_type,
+            'genres': [{'id': g.id, 'name': g.name, 'color': g.genres_color} for g in book.genres.all()],
             'created_at': book.created_at.isoformat() if book.created_at else None,
             'reading_progress': {
                 'status': progress.get_reading_status(),

@@ -2456,7 +2456,9 @@ def api_user_bookmarks(request):
                 'tags': [
                     {'id': t.id, 'name': t.name}
                     for t in book.tags.all()
-                ]
+                ],
+                'book_type': book.book_type,
+                'adult_choice': book.adult_choice,
             }
         })
 
