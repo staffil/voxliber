@@ -1086,15 +1086,23 @@ def api_genre_books(request, genre_id):
     특정 장르의 책 목록 API
 
     Query Parameters:
-        - limit: 결과 개수 (기본: 6)
+        - limit: 결과 개수 (기본: 20)
+        - book_type: 'audiobook' | 'webnovel' (기본: 전체)
 
     Example:
-        GET /book/api/genres/1/books/?limit=6
+        GET /book/api/genres/1/books/?limit=20&book_type=audiobook
     """
-    limit = int(request.GET.get('limit', 6))
-    books = Books.objects.filter(
-        genres__id=genre_id
-    ).select_related('user').prefetch_related('genres').order_by('-book_score')[:limit]
+    limit = int(request.GET.get('limit', 20))
+    book_type = request.GET.get('book_type', '')
+
+    qs = Books.objects.filter(
+        genres__id=genre_id, is_deleted=False
+    ).select_related('user').prefetch_related('genres')
+
+    if book_type in ('audiobook', 'webnovel'):
+        qs = qs.filter(book_type=book_type)
+
+    books = qs.order_by('-book_score', '-created_at')[:limit]
 
     return api_response([_serialize_book(book, request) for book in books])
 
