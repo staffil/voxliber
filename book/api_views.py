@@ -1042,7 +1042,7 @@ def api_top_rated_books(request):
     """
     limit = int(request.GET.get('limit', 8))
     book_type = request.GET.get('book_type', 'audiobook')
-    books = Books.objects.filter(
+    books = Books.objects.filter(book_type='audiobook',
         book_type=book_type, is_deleted=False, book_score__gt=0
     ).select_related('user').prefetch_related('genres').order_by('-book_score')[:limit]
 
@@ -1096,7 +1096,7 @@ def api_genre_books(request, genre_id):
     limit = int(request.GET.get('limit', 20))
     book_type = request.GET.get('book_type', '')
 
-    qs = Books.objects.filter(
+    qs = Books.objects.filter( 
         genres__id=genre_id, is_deleted=False
     ).select_related('user').prefetch_related('genres')
 
