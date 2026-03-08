@@ -91,7 +91,7 @@ def main(request):
     all_genres = Genres.objects.filter(book_type='audiobook').order_by('?')[:6]  # 상위 6개 장르만
 
     for genre in all_genres:
-        genre_books = Books.objects.filter(book_type='audiobook',
+        genre_books = Books.objects.filter(
             genres=genre
         ).select_related('user').prefetch_related('genres').order_by('-book_score', '-created_at')[:6]
 
@@ -158,7 +158,7 @@ def main(request):
     # 장르당 인기 많은 수록 책들
     popular_genres = GenrePlaylist.objects.filter(
         playlist_type='popular',
-        book_type='audiobook',
+        book_type='audiobook'
         is_active=True
     ).select_related('genre').prefetch_related(
         'items__content__book'
