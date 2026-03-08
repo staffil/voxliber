@@ -65,6 +65,9 @@
               {% elif progress.status == 'paused' %}일시중지
               {% endif %}
             </div>
+            <div class="book-type-badge book-type-{{ progress.book.book_type }}">
+              {% if progress.book.book_type == 'webnovel' %}📖 웹소설{% else %}🎧 오디오북{% endif %}
+            </div>
           </div>
 
           <div class="book-info-section">
@@ -89,12 +92,27 @@
             </div>
 
             <div class="book-actions">
-              <a href="#" class="btn-action btn-continue" onclick="showAppInstallModal()">
-                {% if progress.status == 'completed' %}다시 읽기{% else %}이어 읽기{% endif %}
-              </a>
-              <a href="{% url 'book:book_detail' progress.book.public_uuid %}" class="btn-action btn-secondary">
-                상세 정보
-              </a>
+              {% if progress.book.book_type == 'webnovel' %}
+                {% if progress.current_content %}
+                <a href="{% url 'book:webnovel_episode' progress.current_content.public_uuid %}" class="btn-action btn-continue">
+                  {% if progress.status == 'completed' %}다시 읽기{% else %}이어 읽기{% endif %}
+                </a>
+                {% else %}
+                <a href="{% url 'book:webnovel_detail' progress.book.public_uuid %}" class="btn-action btn-continue">
+                  읽기 시작
+                </a>
+                {% endif %}
+                <a href="{% url 'book:webnovel_detail' progress.book.public_uuid %}" class="btn-action btn-secondary">
+                  상세 정보
+                </a>
+              {% else %}
+                <a href="#" class="btn-action btn-continue" onclick="showAppInstallModal()">
+                  {% if progress.status == 'completed' %}다시 읽기{% else %}이어 읽기{% endif %}
+                </a>
+                <a href="{% url 'book:book_detail' progress.book.public_uuid %}" class="btn-action btn-secondary">
+                  상세 정보
+                </a>
+              {% endif %}
             </div>
 
           </div>

@@ -261,6 +261,30 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.book-type-badge {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  padding: 4px 9px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  z-index: 2;
+  backdrop-filter: blur(10px);
+}
+.book-type-audiobook {
+  background: rgba(59,130,246,.18);
+  color: #93c5fd;
+  border: 1px solid rgba(59,130,246,.3);
+}
+.book-type-webnovel {
+  background: rgba(236,72,153,.18);
+  color: #f9a8d4;
+  border: 1px solid rgba(236,72,153,.3);
+}
+body.light-mode .book-type-audiobook { background: rgba(59,130,246,.1); color: #1d4ed8; }
+body.light-mode .book-type-webnovel  { background: rgba(236,72,153,.1); color: #be185d; }
+
 .status-reading {
   color: #4ade80;
   border-color: rgba(74, 222, 128, 0.3);

@@ -332,9 +332,9 @@ def api_my_library(request):
 
     filter_status = request.GET.get('status', 'all')
 
-    # 오디오북만 가져오기 (웹소설 제외)
+    # 모든 읽기 진행 상황 가져오기 (오디오북 + 웹소설)
     all_progress = ReadingProgress.objects.filter(
-        user=user, book__book_type='audiobook'
+        user=user
     ).select_related(
         'book', 'current_content'
     ).prefetch_related('book__contents', 'book__genres', 'book__user').order_by('-last_read_at')
@@ -380,6 +380,7 @@ def api_my_library(request):
                 'last_read_content_number': progress.last_read_content_number,
                 'progress_percentage': progress.get_progress_percentage(),
                 'is_favorite': progress.is_favorite,
+                'current_content_uuid': str(progress.current_content.public_uuid) if progress.current_content else None,
                 'last_read_at': progress.last_read_at.isoformat() if progress.last_read_at else None,
                 'started_at': progress.started_at.isoformat() if progress.started_at else None,
                 'completed_at': progress.completed_at.isoformat() if progress.completed_at else None,
