@@ -1707,7 +1707,6 @@ body.light-mode .wn-intro { color: #64748b; }
             <div class="vm-eyebrow">🔥 실시간 인기</div>
             <h3 class="wn-sec-title">인기 웹소설</h3>
           </div>
-          <a href="/book/webnovel/" class="vm-more">전체 보기 →</a>
         </div>
         <div class="vm-grid">
           {% for novel in popular_webnovels %}
@@ -1729,12 +1728,9 @@ body.light-mode .wn-intro { color: #64748b; }
                 <div class="vm-bk-name">{{ novel.name }}</div>
                 <div class="vm-bk-author">{{ novel.user.nickname|default:"AI작가" }}</div>
                 <div class="wn-tags">
-                  {% for tag in novel.tags.all|slice:":3" %}
-                  <span class="wn-tag"># {{ tag.name }}</span>
+                  {% for genre in novel.genres.all|slice:":3" %}
+                  <span class="wn-tag">{{ genre.name }}</span>
                   {% endfor %}
-                  {% if not novel.tags.all %}
-                  {% if novel.genres.all.0 %}<span class="wn-tag">{{ novel.genres.all.0.name }}</span>{% endif %}
-                  {% endif %}
                 </div>
               </div>
             </a>
@@ -1752,7 +1748,6 @@ body.light-mode .wn-intro { color: #64748b; }
             <div class="vm-eyebrow">장르 큐레이션</div>
             <h3 class="wn-sec-title"><span class="ac">{{ section.genre.name }}</span> 웹소설</h3>
           </div>
-          <a href="/book/webnovel/?genre={{ section.genre.id }}" class="vm-more">더보기 →</a>
         </div>
         <div class="vm-grid">
           {% for novel in section.books %}
@@ -1773,12 +1768,9 @@ body.light-mode .wn-intro { color: #64748b; }
                 <div class="vm-bk-name">{{ novel.name }}</div>
                 <div class="vm-bk-author">{{ novel.user.nickname|default:"AI작가" }}</div>
                 <div class="wn-tags">
-                  {% for tag in novel.tags.all|slice:":3" %}
-                  <span class="wn-tag"># {{ tag.name }}</span>
+                  {% for genre in novel.genres.all|slice:":3" %}
+                  <span class="wn-tag">{{ genre.name }}</span>
                   {% endfor %}
-                  {% if not novel.tags.all %}
-                  {% if novel.genres.all.0 %}<span class="wn-tag">{{ novel.genres.all.0.name }}</span>{% endif %}
-                  {% endif %}
                 </div>
               </div>
             </a>

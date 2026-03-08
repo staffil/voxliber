@@ -1041,8 +1041,9 @@ def api_top_rated_books(request):
         GET /book/api/books/top-rated/?limit=8
     """
     limit = int(request.GET.get('limit', 8))
+    book_type = request.GET.get('book_type', 'audiobook')
     books = Books.objects.filter(
-        book_type='audiobook', is_deleted=False, book_score__gt=0
+        book_type=book_type, is_deleted=False, book_score__gt=0
     ).select_related('user').prefetch_related('genres').order_by('-book_score')[:limit]
 
     return api_response([_serialize_book(book, request) for book in books])
