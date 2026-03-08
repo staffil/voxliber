@@ -587,6 +587,11 @@ body.light-mode .vm-tab { color: rgba(0,0,0,.35); }
 body.light-mode .vm-tab:hover { color: rgba(0,0,0,.68); }
 .vm-tab.active { color: #fff; border-bottom-color: var(--primary,#6366f1); }
 body.light-mode .vm-tab.active { color: #0f172a; border-bottom-color: #6366f1; }
+/* 탭별 고유 컬러 */
+.vm-tab[data-p="vm-ab"].active { color: #93c5fd; border-bottom-color: #3b82f6; }
+body.light-mode .vm-tab[data-p="vm-ab"].active { color: #1d4ed8; border-bottom-color: #3b82f6; }
+.vm-tab[data-p="vm-ai"].active { color: #f9a8d4; border-bottom-color: #ec4899; }
+body.light-mode .vm-tab[data-p="vm-ai"].active { color: #be185d; border-bottom-color: #ec4899; }
 .vm-panel { display: none; }
 .vm-panel.active { display: block; }
 

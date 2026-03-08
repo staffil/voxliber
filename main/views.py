@@ -88,10 +88,10 @@ def main(request):
 
     # 📚 장르별 큐레이션 (각 장르당 상위 6개 작품)
     genres_with_books = []
-    all_genres = Genres.objects.order_by('?')[:6]  # 상위 6개 장르만
+    all_genres = Genres.objects.filter(book_type='audiobook').order_by('?')[:6]  # 상위 6개 장르만
 
     for genre in all_genres:
-        genre_books = Books.objects.filter(
+        genre_books = Books.objects.filter(book_type='audiobook',
             genres=genre
         ).select_related('user').prefetch_related('genres').order_by('-book_score', '-created_at')[:6]
 
@@ -114,13 +114,13 @@ def main(request):
 
         if listened_books:
             # 해당 책들의 장르 가져오기 (리스트로 변환)
-            user_genres = list(Genres.objects.filter(
+            user_genres = list(Genres.objects.filter(book_type='audiobook',
                 books__id__in=listened_books
             ).distinct()[:3])
 
             if user_genres:
                 # 해당 장르의 책 중 아직 보지 않은 책 추천
-                recommended_books = Books.objects.filter(
+                recommended_books = Books.objects.filter(book_type='audiobook',
                     genres__in=user_genres
                 ).exclude(
                     id__in=listened_books
@@ -147,17 +147,18 @@ def main(request):
 
 
     # 모든 장르 (필터용)
-    genres_list = Genres.objects.all()[:10]
+    genres_list = Genres.objects.filter(book_type='audiobook')[:10]
 
     # 오디오 리스트
-    audio_list = Books.objects.all()
+    audio_list = Books.objects.filter(book_type='audiobook').all()
 
     # 에피소드 없데이트 바로 한 책 
-    latest_episodes = Content.objects.select_related('book').order_by('-created_at')[:20]
+    latest_episodes = Content.objects.filter(book_type='audiobook').select_related('book').order_by('-created_at')[:20]
 
     # 장르당 인기 많은 수록 책들
     popular_genres = GenrePlaylist.objects.filter(
         playlist_type='popular',
+        book_type='audiobook',
         is_active=True
     ).select_related('genre').prefetch_related(
         'items__content__book'
