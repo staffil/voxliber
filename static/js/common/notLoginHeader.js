@@ -15,20 +15,11 @@
         //     }
         // });
 
-        // Theme Toggle - base.html의 전역 함수 사용
+        // Theme Toggle - 아이콘 초기 상태 설정 (클릭은 onclick="toggleTheme()"에서 처리)
         const themeToggle = document.getElementById('themeToggle');
-
         if (themeToggle) {
-            // 현재 테마에 맞게 아이콘 설정
             const savedTheme = localStorage.getItem('theme');
             themeToggle.textContent = savedTheme === 'light' ? '☀️' : '🌙';
-
-            // 클릭 시 전역 toggleTheme 함수 호출
-            themeToggle.addEventListener('click', () => {
-                if (window.toggleTheme) {
-                    window.toggleTheme();
-                }
-            });
         }
 
 
