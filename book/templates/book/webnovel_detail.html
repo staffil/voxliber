@@ -40,16 +40,16 @@
       <div class="wn-author">✍️ {{ book.author_name|default:book.user.nickname }}</div>
       <div class="wn-genres">
         {% for g in book.genres.all %}
-          <span class="wn-genre-tag">{{ g.name }}</span>
+          <span class="wn-genre-tag" style="background-color:{{ g.genres_color }}30;border-color:{{ g.genres_color }};color:{{ g.genres_color }};">{{ g.name }}</span>
         {% endfor %}
         {% if not book.genres.all %}
-          <span class="wn-genre-tag">웹소설</span>
+          <span class="wn-genre-tag" style="background-color:rgba(99,102,241,.12);border-color:#6366f1;color:#6366f1;">웹소설</span>
         {% endif %}
       </div>
       {% if book.tags.all %}
-      <div class="wn-tags">
-        {% for t in book.tags.all %}
-          <span class="wn-tag">#{{ t.name }}</span>
+      <div class="wn-tags" style="margin-top:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        {% for t in book.tags.all|slice:":5" %}
+          <span style="display:inline-block;margin-right:10px;font-size:.8em;color:#6366f1;font-weight:500;">#{{ t.name }}</span>
         {% endfor %}
       </div>
       {% endif %}
