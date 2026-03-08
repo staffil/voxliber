@@ -1,0 +1,16 @@
+[Unit]
+Description=VoxLiber Webnovel Auto Scheduler
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/home/ubuntu/voxliber
+ExecStart=/home/ubuntu/voxliber/venv/bin/python manage.py webnovel_scheduler start
+Restart=on-failure
+RestartSec=30
+StandardOutput=append:/var/log/webnovel_scheduler.log
+StandardError=append:/var/log/webnovel_scheduler.log
+
+[Install]
+WantedBy=multi-user.target
