@@ -24,7 +24,7 @@ from django.core.management.base import BaseCommand
 API_KEY = "59DQqKqImxvNkePzZE70_7-qCIaU00PYor9ubKtgeX5DYmzn3EbjdenZyo3iudC1"
 BASE_URL = "https://voxliber.ink/api/v1"
 HEADERS  = {"X-API-Key": API_KEY, "Content-Type": "application/json"}
-INTERVAL_HOURS = 4
+INTERVAL_HOURS = 12
 
 # 일시정지 플래그 파일 위치 (존재하면 다음 사이클 스킵)
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
