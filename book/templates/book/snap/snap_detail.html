@@ -104,7 +104,15 @@
             </div>
             <div class="snap-title">{{ snap.snap_title }}</div>
             <div class="snap-description">{{ snap.book_comment }}</div>
-<a href="{{ snap.book_link }}" class="arrow-link" data-login-required>책 보러 가기</a>
+{% if snap.book %}
+  {% if snap.book.book_type == 'webnovel' %}
+    <a href="{% url 'book:webnovel_detail' snap.book.public_uuid %}" class="arrow-link">📖 웹소설 보러 가기</a>
+  {% else %}
+    <a href="{% url 'book:book_detail' snap.book.public_uuid %}" class="arrow-link">🎧 오디오북 보러 가기</a>
+  {% endif %}
+{% elif snap.book_link %}
+  <a href="{{ snap.book_link }}" class="arrow-link" data-login-required>책 보러 가기</a>
+{% endif %}
         </div>
 
 
