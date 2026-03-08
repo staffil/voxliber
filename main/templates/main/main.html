@@ -1504,7 +1504,6 @@ body.light-mode .wn-intro { color: #64748b; }
             <div class="vm-bk-cover">
               {% if book.cover_img %}<img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
               {% else %}<div class="vm-bk-empty">📚</div>{% endif %}
-              {% if book.genres.all.0 %}<div class="vm-bk-genre" {% if book.genres.all.0.genres_color %}style="background:{{ book.genres.all.0.genres_color }}"{% endif %}>{{ book.genres.all.0.name }}</div>{% endif %}
               <div class="vm-bk-hover"><div class="vm-play-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div></div>
             </div>
             <div class="vm-bk-meta">
@@ -1719,12 +1718,8 @@ body.light-mode .wn-intro { color: #64748b; }
                 {% if novel.cover_img %}
                 <img src="{{ novel.cover_img.url }}" alt="{{ novel.name }}" loading="lazy">
                 {% else %}<div class="vm-bk-empty">📖</div>{% endif %}
-                {% if novel.genres.all.0 %}
-                <div class="vm-bk-genre" {% if novel.genres.all.0.genres_color %}style="background:{{ novel.genres.all.0.genres_color }}"{% endif %}>{{ novel.genres.all.0.name }}</div>
-                {% endif %}
                 <div class="wn-badge-hot">HOT</div>
                 <div class="vm-bk-hover">
-                  <div class="wn-read-btn">읽기</div>
                 </div>
               </div>
               <div class="vm-bk-meta">
@@ -1759,11 +1754,7 @@ body.light-mode .wn-intro { color: #64748b; }
                 {% if novel.cover_img %}
                 <img src="{{ novel.cover_img.url }}" alt="{{ novel.name }}" loading="lazy">
                 {% else %}<div class="vm-bk-empty">📖</div>{% endif %}
-                {% if novel.genres.all.0 %}
-                <div class="vm-bk-genre" {% if novel.genres.all.0.genres_color %}style="background:{{ novel.genres.all.0.genres_color }}"{% endif %}>{{ novel.genres.all.0.name }}</div>
-                {% endif %}
                 <div class="vm-bk-hover">
-                  <div class="wn-read-btn">읽기</div>
                 </div>
               </div>
               <div class="vm-bk-meta">
@@ -2118,7 +2109,6 @@ document.addEventListener('DOMContentLoaded', function () {
             d.innerHTML = `<a href="/book/${book.public_uuid}/">
               <div class="vm-bk-cover">
                 ${book.cover_img ? `<img src="${book.cover_img}" alt="${book.name}" loading="lazy">` : `<div class="vm-bk-empty">📚</div>`}
-                ${book.genres && book.genres.length > 0 ? `<div class="vm-bk-genre" style="background:${book.genres[0].color||'rgba(0,0,0,.62)'}">${book.genres[0].name}</div>` : ''}
                 <div class="vm-bk-hover"><div class="vm-play-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div></div>
               </div>
               <div class="vm-bk-meta">
