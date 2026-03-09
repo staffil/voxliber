@@ -64,6 +64,8 @@ def api_create_book(request):
     description = data.get("description", "").strip()
     genre_ids = data.get("genre_ids", [])
     tag_ids = data.get("tag_ids", [])
+    genre_names = data.get("genres", [])   # 이름으로도 가능
+    tag_names = data.get("tags", [])       # 이름으로도 가능
     status = data.get("status", "ongoing")
     adult_choice = data.get("adult_choice", False)
     author_name = data.get("author_name", "").strip() or "미상"
@@ -88,15 +90,29 @@ def api_create_book(request):
         book_type=book_type,
     )
 
-    # 장르 연결
+    # 장르 연결 (ID 또는 이름)
     if genre_ids:
         genres = Genres.objects.filter(id__in=genre_ids)
         book.genres.set(genres)
+    elif genre_names:
+        genre_objs = []
+        for gname in genre_names:
+            g, _ = Genres.objects.get_or_create(name=gname, defaults={"genres_color": "#6366f1"})
+            genre_objs.append(g)
+        book.genres.set(genre_objs)
 
-    # 태그 연결
+    # 태그 연결 (ID 또는 이름)
     if tag_ids:
         tags = Tags.objects.filter(id__in=tag_ids)
         book.tags.set(tags)
+    elif tag_names:
+        from django.utils.text import slugify
+        tag_objs = []
+        for tname in tag_names:
+            slug = slugify(tname, allow_unicode=True)
+            t, _ = Tags.objects.get_or_create(name=tname, defaults={"slug": slug or tname})
+            tag_objs.append(t)
+        book.tags.set(tag_objs)
 
     print(f"✅ [API] 책 생성 완료: {book.name} (UUID: {book.public_uuid})")
 

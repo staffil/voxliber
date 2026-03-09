@@ -387,14 +387,14 @@ def _default_book_concepts():
 def create_book_via_api(concept):
     """API로 책 생성 후 UUID 반환"""
     r = requests.post(
-        f"{BASE_URL}/books/create/",
+        f"{BASE_URL}/create-book/",
         headers=HEADERS,
         json={
-            "name": concept["name"],
+            "title": concept["name"],          # API는 "title" 키 사용
             "description": concept["description"],
             "book_type": "webnovel",
-            "genres": concept.get("genres", []),
-            "tags": concept.get("tags", []),
+            "genres": concept.get("genres", []),   # 이름 문자열 배열
+            "tags": concept.get("tags", []),        # 이름 문자열 배열
         },
         timeout=30,
     )
