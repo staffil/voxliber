@@ -39,7 +39,7 @@ def _make_image_prompt(title: str, description: str, book_type: str) -> str:
     user = f"Book title: {title}\nDescription: {description[:300]}\nBook type: {book_type}"
     try:
         resp = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             max_tokens=150,
             messages=[
                 {"role": "system", "content": system},

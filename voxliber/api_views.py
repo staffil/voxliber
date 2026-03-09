@@ -1341,6 +1341,7 @@ def api_update_book_metadata(request):
     genre_ids = data.get("genre_ids")
     tag_ids = data.get("tag_ids")
     mode = data.get("mode", "set")
+    new_status = data.get("status")  # 'ongoing' | 'completed' | 'hiatus'
 
     if not book_uuid:
         return api_response(error="book_uuid는 필수입니다.", status=400)
@@ -1348,6 +1349,11 @@ def api_update_book_metadata(request):
     book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user, is_deleted=False).first()
     if not book:
         return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
+
+    # 연재 상태 업데이트
+    if new_status in ('ongoing', 'completed', 'hiatus'):
+        book.status = new_status
+        book.save(update_fields=['status'])
 
     # 장르 업데이트
     if genre_ids is not None:

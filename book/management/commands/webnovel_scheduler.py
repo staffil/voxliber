@@ -31,9 +31,10 @@ WEEKLY_CREATION_COUNT = 5  # 한 번에 생성할 책 수
 
 # 파일 위치
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-PAUSE_FILE = os.path.join(BASE_DIR, "scheduler_pause.flag")
+PAUSE_FILE        = os.path.join(BASE_DIR, "scheduler_pause.flag")
 WEEKLY_STATE_FILE = os.path.join(BASE_DIR, "weekly_creation_state.json")
 AUTO_BOOKS_FILE   = os.path.join(BASE_DIR, "auto_created_books.json")
+BOOK_CONTEXT_FILE = os.path.join(BASE_DIR, "book_context_cache.json")  # 캐릭터/플롯 캐시
 
 # ── 웹소설 목록 ───────────────────────────────────────────────────────
 WEBNOVEL_LIST = [
@@ -138,6 +139,91 @@ def get_episode_count(book_uuid):
     return 0
 
 
+def load_book_context_cache():
+    try:
+        with open(BOOK_CONTEXT_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_book_context_cache(cache):
+    with open(BOOK_CONTEXT_FILE, "w", encoding="utf-8") as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2)
+
+
+def generate_book_context(book_uuid, book_name, description, writing_style):
+    """GPT-4o-mini로 캐릭터 시트 + 플롯 아웃라인 자동 생성 후 캐시"""
+    cache = load_book_context_cache()
+    if book_uuid in cache:
+        return cache[book_uuid]
+
+    if not OPENAI_API_KEY:
+        return None
+
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=1500,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "한국 웹소설 편집자입니다. 소설의 핵심 정보를 간결하게 정리합니다."
+                },
+                {
+                    "role": "user",
+                    "content": f"""다음 웹소설의 캐릭터 시트와 플롯 아웃라인을 작성하세요.
+
+제목: {book_name}
+설명: {description}
+문체/장르: {writing_style[:200]}
+
+아래 형식으로 출력하세요 (다른 설명 없이):
+
+【주요 등장인물】
+- 주인공: (이름, 나이, 외모 특징 1줄, 성격 1줄, 특이사항)
+- 남/여주2: (이름, 외모 특징 1줄, 성격 1줄)
+- 조연1~2: (이름, 역할 1줄)
+
+【세계관 핵심 설정】
+(3줄 이내. 마법 시스템, 시대적 배경, 고유 용어 등)
+
+【전체 플롯 아웃라인】
+- 도입부(1~25%):
+- 갈등 심화(26~50%):
+- 클라이맥스 준비(51~75%):
+- 결말(76~100%): """
+                }
+            ]
+        )
+        context_text = resp.choices[0].message.content.strip()
+        cache[book_uuid] = context_text
+        save_book_context_cache(cache)
+        _log(f"  📋 '{book_name}' 캐릭터/플롯 생성 완료 (캐시 저장)")
+        return context_text
+    except Exception as e:
+        _log(f"  ⚠️  캐릭터/플롯 생성 실패: {e}")
+        return None
+
+
+def mark_book_completed(book_uuid):
+    """책 완결 상태로 업데이트"""
+    try:
+        r = requests.post(
+            f"{BASE_URL}/update-book-metadata/",
+            headers=HEADERS,
+            json={"book_uuid": book_uuid, "status": "completed"},
+            timeout=10,
+        )
+        if r.status_code == 200 and r.json().get("success"):
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def get_story_phase_instruction(current_count, max_episodes):
     """현재 화수/총화수 기반으로 스토리 단계 지시문 반환"""
     if max_episodes is None or current_count is None:
@@ -191,12 +277,17 @@ def get_story_phase_instruction(current_count, max_episodes):
 - 매화마다 작은 반전이나 예상치 못한 전개로 독자가 지루하지 않게 하세요.{twist_note}"""
 
 
-def generate_episode(book_uuid, writing_style, provider="gpt", max_episodes=None, current_count=None):
+def generate_episode(book_uuid, writing_style, provider="gpt", max_episodes=None, current_count=None, book_context=None):
+    # 캐릭터/플롯 컨텍스트 삽입
+    context_note = ""
+    if book_context:
+        context_note = f"\n\n【작품 설정 — 반드시 일관되게 유지】\n{book_context}\n"
+
     # 스토리 단계 지시문 추가
     phase_instruction = get_story_phase_instruction(current_count, max_episodes)
     is_final = max_episodes and current_count is not None and (current_count + 1) >= max_episodes
 
-    effective_style = writing_style + phase_instruction
+    effective_style = writing_style + context_note + phase_instruction
 
     try:
         r = requests.post(
@@ -242,6 +333,9 @@ def run_once():
             current = get_episode_count(uuid)
             if current >= max_ep:
                 _log(f"  ⏭  {uuid[:8]}... [{current}/{max_ep}화 — 목표 달성, 스킵]")
+                # ③ 자동 완결 상태 업데이트
+                if mark_book_completed(uuid):
+                    _log(f"  ✅ 완결 처리 완료: {uuid[:8]}")
                 skip += 1
                 continue
         else:
@@ -250,10 +344,19 @@ def run_once():
         # 19금 책은 무조건 grok 사용
         provider = "grok" if novel.get("adult", False) else novel.get("provider", "gpt")
 
+        # ① 캐릭터 시트 + 플롯 아웃라인 자동 생성 (첫 실행 시 1회, 이후 캐시)
+        book_context = generate_book_context(
+            uuid,
+            novel.get("name", uuid[:8]),
+            "",  # description은 API에서 가져오므로 writing_style로 대체
+            novel["writing_style"],
+        )
+
         ep_info = f"{current+1}/{max_ep}화" if max_ep and current is not None else "다음화"
         _log(f"  📖 {uuid[:8]}... [{provider}] {ep_info}")
 
-        if generate_episode(uuid, novel["writing_style"], provider, max_ep, current):
+        # ② 캐릭터/플롯 컨텍스트를 프롬프트에 삽입
+        if generate_episode(uuid, novel["writing_style"], provider, max_ep, current, book_context):
             ok += 1
         else:
             fail += 1
@@ -298,7 +401,7 @@ def generate_book_concepts():
         from openai import OpenAI
         client = OpenAI(api_key=OPENAI_API_KEY)
         resp = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             max_tokens=3000,
             messages=[
                 {
@@ -435,6 +538,13 @@ def weekly_create_books():
             uuid, concept["writing_style"],
             concept.get("provider", "gpt"),
             concept.get("max_episodes", 30), 0
+        )
+
+        # 신규 책 캐릭터/플롯 미리 생성 (캐시)
+        generate_book_context(
+            uuid, concept["name"],
+            concept.get("description", ""),
+            concept["writing_style"],
         )
 
         # auto_books 리스트에 추가 (스케줄러가 다음 사이클부터 자동 연재)
