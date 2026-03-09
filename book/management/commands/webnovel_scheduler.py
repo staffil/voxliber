@@ -225,7 +225,7 @@ def generate_cover_dalle3(book_uuid, book_name, description, writing_style):
             model='gpt-4o-mini', max_tokens=200,
             messages=[
                 {'role': 'system', 'content': 'Expert book cover prompt writer for DALL-E 3. Output ONLY the English prompt, no explanations.'},
-                {'role': 'user', 'content': f'Create a DALL-E 3 HD prompt for a Korean webnovel cover (portrait 2:3 ratio). Title: "{book_name}". Description: {description[:200]}. Genre/style: {genre_hint}. Requirements: manhwa/anime illustration style, dramatic cinematic lighting, beautiful detailed Korean characters, vibrant colors, professional book cover composition, absolutely NO text or letters in the image.'}
+                {'role': 'user', 'content': f'Create a DALL-E 3 HD prompt for a Korean webtoon/Japanese anime style novel cover (portrait 2:3 ratio). Title: "{book_name}". Description: {description[:200]}. Genre: {genre_hint}. REQUIRED style: Korean webtoon art style combined with Japanese anime illustration — large expressive eyes, soft cel-shading, clean linework, pastel and saturated color palette, detailed hair, beautiful Korean anime characters. Dramatic cinematic composition, atmospheric lighting, professional book cover layout. Absolutely NO text, letters, or watermarks in the image.'}
             ]
         )
         img_prompt = pr.choices[0].message.content.strip()
