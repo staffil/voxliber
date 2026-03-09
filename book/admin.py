@@ -48,12 +48,48 @@ class TagsAdmin(admin.ModelAdmin):
 # =====================================================
 # 책
 # =====================================================
-@admin.register(Books)
-class BooksAdmin(admin.ModelAdmin):
+# ── 오디오북 프록시 모델 ──────────────────────────────────────────────
+class AudioBook(Books):
+    class Meta:
+        proxy = True
+        verbose_name = '오디오북'
+        verbose_name_plural = '오디오북 목록'
+
+class WebNovel(Books):
+    class Meta:
+        proxy = True
+        verbose_name = '웹소설'
+        verbose_name_plural = '웹소설 목록'
+
+
+@admin.register(AudioBook)
+class AudioBookAdmin(admin.ModelAdmin):
     list_display = ['name', 'user', 'book_score', 'status', 'created_at']
     list_filter = ['created_at', 'genres', 'status']
     search_fields = ['name', 'user__nickname']
     filter_horizontal = ['genres']
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(book_type='audiobook')
+
+    def save_model(self, request, obj, form, change):
+        obj.book_type = 'audiobook'
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(WebNovel)
+class WebNovelAdmin(admin.ModelAdmin):
+    list_display = ['name', 'user', 'book_score', 'status', 'adult_choice', 'created_at']
+    list_filter = ['created_at', 'genres', 'status', 'adult_choice']
+    search_fields = ['name', 'user__nickname']
+    filter_horizontal = ['genres']
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(book_type='webnovel')
+
+    def save_model(self, request, obj, form, change):
+        obj.book_type = 'webnovel'
+        super().save_model(request, obj, form, change)
 
 
 # =====================================================
