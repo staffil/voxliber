@@ -2455,15 +2455,17 @@ def api_webnovel_generate_episode(request):
         else:
             adult_note = "\n- 이 작품은 19세 이상 성인 전용 웹소설입니다. 성인 로맨스와 선정적 묘사를 포함할 수 있습니다."
 
-    prompt = f"""당신은 한국 웹소설 작가입니다.
+    SYSTEM_PROMPT = """당신은 한국에서 가장 흡입력 있는 웹소설을 쓰는 전업 작가입니다.
+독자를 이야기 속으로 끌어당기는 강렬한 문장과 예측 불가능한 전개가 당신의 특기입니다.
+매화 독자가 다음 화를 기다리지 않을 수 없게 만드는 것이 당신의 사명입니다."""
 
-작품 정보:
+    prompt = f"""작품 정보:
 - 제목: {book.name}
 - 설명: {book.description or '없음'}
-- 문체: {writing_style}{adult_note}
+- 문체/장르: {writing_style}{adult_note}
 
 이전 스토리 흐름:
-{prev_context if prev_context else "(첫 번째 화입니다)"}
+{prev_context if prev_context else "(첫 번째 화입니다. 매력적인 도입부로 독자를 즉시 사로잡으세요.)"}
 
 ---
 {episode_number}화를 작성하세요.
@@ -2476,14 +2478,18 @@ def api_webnovel_generate_episode(request):
 본문 전체 내용 (줄바꿈으로 단락 구분, 반드시 7000자 이상 10000자 이내)
 ---END---
 
-규칙:
-- 나레이션과 대화를 자연스럽게 섞어 쓰세요 (대화 비중 40% 이상)
-- 대화문은 "" 안에 작성
-- 대화문이 포함된 문장은 반드시 앞뒤로 빈 줄을 추가하여 단락을 분리하세요
-- 단락은 빈 줄로 구분
-- 각 장면을 풍부하게 묘사하고 인물의 내면 감정을 세밀하게 표현하세요
-- 감정 태그([calm], [excited] 등)는 넣지 마세요
-- 반드시 위 구분자 형식만 출력하세요. JSON, 마크다운, 코드블록 사용 금지
+【집필 품질 기준】
+① 오프닝 훅: 첫 문장부터 독자를 잡아당기세요. 강렬한 행동, 충격적 대사, 또는 긴장감 넘치는 상황으로 시작하세요. "~했다. ~였다." 식의 평범한 도입 금지.
+② 장면 구성: 한 화에 최소 3개의 뚜렷한 씬(장면)을 넣으세요. 장면 전환은 자연스럽게.
+③ 캐릭터 말투: 각 등장인물은 반드시 고유한 말투를 가져야 합니다 (어휘, 문장 길이, 반말/존댓말, 거친/우아한 표현 등).
+④ 감정 표현 (Show, Don't Tell): 감정을 직접 쓰지 마세요. 신체 반응과 행동으로 보여주세요.
+   ❌ "그는 분노했다" → ✅ "그의 손이 탁자 모서리를 쥐어뜯었다. 관자놀이에 핏줄이 섰다."
+   ❌ "그녀가 설레었다" → ✅ "심장이 제멋대로 뛰었다. 그가 이쪽을 볼까봐, 안 볼까봐 동시에 무서웠다."
+⑤ 감각 묘사: 시각에만 의존하지 말고 청각, 촉각, 냄새, 온도감을 활용하여 장면을 생생하게 만드세요.
+⑥ 대화 vs 서술 균형: 대화 비중 40% 이상. 대화문은 "" 안에, 앞뒤로 빈 줄 삽입.
+⑦ 반복 금지: 같은 단어·표현을 2문단 내에서 반복하지 마세요.
+⑧ 단락 구분: 빈 줄로 단락 분리. 감정 태그([calm] 등) 절대 넣지 마세요.
+⑨ 출력 형식: 반드시 위 구분자(---TITLE--- 등)만 사용. JSON, 마크다운, 코드블록 금지.
 
 【결말 필수 규칙 — 반드시 지킬 것】
 - 이 화는 절대로 완결/해피엔딩/마무리로 끝나면 안 됩니다
@@ -2524,7 +2530,10 @@ def api_webnovel_generate_episode(request):
             completion = _ai.chat.completions.create(
                 model=model_name,
                 max_tokens=12000,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt}
+                ]
             )
             response_text = completion.choices[0].message.content.strip()
         else:
@@ -2537,6 +2546,7 @@ def api_webnovel_generate_episode(request):
             message = _client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=12000,
+                system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": prompt}]
             )
             response_text = message.content[0].text.strip()

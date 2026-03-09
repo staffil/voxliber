@@ -17,18 +17,23 @@ import time
 import requests
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.core.management.base import BaseCommand
 
 # ── 설정 ──────────────────────────────────────────────────────────────
 API_KEY = "59DQqKqImxvNkePzZE70_7-qCIaU00PYor9ubKtgeX5DYmzn3EbjdenZyo3iudC1"
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 BASE_URL = "https://voxliber.ink/api/v1"
 HEADERS  = {"X-API-Key": API_KEY, "Content-Type": "application/json"}
 INTERVAL_HOURS = 12
+WEEKLY_CREATION_DAYS = 7   # 7일마다 신규 책 5권 생성
+WEEKLY_CREATION_COUNT = 5  # 한 번에 생성할 책 수
 
-# 일시정지 플래그 파일 위치 (존재하면 다음 사이클 스킵)
-BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
+# 파일 위치
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 PAUSE_FILE = os.path.join(BASE_DIR, "scheduler_pause.flag")
+WEEKLY_STATE_FILE = os.path.join(BASE_DIR, "weekly_creation_state.json")
+AUTO_BOOKS_FILE   = os.path.join(BASE_DIR, "auto_created_books.json")
 
 # ── 웹소설 목록 ───────────────────────────────────────────────────────
 WEBNOVEL_LIST = [
@@ -217,8 +222,12 @@ def generate_episode(book_uuid, writing_style, provider="gpt", max_episodes=None
 def run_once():
     _log("웹소설 자동 생성 시작")
     ok, fail, skip = 0, 0, 0
-    for novel in WEBNOVEL_LIST:
-        uuid = novel["book_uuid"]
+    # 고정 목록 + 자동 생성 목록 합치기
+    all_novels = WEBNOVEL_LIST + load_auto_books()
+    for novel in all_novels:
+        uuid = novel.get("book_uuid", "")
+        if not uuid:
+            continue
 
         # 수동 완결 플래그
         if novel.get("completed", False):
@@ -252,13 +261,212 @@ def run_once():
     _log(f"완료 — 성공 {ok} / 실패 {fail} / 스킵 {skip}")
 
 
+def load_weekly_state():
+    try:
+        with open(WEEKLY_STATE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"last_creation": None}
+
+
+def save_weekly_state(state):
+    with open(WEEKLY_STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+
+
+def load_auto_books():
+    """자동 생성된 책 목록 로드"""
+    try:
+        with open(AUTO_BOOKS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def save_auto_books(books):
+    with open(AUTO_BOOKS_FILE, "w", encoding="utf-8") as f:
+        json.dump(books, f, ensure_ascii=False, indent=2)
+
+
+def generate_book_concepts():
+    """GPT로 새로운 웹소설 아이디어 5개 생성"""
+    if not OPENAI_API_KEY:
+        _log("❌ OPENAI_API_KEY 없음 — 기본 아이디어 사용")
+        return _default_book_concepts()
+
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        resp = client.chat.completions.create(
+            model="gpt-4o",
+            max_tokens=3000,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "한국 웹소설 기획자입니다. 독자들이 열광할 독창적인 웹소설 아이디어를 제안합니다."
+                },
+                {
+                    "role": "user",
+                    "content": """한국 웹소설 신작 5개의 기획안을 JSON 배열로 작성하세요.
+기존 흔한 소재(빙의, 이세계전생, 황제로맨스)는 피하고 참신한 장르를 선택하세요.
+
+각 항목 형식:
+{
+  "name": "제목",
+  "description": "2-3문장 소개 (독자가 바로 읽고 싶게)",
+  "genres": ["장르1", "장르2"],
+  "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
+  "writing_style": "상세한 문체/시점/분위기 지시 (한국 웹소설 스타일 명시)",
+  "provider": "gpt 또는 grok 또는 gemini 중 장르에 맞게",
+  "max_episodes": 25~40 사이 숫자
+}
+
+다양한 장르(현대판타지, 스포츠, 요리, 음악, 역사, 공포, SF, 스릴러 등)를 섞어주세요.
+JSON 배열만 출력하세요. 마크다운 코드블록 없이."""
+                }
+            ]
+        )
+        text = resp.choices[0].message.content.strip()
+        # JSON 배열 파싱
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        concepts = json.loads(text)
+        _log(f"✅ GPT로 {len(concepts)}개 아이디어 생성 완료")
+        return concepts[:WEEKLY_CREATION_COUNT]
+    except Exception as e:
+        _log(f"❌ 아이디어 생성 실패: {e} — 기본 아이디어 사용")
+        return _default_book_concepts()
+
+
+def _default_book_concepts():
+    """GPT 실패 시 기본 아이디어 풀에서 랜덤 선택"""
+    import random
+    pool = [
+        {
+            "name": "셰프의 마지막 레시피",
+            "description": "국가대표 요리사가 은퇴 직전 잃어버린 첫사랑의 레시피를 찾아 나서는 이야기. 음식 하나하나에 숨겨진 기억과 사랑.",
+            "genres": ["로맨스", "일상"], "tags": ["요리", "로맨스", "추억", "셰프", "성장"],
+            "writing_style": "한국 웹소설 스타일, 3인칭 시점, 음식과 감정을 연결하는 감성적 묘사, 현실적 요리 묘사와 로맨스 균형",
+            "provider": "gemini", "max_episodes": 25,
+        },
+        {
+            "name": "프로게이머의 두 번째 봄",
+            "description": "부상으로 은퇴한 전설의 프로게이머. 5년 후, 그의 제자가 세계무대에 섰다. 스승으로서, 그는 다시 현역으로 돌아올 것인가.",
+            "genres": ["스포츠", "성장"], "tags": ["게임", "은퇴", "복귀", "사제", "도전"],
+            "writing_style": "한국 웹소설 스타일, 1인칭 남주 시점, e스포츠 현실 묘사, 경기 장면 박진감 넘치게, 성장과 감동",
+            "provider": "gpt", "max_episodes": 30,
+        },
+        {
+            "name": "야간 특수대의 비밀",
+            "description": "표면상 경찰, 실제는 초자연 현상을 처리하는 비밀 부대. 신입 요원 박지호는 오늘도 유령, 괴물, 이해 못할 사건들과 씨름한다.",
+            "genres": ["판타지", "액션", "코미디"], "tags": ["경찰", "초자연", "현대판타지", "팀물", "개그"],
+            "writing_style": "한국 웹소설 스타일, 1인칭 남주 시점, 현대 배경 초자연 액션+코미디, 팀원들 간의 케미, 긴박한 사건과 유머 교차",
+            "provider": "grok", "max_episodes": 35,
+        },
+        {
+            "name": "조선 최초의 여형사",
+            "description": "조선 시대, 신분을 숨기고 포졸로 잠입한 양반가 딸 윤서연. 한양을 뒤흔드는 연쇄 살인 사건을 추적하며 왕의 눈에 띄기 시작한다.",
+            "genres": ["역사", "미스터리", "로맨스"], "tags": ["조선", "여주", "추리", "역사로맨스", "강한여주"],
+            "writing_style": "한국 웹소설 스타일, 1인칭 여주 시점, 역사 배경 추리+로맨스, 시대 고증 디테일, 지략 있는 여주와 냉철한 남주",
+            "provider": "gemini", "max_episodes": 35,
+        },
+        {
+            "name": "멸종 위기종 구조센터",
+            "description": "도시 한복판에 생긴 기묘한 구조센터. 그런데 여기 드나드는 건 동물이 아니라 신화 속 멸종 위기 마법 생물들이다.",
+            "genres": ["판타지", "코미디", "힐링"], "tags": ["마법", "동물", "힐링", "도시판타지", "개그"],
+            "writing_style": "한국 웹소설 스타일, 1인칭 여주 시점, 도시 배경 판타지 코미디, 귀여운 마법 생물들과의 좌충우돌, 따뜻한 힐링",
+            "provider": "gpt", "max_episodes": 25,
+        },
+    ]
+    random.shuffle(pool)
+    return pool[:WEEKLY_CREATION_COUNT]
+
+
+def create_book_via_api(concept):
+    """API로 책 생성 후 UUID 반환"""
+    r = requests.post(
+        f"{BASE_URL}/books/create/",
+        headers=HEADERS,
+        json={
+            "name": concept["name"],
+            "description": concept["description"],
+            "book_type": "webnovel",
+            "genres": concept.get("genres", []),
+            "tags": concept.get("tags", []),
+        },
+        timeout=30,
+    )
+    if r.status_code in (200, 201):
+        data = r.json()
+        if data.get("success"):
+            return data.get("data", {}).get("book_uuid") or data.get("book_uuid")
+    _log(f"  ❌ 책 생성 실패: {r.status_code} {r.text[:100]}")
+    return None
+
+
+def weekly_create_books():
+    """주간 신규 책 5권 자동 생성"""
+    state = load_weekly_state()
+    last = state.get("last_creation")
+
+    if last:
+        last_dt = datetime.fromisoformat(last)
+        days_since = (datetime.now() - last_dt).days
+        if days_since < WEEKLY_CREATION_DAYS:
+            remaining = WEEKLY_CREATION_DAYS - days_since
+            _log(f"📅 주간 생성 스킵 — 다음 생성까지 {remaining}일 남음")
+            return
+
+    _log(f"📚 주간 신규 웹소설 {WEEKLY_CREATION_COUNT}권 생성 시작!")
+    concepts = generate_book_concepts()
+    auto_books = load_auto_books()
+    created = 0
+
+    for concept in concepts:
+        _log(f"  📖 『{concept['name']}』 생성 중...")
+        uuid = create_book_via_api(concept)
+        if not uuid:
+            continue
+
+        # 1화 생성
+        generate_episode(
+            uuid, concept["writing_style"],
+            concept.get("provider", "gpt"),
+            concept.get("max_episodes", 30), 0
+        )
+
+        # auto_books 리스트에 추가 (스케줄러가 다음 사이클부터 자동 연재)
+        auto_books.append({
+            "book_uuid": uuid,
+            "name": concept["name"],
+            "writing_style": concept["writing_style"],
+            "provider": concept.get("provider", "gpt"),
+            "max_episodes": concept.get("max_episodes", 30),
+            "adult": concept.get("adult", False),
+            "completed": False,
+            "created_at": datetime.now().isoformat(),
+        })
+        _log(f"  ✅ 『{concept['name']}』 생성 완료: {uuid}")
+        created += 1
+
+    save_auto_books(auto_books)
+    save_weekly_state({"last_creation": datetime.now().isoformat()})
+    _log(f"📚 주간 생성 완료 — {created}권 추가됨. 다음 생성: {WEEKLY_CREATION_DAYS}일 후")
+
+
 def run_loop():
-    _log(f"스케줄러 시작 — {INTERVAL_HOURS}시간 간격")
+    _log(f"스케줄러 시작 — 에피소드: {INTERVAL_HOURS}시간 간격 / 신규 책: {WEEKLY_CREATION_DAYS}일 간격")
     while True:
         if is_paused():
             _log("⏸  일시정지 상태 — 1시간 후 재확인")
             time.sleep(3600)
             continue
+
+        # 주간 신규 책 생성 확인
+        weekly_create_books()
+
         run_once()
         _log(f"다음 실행까지 {INTERVAL_HOURS}시간 대기...")
         # 대기 중에도 pause 신호 1분마다 확인
