@@ -2473,7 +2473,7 @@ def api_webnovel_generate_episode(request):
 ---TITLE---
 화 제목
 ---TEXT---
-본문 전체 내용 (줄바꿈으로 단락 구분, 반드시 3000자 이상 5000자 내외)
+본문 전체 내용 (줄바꿈으로 단락 구분, 반드시 7000자 이상 10000자 이내)
 ---END---
 
 규칙:
@@ -2482,16 +2482,26 @@ def api_webnovel_generate_episode(request):
 - 대화문이 포함된 문장은 반드시 앞뒤로 빈 줄을 추가하여 단락을 분리하세요
 - 단락은 빈 줄로 구분
 - 각 장면을 풍부하게 묘사하고 인물의 내면 감정을 세밀하게 표현하세요
-- 긴장감과 설렘을 교차하며 다음 화가 궁금해지는 결말로 끝내세요
 - 감정 태그([calm], [excited] 등)는 넣지 마세요
-- 반드시 위 구분자 형식만 출력하세요. JSON, 마크다운, 코드블록 사용 금지"""
+- 반드시 위 구분자 형식만 출력하세요. JSON, 마크다운, 코드블록 사용 금지
+
+【결말 필수 규칙 — 반드시 지킬 것】
+- 이 화는 절대로 완결/해피엔딩/마무리로 끝나면 안 됩니다
+- 반드시 다음 중 하나로 끝내세요:
+  ① 클리프행어: 위기 상황, 충격적 사실 발각, 예상치 못한 인물 등장
+  ② 떡밥 투척: 해결되지 않은 수수께끼나 새로운 의문 제기
+  ③ 감정적 훅: 중요한 감정 고조 직전에서 끊기 (고백 직전, 결전 직전 등)
+- "~하고 끝났다", "~해서 다행이었다" 같은 해소형 마무리 절대 금지
+- 마지막 문장은 독자가 "다음 화가 뭐지?!"라고 느낄 수 있어야 합니다
+- 이 화에서 생긴 모든 갈등을 해소하지 말고, 더 큰 갈등의 씨앗을 남기세요
+- 이야기는 장편 연재 중이며, 아직 전체 스토리의 절반도 진행되지 않았음을 항상 염두에 두세요"""
 
     # OpenAI 호환 provider 설정 (base_url, model, env_key)
     _OPENAI_COMPAT = {
         "gpt":       (None,                              "gpt-4o",                    "OPENAI_API_KEY"),
         "grok":      ("https://api.x.ai/v1",             "grok-3",                    "GROK_API_KEY"),
         "gemini":    ("https://generativelanguage.googleapis.com/v1beta/openai/",
-                                                         "gemini-2.5-flash",          "GEMINI_API_KEY"),
+                                                         "gemini-2.5-pro",            "GEMINI_API_KEY"),
         "qwen":      ("https://dashscope.aliyuncs.com/compatible-mode/v1",
                                                          "qwen-max",                  "QWEN_API_KEY"),
         "deepseek":  ("https://api.deepseek.com/v1",        "deepseek-chat",                 "DEEPSEEK_API_KEY"),
@@ -2525,7 +2535,7 @@ def api_webnovel_generate_episode(request):
                 return api_response(error="ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다", status=500)
             _client = anthropic.Anthropic(api_key=anthropic_api_key)
             message = _client.messages.create(
-                model="claude-haiku-4-5-20251001",
+                model="claude-sonnet-4-6",
                 max_tokens=12000,
                 messages=[{"role": "user", "content": prompt}]
             )
