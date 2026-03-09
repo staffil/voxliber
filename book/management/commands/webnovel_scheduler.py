@@ -208,6 +208,58 @@ def generate_book_context(book_uuid, book_name, description, writing_style):
         return None
 
 
+def generate_cover_dalle3(book_uuid, book_name, description, writing_style):
+    """DALL-E 3 HD로 웹소설 표지 생성 후 업로드"""
+    if not OPENAI_API_KEY:
+        return False
+    try:
+        import requests as _req
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)
+
+        # 장르/분위기 추출 (writing_style 앞 100자)
+        genre_hint = writing_style[:100]
+
+        # GPT-4o-mini로 커버 프롬프트 생성
+        pr = client.chat.completions.create(
+            model='gpt-4o-mini', max_tokens=200,
+            messages=[
+                {'role': 'system', 'content': 'Expert book cover prompt writer for DALL-E 3. Output ONLY the English prompt, no explanations.'},
+                {'role': 'user', 'content': f'Create a DALL-E 3 HD prompt for a Korean webnovel cover (portrait 2:3 ratio). Title: "{book_name}". Description: {description[:200]}. Genre/style: {genre_hint}. Requirements: manhwa/anime illustration style, dramatic cinematic lighting, beautiful detailed Korean characters, vibrant colors, professional book cover composition, absolutely NO text or letters in the image.'}
+            ]
+        )
+        img_prompt = pr.choices[0].message.content.strip()
+
+        # DALL-E 3 HD 생성
+        ir = client.images.generate(
+            model='dall-e-3',
+            prompt=img_prompt,
+            size='1024x1792',
+            quality='hd',
+            n=1,
+        )
+        img_url = ir.data[0].url
+        img_data = _req.get(img_url, timeout=60).content
+
+        # 서버 업로드
+        up = _req.post(
+            f"{BASE_URL}/upload-book-cover/",
+            headers={"X-API-Key": API_KEY},
+            data={"book_uuid": book_uuid},
+            files={"cover_image": ("cover.jpg", img_data, "image/jpeg")},
+            timeout=30,
+        )
+        if up.json().get("success"):
+            _log(f"  🖼️  표지 생성 완료: {book_name}")
+            return True
+        else:
+            _log(f"  ⚠️  표지 업로드 실패: {up.json()}")
+            return False
+    except Exception as e:
+        _log(f"  ⚠️  표지 생성 실패: {e}")
+        return False
+
+
 def mark_book_completed(book_uuid):
     """책 완결 상태로 업데이트"""
     try:
@@ -542,6 +594,13 @@ def weekly_create_books():
 
         # 신규 책 캐릭터/플롯 미리 생성 (캐시)
         generate_book_context(
+            uuid, concept["name"],
+            concept.get("description", ""),
+            concept["writing_style"],
+        )
+
+        # DALL-E 3 HD 표지 자동 생성
+        generate_cover_dalle3(
             uuid, concept["name"],
             concept.get("description", ""),
             concept["writing_style"],
