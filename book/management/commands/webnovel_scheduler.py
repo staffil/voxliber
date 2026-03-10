@@ -105,13 +105,37 @@ WEBNOVEL_LIST = [
         "adult": True,
         "max_episodes": 30,
     },
-    # ── 신규 5권 (생성 후 UUID 업데이트 필요) ──
-    # {
-    #     "book_uuid": "REPLACE_AFTER_CREATE",
-    #     "writing_style": "...",
-    #     "provider": "gpt",
-    #     "completed": False,  # True로 바꾸면 생성 중단
-    # },
+    # ── 신규 5권 ──
+    {
+        "book_uuid": "43b84eec-ceff-41d2-9239-57ce99cfef4e",
+        "writing_style": "한국 웹소설 스타일, 1인칭 주인공 시점, 직장인 개그+이세계 판타지, 현실 직장 경험을 판타지에 접목한 코미디, 주인공의 냉소적 내면 독백 풍부, 대화 비중 높이고 예상 밖의 전개로 웃음 유발",
+        "provider": "gpt",
+        "max_episodes": 30,
+    },
+    {
+        "book_uuid": "3ec8eae1-45c8-4193-90c0-146959f90121",
+        "writing_style": "한국 웹소설 스타일, 3인칭 전지적 시점, 다크 판타지+미스터리, 신비롭고 음울한 분위기, 복선과 반전을 촘촘히 배치, 인물들의 숨겨진 의도가 조금씩 드러나는 구조, 세계관 묘사 풍부",
+        "provider": "grok",
+        "max_episodes": 30,
+    },
+    {
+        "book_uuid": "7906392a-ef67-4589-8ad1-e7bad6a5cfc5",
+        "writing_style": "한국 웹소설 스타일, 1인칭 여주 시점, 강한 여주가 모든 걸 뒤집는 복수극, 액션과 정치 암투 균형, 차갑고 계산적인 여주와 예상 밖의 남주 케미, 긴장감 넘치는 전개",
+        "provider": "gemini",
+        "max_episodes": 35,
+    },
+    {
+        "book_uuid": "1fce1aa2-58a4-487c-89d0-4e0c86ddb20a",
+        "writing_style": "한국 웹소설 스타일, 3인칭 시점, 포스트아포칼립스+서바이벌 스릴러, 다양한 인간 군상의 욕망과 갈등, 현실적인 생존 묘사, 긴장감과 극적 반전, 유머와 공포가 교차하는 전개",
+        "provider": "gpt",
+        "max_episodes": 30,
+    },
+    {
+        "book_uuid": "3d89aeff-9112-45bd-9250-3441607b9c98",
+        "writing_style": "한국 웹소설 스타일, 3인칭 시점, 현대 배경 다크 판타지+미스터리+로맨스, 예술적 감수성과 공포 분위기 균형, 저주의 비밀이 서서히 밝혀지는 구조, 히로인의 등장과 감정선 섬세하게",
+        "provider": "grok",
+        "max_episodes": 25,
+    },
 ]
 
 
@@ -473,10 +497,15 @@ def generate_book_concepts():
   "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
   "writing_style": "상세한 문체/시점/분위기 지시 (한국 웹소설 스타일 명시)",
   "provider": "gpt 또는 grok 또는 gemini 중 장르에 맞게",
-  "max_episodes": 25~40 사이 숫자
+  "max_episodes": 25~40 사이 숫자,
+  "adult": false
 }
 
-다양한 장르(현대판타지, 스포츠, 요리, 음악, 역사, 공포, SF, 스릴러 등)를 섞어주세요.
+조건:
+1. 5개 중 반드시 1개는 "adult": true인 19세 이상 성인 로맨스 소설을 포함하세요.
+   - 성인작의 writing_style에는 "성인 로맨스, 관능적 긴장감, 선정적 분위기 포함" 문구를 넣고 provider는 "grok"으로 설정하세요.
+   - 성인작 장르 예시: 재벌로맨스, 금지된사랑, 계약연애, 복수로맨스, 나이차로맨스 등
+2. 나머지 4개는 다양한 장르(현대판타지, 스포츠, 요리, 음악, 역사, 공포, SF, 스릴러 등)를 섞어주세요.
 JSON 배열만 출력하세요. 마크다운 코드블록 없이."""
                 }
             ]
@@ -532,11 +561,37 @@ def _default_book_concepts():
             "description": "도시 한복판에 생긴 기묘한 구조센터. 그런데 여기 드나드는 건 동물이 아니라 신화 속 멸종 위기 마법 생물들이다.",
             "genres": ["판타지", "코미디", "힐링"], "tags": ["마법", "동물", "힐링", "도시판타지", "개그"],
             "writing_style": "한국 웹소설 스타일, 1인칭 여주 시점, 도시 배경 판타지 코미디, 귀여운 마법 생물들과의 좌충우돌, 따뜻한 힐링",
-            "provider": "gpt", "max_episodes": 25,
+            "provider": "gpt", "max_episodes": 25, "adult": False,
+        },
+    ]
+    # 19금 기본 풀 (항상 1개 랜덤 선택)
+    adult_pool = [
+        {
+            "name": "금지된 계약",
+            "description": "냉혹한 재벌 회장과 신입 비서의 계약 관계. 선을 넘지 않겠다던 약속은 첫날 밤부터 흔들리기 시작했다.",
+            "genres": ["로맨스", "성인"], "tags": ["재벌", "계약", "금지된사랑", "비서", "성인로맨스"],
+            "writing_style": "한국 성인 웹소설 스타일, 1인칭 여주 시점, 재벌×비서 금지된 로맨스, 관능적 긴장감과 선정적 분위기 포함, 냉혹한 남주가 서서히 무너지는 감정선, 밀당과 설레임",
+            "provider": "grok", "max_episodes": 30, "adult": True,
+        },
+        {
+            "name": "밤의 주치의",
+            "description": "낮에는 차가운 외과 의사, 밤에는 나만을 바라보는 남자. 병원 안에서 시작된 위험한 감정은 수술실 밖으로 번져나간다.",
+            "genres": ["로맨스", "성인"], "tags": ["의사", "병원로맨스", "금지된사랑", "성인로맨스", "연상"],
+            "writing_style": "한국 성인 웹소설 스타일, 1인칭 여주 시점, 의사×환자 금지된 로맨스, 관능적 긴장감과 선정적 분위기 포함, 감정선 섬세하게, 다음 화가 궁금한 결말",
+            "provider": "grok", "max_episodes": 25, "adult": True,
+        },
+        {
+            "name": "복수의 신부",
+            "description": "나를 배신한 남자의 동생과 위장 결혼을 선택했다. 복수를 위한 결혼이었는데, 왜 그의 품이 이렇게 따뜻한 걸까.",
+            "genres": ["로맨스", "성인"], "tags": ["복수", "위장결혼", "금지된사랑", "성인로맨스", "반전"],
+            "writing_style": "한국 성인 웹소설 스타일, 1인칭 여주 시점, 복수×위장결혼 로맨스, 관능적 긴장감과 선정적 분위기 포함, 냉혹한 계획과 흔들리는 감정의 충돌, 긴장감 넘치는 전개",
+            "provider": "grok", "max_episodes": 30, "adult": True,
         },
     ]
     random.shuffle(pool)
-    return pool[:WEEKLY_CREATION_COUNT]
+    random.shuffle(adult_pool)
+    # 일반 4개 + 성인 1개
+    return pool[:WEEKLY_CREATION_COUNT - 1] + adult_pool[:1]
 
 
 def create_book_via_api(concept):
