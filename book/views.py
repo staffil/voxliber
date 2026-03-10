@@ -929,7 +929,7 @@ def webnovel_detail(request, book_uuid):
         book_type='webnovel'
     )
 
-    contents = Content.objects.filter(book=book, is_deleted=False).order_by('number')
+    contents = Content.objects.filter(book=book, is_deleted=False).order_by('-number')
 
     avg_rating = book.reviews.aggregate(Avg('rating'))['rating__avg'] or 0
     review_count = book.reviews.count()
