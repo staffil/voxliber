@@ -133,16 +133,12 @@ def is_paused():
 
 
 def get_episode_count(book_uuid):
-    """현재 에피소드 수 조회"""
+    """현재 에피소드 수 조회 (DB 직접 조회)"""
     try:
-        r = requests.get(
-            f"{BASE_URL}/webnovels/{book_uuid}/",
-            headers=HEADERS, timeout=10
-        )
-        if r.status_code == 200:
-            data = r.json().get("data", {})
-            eps = data.get("episodes", data.get("contents", []))
-            return len(eps) if isinstance(eps, list) else data.get("episode_count", 0)
+        from book.models import Content
+        return Content.objects.filter(
+            book__public_uuid=book_uuid, is_deleted=False
+        ).count()
     except Exception:
         pass
     return 0
