@@ -2578,7 +2578,10 @@ def api_webnovel_generate_episode(request):
         # 구분자 기반 파싱 (JSON 파싱 오류 방지)
         import re
         title_match = re.search(r'---TITLE---\s*(.*?)\s*---TEXT---', response_text, re.DOTALL)
+        # ---END--- 없어도 파싱 (Gemini 응답 잘림 대응)
         text_match = re.search(r'---TEXT---\s*([\s\S]+?)\s*---END---', response_text)
+        if not text_match:
+            text_match = re.search(r'---TEXT---\s*([\s\S]+)', response_text)
         if not title_match or not text_match:
             return api_response(error=f"AI 응답 파싱 실패: {response_text[:300]}", status=500)
         ep_title = title_match.group(1).strip()
