@@ -2593,7 +2593,7 @@ def api_webnovel_detail(request, book_uuid):
     episode_count = book.contents.filter(is_deleted=False).count()
 
     episodes = []
-    for ep in book.contents.filter(is_deleted=False).order_by('number'):
+    for ep in book.contents.filter(is_deleted=False).order_by('-number'):
         episodes.append({
             'id': str(ep.public_uuid),
             'number': ep.number,
