@@ -2503,7 +2503,7 @@ def api_webnovel_list(request):
             Q(tags__name__icontains=search)
         ).distinct()
 
-    novels = novels.order_by('created_at')
+    novels = novels.order_by('-created_at')
     result = paginate(novels, page, per_page)
 
     data = []
@@ -2593,7 +2593,7 @@ def api_webnovel_detail(request, book_uuid):
     episode_count = book.contents.filter(is_deleted=False).count()
 
     episodes = []
-    for ep in book.contents.filter(is_deleted=False).order_by('-number'):
+    for ep in book.contents.filter(is_deleted=False).order_by('number'):
         episodes.append({
             'id': str(ep.public_uuid),
             'number': ep.number,
