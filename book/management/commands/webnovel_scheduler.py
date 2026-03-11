@@ -36,107 +36,92 @@ WEEKLY_STATE_FILE = os.path.join(BASE_DIR, "weekly_creation_state.json")
 AUTO_BOOKS_FILE   = os.path.join(BASE_DIR, "auto_created_books.json")
 BOOK_CONTEXT_FILE = os.path.join(BASE_DIR, "book_context_cache.json")  # 캐릭터/플롯 캐시
 
-# ── 웹소설 목록 ───────────────────────────────────────────────────────
-WEBNOVEL_LIST = [
-    {
-        "book_uuid": "bf046219-8547-418b-824d-912bb9426793",
+# ── 기존 웹소설 스타일 설정 (UUID → 설정) ────────────────────────────
+# 새로 추가된 책은 자동으로 DB에서 읽어오므로 여기에 추가 불필요
+STYLE_CONFIG = {
+    "bf046219-8547-418b-824d-912bb9426793": {
         "writing_style": "한국 웹소설 스타일, 1인칭 주인공(이은서) 시점, 빙의+이세계, 황제와의 긴장감과 설레임, 코믹하면서도 감정 묘사 풍부, 대화 비중 높이고 내면 독백 포함",
-        "provider": "gpt",
-        "max_episodes": 30,
+        "provider": "gpt", "max_episodes": 30,
     },
-    {
-        "book_uuid": "a7777d75-ff6f-47d9-ac8f-68062e06bd2a",
+    "a7777d75-ff6f-47d9-ac8f-68062e06bd2a": {
         "writing_style": "한국 웹소설 스타일, 3인칭 시점, 황제×평민녀 로맨스, 차가운 남주가 녹아가는 과정, 긴장감 넘치는 궁정 암투, 감정선 섬세하게",
-        "provider": "claude",
-        "max_episodes": 30,
+        "provider": "claude", "max_episodes": 30,
     },
-    {
-        "book_uuid": "7161fcb6-5423-4780-99fd-9e0f3ee252b0",
+    "7161fcb6-5423-4780-99fd-9e0f3ee252b0": {
         "writing_style": "한국 웹소설 스타일, 1인칭 여주 시점, 신데렐라 스토리 비틀기, 재벌가 내 갈등과 비밀, 로맨스와 가족 드라마 균형",
-        "provider": "gemini",
-        "max_episodes": 25,
+        "provider": "gemini", "max_episodes": 25,
     },
-    {
-        "book_uuid": "7e6eda70-7a4e-4bde-af54-8e8bc9d30492",
+    "7e6eda70-7a4e-4bde-af54-8e8bc9d30492": {
         "writing_style": "한국 웹소설 스타일, 1인칭 남주 시점, 무능 → 두뇌파 역전, 게임 시스템 비틀기, 코믹하면서도 긴장감 있는 전개, 현실적 감각으로 판타지 극복",
-        "provider": "gpt",
-        "max_episodes": 40,
+        "provider": "gpt", "max_episodes": 40,
     },
-    {
-        "book_uuid": "fd136c5d-8ee1-4ea9-99ca-7dfeb90078e5",
+    "fd136c5d-8ee1-4ea9-99ca-7dfeb90078e5": {
         "writing_style": "한국 웹소설 스타일, 1인칭 황녀 시점, 회귀+복수+로맨스, 지략 대결, 황실 음모, 냉철하지만 감정이 스며드는 주인공",
-        "provider": "gemini",
-        "max_episodes": 35,
+        "provider": "gemini", "max_episodes": 35,
     },
-    {
-        "book_uuid": "a1ff5c7c-fd69-4d8b-99bb-6054b8e450d2",
+    "a1ff5c7c-fd69-4d8b-99bb-6054b8e450d2": {
         "writing_style": "한국 웹소설 스타일, 3인칭 시점, SF+로맨스, AI와 인간의 감정 탐구, 철학적 질문을 부드럽게 녹인 스토리, 따뜻하고 잔잔한 문체",
-        "provider": "claude",
-        "max_episodes": 25,
+        "provider": "claude", "max_episodes": 25,
     },
-    {
-        "book_uuid": "bc1988eb-78a3-4f9a-9a7a-f6f581578358",
+    "bc1988eb-78a3-4f9a-9a7a-f6f581578358": {
         "writing_style": "한국 웹소설 스타일, 1인칭 여주 시점, 학원+마법+코미디, 성장 스토리, 유쾌한 사건사고, 동료들과의 우정과 로맨스 힌트",
-        "provider": "grok",
-        "max_episodes": 30,
+        "provider": "grok", "max_episodes": 30,
     },
-    {
-        "book_uuid": "e7515a91-2085-4ca0-a6f5-368be73a404c",
+    "e7515a91-2085-4ca0-a6f5-368be73a404c": {
         "writing_style": "한국 웹소설 스타일, 3인칭 시점, 저주×용×로맨스, 서툰 남주의 로맨스 시도, 긴장감 있는 세계관, 판타지 설정 풍부하게",
-        "provider": "gemini",
-        "max_episodes": 30,
+        "provider": "gemini", "max_episodes": 30,
     },
-    {
-        "book_uuid": "a3a40766-0480-4a7c-a5cd-548912f870b7",
+    "a3a40766-0480-4a7c-a5cd-548912f870b7": {
         "writing_style": "한국 웹소설 스타일, 1인칭 여주 시점, 사이버펑크+스릴러+로맨스, 빠른 전개, 긴장감, 과거의 비밀이 밝혀지는 구조",
-        "provider": "grok",
-        "max_episodes": 25,
+        "provider": "grok", "max_episodes": 25,
     },
-    {
-        "book_uuid": "5f8c3d82-52f6-44b7-81f4-40320b084e1c",
+    "5f8c3d82-52f6-44b7-81f4-40320b084e1c": {
         "writing_style": "한국 웹소설 스타일, 1인칭 여주 시점, 공포+미스터리+로맨스, 학원 배경, 코믹한 귀신과의 일상, 반전 있는 진실 추적",
-        "provider": "gpt",
-        "max_episodes": 20,
+        "provider": "gpt", "max_episodes": 20,
     },
-    {
-        "book_uuid": "7bc76bd9-eea8-4e6b-9636-457046a1ab75",
+    "7bc76bd9-eea8-4e6b-9636-457046a1ab75": {
         "writing_style": "한국 성인 웹소설 스타일, 1인칭 여주(강아린) 시점, 재벌 CEO와의 계약 동거, 냉혹하지만 은밀히 끌리는 남주 묘사, 긴장감 넘치는 밀당과 설레임, 선정적이고 노골적인 성인 묘사 포함, 대화 비중 높이고 내면 독백 풍부하게, 다음 화가 궁금해지는 결말",
-        "provider": "grok",
-        "adult": True,
-        "max_episodes": 30,
+        "provider": "grok", "adult": True, "max_episodes": 30,
     },
-    # ── 신규 5권 ──
-    {
-        "book_uuid": "43b84eec-ceff-41d2-9239-57ce99cfef4e",
+    "43b84eec-ceff-41d2-9239-57ce99cfef4e": {
         "writing_style": "한국 웹소설 스타일, 1인칭 주인공 시점, 직장인 개그+이세계 판타지, 현실 직장 경험을 판타지에 접목한 코미디, 주인공의 냉소적 내면 독백 풍부, 대화 비중 높이고 예상 밖의 전개로 웃음 유발",
-        "provider": "gpt",
-        "max_episodes": 30,
+        "provider": "gpt", "max_episodes": 30,
     },
-    {
-        "book_uuid": "3ec8eae1-45c8-4193-90c0-146959f90121",
+    "3ec8eae1-45c8-4193-90c0-146959f90121": {
         "writing_style": "한국 웹소설 스타일, 3인칭 전지적 시점, 다크 판타지+미스터리, 신비롭고 음울한 분위기, 복선과 반전을 촘촘히 배치, 인물들의 숨겨진 의도가 조금씩 드러나는 구조, 세계관 묘사 풍부",
-        "provider": "grok",
-        "max_episodes": 30,
+        "provider": "grok", "max_episodes": 30,
     },
-    {
-        "book_uuid": "7906392a-ef67-4589-8ad1-e7bad6a5cfc5",
+    "7906392a-ef67-4589-8ad1-e7bad6a5cfc5": {
         "writing_style": "한국 웹소설 스타일, 1인칭 여주 시점, 강한 여주가 모든 걸 뒤집는 복수극, 액션과 정치 암투 균형, 차갑고 계산적인 여주와 예상 밖의 남주 케미, 긴장감 넘치는 전개",
-        "provider": "gemini",
-        "max_episodes": 35,
+        "provider": "gemini", "max_episodes": 35,
     },
-    {
-        "book_uuid": "1fce1aa2-58a4-487c-89d0-4e0c86ddb20a",
+    "1fce1aa2-58a4-487c-89d0-4e0c86ddb20a": {
         "writing_style": "한국 웹소설 스타일, 3인칭 시점, 포스트아포칼립스+서바이벌 스릴러, 다양한 인간 군상의 욕망과 갈등, 현실적인 생존 묘사, 긴장감과 극적 반전, 유머와 공포가 교차하는 전개",
-        "provider": "gpt",
-        "max_episodes": 30,
+        "provider": "gpt", "max_episodes": 30,
     },
-    {
-        "book_uuid": "3d89aeff-9112-45bd-9250-3441607b9c98",
+    "3d89aeff-9112-45bd-9250-3441607b9c98": {
         "writing_style": "한국 웹소설 스타일, 3인칭 시점, 현대 배경 다크 판타지+미스터리+로맨스, 예술적 감수성과 공포 분위기 균형, 저주의 비밀이 서서히 밝혀지는 구조, 히로인의 등장과 감정선 섬세하게",
-        "provider": "grok",
-        "max_episodes": 25,
+        "provider": "grok", "max_episodes": 25,
     },
-]
+}
+
+# auto_created_books.json 로드 후 STYLE_CONFIG에 병합
+def _merge_auto_books_to_config():
+    """자동 생성된 책 정보를 STYLE_CONFIG에 병합"""
+    auto = load_auto_books()
+    merged = dict(STYLE_CONFIG)
+    for b in auto:
+        uid = b.get("book_uuid", "")
+        if uid and uid not in merged:
+            merged[uid] = {
+                "writing_style": b.get("writing_style", "한국 웹소설 스타일, 감성적이고 몰입감 있는 전개"),
+                "provider": b.get("provider", "gpt"),
+                "max_episodes": b.get("max_episodes", 30),
+                "adult": b.get("adult", False),
+                "completed": b.get("completed", False),
+                "name": b.get("name", ""),
+            }
+    return merged
 
 
 def _log(msg):
@@ -386,11 +371,74 @@ def generate_episode(book_uuid, writing_style, provider="gpt", max_episodes=None
         return False
 
 
+def _generate_writing_style_for_book(book_name, description, genres):
+    """STYLE_CONFIG에 없는 새 책의 writing_style을 GPT로 자동 생성"""
+    if not OPENAI_API_KEY:
+        return f"한국 웹소설 스타일, {book_name} 장르에 맞는 몰입감 있는 전개, 대화 비중 높이고 감정 묘사 풍부"
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini", max_tokens=300,
+            messages=[
+                {"role": "system", "content": "한국 웹소설 편집자. 소설 문체 지시문을 1~2문장으로 작성합니다."},
+                {"role": "user", "content": f"제목: {book_name}\n설명: {description}\n장르: {', '.join(genres)}\n\n이 소설의 writing_style 지시문을 한국 웹소설 스타일로 작성하세요. 시점, 분위기, 대화 비중, 감정 묘사 방향 포함. 한 문단으로."}
+            ]
+        )
+        return resp.choices[0].message.content.strip()
+    except Exception:
+        return f"한국 웹소설 스타일, {book_name} 장르의 몰입감 있는 전개, 대화 비중 높이고 감정 묘사 풍부"
+
+
+def load_all_webnovels_from_db():
+    """DB에서 전체 웹소설 목록을 읽어 스타일 설정과 병합"""
+    from book.models import Books
+    config = _merge_auto_books_to_config()
+    novels = []
+
+    db_books = Books.objects.filter(book_type='webnovel').order_by('created_at')
+    for book in db_books:
+        uid = str(book.public_uuid)
+        cfg = config.get(uid)
+
+        if cfg:
+            # 기존 설정 있음
+            novels.append({
+                "book_uuid": uid,
+                "name": book.name,
+                "writing_style": cfg["writing_style"],
+                "provider": cfg.get("provider", "gpt"),
+                "max_episodes": cfg.get("max_episodes", 30),
+                "adult": cfg.get("adult", False),
+                "completed": cfg.get("completed", False),
+            })
+        else:
+            # 신규 책 — writing_style 자동 생성
+            _log(f"  새 책 발견: 『{book.name}』({uid[:8]}) — writing_style 자동 생성")
+            genres = list(book.genres.values_list('name', flat=True))
+            description = getattr(book, 'description', '') or ''
+            writing_style = _generate_writing_style_for_book(book.name, description, genres)
+            novels.append({
+                "book_uuid": uid,
+                "name": book.name,
+                "writing_style": writing_style,
+                "provider": "gpt",
+                "max_episodes": 30,
+                "adult": False,
+                "completed": False,
+            })
+
+    _log(f"DB 웹소설 {len(novels)}권 로드 완료")
+    return novels
+
+
 def run_once():
     _log("웹소설 자동 생성 시작")
     ok, fail, skip = 0, 0, 0
-    # 고정 목록 + 자동 생성 목록 합치기
-    all_novels = WEBNOVEL_LIST + load_auto_books()
+
+    # DB에서 전체 웹소설 자동 로드
+    all_novels = load_all_webnovels_from_db()
+
     for novel in all_novels:
         uuid = novel.get("book_uuid", "")
         if not uuid:
@@ -398,7 +446,7 @@ def run_once():
 
         # 수동 완결 플래그
         if novel.get("completed", False):
-            _log(f"  ⏭  {uuid[:8]}... [완결 — 스킵]")
+            _log(f"  ⏭  {novel.get('name', uuid[:8])} [완결 — 스킵]")
             skip += 1
             continue
 
@@ -408,10 +456,9 @@ def run_once():
         if max_ep:
             current = get_episode_count(uuid)
             if current >= max_ep:
-                _log(f"  ⏭  {uuid[:8]}... [{current}/{max_ep}화 — 목표 달성, 스킵]")
-                # ③ 자동 완결 상태 업데이트
+                _log(f"  ⏭  {novel.get('name', uuid[:8])} [{current}/{max_ep}화 — 목표 달성, 스킵]")
                 if mark_book_completed(uuid):
-                    _log(f"  ✅ 완결 처리 완료: {uuid[:8]}")
+                    _log(f"  ✅ 완결 처리 완료: {novel.get('name', uuid[:8])}")
                 skip += 1
                 continue
         else:
@@ -420,18 +467,17 @@ def run_once():
         # 19금 책은 무조건 grok 사용
         provider = "grok" if novel.get("adult", False) else novel.get("provider", "gpt")
 
-        # ① 캐릭터 시트 + 플롯 아웃라인 자동 생성 (첫 실행 시 1회, 이후 캐시)
+        # 캐릭터 시트 + 플롯 아웃라인 자동 생성 (첫 실행 시 1회, 이후 캐시)
         book_context = generate_book_context(
             uuid,
             novel.get("name", uuid[:8]),
-            "",  # description은 API에서 가져오므로 writing_style로 대체
+            "",
             novel["writing_style"],
         )
 
         ep_info = f"{current+1}/{max_ep}화" if max_ep and current is not None else "다음화"
-        _log(f"  📖 {uuid[:8]}... [{provider}] {ep_info}")
+        _log(f"  📖 『{novel.get('name', uuid[:8])}』 [{provider}] {ep_info}")
 
-        # ② 캐릭터/플롯 컨텍스트를 프롬프트에 삽입
         if generate_episode(uuid, novel["writing_style"], provider, max_ep, current, book_context):
             ok += 1
         else:

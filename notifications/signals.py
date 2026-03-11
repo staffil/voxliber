@@ -52,6 +52,7 @@ def notify_new_episode(sender, instance, created, **kwargs):
             data={
                 'type': 'new_episode',
                 'book_uuid': str(book.public_uuid),
+                'book_type': book.book_type or 'audiobook',
                 'content_uuid': str(instance.public_uuid),
                 'cover_url': cover_url,
             },

@@ -2503,7 +2503,7 @@ def api_webnovel_list(request):
             Q(tags__name__icontains=search)
         ).distinct()
 
-    novels = novels.order_by('-created_at')
+    novels = novels.order_by('created_at')
     result = paginate(novels, page, per_page)
 
     data = []
