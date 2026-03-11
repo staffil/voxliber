@@ -2529,7 +2529,7 @@ def api_webnovel_generate_episode(request):
     # OpenAI 호환 provider 설정 (base_url, model, env_key)
     _OPENAI_COMPAT = {
         "gpt":       (None,                              "gpt-4o",                    "OPENAI_API_KEY"),
-        "grok":      ("https://api.x.ai/v1",             "grok-3",                    "GROK_API_KEY"),
+        "grok":      ("https://api.x.ai/v1",             "grok-3-mini",               "GROK_API_KEY"),
         "gemini":    ("https://generativelanguage.googleapis.com/v1beta/openai/",
                                                          "gemini-2.5-pro",            "GEMINI_API_KEY"),
         "qwen":      ("https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -2568,7 +2568,7 @@ def api_webnovel_generate_episode(request):
                 return api_response(error="ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다", status=500)
             _client = anthropic.Anthropic(api_key=anthropic_api_key)
             message = _client.messages.create(
-                model="claude-sonnet-4-6",
+                model="claude-haiku-4-5-20251001",
                 max_tokens=12000,
                 system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": prompt}]

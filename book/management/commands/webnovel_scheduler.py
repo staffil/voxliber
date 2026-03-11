@@ -25,7 +25,7 @@ API_KEY = "59DQqKqImxvNkePzZE70_7-qCIaU00PYor9ubKtgeX5DYmzn3EbjdenZyo3iudC1"
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 BASE_URL = "https://voxliber.ink/api/v1"
 HEADERS  = {"X-API-Key": API_KEY, "Content-Type": "application/json"}
-INTERVAL_HOURS = 12
+INTERVAL_HOURS = 48
 WEEKLY_CREATION_DAYS = 7   # 7일마다 신규 책 5권 생성
 WEEKLY_CREATION_COUNT = 5  # 한 번에 생성할 책 수
 
