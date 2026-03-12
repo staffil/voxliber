@@ -29,7 +29,7 @@ def recommend_books(user, limit=10):
     top_genres = sorted(genre_score, key=genre_score.get, reverse=True)[:3]
     top_tags = sorted(tag_score, key=tag_score.get, reverse=True)[:5]
 
-    qs = Books.objects.annotate(
+    qs = Books.objects.filter(book_type="audiobook").annotate(
         genre_match=Count("genres", filter=Q(genres__in=top_genres)),
         tag_match=Count("tags", filter=Q(tags__in=top_tags)),
     ).order_by("-tag_match", "-genre_match", "-book_score")
