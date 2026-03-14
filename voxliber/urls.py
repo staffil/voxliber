@@ -84,6 +84,9 @@ urlpatterns = [
     path("api/v1/create-episode/", voxliber_api.api_create_episode, name="api_create_episode"),
     path("api/v1/delete-episode/", voxliber_api.api_delete_episode, name="api_delete_episode"),
     path("api/v1/regenerate-episode/", voxliber_api.api_regenerate_episode, name="api_regenerate_episode"),
+    path("api/v1/regenerate-page/", voxliber_api.api_regenerate_page, name="api_regenerate_page"),
+    path("api/v1/regenerate-sfx/", voxliber_api.api_regenerate_sfx, name="api_regenerate_sfx"),
+    path("api/v1/regenerate-bgm/", voxliber_api.api_regenerate_bgm, name="api_regenerate_bgm"),
     path("api/v1/my-books/", voxliber_api.api_my_books, name="api_my_books"),
 
     # 조회 API

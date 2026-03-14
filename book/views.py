@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse,HttpResponseForbidden
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -2862,6 +2862,7 @@ def book_serilazation_fast_view(request, book_uuid):
         'voice_config_json': _json.dumps(book.voice_config or {}),
         'draft_text_json': _json.dumps(book.draft_text or ''),
         'draft_episode_title_json': _json.dumps(book.draft_episode_title or ''),
+        'block_draft_json': _json.dumps(book.block_draft or None),
     }
     return render(request, 'book/book_serialization_fast.html', context)
 
@@ -2884,11 +2885,60 @@ def save_voice_config(request, book_uuid):
         if 'draft_episode_title' in data:
             book.draft_episode_title = data['draft_episode_title']
             update_fields.append('draft_episode_title')
+        if 'block_draft' in data:
+            book.block_draft = data['block_draft']
+            update_fields.append('block_draft')
         if update_fields:
             book.save(update_fields=update_fields)
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+@require_GET
+def load_draft(request, book_uuid):
+    """임시저장된 블록 드래프트 + 보이스 설정 + 오디오 URL 맵 반환"""
+    from book.models import Content, PageAudio, SoundEffectLibrary, BackgroundMusicLibrary
+    book = get_object_or_404(Books, public_uuid=book_uuid, user=request.user)
+
+    # 가장 최근 에피소드에서 오디오 URL 수집
+    audio_map = {'tts': {}, 'sfx': {}, 'bgm': {}}
+    audio_ids = {'sfx': {}, 'bgm': {}}
+    latest = Content.objects.filter(book=book, is_deleted=False).order_by('-pk').first()
+    # SFX/BGM 은 mix_config 가 있는 가장 최근 에피소드에서 수집
+    latest_with_mix = Content.objects.filter(
+        book=book, is_deleted=False, mix_config__isnull=False
+    ).order_by('-pk').first()
+    if latest:
+        for pa in PageAudio.objects.filter(content=latest).order_by('page_number'):
+            if pa.audio_file:
+                audio_map['tts'][pa.page_number] = pa.audio_file.url
+    if latest_with_mix:
+        mix_cfg = latest_with_mix.mix_config or {}
+        for i, sfx in enumerate(mix_cfg.get('sfx', []), 1):
+            obj = SoundEffectLibrary.objects.filter(id=sfx.get('id')).first()
+            if obj and obj.audio_file:
+                audio_map['sfx'][i] = obj.audio_file.url
+            if sfx.get('id'):
+                audio_ids['sfx'][i] = sfx.get('id')
+        for i, bgm_item in enumerate(mix_cfg.get('bgm', []), 1):
+            obj = BackgroundMusicLibrary.objects.filter(id=bgm_item.get('id')).first()
+            if obj and obj.audio_file:
+                audio_map['bgm'][i] = obj.audio_file.url
+            if bgm_item.get('id'):
+                audio_ids['bgm'][i] = bgm_item.get('id')
+
+    return JsonResponse({
+        'success': True,
+        'block_draft': book.block_draft,
+        'voice_config': book.voice_config or {},
+        'draft_text': book.draft_text or '',
+        'draft_episode_title': book.draft_episode_title or '',
+        'audio_map': audio_map,
+        'audio_ids': audio_ids,
+        'content_uuid': str(latest.public_uuid) if latest else None,
+    })
 
 
 # ==================== AI 오디오북 분석 (Grok) ====================
@@ -3207,6 +3257,14 @@ def process_json_audiobook(request):
         return JsonResponse({'error': 'JSON 파싱 실패'}, status=400)
 
     steps = data.get('steps', [])
+    # 단일 create_episode 액션이면 batch 형식으로 자동 변환
+    if not steps and data.get('action') == 'create_episode':
+        data = {
+            'action': 'batch',
+            'book_uuid': data.get('book_uuid', ''),
+            'steps': [data]
+        }
+        steps = data['steps']
     if not steps:
         return JsonResponse({'error': 'steps가 비어있습니다'}, status=400)
 
@@ -3356,3 +3414,398 @@ def content_youtube_thumbnail(request, content_uuid):
         "book": book,
     }
     return render(request, "book/content_youtube_thumbnail.html", context)
+
+
+# ==================== 페이지별 TTS 편집 (초급자 모드) ====================
+
+@login_required
+@require_http_methods(["GET"])
+def get_page_audios(request, content_uuid):
+    """에피소드의 PageAudio 목록 반환"""
+    from book.models import Content, PageAudio
+    content = get_object_or_404(Content, public_uuid=content_uuid, book__user=request.user, is_deleted=False)
+    pages = PageAudio.objects.filter(content=content).order_by('page_number')
+    data = []
+    for p in pages:
+        data.append({
+            'page_number': p.page_number,
+            'text': p.text,
+            'voice_id': p.voice_id,
+            'language_code': p.language_code,
+            'speed_value': p.speed_value,
+            'style_value': p.style_value,
+            'similarity_value': p.similarity_value,
+            'webaudio_effect': p.webaudio_effect,
+            'page_type': p.page_type,
+            'audio_url': p.audio_file.url if p.audio_file else None,
+        })
+    from book.models import SoundEffectLibrary, BackgroundMusicLibrary
+    raw = content.mix_config
+    if not raw:
+        latest_mix = Content.objects.filter(
+            book=content.book, is_deleted=False, mix_config__isnull=False
+        ).order_by('-pk').first()
+        if latest_mix:
+            raw = latest_mix.mix_config
+    raw = raw or {}
+
+    sfx_enriched = []
+    for s in raw.get('sfx', []):
+        obj = SoundEffectLibrary.objects.filter(id=s.get('id')).first()
+        sfx_enriched.append({**s, 'audio_url': obj.audio_file.url if obj and obj.audio_file else None})
+    bgm_enriched = []
+    for b in raw.get('bgm', []):
+        obj = BackgroundMusicLibrary.objects.filter(id=b.get('id')).first()
+        bgm_enriched.append({**b, 'audio_url': obj.audio_file.url if obj and obj.audio_file else None})
+
+    mix_config = {'sfx': sfx_enriched, 'bgm': bgm_enriched}
+    return JsonResponse({'success': True, 'pages': data, 'episode_title': content.title, 'mix_config': mix_config})
+
+
+@login_required
+@require_POST
+def regenerate_page(request, content_uuid, page_number):
+    """특정 페이지 TTS 재생성"""
+    import json as _json
+    from book.models import Content, PageAudio
+    from book.utils import generate_tts
+    from django.core.files import File as DjangoFile
+
+    content = get_object_or_404(Content, public_uuid=content_uuid, book__user=request.user, is_deleted=False)
+    try:
+        data = _json.loads(request.body)
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'JSON 파싱 실패'}, status=400)
+
+    text = data.get('text', '').strip()
+    voice_id = data.get('voice_id', '').strip()
+    if not text or not voice_id:
+        return JsonResponse({'success': False, 'error': 'text와 voice_id가 필요합니다'}, status=400)
+
+    pa = PageAudio.objects.filter(content=content, page_number=page_number).first()
+    if not pa:
+        return JsonResponse({'success': False, 'error': f'페이지 {page_number}을 찾을 수 없습니다'}, status=404)
+
+    speed = float(data.get('speed_value', pa.speed_value))
+    style = float(data.get('style_value', pa.style_value))
+    similarity = float(data.get('similarity_value', pa.similarity_value))
+    webaudio = data.get('webaudio_effect', pa.webaudio_effect)
+
+    try:
+        audio_path = generate_tts(text, voice_id, pa.language_code, speed, style, similarity)
+        if not audio_path:
+            return JsonResponse({'success': False, 'error': 'TTS 생성 실패'}, status=500)
+
+        # WebAudio 효과 적용
+        if webaudio and webaudio != 'normal':
+            from book.utils import apply_webaudio_effect
+            processed = apply_webaudio_effect(audio_path, webaudio)
+            if processed and os.path.exists(processed):
+                if processed != audio_path:
+                    os.remove(audio_path)
+                audio_path = processed
+
+        # 기존 파일 삭제 후 새 파일 저장
+        if pa.audio_file:
+            try:
+                old_path = pa.audio_file.path
+                pa.audio_file.delete(save=False)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            except Exception:
+                pass
+
+        pa.text = text
+        pa.voice_id = voice_id
+        pa.speed_value = speed
+        pa.style_value = style
+        pa.similarity_value = similarity
+        pa.webaudio_effect = webaudio
+        with open(audio_path, 'rb') as f:
+            pa.audio_file.save(os.path.basename(audio_path), DjangoFile(f), save=True)
+
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+
+        return JsonResponse({'success': True, 'audio_url': pa.audio_file.url, 'page_number': page_number})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def save_page_text(request, content_uuid, page_number):
+    """TTS 재생성 없이 페이지 텍스트/보이스 메타데이터만 저장"""
+    import json as _json
+    from book.models import Content, PageAudio
+
+    content = get_object_or_404(Content, public_uuid=content_uuid, book__user=request.user, is_deleted=False)
+    try:
+        data = _json.loads(request.body)
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'JSON 파싱 실패'}, status=400)
+
+    pa = PageAudio.objects.filter(content=content, page_number=page_number).first()
+    if not pa:
+        return JsonResponse({'success': False, 'error': f'페이지 {page_number}을 찾을 수 없습니다'}, status=404)
+
+    update_fields = []
+    if 'text' in data:
+        pa.text = data['text']
+        update_fields.append('text')
+    if 'voice_id' in data:
+        pa.voice_id = data['voice_id']
+        update_fields.append('voice_id')
+    if 'speed_value' in data:
+        pa.speed_value = float(data['speed_value'])
+        update_fields.append('speed_value')
+    if 'style_value' in data:
+        pa.style_value = float(data['style_value'])
+        update_fields.append('style_value')
+    if 'webaudio_effect' in data:
+        pa.webaudio_effect = data['webaudio_effect']
+        update_fields.append('webaudio_effect')
+
+    if update_fields:
+        pa.save(update_fields=update_fields)
+
+    return JsonResponse({'success': True, 'page_number': page_number})
+
+
+@login_required
+@require_POST
+def remerge_episode(request, content_uuid):
+    """저장된 PageAudio들을 다시 병합하여 에피소드 오디오 갱신"""
+    from book.models import Content, PageAudio
+    from book.utils import merge_audio_files
+    from django.core.files import File as DjangoFile
+    from pydub import AudioSegment
+
+    content = get_object_or_404(Content, public_uuid=content_uuid, book__user=request.user, is_deleted=False)
+    pages = list(PageAudio.objects.filter(content=content).order_by('page_number'))
+    if not pages:
+        return JsonResponse({'success': False, 'error': '저장된 페이지가 없습니다'}, status=400)
+
+    audio_paths = []
+    pages_text = []
+    for p in pages:
+        if not p.audio_file:
+            continue
+        try:
+            fpath = p.audio_file.path
+            if os.path.exists(fpath):
+                audio_paths.append(fpath)
+                pages_text.append(p.text)
+        except Exception:
+            pass
+
+    if not audio_paths:
+        return JsonResponse({'success': False, 'error': '오디오 파일이 없습니다'}, status=400)
+
+    try:
+        merged_path, timestamps, _ = merge_audio_files(audio_paths, pages_text)
+        if not merged_path or not os.path.exists(merged_path):
+            return JsonResponse({'success': False, 'error': '병합 실패'}, status=500)
+
+        duration_seconds = int(len(AudioSegment.from_file(merged_path)) / 1000)
+
+        if content.audio_file:
+            try:
+                old_path = content.audio_file.path
+                content.audio_file.delete(save=False)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            except Exception:
+                pass
+
+        with open(merged_path, 'rb') as f:
+            content.audio_file.save(os.path.basename(merged_path), DjangoFile(f), save=True)
+        content.audio_timestamps = timestamps
+        content.duration_seconds = duration_seconds
+        content.save()
+
+        os.remove(merged_path)
+
+        return JsonResponse({
+            'success': True,
+            'audio_url': content.audio_file.url,
+            'duration_seconds': duration_seconds,
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def regenerate_sfx(request, content_uuid, sfx_id):
+    """SFX 오디오 재생성"""
+    from book.models import Content, SoundEffectLibrary
+    from book.utils import sound_effect
+    from django.core.files import File as DjangoFile
+    import json as _json
+
+    content = get_object_or_404(Content, public_uuid=content_uuid, book__user=request.user, is_deleted=False)
+    sfx_obj = get_object_or_404(SoundEffectLibrary, id=sfx_id, user=request.user)
+
+    try:
+        data = _json.loads(request.body) if request.body else {}
+    except Exception:
+        data = {}
+
+    desc = data.get('desc', sfx_obj.effect_description)
+    duration_seconds = data.get('duration', 5)
+    new_path = sound_effect(sfx_obj.effect_name, desc, duration_seconds)
+    if not new_path or not os.path.exists(new_path):
+        return JsonResponse({'success': False, 'error': 'SFX 생성 실패'}, status=500)
+
+    try:
+        if sfx_obj.audio_file:
+            try:
+                old = sfx_obj.audio_file.path
+                sfx_obj.audio_file.delete(save=False)
+                if os.path.exists(old):
+                    os.remove(old)
+            except Exception:
+                pass
+        with open(new_path, 'rb') as f:
+            sfx_obj.audio_file.save(os.path.basename(new_path), DjangoFile(f), save=True)
+        sfx_obj.effect_description = desc
+        sfx_obj.save()
+        if os.path.exists(new_path):
+            os.remove(new_path)
+        return JsonResponse({'success': True, 'audio_url': sfx_obj.audio_file.url, 'sfx_id': sfx_id})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def regenerate_bgm(request, content_uuid, bgm_id):
+    """BGM 오디오 재생성"""
+    from book.models import Content, BackgroundMusicLibrary
+    from book.utils import background_music
+    from django.core.files import File as DjangoFile
+    import json as _json
+
+    content = get_object_or_404(Content, public_uuid=content_uuid, book__user=request.user, is_deleted=False)
+    bgm_obj = get_object_or_404(BackgroundMusicLibrary, id=bgm_id, user=request.user)
+
+    try:
+        data = _json.loads(request.body) if request.body else {}
+    except Exception:
+        data = {}
+
+    desc = data.get('desc', bgm_obj.music_description)
+    duration = data.get('duration', bgm_obj.duration_seconds)
+    new_path = background_music(bgm_obj.music_name, desc, duration)
+    if not new_path or not os.path.exists(new_path):
+        return JsonResponse({'success': False, 'error': 'BGM 생성 실패'}, status=500)
+
+    try:
+        if bgm_obj.audio_file:
+            try:
+                old = bgm_obj.audio_file.path
+                bgm_obj.audio_file.delete(save=False)
+                if os.path.exists(old):
+                    os.remove(old)
+            except Exception:
+                pass
+        with open(new_path, 'rb') as f:
+            bgm_obj.audio_file.save(os.path.basename(new_path), DjangoFile(f), save=True)
+        bgm_obj.music_description = desc
+        bgm_obj.duration_seconds = duration
+        bgm_obj.save()
+        if os.path.exists(new_path):
+            os.remove(new_path)
+        return JsonResponse({'success': True, 'audio_url': bgm_obj.audio_file.url, 'bgm_id': bgm_id})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def create_bgm_for_block(request, book_uuid):
+    """블록 편집기에서 새 BGM 생성 (DB ID 없을 때 최초 생성)"""
+    from book.models import Books, BackgroundMusicLibrary
+    from book.utils import background_music
+    from django.core.files import File as DjangoFile
+    import json as _json
+
+    get_object_or_404(Books, public_uuid=book_uuid, user=request.user)
+    try:
+        data = _json.loads(request.body) if request.body else {}
+    except Exception:
+        data = {}
+
+    name = data.get('name', 'BGM')
+    desc = data.get('desc', name)
+    duration = int(data.get('duration', 30))
+
+    new_path = background_music(name, desc, duration)
+    if not new_path or not os.path.exists(new_path):
+        return JsonResponse({'success': False, 'error': 'BGM 생성 실패'}, status=500)
+
+    try:
+        bgm_obj = BackgroundMusicLibrary(
+            user=request.user,
+            music_name=name,
+            music_description=desc,
+            duration_seconds=duration,
+        )
+        with open(new_path, 'rb') as f:
+            bgm_obj.audio_file.save(os.path.basename(new_path), DjangoFile(f), save=True)
+        if os.path.exists(new_path):
+            os.remove(new_path)
+        return JsonResponse({'success': True, 'audio_url': bgm_obj.audio_file.url, 'bgm_id': bgm_obj.id})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def create_sfx_for_block(request, book_uuid):
+    """블록 편집기에서 새 SFX 생성 (DB ID 없을 때 최초 생성)"""
+    from book.models import Books, SoundEffectLibrary
+    from book.utils import sound_effect
+    from django.core.files import File as DjangoFile
+    import json as _json
+
+    get_object_or_404(Books, public_uuid=book_uuid, user=request.user)
+    try:
+        data = _json.loads(request.body) if request.body else {}
+    except Exception:
+        data = {}
+
+    name = data.get('name', 'SFX')
+    desc = data.get('desc', name)
+    duration = int(data.get('duration', 5))
+
+    new_path = sound_effect(name, desc, duration)
+    if not new_path or not os.path.exists(new_path):
+        return JsonResponse({'success': False, 'error': 'SFX 생성 실패'}, status=500)
+
+    try:
+        sfx_obj = SoundEffectLibrary(
+            user=request.user,
+            effect_name=name,
+            effect_description=desc,
+        )
+        with open(new_path, 'rb') as f:
+            sfx_obj.audio_file.save(os.path.basename(new_path), DjangoFile(f), save=True)
+        if os.path.exists(new_path):
+            os.remove(new_path)
+        return JsonResponse({'success': True, 'audio_url': sfx_obj.audio_file.url, 'sfx_id': sfx_obj.id})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

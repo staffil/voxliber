@@ -102,10 +102,20 @@ urlpatterns=[
     # book_serilazation_fast
     path("serialization/fast/<uuid:book_uuid>/", views.book_serilazation_fast_view, name="book_serilazation_fast_view"),
     path("serialization/fast/<uuid:book_uuid>/voice-config/save/", views.save_voice_config, name="save_voice_config"),
+    path("serialization/fast/<uuid:book_uuid>/draft/load/", views.load_draft, name="load_draft"),
     path("json/generate/", views.process_json_audiobook, name="process_json_audiobook"),
     path("json/ai-generate/", views.ai_analyze_audiobook, name="ai_analyze_audiobook"),
     path("json/ai-speakers/", views.ai_assign_speakers, name="ai_assign_speakers"),
     path("json/task-status/<str:task_id>/", views.audiobook_task_status, name="audiobook_task_status"),
+    # 페이지별 TTS 편집
+    path("episodes/<uuid:content_uuid>/pages/", views.get_page_audios, name="get_page_audios"),
+    path("episodes/<uuid:content_uuid>/pages/<int:page_number>/regenerate/", views.regenerate_page, name="regenerate_page"),
+    path("episodes/<uuid:content_uuid>/pages/<int:page_number>/save/", views.save_page_text, name="save_page_text"),
+    path("episodes/<uuid:content_uuid>/remerge/", views.remerge_episode, name="remerge_episode"),
+    path("episodes/<uuid:content_uuid>/sfx/<int:sfx_id>/regenerate/", views.regenerate_sfx, name="regenerate_sfx"),
+    path("episodes/<uuid:content_uuid>/bgm/<int:bgm_id>/regenerate/", views.regenerate_bgm, name="regenerate_bgm"),
+    path("books/<uuid:book_uuid>/block/create-bgm/", views.create_bgm_for_block, name="create_bgm_for_block"),
+    path("books/<uuid:book_uuid>/block/create-sfx/", views.create_sfx_for_block, name="create_sfx_for_block"),
 
 
     # ==================== 📱 API 엔드포인트 (안드로이드 앱용) ====================

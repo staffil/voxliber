@@ -67,6 +67,7 @@ class Books(models.Model):
     voice_config = models.JSONField(default=dict, null=True, blank=True, help_text="캐릭터별 보이스 설정 {0: {name, voice_id}, ...}")
     draft_episode_title = models.CharField(max_length=200, null=True, blank=True, help_text="임시저장 에피소드 제목")
     draft_text = models.TextField(null=True, blank=True, help_text="임시저장 소설 텍스트")
+    block_draft = models.JSONField(null=True, blank=True, help_text="블록 편집기 임시저장 (batch JSON)")
     is_deleted = models.BooleanField(default=False, db_index=True, help_text="소프트 삭제 여부 (데이터는 보존)")
     deleted_at = models.DateTimeField(null=True, blank=True)
 
@@ -133,7 +134,8 @@ class Content(models.Model):
     episode_image = models.ImageField(upload_to="uploads/episode_images/", null=True, blank=True)  # 에피소드 썸네일
     audio_file = models.FileField(upload_to="uploads/audio/", null=True, blank=True, max_length=1000)
     audio_timestamps = models.JSONField(null=True, blank=True)  # 각 대사의 시작/종료 시간 저장
-    duration_seconds = models.IntegerField(default=0, help_text="오디오 길이(초)")  # 오디오 길이 (초 단위)
+    duration_seconds = models.IntegerField(default=0, help_text="오디오 길이(초)")
+    mix_config = models.JSONField(null=True, blank=True, help_text="믹싱 설정 {bgm:[{id,name,desc,volume,start_page,end_page}], sfx:[{id,name,desc,volume,page_number}]}")  # 오디오 길이 (초 단위)
     llm_provider = models.CharField(max_length=20, blank=True, null=True, help_text="에피소드 작성 AI (gpt/grok/claude)")
     created_at  = models.DateTimeField(default=timezone.now)
     is_deleted = models.BooleanField(default=False, help_text="소프트 삭제 여부")  # Soft delete
@@ -156,6 +158,36 @@ class Content(models.Model):
         else:
             return f"{minutes}:{seconds:02d}"
 
+
+
+# 페이지별 TTS 개별 저장 테이블
+class PageAudio(models.Model):
+    PAGE_TYPE_CHOICES = [
+        ('tts', 'TTS'),
+        ('silence', '무음'),
+        ('duet', '듀엣'),
+    ]
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name='page_audios')
+    page_number = models.IntegerField()  # 1-based
+    audio_file = models.FileField(upload_to='uploads/page_audio/', null=True, blank=True, max_length=1000)
+    text = models.TextField(blank=True, default='')
+    voice_id = models.CharField(max_length=100, blank=True, default='')
+    language_code = models.CharField(max_length=10, default='ko')
+    speed_value = models.FloatField(default=1.0)
+    style_value = models.FloatField(default=0.85)
+    similarity_value = models.FloatField(default=0.75)
+    webaudio_effect = models.CharField(max_length=50, blank=True, default='normal')
+    page_type = models.CharField(max_length=20, choices=PAGE_TYPE_CHOICES, default='tts')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'page_audio'
+        unique_together = ('content', 'page_number')
+        ordering = ['page_number']
+
+    def __str__(self):
+        return f"{self.content.title} - Page {self.page_number}"
 
 
 # 책 평가 테이블

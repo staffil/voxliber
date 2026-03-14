@@ -18,7 +18,7 @@ from django.core.files.base import ContentFile
 
 from book.models import (
     Books, Content, Genres, Tags, VoiceList, VoiceType,
-    SoundEffectLibrary, BackgroundMusicLibrary, BookSnap,
+    SoundEffectLibrary, BackgroundMusicLibrary, BookSnap, PageAudio,
 )
 from book.api_utils import require_api_key_secure, api_response
 from book.utils import generate_tts, merge_audio_files, sound_effect, background_music, mix_audio_with_background
@@ -2611,3 +2611,215 @@ def api_webnovel_generate_episode(request):
         return api_response(error=f"AI 응답 JSON 파싱 오류: {str(e)}", status=500)
     except Exception as e:
         return api_response(error=f"에피소드 생성 오류: {str(e)}", status=500)
+
+
+# ==================== 부분 재생성 API ====================
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_regenerate_page(request):
+    """
+    단일 페이지 TTS 재생성 API
+
+    POST /api/v1/regenerate-page/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "content_uuid": "xxxx-xxxx",
+        "page_number": 3,
+        "text": "재생성할 텍스트",
+        "voice_id": "voice_id",
+        "speed_value": 1.0,      (선택, 기존값 유지)
+        "style_value": 0.85,     (선택)
+        "similarity_value": 0.75 (선택)
+    }
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    content_uuid = data.get("content_uuid", "").strip()
+    page_number = data.get("page_number")
+    text = data.get("text", "").strip()
+    voice_id = data.get("voice_id", "").strip()
+
+    if not content_uuid or page_number is None or not text or not voice_id:
+        return api_response(error="content_uuid, page_number, text, voice_id는 필수입니다.", status=400)
+
+    content = Content.objects.filter(
+        public_uuid=content_uuid, book__user=request.api_user, is_deleted=False
+    ).first()
+    if not content:
+        return api_response(error="에피소드를 찾을 수 없거나 권한이 없습니다.", status=404)
+
+    pa = PageAudio.objects.filter(content=content, page_number=int(page_number)).first()
+    if not pa:
+        return api_response(error=f"페이지 {page_number}을 찾을 수 없습니다.", status=404)
+
+    speed = float(data.get("speed_value", pa.speed_value))
+    style = float(data.get("style_value", pa.style_value))
+    similarity = float(data.get("similarity_value", pa.similarity_value))
+
+    try:
+        audio_path = generate_tts(text, voice_id, pa.language_code, speed, style, similarity)
+        if not audio_path:
+            return api_response(error="TTS 생성 실패", status=500)
+
+        if pa.audio_file:
+            try:
+                old_path = pa.audio_file.path
+                pa.audio_file.delete(save=False)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            except Exception:
+                pass
+
+        pa.text = text
+        pa.voice_id = voice_id
+        pa.speed_value = speed
+        pa.style_value = style
+        pa.similarity_value = similarity
+        with open(audio_path, 'rb') as f:
+            pa.audio_file.save(os.path.basename(audio_path), File(f), save=True)
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+
+        print(f"✅ [API] 페이지 {page_number} TTS 재생성 완료")
+        return api_response(data={
+            "page_number": int(page_number),
+            "audio_url": pa.audio_file.url,
+            "message": f"페이지 {page_number} TTS 재생성 완료"
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return api_response(error=f"TTS 재생성 오류: {str(e)}", status=500)
+
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_regenerate_sfx(request):
+    """
+    SFX 재생성 API (기존 SFX 오디오를 새로 생성)
+
+    POST /api/v1/regenerate-sfx/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "sfx_id": 5,
+        "desc": "새 설명 (선택, 없으면 기존 설명 유지)",
+        "duration": 5
+    }
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    sfx_id = data.get("sfx_id")
+    if not sfx_id:
+        return api_response(error="sfx_id는 필수입니다.", status=400)
+
+    sfx_obj = SoundEffectLibrary.objects.filter(id=sfx_id, user=request.api_user).first()
+    if not sfx_obj:
+        return api_response(error="SFX를 찾을 수 없거나 권한이 없습니다.", status=404)
+
+    desc = data.get("desc", sfx_obj.effect_description)
+    duration = int(data.get("duration", 5))
+
+    try:
+        new_path = sound_effect(sfx_obj.effect_name, desc, duration)
+        if not new_path or not os.path.exists(new_path):
+            return api_response(error="SFX 생성 실패", status=500)
+
+        if sfx_obj.audio_file:
+            try:
+                old = sfx_obj.audio_file.path
+                sfx_obj.audio_file.delete(save=False)
+                if os.path.exists(old):
+                    os.remove(old)
+            except Exception:
+                pass
+
+        with open(new_path, 'rb') as f:
+            sfx_obj.audio_file.save(os.path.basename(new_path), File(f), save=True)
+        sfx_obj.effect_description = desc
+        sfx_obj.save()
+        if os.path.exists(new_path):
+            os.remove(new_path)
+
+        print(f"✅ [API] SFX {sfx_id} 재생성 완료")
+        return api_response(data={
+            "sfx_id": sfx_obj.id,
+            "effect_name": sfx_obj.effect_name,
+            "audio_url": sfx_obj.audio_file.url,
+            "message": "SFX 재생성 완료"
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return api_response(error=f"SFX 재생성 오류: {str(e)}", status=500)
+
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_regenerate_bgm(request):
+    """
+    BGM 재생성 API (기존 BGM 오디오를 새로 생성)
+
+    POST /api/v1/regenerate-bgm/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "bgm_id": 3,
+        "desc": "새 설명 (선택, 없으면 기존 설명 유지)",
+        "duration": 30
+    }
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    bgm_id = data.get("bgm_id")
+    if not bgm_id:
+        return api_response(error="bgm_id는 필수입니다.", status=400)
+
+    bgm_obj = BackgroundMusicLibrary.objects.filter(id=bgm_id, user=request.api_user).first()
+    if not bgm_obj:
+        return api_response(error="BGM을 찾을 수 없거나 권한이 없습니다.", status=404)
+
+    desc = data.get("desc", bgm_obj.music_description)
+    duration = int(data.get("duration", bgm_obj.duration_seconds or 30))
+
+    try:
+        new_path = background_music(bgm_obj.music_name, desc, duration)
+        if not new_path or not os.path.exists(new_path):
+            return api_response(error="BGM 생성 실패", status=500)
+
+        if bgm_obj.audio_file:
+            try:
+                old = bgm_obj.audio_file.path
+                bgm_obj.audio_file.delete(save=False)
+                if os.path.exists(old):
+                    os.remove(old)
+            except Exception:
+                pass
+
+        with open(new_path, 'rb') as f:
+            bgm_obj.audio_file.save(os.path.basename(new_path), File(f), save=True)
+        bgm_obj.music_description = desc
+        bgm_obj.duration_seconds = duration
+        bgm_obj.save()
+        if os.path.exists(new_path):
+            os.remove(new_path)
+
+        print(f"✅ [API] BGM {bgm_id} 재생성 완료")
+        return api_response(data={
+            "bgm_id": bgm_obj.id,
+            "music_name": bgm_obj.music_name,
+            "audio_url": bgm_obj.audio_file.url,
+            "message": "BGM 재생성 완료"
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return api_response(error=f"BGM 재생성 오류: {str(e)}", status=500)

@@ -301,12 +301,37 @@
 
             <!-- 액션 버튼 -->
             <div class="action-panel">
+                <button id="btnManualSaveDraft" onclick="manualSaveDraft()" class="btn btn-secondary" title="현재 블록 편집 상태 임시저장">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    임시저장
+                </button>
+                <button id="btnLoadDraft" onclick="loadDraft()" class="btn btn-secondary" title="임시저장된 블록 불러오기">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4"/>
+                        <polyline points="17 9 12 4 7 9"/>
+                        <line x1="12" y1="4" x2="12" y2="16"/>
+                    </svg>
+                    불러오기
+                </button>
                 <button id="btnPreview" class="btn btn-secondary" onclick="generateJSONPreview()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                         <circle cx="12" cy="12" r="3"/>
                     </svg>
                     미리보기
+                </button>
+                <button id="btnClearAllBlocks" onclick="clearAllBlocks()" class="btn btn-danger" title="블록 전체 삭제">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                        <path d="M10 11v6M14 11v6"/>
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
+                    전체 삭제
                 </button>
 
                 <button id="btnDownloadJSON" class="btn btn-warning" onclick="downloadJSON()">
@@ -404,6 +429,153 @@
                         <span class="ui-tour-step-text">JSON 업로드 (복원)</span>
                         <span class="ui-tour-step-arrow">›</span>
                     </button>
+                    <button class="ui-tour-step-btn" onclick="VoxTour.startTour(VOX_FAST_STEPS, 9)">
+                        <span class="ui-tour-step-num">10</span>
+                        <span class="ui-tour-step-text">임시저장</span>
+                        <span class="ui-tour-step-arrow">›</span>
+                    </button>
+                    <button class="ui-tour-step-btn" onclick="VoxTour.startTour(VOX_FAST_STEPS, 10)">
+                        <span class="ui-tour-step-num">11</span>
+                        <span class="ui-tour-step-text">불러오기</span>
+                        <span class="ui-tour-step-arrow">›</span>
+                    </button>
+                    <button class="ui-tour-step-btn" onclick="VoxTour.startTour(VOX_FAST_STEPS, 11)">
+                        <span class="ui-tour-step-num">12</span>
+                        <span class="ui-tour-step-text">전체 삭제</span>
+                        <span class="ui-tour-step-arrow">›</span>
+                    </button>
+                    <button class="ui-tour-step-btn" onclick="VoxTour.startTour(VOX_FAST_STEPS, 12)">
+                        <span class="ui-tour-step-num">13</span>
+                        <span class="ui-tour-step-text">블록 생성 / 재생성</span>
+                        <span class="ui-tour-step-arrow">›</span>
+                    </button>
+                    <button class="ui-tour-step-btn" onclick="VoxTour.startTour(VOX_FAST_STEPS, 13)">
+                        <span class="ui-tour-step-num">14</span>
+                        <span class="ui-tour-step-text">실행 이후 — 페이지 편집</span>
+                        <span class="ui-tour-step-arrow">›</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 정적 기능 가이드 -->
+            <div class="guide-static-section">
+                <div class="guide-static-section-title">⚡ 주요 기능 가이드</div>
+
+                <!-- 임시저장 / 불러오기 -->
+                <div class="guide-static-card guide-card-save">
+                    <div class="guide-static-card-header">
+                        <span class="guide-static-icon">💾</span>
+                        <div class="guide-static-info">
+                            <div class="guide-static-title">임시저장 &amp; 불러오기</div>
+                            <div class="guide-tag-row">
+                                <span class="guide-badge badge-gray">임시저장</span>
+                                <span class="guide-badge badge-gray">불러오기</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="guide-static-body">
+                        <div class="guide-step-list">
+                            <div class="guide-step-row"><span class="guide-step-num">1</span><span>블록 편집 후 <strong>임시저장</strong> 버튼 클릭 → 서버에 현재 블록 상태 저장</span></div>
+                            <div class="guide-step-row"><span class="guide-step-num">2</span><span>페이지 새로고침 또는 다음 방문 시 <strong>불러오기</strong> 버튼 클릭 → 블록 + 오디오 URL 자동 복원</span></div>
+                            <div class="guide-step-row"><span class="guide-step-num">3</span><span>실행 완료 후에도 불러오기 가능 → 생성된 TTS·SFX·BGM 플레이어 함께 복원</span></div>
+                        </div>
+                        <div class="guide-tip guide-tip-blue">💡 실행 완료 직후 자동으로 임시저장됩니다. 수동으로도 언제든 저장하세요.</div>
+                    </div>
+                </div>
+
+                <!-- 전체 삭제 -->
+                <div class="guide-static-card guide-card-delete">
+                    <div class="guide-static-card-header">
+                        <span class="guide-static-icon">🗑️</span>
+                        <div class="guide-static-info">
+                            <div class="guide-static-title">전체 삭제</div>
+                            <div class="guide-tag-row">
+                                <span class="guide-badge badge-red">전체 삭제</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="guide-static-body">
+                        <p>블록 편집기의 모든 블록(TTS·SFX·무음·2인 대화)과 BGM을 한 번에 초기화합니다.</p>
+                        <div class="guide-tip guide-tip-red">⚠️ 삭제 후 되돌릴 수 없습니다. 먼저 <strong>임시저장</strong>을 권장합니다.</div>
+                    </div>
+                </div>
+
+                <!-- 생성 / 재생성 버튼 -->
+                <div class="guide-static-card guide-card-regen">
+                    <div class="guide-static-card-header">
+                        <span class="guide-static-icon">🎙️</span>
+                        <div class="guide-static-info">
+                            <div class="guide-static-title">블록 생성 / 재생성 버튼</div>
+                            <div class="guide-tag-row">
+                                <span class="guide-badge badge-green">생성</span>
+                                <span class="guide-badge badge-yellow">재생성</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="guide-static-body">
+                        <div class="guide-regen-table">
+                            <div class="guide-regen-row guide-regen-header">
+                                <span>버튼</span><span>조건</span><span>동작</span>
+                            </div>
+                            <div class="guide-regen-row">
+                                <span><span class="guide-badge badge-green">생성</span></span>
+                                <span>오디오 없는 블록</span>
+                                <span>에피소드 실행 후 해당 블록 단독 TTS·SFX·BGM 생성</span>
+                            </div>
+                            <div class="guide-regen-row">
+                                <span><span class="guide-badge badge-yellow">재생성</span></span>
+                                <span>오디오 있는 블록</span>
+                                <span>텍스트·프롬프트 수정 후 해당 블록만 다시 생성</span>
+                            </div>
+                        </div>
+                        <div class="guide-tip guide-tip-blue">💡 에피소드를 먼저 실행해야 블록 단독 생성/재생성이 가능합니다.</div>
+                    </div>
+                </div>
+
+                <!-- 실행 이후 할 수 있는 것들 -->
+                <div class="guide-static-card guide-card-after">
+                    <div class="guide-static-card-header">
+                        <span class="guide-static-icon">✅</span>
+                        <div class="guide-static-info">
+                            <div class="guide-static-title">실행 이후 할 수 있는 것들</div>
+                            <div class="guide-tag-row">
+                                <span class="guide-badge badge-purple">페이지 편집</span>
+                                <span class="guide-badge badge-teal">재머지</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="guide-static-body">
+                        <div class="guide-step-list">
+                            <div class="guide-step-row"><span class="guide-step-num">1</span><span><strong>페이지 편집 열기</strong> → 실행 완료 후 자동으로 열리거나, 불러오기 후 버튼으로 접근</span></div>
+                            <div class="guide-step-row"><span class="guide-step-num">2</span><span><strong>저장</strong> — 페이지 텍스트·목소리 수정 후 TTS 재생성 없이 메타데이터만 저장</span></div>
+                            <div class="guide-step-row"><span class="guide-step-num">3</span><span><strong>재생성</strong> — 해당 페이지 TTS를 새 텍스트/목소리로 다시 생성</span></div>
+                            <div class="guide-step-row"><span class="guide-step-num">4</span><span><strong>SFX 재생성</strong> — 사운드 이펙트 프롬프트 수정 후 해당 SFX만 다시 생성</span></div>
+                            <div class="guide-step-row"><span class="guide-step-num">5</span><span><strong>BGM 재생성</strong> — 배경음 프롬프트·길이 수정 후 해당 BGM만 다시 생성</span></div>
+                            <div class="guide-step-row"><span class="guide-step-num">6</span><span><strong>전체 재머지</strong> — 모든 페이지 오디오를 다시 합쳐 에피소드 최종 오디오 재생성</span></div>
+                            <div class="guide-step-row"><span class="guide-step-num">7</span><span><strong>닫기</strong> → 자동으로 블록 편집기에 오디오 플레이어 반영 (패널 닫히면 오디오 자동 정지)</span></div>
+                        </div>
+                        <div class="guide-tip guide-tip-purple">🎵 SFX·BGM을 개별 재생성한 뒤 <strong>전체 재머지</strong>를 눌러야 최종 에피소드 오디오에 반영됩니다.</div>
+                    </div>
+                </div>
+
+                <!-- 블록 타입 안내 -->
+                <div class="guide-static-card guide-card-blocks">
+                    <div class="guide-static-card-header">
+                        <span class="guide-static-icon">🧱</span>
+                        <div class="guide-static-info">
+                            <div class="guide-static-title">블록 타입 안내</div>
+                        </div>
+                    </div>
+                    <div class="guide-static-body">
+                        <div class="guide-block-type-list">
+                            <div class="guide-block-type-row"><span class="guide-block-type-badge" style="background:#6366f1;">P</span><strong>대사 블록</strong> — 나레이션·캐릭터 대사 1 페이지. 목소리·감정 태그 지정 가능</div>
+                            <div class="guide-block-type-row"><span class="guide-block-type-badge" style="background:#8b5cf6;">🎭</span><strong>2인 대화</strong> — 두 캐릭터가 동시에 등장하는 대화 블록 (듀엣 TTS)</div>
+                            <div class="guide-block-type-row"><span class="guide-block-type-badge" style="background:#f59e0b;">🔊</span><strong>SFX 블록</strong> — 사운드 이펙트 삽입. 영문 프롬프트로 AI 생성</div>
+                            <div class="guide-block-type-row"><span class="guide-block-type-badge" style="background:#10b981;">🔇</span><strong>무음 블록</strong> — 지정 시간만큼 정적. BGM은 계속 재생됨</div>
+                            <div class="guide-block-type-row"><span class="guide-block-type-badge" style="background:#3b82f6;">🎵</span><strong>BGM 트랙</strong> — 지정 페이지 범위에 배경음 삽입. 여러 개 중첩 가능</div>
+                        </div>
+                        <div class="guide-tip guide-tip-blue">💡 같은 목소리·200자 이하 → 한 블록으로 합칠 수 있습니다. 블록은 Ctrl+↑↓ 로 순서 이동 가능.</div>
+                    </div>
                 </div>
             </div>
 
@@ -514,6 +686,31 @@ var VOX_FAST_STEPS = [
         sel: '#labelJsonUpload',
         title: 'JSON 업로드 (복원)',
         desc: '이전에 다운로드한 JSON 파일을 업로드하면 <b>작업 내용이 그대로 복원</b>됩니다.<br><br>· 저장해 둔 JSON 파일을 선택하면 블록 목록과 설정이 자동으로 불러와집니다.<br>· 실수로 페이지를 닫거나 세션이 종료되어도 JSON만 있으면 처음부터 다시 하지 않아도 됩니다.<br>· 업로드 후 확인이 필요한 항목만 수정하고 바로 실행할 수 있습니다.'
+    },
+    {
+        sel: '#btnManualSaveDraft',
+        title: '임시저장',
+        desc: '<b>임시저장</b> 버튼을 클릭하면 현재 블록 편집 상태 전체(블록 구성, 목소리, BGM 설정)를 서버에 저장합니다.<br><br>· 페이지를 새로고침해도 블록이 그대로 유지됩니다.<br>· 실행 완료 후에도 자동으로 임시저장됩니다.<br>· 블록을 편집할 때마다 5초 후 자동 저장됩니다.'
+    },
+    {
+        sel: '#btnLoadDraft',
+        title: '불러오기',
+        desc: '<b>불러오기</b> 버튼을 클릭하면 마지막으로 임시저장한 블록 상태를 복원합니다.<br><br>· TTS·SFX·BGM 오디오 플레이어도 함께 복원됩니다.<br>· 실행 후 닫은 페이지에서도 다시 돌아와 그대로 들을 수 있습니다.<br>· 보이스 설정, 소설 텍스트, 에피소드 제목도 함께 복원됩니다.'
+    },
+    {
+        sel: '#btnClearAllBlocks',
+        title: '전체 삭제',
+        desc: '<b>전체 삭제</b> 버튼을 클릭하면 블록 편집기의 모든 블록과 BGM을 초기화합니다.<br><br>· 확인 팝업이 표시됩니다 — OK를 클릭해야 삭제됩니다.<br>· <span style="color:#ef4444;font-weight:600;">삭제 후 되돌릴 수 없습니다.</span> 먼저 임시저장을 권장합니다.<br>· 완전히 새 에피소드를 처음부터 작성할 때 사용하세요.'
+    },
+    {
+        sel: '#blockList',
+        title: '블록 생성 / 재생성',
+        desc: '각 블록에는 오디오 상태에 따라 버튼이 표시됩니다.<br><br>· <span style="background:#d1fae5;color:#059669;padding:1px 8px;border-radius:12px;font-weight:700;font-size:12px;">생성</span> — 오디오가 없는 블록. 에피소드 실행 후 해당 블록만 단독으로 TTS·SFX·BGM을 생성합니다.<br>· <span style="background:#fef3c7;color:#b45309;padding:1px 8px;border-radius:12px;font-weight:700;font-size:12px;">재생성</span> — 오디오가 이미 있는 블록. 텍스트·프롬프트 수정 후 해당 블록만 다시 생성합니다.<br><br><b>에피소드를 먼저 실행해야</b> 블록 단독 생성이 가능합니다.'
+    },
+    {
+        sel: '#blockList',
+        title: '실행 이후 — 페이지 편집',
+        desc: '에피소드 실행이 완료되면 <b>페이지 편집 패널</b>이 자동으로 열립니다.<br><br>· <b>저장</b> — 텍스트·목소리만 수정, TTS 재생성 없이 메타데이터 저장<br>· <b>재생성</b> — 해당 페이지 TTS를 새 텍스트/목소리로 다시 생성<br>· <b>SFX 재생성</b> — 사운드 이펙트 프롬프트 수정 후 해당 SFX만 재생성<br>· <b>BGM 재생성</b> — 배경음 프롬프트 수정 후 해당 BGM만 재생성<br>· <b>전체 재머지</b> — 모든 수정사항을 반영해 에피소드 오디오 재머지<br><br>닫기를 누르면 오디오 자동 정지, 블록 편집기에 오디오 플레이어 반영.'
     }
 ];
 </script>
@@ -532,6 +729,7 @@ const nextEpisodeNumber = {{ next_episode_number }};
 const savedVoiceConfig = {{ voice_config_json|safe }};
 const savedDraftText = {{ draft_text_json|safe }};
 const savedDraftTitle = {{ draft_episode_title_json|safe }};
+const savedBlockDraft = {{ block_draft_json|safe }};
 
 // 이미지 관련 로직은 book_serialization_fast.js에서 처리
 

@@ -55,6 +55,43 @@ document.addEventListener('DOMContentLoaded', function() {
         restoreVoiceConfig(savedVoiceConfig);
     }
 
+    // 저장된 블록 드래프트 복원
+    if (typeof savedBlockDraft !== 'undefined' && savedBlockDraft) {
+        try {
+            const editor = document.getElementById('jsonEditor');
+            if (editor) editor.value = JSON.stringify(savedBlockDraft, null, 2);
+            renderBlocks(savedBlockDraft);
+            // 오디오 맵 복원 (새로고침 후에도 생성된 오디오 URL 유지)
+            if (savedBlockDraft._audio_map) {
+                _blockAudioMap.tts = savedBlockDraft._audio_map.tts || {};
+                _blockAudioMap.sfx = savedBlockDraft._audio_map.sfx || {};
+                _blockAudioMap.bgm = savedBlockDraft._audio_map.bgm || {};
+            }
+            if (savedBlockDraft._audio_ids) {
+                _blockAudioIds.sfx = savedBlockDraft._audio_ids.sfx || {};
+                _blockAudioIds.bgm = savedBlockDraft._audio_ids.bgm || {};
+                // _bgmItems / _blockItems 에 실제 DB ID 동기화
+                Object.entries(_blockAudioIds.bgm).forEach(([pos, id]) => {
+                    const idx = parseInt(pos) - 1;
+                    if (_bgmItems[idx] && id) _bgmItems[idx]._id = String(id);
+                });
+                let _sfxScanInit = 0;
+                _blockItems.forEach(item => {
+                    if (item.type === 'sfx') {
+                        _sfxScanInit++;
+                        const id = _blockAudioIds.sfx[_sfxScanInit];
+                        if (id) item.sfxData._id = String(id);
+                    }
+                });
+                renderBlockList();
+                renderBgmSection();
+            }
+            if (savedBlockDraft._content_uuid) _editorContentUuid = savedBlockDraft._content_uuid;
+        } catch (e) {
+            console.warn('블록 드래프트 복원 실패:', e);
+        }
+    }
+
     // 소설 텍스트/제목 변경 시 debounce 자동 저장 (3초)
     let draftSaveTimer = null;
     function scheduleDraftSave() {
@@ -461,6 +498,9 @@ async function aiGenerate() {
 let pollingInterval = null;
 
 async function executeJSON() {
+    // 블록 상태 → JSON 동기화 (최신 상태 보장)
+    if (_blockJSON) syncBlocksToJSON();
+
     const editor = document.getElementById('jsonEditor');
     if (!editor || !editor.value.trim()) {
         showStatus('먼저 미리보기를 생성하세요', 'error');
@@ -480,6 +520,15 @@ async function executeJSON() {
     const episodeStep = jsonData.steps ? jsonData.steps.find(s => s.action === 'create_episode') : null;
     const pageCount = episodeStep ? (episodeStep.pages ? episodeStep.pages.length : 0) : 0;
     const stepCount = jsonData.steps ? jsonData.steps.length : 0;
+
+    // 디버그: 전송 JSON 확인
+    const mixBgmStep = jsonData.steps ? jsonData.steps.find(s => s.action === 'mix_bgm') : null;
+    const createBgmStep = jsonData.steps ? jsonData.steps.filter(s => s.action === 'create_bgm') : [];
+    const createSfxStep = jsonData.steps ? jsonData.steps.filter(s => s.action === 'create_sfx') : [];
+    console.log('[executeJSON] steps:', jsonData.steps ? jsonData.steps.map(s => s.action) : 'none');
+    console.log('[executeJSON] create_bgm steps:', JSON.stringify(createBgmStep));
+    console.log('[executeJSON] create_sfx steps:', JSON.stringify(createSfxStep));
+    console.log('[executeJSON] mix_bgm step:', JSON.stringify(mixBgmStep));
 
     if (!confirm(`오디오북을 생성하시겠습니까?\n\n${stepCount}단계, ${pageCount}페이지 처리가 시작됩니다.`)) {
         return;
@@ -584,9 +633,18 @@ function startPolling(taskId) {
                     }
 
                     hideLoading();
-                    alert(`오디오북이 성공적으로 생성되었습니다!\n\n에피소드: ${ep.title || ''}\n페이지: ${ep.page_count || '?'}개`);
+                    if (data.warnings && data.warnings.length > 0) {
+                        const warnMsg = data.warnings.join('\n');
+                        showStatus(`⚠️ 일부 실패: ${data.warnings[0]}`, 'error');
+                        alert('⚠️ BGM/SFX 생성 실패 (TTS는 완료됨):\n\n' + warnMsg + '\n\nCelery 워커 로그를 확인하세요.');
+                    } else {
+                        showStatus(`✅ ${ep.title || '에피소드'} 생성 완료! (${ep.page_count || '?'}페이지)`, 'success');
+                    }
 
-                    if (data.redirect_url) {
+                    // 페이지 편집 패널 표시 (리다이렉트 대신)
+                    if (ep.content_uuid) {
+                        openPageEditor(ep.content_uuid, ep.title || '', bookId);
+                    } else if (data.redirect_url) {
                         window.location.href = data.redirect_url;
                     } else if (bookId) {
                         window.location.href = `/book/detail/${bookId}/`;
@@ -796,6 +854,8 @@ async function saveVoiceConfig(charMap) {
     if (charMap && Object.keys(charMap).length > 0) payload.voice_config = charMap;
     if (novelTextEl) payload.draft_text = novelTextEl.value;
     if (titleInputEl) payload.draft_episode_title = titleInputEl.value;
+    const _blockDraft = _getBlockDraftJSON();
+    if (_blockDraft) payload.block_draft = _blockDraft;
 
     try {
         await fetch(`/book/serialization/fast/${bookId}/voice-config/save/`, {
@@ -824,6 +884,14 @@ async function saveDraft() {
         draft_text: novelTextEl ? novelTextEl.value : '',
         draft_episode_title: titleInputEl ? titleInputEl.value : ''
     };
+    const _blockDraft = _getBlockDraftJSON();
+    if (_blockDraft) {
+        // BGM/SFX 오디오 맵과 ID, content_uuid를 block_draft 안에 함께 저장
+        _blockDraft._audio_map = _blockAudioMap || {tts:{}, sfx:{}, bgm:{}};
+        _blockDraft._audio_ids = _blockAudioIds || {sfx:{}, bgm:{}};
+        if (_editorContentUuid) _blockDraft._content_uuid = _editorContentUuid;
+        payload.block_draft = _blockDraft;
+    }
 
     try {
         await fetch(`/book/serialization/fast/${bookId}/voice-config/save/`, {
@@ -839,6 +907,134 @@ async function saveDraft() {
     }
 }
 
+/**
+ * jsonEditor 값을 파싱해서 block_draft용 JSON 객체 반환
+ */
+function _getBlockDraftJSON() {
+    const editor = document.getElementById('jsonEditor');
+    if (!editor || !editor.value.trim()) return null;
+    try {
+        return JSON.parse(editor.value);
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * 수동 임시저장 버튼 핸들러 — 시각적 피드백 포함
+ */
+async function manualSaveDraft() {
+    if (!bookId) return;
+    const btn = document.getElementById('btnManualSaveDraft');
+    if (btn) { btn.textContent = '저장 중...'; btn.disabled = true; btn.style.background = '#a5b4fc'; }
+
+    const novelTextEl = document.getElementById('novelText');
+    const titleInputEl = document.getElementById('episodeTitle');
+    const payload = {
+        draft_text: novelTextEl ? novelTextEl.value : '',
+        draft_episode_title: titleInputEl ? titleInputEl.value : ''
+    };
+    const _blockDraft = _getBlockDraftJSON();
+    if (_blockDraft) payload.block_draft = _blockDraft;
+    const charMap = collectCharacterMap();
+    if (charMap && Object.keys(charMap).length > 0) payload.voice_config = charMap;
+
+    try {
+        await fetch(`/book/serialization/fast/${bookId}/voice-config/save/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify(payload)
+        });
+        if (btn) { btn.textContent = '✓ 저장됨'; btn.style.background = '#10b981'; }
+    } catch (e) {
+        if (btn) { btn.textContent = '저장 실패'; btn.style.background = '#ef4444'; }
+    } finally {
+        setTimeout(() => {
+            if (btn) { btn.textContent = '임시저장'; btn.disabled = false; btn.style.background = '#6366f1'; }
+        }, 2000);
+    }
+}
+
+/**
+ * 서버에서 임시저장 데이터 불러와 블록 복원
+ */
+async function loadDraft() {
+    if (!bookId) return;
+    const btn = document.getElementById('btnLoadDraft');
+    if (btn) { btn.textContent = '불러오는 중...'; btn.disabled = true; }
+
+    try {
+        const res = await fetch(`/book/serialization/fast/${bookId}/draft/load/`);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '실패');
+
+        if (!data.block_draft) {
+            alert('저장된 블록 드래프트가 없습니다.');
+            return;
+        }
+
+        const bd = data.block_draft;
+
+        // 1순위: block_draft 안에 저장된 오디오 맵 (saveDraft가 함께 저장한 것)
+        // 2순위: 서버 audio_map (mix_config 기반)
+        const savedAudioMap = (bd && bd._audio_map) || null;
+        const savedAudioIds = (bd && bd._audio_ids) || null;
+        const savedContentUuid = (bd && bd._content_uuid) || null;
+
+        const srcMap = savedAudioMap || data.audio_map || {};
+        const srcIds = savedAudioIds || data.audio_ids || {};
+
+        _blockAudioMap.tts = srcMap.tts || {};
+        _blockAudioMap.sfx = srcMap.sfx || {};
+        _blockAudioMap.bgm = srcMap.bgm || {};
+        _blockAudioIds.sfx = srcIds.sfx || {};
+        _blockAudioIds.bgm = srcIds.bgm || {};
+
+        if (savedContentUuid || data.content_uuid) {
+            _editorContentUuid = savedContentUuid || data.content_uuid;
+        }
+
+        // 블록 복원 (block_draft에서 _audio_* 키는 렌더링에 영향 없음)
+        const editor = document.getElementById('jsonEditor');
+        if (editor) editor.value = JSON.stringify(bd, null, 2);
+        renderBlocks(bd);
+
+        // audio_ids → _bgmItems, _blockItems SFX에도 실제 DB ID 동기화
+        Object.entries(_blockAudioIds.bgm || {}).forEach(([pos, id]) => {
+            const idx = parseInt(pos) - 1;
+            if (_bgmItems[idx] && id) _bgmItems[idx]._id = String(id);
+        });
+        let sfxScanCount = 0;
+        _blockItems.forEach(item => {
+            if (item.type === 'sfx') {
+                sfxScanCount++;
+                const id = (_blockAudioIds.sfx || {})[sfxScanCount];
+                if (id) item.sfxData._id = String(id);
+            }
+        });
+
+        // 텍스트 / 제목 복원
+        const novelTextEl = document.getElementById('novelText');
+        const titleInputEl = document.getElementById('episodeTitle');
+        if (novelTextEl && data.draft_text) { novelTextEl.value = data.draft_text; updateCharCount(); }
+        if (titleInputEl && data.draft_episode_title) titleInputEl.value = data.draft_episode_title;
+
+        // 보이스 설정 복원
+        if (data.voice_config && Object.keys(data.voice_config).length > 0) {
+            restoreVoiceConfig(data.voice_config);
+        }
+
+        if (btn) { btn.textContent = '✓ 불러옴'; btn.style.background = '#10b981'; btn.style.color = '#fff'; }
+    } catch (e) {
+        alert('불러오기 실패: ' + e.message);
+        if (btn) { btn.textContent = '불러오기 실패'; }
+    } finally {
+        setTimeout(() => {
+            if (btn) { btn.textContent = '불러오기'; btn.disabled = false; btn.style.background = ''; btn.style.color = ''; }
+        }, 2000);
+    }
+}
+
 console.log('오디오북 생성기 스크립트 로드 완료');
 
 
@@ -848,6 +1044,10 @@ let _bgmItems = [];         // [{_id, _name, _desc, start_page, end_page, volume
 let _blockJSON = null;
 let _selectedEpStep = 0;
 let _selectedBlockIndex = null;
+// 오디오 미리듣기 맵 {tts:{pageNum:url}, sfx:{sfxIdx:url}, bgm:{bgmIdx:url}}
+let _blockAudioMap = {tts: {}, sfx: {}, bgm: {}};
+// 오디오 DB ID 맵 {sfx:{sfxIdx:dbId}, bgm:{bgmIdx:dbId}}
+let _blockAudioIds = {sfx: {}, bgm: {}};
 
 // ==================== 캐릭터 색상 코딩 ====================
 const VOICE_COLORS = [
@@ -1080,6 +1280,7 @@ function renderBlockList() {
     let html = `<div class="block-time-summary">예상 재생시간 약 <strong>${formatDuration(totalSec)}</strong><span class="block-move-hint">블록을 움직이려면 클릭 후 Ctrl+↑↓ 를 누르세요</span></div>`;
     html += sfxInsertRowHTML(0);
     let pageNum = 0;
+    let sfxIdx = 0;
 
     _blockItems.forEach((item, idx) => {
         if (item.type === 'page') {
@@ -1094,6 +1295,13 @@ function renderBlockList() {
             const color = getVoiceColor(item.pageData.voice_id);
             const dur = estimatePageDuration(item.pageData.text);
             const durLabel = dur > 0 ? `<span class="block-duration-badge">~${formatDuration(dur)}</span>` : '';
+            const ttsAudioUrl = _blockAudioMap.tts && _blockAudioMap.tts[pageNum];
+            const audioPlayer = ttsAudioUrl
+                ? makeAudioPlayer(ttsAudioUrl, `blk_tts_${pageNum}`, '#6366f1')
+                : '';
+            const ttsBtn = ttsAudioUrl
+                ? `<button onclick="event.stopPropagation(); blockRegenerateTts(${pageNum}, this)" style="background:#f59e0b;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">재생성</button>`
+                : `<button onclick="event.stopPropagation(); blockRegenerateTts(${pageNum}, this)" style="background:#10b981;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">생성</button>`;
 
             html += `<div class="block-item${isSelected ? ' selected' : ''}" id="block-${idx}"
                 style="border-left: 3px solid ${color};"
@@ -1104,15 +1312,26 @@ function renderBlockList() {
                         <option value="">목소리 선택</option>${voiceOpts}
                     </select>
                     <div class="block-badges">${effBadge}${durLabel}</div>
+                    ${ttsBtn}
                     <button class="page-remove-btn" onclick="event.stopPropagation(); removePage(${idx})" title="삭제">×</button>
                 </div>
                 <textarea class="block-text-edit" rows="3"
                     onchange="updateBlockText(${idx}, this.value)"
                     onclick="event.stopPropagation()"
                     placeholder="텍스트를 입력하세요">${escapeHtml(item.pageData.text)}</textarea>
+                ${audioPlayer}
             </div>`;
 
         } else if (item.type === 'sfx') {
+            sfxIdx++;
+            const sfxAudioUrl = _blockAudioMap.sfx && _blockAudioMap.sfx[sfxIdx];
+            const sfxAudioPlayer = sfxAudioUrl
+                ? makeAudioPlayer(sfxAudioUrl, `blk_sfx_${sfxIdx}`, '#f59e0b')
+                : '';
+            const _sfxPos = sfxIdx;
+            const sfxBtn = sfxAudioUrl
+                ? `<button onclick="event.stopPropagation(); blockRegenerateSfx(${_sfxPos}, this)" style="background:#f59e0b;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">재생성</button>`
+                : `<button onclick="event.stopPropagation(); blockRegenerateSfx(${_sfxPos}, this)" style="background:#10b981;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">생성</button>`;
             html += `<div class="sfx-block" id="block-${idx}" onclick="selectBlock(${idx})">
                 <div class="sfx-main-row">
                     <span class="sfx-icon">🔊</span>
@@ -1123,12 +1342,14 @@ function renderBlockList() {
                     <input class="sfx-vol-input" type="number" min="0" max="2" step="0.1"
                         value="${item.sfxData.volume}" title="볼륨"
                         onchange="updateSfxVol(${idx}, this.value)" onclick="event.stopPropagation()">
+                    ${sfxBtn}
                     <button class="sfx-remove-btn" onclick="removeSfx(${idx})" title="삭제">×</button>
                 </div>
                 <input class="sfx-desc-input" type="text"
                     placeholder="사운드 이펙트 프롬프트 넣기 (예: wooden door closing sound)"
                     value="${escapeAttr(item.sfxData._desc)}"
                     onchange="updateSfxDesc(${idx}, this.value)" onclick="event.stopPropagation()">
+                ${sfxAudioPlayer}
             </div>`;
 
         } else if (item.type === 'silence') {
@@ -1167,13 +1388,23 @@ function renderBlockList() {
                     </div>`;
                 });
 
+                const duetAudioUrl = _blockAudioMap.tts && _blockAudioMap.tts[pageNum];
+                const duetAudioPlayer = duetAudioUrl
+                    ? makeAudioPlayer(duetAudioUrl, `blk_duet_${pageNum}`, '#8b5cf6')
+                    : '';
+                const _duetPageNum = pageNum;
+                const duetBtn = duetAudioUrl
+                    ? `<button onclick="event.stopPropagation(); blockRegenerateTts(${_duetPageNum}, this)" style="background:#f59e0b;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">재생성</button>`
+                    : `<button onclick="event.stopPropagation(); blockRegenerateTts(${_duetPageNum}, this)" style="background:#10b981;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">생성</button>`;
                 html += `<div class="duet-block" id="block-${idx}" onclick="selectBlock(${idx})">
                     <div class="duet-header">
                         <span class="duet-badge">🎭 P${pageNum} ${voiceCount}인 동시 대화</span>
                         <button class="sfx-insert-btn" onclick="addDuetVoice(${idx})" style="font-size:11px;padding:2px 6px;margin-left:4px;">+ 목소리</button>
+                        ${duetBtn}
                         <button class="page-remove-btn" onclick="event.stopPropagation(); removeDuet(${idx})">×</button>
                     </div>
                     ${voiceRows}
+                    ${duetAudioPlayer}
                 </div>`;
             } catch (e) {
                 console.error('[renderBlockList] duet 렌더링 오류 (idx=' + idx + '):', e, item);
@@ -1220,6 +1451,108 @@ function escapeHtml(str) {
     return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// ==================== 커스텀 오디오 플레이어 ====================
+function makeAudioPlayer(src, id, accentColor) {
+    if (!src) return '';
+    const pid = id || ('ap_' + Math.random().toString(36).slice(2, 8));
+    const color = accentColor || '#6366f1';
+    return `<div class="custom-audio-player" id="${pid}" data-src="${src}" onclick="event.stopPropagation()" style="--ap-color:${color};">
+        <button class="cap-play-btn" onclick="capTogglePlay('${pid}')">
+            <svg class="cap-icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <svg class="cap-icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <div class="cap-progress-wrap" onclick="capSeek('${pid}', event)">
+            <div class="cap-progress-bg">
+                <div class="cap-progress-fill" id="${pid}-fill" style="width:0%;background:${color};"></div>
+            </div>
+        </div>
+        <span class="cap-time" id="${pid}-time">0:00</span>
+        <audio id="${pid}-audio" src="${src}" preload="none" onended="capOnEnded('${pid}')" ontimeupdate="capOnTimeUpdate('${pid}')" onloadedmetadata="capOnMeta('${pid}')"></audio>
+    </div>`;
+}
+
+function capTogglePlay(pid) {
+    const audio = document.getElementById(pid + '-audio');
+    const iconPlay = document.querySelector('#' + pid + ' .cap-icon-play');
+    const iconPause = document.querySelector('#' + pid + ' .cap-icon-pause');
+    if (!audio) return;
+    if (audio.paused) {
+        // 다른 플레이어 모두 정지
+        document.querySelectorAll('.custom-audio-player audio').forEach(a => {
+            if (a !== audio && !a.paused) {
+                const p = a.id.replace('-audio', '');
+                a.pause();
+                const ip = document.querySelector('#' + p + ' .cap-icon-play');
+                const ipa = document.querySelector('#' + p + ' .cap-icon-pause');
+                if (ip) ip.style.display = '';
+                if (ipa) ipa.style.display = 'none';
+            }
+        });
+        audio.play();
+        if (iconPlay) iconPlay.style.display = 'none';
+        if (iconPause) iconPause.style.display = '';
+    } else {
+        audio.pause();
+        if (iconPlay) iconPlay.style.display = '';
+        if (iconPause) iconPause.style.display = 'none';
+    }
+}
+
+function capOnEnded(pid) {
+    const audio = document.getElementById(pid + '-audio');
+    const fill = document.getElementById(pid + '-fill');
+    const iconPlay = document.querySelector('#' + pid + ' .cap-icon-play');
+    const iconPause = document.querySelector('#' + pid + ' .cap-icon-pause');
+    if (audio) audio.currentTime = 0;
+    if (fill) fill.style.width = '0%';
+    if (iconPlay) iconPlay.style.display = '';
+    if (iconPause) iconPause.style.display = 'none';
+}
+
+function capOnTimeUpdate(pid) {
+    const audio = document.getElementById(pid + '-audio');
+    const fill = document.getElementById(pid + '-fill');
+    const timeEl = document.getElementById(pid + '-time');
+    if (!audio) return;
+    const cur = audio.currentTime, dur = audio.duration || 0;
+    if (fill && dur > 0) fill.style.width = ((cur / dur) * 100) + '%';
+    if (timeEl) {
+        const fmt = s => Math.floor(s / 60) + ':' + ('0' + Math.floor(s % 60)).slice(-2);
+        timeEl.textContent = fmt(cur) + (dur > 0 ? ' / ' + fmt(dur) : '');
+    }
+}
+
+function capOnMeta(pid) {
+    capOnTimeUpdate(pid);
+}
+
+function capSeek(pid, e) {
+    const audio = document.getElementById(pid + '-audio');
+    const wrap = document.querySelector('#' + pid + ' .cap-progress-wrap');
+    if (!audio || !wrap || !audio.duration) return;
+    const rect = wrap.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audio.currentTime = ratio * audio.duration;
+}
+
+// 기존 커스텀 플레이어를 새 URL로 교체 (재생성 후 업데이트)
+function capReplacePlayer(pid, audioUrl, color, container) {
+    if (!audioUrl) return;
+    const url = audioUrl + '?t=' + Date.now();
+    const existing = document.getElementById(pid);
+    const tmp = document.createElement('div');
+    tmp.innerHTML = makeAudioPlayer(url, pid, color);
+    const newEl = tmp.firstChild;
+    if (existing) {
+        existing.parentNode.replaceChild(newEl, existing);
+    } else if (container) {
+        const textarea = container.querySelector('textarea');
+        if (textarea) {
+            textarea.parentNode.insertBefore(newEl, textarea);
+        }
+    }
+}
+
 function escapeAttr(str) {
     return (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
@@ -1237,7 +1570,16 @@ function renderBgmSection() {
     }
 
     const totalPages = _blockItems.filter(b => b.type === 'page').length;
-    trackList.innerHTML = _bgmItems.map((bgm, idx) => `
+    trackList.innerHTML = _bgmItems.map((bgm, idx) => {
+        const bgmPos = idx + 1;
+        const bgmAudioUrl = _blockAudioMap.bgm && _blockAudioMap.bgm[bgmPos];
+        const bgmAudioPlayer = bgmAudioUrl
+            ? makeAudioPlayer(bgmAudioUrl, `blk_bgm_${bgmPos}`, '#3b82f6')
+            : '';
+        const bgmBtn = bgmAudioUrl
+            ? `<button onclick="blockRegenerateBgm(${bgmPos}, this)" style="background:#f59e0b;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">재생성</button>`
+            : `<button onclick="blockRegenerateBgm(${bgmPos}, this)" style="background:#10b981;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">생성</button>`;
+        return `
         <div class="bgm-track-item">
             <div class="bgm-controls-row">
                 <input class="bgm-name-input" type="text" placeholder="이름 (예: 긴장감 있는 배경음)"
@@ -1254,14 +1596,16 @@ function renderBgmSection() {
                     <input class="bgm-vol-input" type="number" min="0" max="1" step="0.05" value="${bgm.volume}"
                         onchange="updateBgmField(${idx},'volume',parseFloat(this.value)||0)">
                 </div>
+                ${bgmBtn}
                 <button class="bgm-remove-btn" onclick="removeBgmTrack(${idx})">×</button>
             </div>
             <input class="bgm-desc-input" type="text"
                 placeholder="배경음 프롬프트 넣기 (예: tense orchestral music with strings)"
                 value="${escapeAttr(bgm._desc)}"
                 onchange="updateBgmDesc(${idx}, this.value)">
-        </div>
-    `).join('');
+            ${bgmAudioPlayer}
+        </div>`;
+    }).join('');
 }
 
 // ==================== SFX 삽입/삭제/수정 ====================
@@ -1495,21 +1839,38 @@ function syncBlocksToJSON() {
 
     // 1. pages 재구성 (silence, duet 포함 — BGM은 merged audio 전체에 걸쳐 재생됨)
     const pages = [];
+    let _pageCounter = 0;
     for (const b of _blockItems) {
         if (b.type === 'page') {
+            _pageCounter++;
             const p = {text: b.pageData.text, voice_id: b.pageData.voice_id};
             if (b.pageData._effect) p.webaudio_effect = b.pageData._effect;
+            // 이미 TTS가 있으면 skip_tts 플래그 추가
+            const existingUrl = _blockAudioMap.tts && _blockAudioMap.tts[_pageCounter];
+            if (existingUrl && _editorContentUuid) {
+                p._skip_tts = true;
+                p._existing_content_uuid = _editorContentUuid;
+                p._existing_page_num = _pageCounter;
+            }
             pages.push(p);
         } else if (b.type === 'silence') {
             pages.push({silence_seconds: b.silenceData.duration || 1.0});
         } else if (b.type === 'duet') {
+            _pageCounter++;
             const d = b.duetData;
             const voices = (d.voices || []).map(v => {
                 const entry = {voice_id: v.voice_id || '', text: v.text || ''};
                 if (v.webaudio_effect && v.webaudio_effect !== 'normal') entry.webaudio_effect = v.webaudio_effect;
                 return entry;
             });
-            pages.push({voices, mode: 'overlap'});
+            const duetEntry = {voices, mode: 'overlap'};
+            const existingDuetUrl = _blockAudioMap.tts && _blockAudioMap.tts[_pageCounter];
+            if (existingDuetUrl && _editorContentUuid) {
+                duetEntry._skip_tts = true;
+                duetEntry._existing_content_uuid = _editorContentUuid;
+                duetEntry._existing_page_num = _pageCounter;
+            }
+            pages.push(duetEntry);
         }
     }
 
@@ -1525,18 +1886,31 @@ function syncBlocksToJSON() {
             pageCount++;
         } else if (item.type === 'sfx') {
             const d = item.sfxData;
-            let effectId = d._id || '';
+            const sfxHasRealId = d._id && !String(d._id).startsWith('$');
+            const sfxHasDesc = !!(d._desc || d._name);
+            let effectId = '';
 
-            if (d._desc || d._name) {
-                // 프롬프트 있음 → create_sfx step 생성
-                sfxIdx++;
-                sfxCreateSteps.push({
-                    action: 'create_sfx',
-                    effect_name: d._name || `SFX ${sfxIdx}`,
-                    effect_description: d._desc || d._name || ''
-                });
-                effectId = `$sfx_${sfxIdx}`;
-                item.sfxData._id = effectId;
+            if (sfxHasDesc) {
+                if (sfxHasRealId) {
+                    // 이미 실제 DB ID가 있으면 재생성 불필요
+                    effectId = String(d._id);
+                } else {
+                    // 프롬프트 있음 → create_sfx step 생성
+                    sfxIdx++;
+                    sfxCreateSteps.push({
+                        action: 'create_sfx',
+                        effect_name: d._name || `SFX ${sfxIdx}`,
+                        effect_description: d._desc || d._name || ''
+                    });
+                    effectId = `$sfx_${sfxIdx}`;
+                    item.sfxData._id = effectId;
+                }
+            } else if (sfxHasRealId) {
+                // 이름/설명 없지만 실제 DB ID가 있으면 기존 SFX 재사용
+                effectId = String(d._id);
+            } else {
+                // 이름/설명도 없고 ID도 없으면 (또는 미해결 변수ref만 있으면): 초기화 후 스킵
+                item.sfxData._id = '';
             }
 
             if (effectId) {
@@ -1562,18 +1936,31 @@ function syncBlocksToJSON() {
     const bgmTracks = [];
 
     _bgmItems.forEach(b => {
-        let musicId = b._id || '';
+        const hasRealId = b._id && !String(b._id).startsWith('$');
+        const hasDesc = !!(b._desc || b._name);
+        let musicId = '';
 
-        if (b._desc || b._name) {
-            bgmIdx++;
-            bgmCreateSteps.push({
-                action: 'create_bgm',
-                music_name: b._name || `BGM ${bgmIdx}`,
-                music_description: b._desc || b._name || '',
-                duration_seconds: 120
-            });
-            musicId = `$bgm_${bgmIdx}`;
-            b._id = musicId;
+        if (hasDesc) {
+            if (hasRealId) {
+                // 이미 실제 DB ID가 있으면 재생성 불필요
+                musicId = String(b._id);
+            } else {
+                bgmIdx++;
+                bgmCreateSteps.push({
+                    action: 'create_bgm',
+                    music_name: b._name || `BGM ${bgmIdx}`,
+                    music_description: b._desc || b._name || '',
+                    duration_seconds: 120
+                });
+                musicId = `$bgm_${bgmIdx}`;
+                b._id = musicId;
+            }
+        } else if (hasRealId) {
+            // 이름/설명 없지만 실제 DB ID가 있으면 기존 BGM 재사용
+            musicId = String(b._id);
+        } else {
+            // 이름/설명도 없고 ID도 없으면 (또는 미해결 변수ref만 있으면): 초기화 후 스킵
+            b._id = '';
         }
 
         if (musicId) {
@@ -1587,6 +1974,7 @@ function syncBlocksToJSON() {
     });
 
     // 4. steps 재구성 (순서: create_bgm → create_sfx → create_episode → mix_bgm)
+    console.log('[syncBlocksToJSON] bgmTracks:', bgmTracks, '| sfxList:', sfxList, '| bgmCreateSteps:', bgmCreateSteps.length, '| sfxCreateSteps:', sfxCreateSteps.length);
     if (_blockJSON.steps) {
         // 기존 create_bgm, create_sfx, mix_bgm 제거, 나머지 유지
         const otherSteps = _blockJSON.steps.filter(s =>
@@ -1617,10 +2005,39 @@ function syncBlocksToJSON() {
         _blockJSON.steps = newSteps;
     } else if (_blockJSON.action === 'create_episode') {
         _blockJSON.pages = pages;
+        // BGM/SFX가 있으면 단일 액션을 batch 형식으로 자동 변환
+        if (bgmCreateSteps.length > 0 || sfxCreateSteps.length > 0 || bgmTracks.length > 0 || sfxList.length > 0) {
+            const epStep = JSON.parse(JSON.stringify(_blockJSON));  // deep copy
+            const newBatch = {
+                action: 'batch',
+                book_uuid: epStep.book_uuid || '',
+                book_name: epStep.book_name || '',
+                steps: [
+                    ...bgmCreateSteps,
+                    ...sfxCreateSteps,
+                    epStep,
+                ]
+            };
+            if (bgmTracks.length > 0 || sfxList.length > 0) {
+                newBatch.steps.push({
+                    action: 'mix_bgm',
+                    book_uuid: epStep.book_uuid || '',
+                    episode_number: epStep.episode_number || 1,
+                    background_tracks: bgmTracks,
+                    sound_effects: sfxList
+                });
+            }
+            _blockJSON = newBatch;
+        }
     }
 
     const editor = document.getElementById('jsonEditor');
     if (editor) editor.value = JSON.stringify(_blockJSON, null, 2);
+
+    // 블록 변경 시 debounce 자동 임시저장 (5초)
+    if (!syncBlocksToJSON._timer) syncBlocksToJSON._timer = null;
+    clearTimeout(syncBlocksToJSON._timer);
+    syncBlocksToJSON._timer = setTimeout(() => saveDraft(), 5000);
 }
 
 // ==================== WebAudio 패널 닫기 ====================
@@ -1631,5 +2048,662 @@ function closeWebAudio() {
         const el = document.getElementById('block-' + _selectedBlockIndex);
         if (el) el.classList.remove('selected');
         _selectedBlockIndex = null;
+    }
+}
+
+// ==================== 페이지별 TTS 편집 패널 ====================
+let _editorContentUuid = null;
+let _editorBookId = null;
+
+function closePageEditorPanel() {
+    const panel = document.getElementById('pageEditorPanel');
+    if (panel) {
+        // 패널 내 모든 오디오 정지
+        panel.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
+        panel.style.display = 'none';
+    }
+    // 블록 편집기를 최신 오디오 맵으로 다시 렌더링
+    renderBlockList();
+    renderBgmSection();
+}
+
+async function openPageEditor(contentUuid, episodeTitle, bId) {
+    _editorContentUuid = contentUuid;
+    _editorBookId = bId;
+
+    // 패널이 없으면 DOM에 생성
+    let panel = document.getElementById('pageEditorPanel');
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'pageEditorPanel';
+        panel.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(5,8,20,0.88);backdrop-filter:blur(6px);z-index:9999;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+        panel.innerHTML = `
+            <div style="max-width:820px;margin:36px auto 60px;background:#0d1829;border:1px solid #1e3a5f;border-radius:16px;padding:28px 32px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,0.6);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid #1e3a5f;">
+                    <h2 id="peTitle" style="margin:0;font-size:17px;font-weight:700;color:#e2e8f0;letter-spacing:-0.3px;">페이지 편집</h2>
+                    <div style="display:flex;gap:8px;">
+                        <button onclick="remergeEpisode()" style="background:#059669;color:#fff;border:none;padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;">전체 재머지</button>
+                        <a id="peBtnGoBook" href="#" style="background:#4f46e5;color:#fff;border:none;padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;">책으로 이동</a>
+                        <button onclick="closePageEditorPanel()" style="background:#1e293b;color:#94a3b8;border:1px solid #334155;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:13px;">닫기</button>
+                    </div>
+                </div>
+                <div id="peStatus" style="display:none;padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px;"></div>
+                <div id="pePageList" style="display:flex;flex-direction:column;gap:10px;"></div>
+            </div>`;
+        document.body.appendChild(panel);
+    }
+
+    panel.style.display = 'block';
+    document.getElementById('peTitle').textContent = `페이지 편집 — ${episodeTitle}`;
+    if (bId) {
+        document.getElementById('peBtnGoBook').href = `/book/detail/${bId}/`;
+    }
+    document.getElementById('pePageList').innerHTML = '<div style="text-align:center;padding:40px;color:#888;">페이지 로딩 중...</div>';
+
+    try {
+        const res = await fetch(`/book/episodes/${contentUuid}/pages/`);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '로드 실패');
+        const mc = data.mix_config || {bgm: [], sfx: []};
+        console.log('[PageEditor] mix_config full:', JSON.stringify(mc));
+        renderPageEditorBlocks(data.pages, mc);
+
+        // 블록 편집기 오디오 맵 갱신 → 기존 bgm/sfx는 보존, 서버 데이터로만 덮어씀
+        // (tts는 새 에피소드 기준으로 완전 교체)
+        _blockAudioMap.tts = {};
+        // 기존 sfx/bgm 맵은 유지하고 서버 데이터가 있으면 덮어씀 (block 생성 오디오 보존)
+        (data.pages || []).forEach(p => {
+            if (p.audio_url) _blockAudioMap.tts[p.page_number] = p.audio_url;
+        });
+        // SFX: audio_url + ID를 blockAudioMap/Ids 및 _blockItems에 저장
+        let sfxCount2 = 0;
+        _blockItems.forEach(item => { if (item.type === 'sfx') sfxCount2++; });
+        let sfxScanIdx = 0;
+        _blockItems.forEach(item => {
+            if (item.type === 'sfx') {
+                sfxScanIdx++;
+                const sfx = (mc.sfx || [])[sfxScanIdx - 1];
+                if (sfx) {
+                    if (sfx.audio_url) _blockAudioMap.sfx[sfxScanIdx] = sfx.audio_url;
+                    if (sfx.id) {
+                        _blockAudioIds.sfx[sfxScanIdx] = sfx.id;
+                        item.sfxData._id = String(sfx.id);  // 실제 DB ID 저장
+                    }
+                }
+            }
+        });
+        (mc.bgm || []).forEach((bgm, i) => {
+            if (bgm.audio_url) _blockAudioMap.bgm[i + 1] = bgm.audio_url;
+            if (bgm.id) {
+                _blockAudioIds.bgm[i + 1] = bgm.id;
+                if (_bgmItems[i]) _bgmItems[i]._id = String(bgm.id);  // 실제 DB ID 저장
+            }
+        });
+        syncBlocksToJSON();  // 실제 DB ID를 block_draft에 저장 (새로고침 후에도 유지)
+        saveDraft();         // 오디오 맵 즉시 저장 (5초 debounce 대신 즉시)
+        renderBlockList();
+        renderBgmSection();
+    } catch (e) {
+        document.getElementById('pePageList').innerHTML = `<div style="color:red;padding:20px;">로드 실패: ${e.message}</div>`;
+    }
+}
+
+function renderPageEditorBlocks(pages, mixConfig) {
+    const list = document.getElementById('pePageList');
+    if (!pages || pages.length === 0) {
+        list.innerHTML = '<div style="color:#888;text-align:center;padding:20px;">저장된 페이지가 없습니다</div>';
+        return;
+    }
+
+    list.innerHTML = '';
+
+    // 서버 mix_config가 비어있으면 블록 편집기 상태(_bgmItems, _blockAudioMap)로 fallback
+    let sfxList = (mixConfig && mixConfig.sfx && mixConfig.sfx.length > 0) ? mixConfig.sfx : [];
+    let bgmList = (mixConfig && mixConfig.bgm && mixConfig.bgm.length > 0) ? mixConfig.bgm : [];
+
+    if (bgmList.length === 0 && _bgmItems && _bgmItems.length > 0) {
+        bgmList = _bgmItems.map((b, i) => ({
+            id: b._id && !String(b._id).startsWith('$') ? b._id : null,
+            name: b._name || `BGM ${i + 1}`,
+            desc: b._desc || '',
+            start_page: b.start_page || 1,
+            end_page: b.end_page || -1,
+            volume: b.volume || 0.2,
+            duration: b.duration || 30,
+            audio_url: _blockAudioMap.bgm && _blockAudioMap.bgm[i + 1] || null,
+        }));
+    }
+    if (sfxList.length === 0) {
+        let sfxCount = 0;
+        _blockItems.forEach(item => {
+            if (item.type === 'sfx') {
+                sfxCount++;
+                const id = item.sfxData._id && !String(item.sfxData._id).startsWith('$') ? item.sfxData._id : null;
+                const audioUrl = _blockAudioMap.sfx && _blockAudioMap.sfx[sfxCount] || null;
+                sfxList.push({
+                    id,
+                    name: item.sfxData._name || `SFX ${sfxCount}`,
+                    desc: item.sfxData._desc || '',
+                    page_number: 1,
+                    audio_url: audioUrl,
+                    duration: item.sfxData._duration || 5,
+                });
+            }
+        });
+    }
+    // _listIdx: listIdx+1 = 1-based position in _blockAudioMap.sfx/.bgm
+    bgmList.forEach((b, i) => { b._listIdx = i; });
+    sfxList.forEach((s, i) => { s._listIdx = i; });
+
+    // ── 1. BGM 섹션 (맨 위) ──────────────────────────────
+    if (bgmList.length > 0) {
+        const bgmSection = document.createElement('div');
+        bgmSection.className = 'pe-section-block pe-bgm-section';
+        bgmSection.innerHTML = `<div class="pe-section-header pe-section-header-bgm">🎵 배경음악</div>`;
+        bgmList.forEach(bgm => {
+            const bgmDiv = document.createElement('div');
+            const bgmElemId = bgm.id ? `pe-bgm-${bgm.id}` : `pe-bgm-new-${bgm._listIdx}`;
+            const bgmDescId = bgm.id ? `pe-bgm-desc-${bgm.id}` : `pe-bgm-desc-new-${bgm._listIdx}`;
+            const bgmStatusId = bgm.id ? `pe-bgm-status-${bgm.id}` : `pe-bgm-status-new-${bgm._listIdx}`;
+            const bgmPlayerId = bgm.id ? `pe_bgm_${bgm.id}` : `pe_bgm_new_${bgm._listIdx}`;
+            bgmDiv.id = bgmElemId;
+            bgmDiv.className = 'pe-item-block pe-item-bgm';
+            bgmDiv.dataset.bgmListIdx = bgm._listIdx;
+            bgmDiv.dataset.bgmName = bgm.name || '';
+            bgmDiv.dataset.bgmDuration = bgm.duration || 30;
+            bgmDiv.innerHTML = `
+                <div class="pe-item-row">
+                    <div class="pe-item-icon pe-icon-bgm">🎵</div>
+                    <div class="pe-item-body">
+                        <div class="pe-item-meta">
+                            <span class="pe-item-title">${bgm.name}</span>
+                            <span class="pe-item-sub">페이지 ${bgm.start_page}~${bgm.end_page < 0 ? '끝' : bgm.end_page} · 볼륨 ${bgm.volume}</span>
+                        </div>
+                        ${makeAudioPlayer(bgm.audio_url, bgmPlayerId, '#3b82f6')}
+                        <textarea id="${bgmDescId}" class="pe-desc-textarea pe-desc-bgm">${bgm.desc || ''}</textarea>
+                        <div class="pe-item-actions">
+                            ${bgm.id
+                                ? `<button onclick="regenerateBgm(${bgm.id}, ${bgm.duration || 30}, ${bgm._listIdx})" class="pe-regen-btn pe-regen-bgm">재생성</button>`
+                                : `<button onclick="createBgmInPageEditor(${bgm._listIdx})" class="pe-regen-btn pe-regen-bgm" style="background:#10b981">생성</button>`}
+                            <div id="${bgmStatusId}" class="pe-status-text"></div>
+                        </div>
+                    </div>
+                </div>`;
+            bgmSection.appendChild(bgmDiv);
+        });
+        list.appendChild(bgmSection);
+    }
+
+    // ── 2. 페이지 + SFX 인터리브 (페이지 순서대로) ─────────
+    // SFX를 page_number 기준으로 맵핑 (같은 page_number면 해당 페이지 앞에 삽입)
+    const sfxByPage = {};
+    sfxList.forEach(sfx => {
+        const pn = sfx.page_number || 1;
+        if (!sfxByPage[pn]) sfxByPage[pn] = [];
+        sfxByPage[pn].push(sfx);
+    });
+
+    pages.forEach(p => {
+        // 해당 페이지 번호의 SFX를 먼저 렌더링
+        (sfxByPage[p.page_number] || []).forEach(sfx => {
+            const sfxDiv = document.createElement('div');
+            const sfxElemId = sfx.id ? `pe-sfx-${sfx.id}` : `pe-sfx-new-${sfx._listIdx}`;
+            const sfxDescId = sfx.id ? `pe-sfx-desc-${sfx.id}` : `pe-sfx-desc-new-${sfx._listIdx}`;
+            const sfxStatusId = sfx.id ? `pe-sfx-status-${sfx.id}` : `pe-sfx-status-new-${sfx._listIdx}`;
+            const sfxPlayerId = sfx.id ? `pe_sfx_${sfx.id}` : `pe_sfx_new_${sfx._listIdx}`;
+            sfxDiv.id = sfxElemId;
+            sfxDiv.className = 'pe-item-block pe-item-sfx';
+            sfxDiv.dataset.sfxListIdx = sfx._listIdx;
+            sfxDiv.dataset.sfxName = sfx.name || '';
+            sfxDiv.dataset.sfxDuration = sfx.duration || 5;
+            sfxDiv.innerHTML = `
+                <div class="pe-item-row">
+                    <div class="pe-item-icon pe-icon-sfx">🔊</div>
+                    <div class="pe-item-body">
+                        <div class="pe-item-meta">
+                            <span class="pe-item-title">${sfx.name}</span>
+                            <span class="pe-item-sub">페이지 ${sfx.page_number} 앞</span>
+                        </div>
+                        ${makeAudioPlayer(sfx.audio_url, sfxPlayerId, '#f59e0b')}
+                        <textarea id="${sfxDescId}" class="pe-desc-textarea pe-desc-sfx">${sfx.desc || ''}</textarea>
+                        <div class="pe-item-actions">
+                            ${sfx.id
+                                ? `<button onclick="regenerateSfx(${sfx.id}, ${sfx._listIdx})" class="pe-regen-btn pe-regen-sfx">재생성</button>`
+                                : `<button onclick="createSfxInPageEditor(${sfx._listIdx})" class="pe-regen-btn pe-regen-sfx" style="background:#10b981">생성</button>`}
+                            <div id="${sfxStatusId}" class="pe-status-text"></div>
+                        </div>
+                    </div>
+                </div>`;
+            list.appendChild(sfxDiv);
+        });
+
+        // 페이지 렌더링
+        const badge = p.page_type === 'silence' ? '🔇' : p.page_type === 'duet' ? '🎭' : '🎙';
+        const pageDiv = document.createElement('div');
+        pageDiv.id = `pe-page-${p.page_number}`;
+        pageDiv.className = 'pe-item-block pe-item-page';
+        pageDiv.innerHTML = `
+            <div class="pe-item-row">
+                <div class="pe-item-icon pe-icon-page">${p.page_number}</div>
+                <div class="pe-item-body">
+                    <div class="pe-item-meta">
+                        <span class="pe-page-type-badge">${badge} ${p.page_type}</span>
+                    </div>
+                    ${makeAudioPlayer(p.audio_url, `pe_tts_${p.page_number}`, '#6366f1')}
+                    <textarea id="pe-text-${p.page_number}" class="pe-desc-textarea pe-desc-page">${p.text || ''}</textarea>
+                    <div class="pe-item-actions">
+                        <select id="pe-voice-${p.page_number}" class="pe-voice-select">
+                            <option value="">-- 보이스 선택 --</option>
+                            ${voiceList.map(v => `<option value="${v.id}" ${v.id === p.voice_id ? 'selected' : ''}>${v.name}</option>`).join('')}
+                        </select>
+                        <button onclick="savePageText(${p.page_number})" class="pe-save-btn">저장</button>
+                        ${(p.page_type === 'tts' || p.page_type === 'duet') ? `<button onclick="regeneratePage(${p.page_number})" class="pe-regen-btn pe-regen-tts">재생성</button>` : ''}
+                        <div id="pe-status-${p.page_number}" class="pe-status-text"></div>
+                    </div>
+                </div>
+            </div>`;
+        list.appendChild(pageDiv);
+    });
+}
+
+async function regenerateSfx(sfxId, listIdx) {
+    if (!_editorContentUuid) return;
+    const descEl = document.getElementById(`pe-sfx-desc-${sfxId}`);
+    const statusEl = document.getElementById(`pe-sfx-status-${sfxId}`);
+    const desc = descEl ? descEl.value.trim() : '';
+
+    if (statusEl) { statusEl.textContent = '재생성 중...'; statusEl.style.color = '#f59e0b'; }
+    try {
+        const res = await fetch(`/book/episodes/${_editorContentUuid}/sfx/${sfxId}/regenerate/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ desc })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '실패');
+        capReplacePlayer(`pe_sfx_${sfxId}`, data.audio_url, '#f59e0b', document.getElementById(`pe-sfx-${sfxId}`));
+        if (statusEl) { statusEl.textContent = '✅ SFX 재생성 완료'; statusEl.style.color = '#10b981'; }
+        // 블록 편집기 오디오 맵 갱신
+        if (listIdx !== undefined && listIdx !== null) {
+            const pos = listIdx + 1;
+            if (!_blockAudioMap.sfx) _blockAudioMap.sfx = {};
+            _blockAudioMap.sfx[pos] = data.audio_url;
+            if (!_blockAudioIds.sfx) _blockAudioIds.sfx = {};
+            _blockAudioIds.sfx[pos] = sfxId;
+            renderBlockList();
+        }
+    } catch (e) {
+        if (statusEl) { statusEl.textContent = '❌ ' + e.message; statusEl.style.color = 'red'; }
+    }
+}
+
+async function regenerateBgm(bgmId, duration, listIdx) {
+    if (!_editorContentUuid) return;
+    const descEl = document.getElementById(`pe-bgm-desc-${bgmId}`);
+    const statusEl = document.getElementById(`pe-bgm-status-${bgmId}`);
+    const desc = descEl ? descEl.value.trim() : '';
+
+    if (statusEl) { statusEl.textContent = '재생성 중...'; statusEl.style.color = '#3b82f6'; }
+    try {
+        const res = await fetch(`/book/episodes/${_editorContentUuid}/bgm/${bgmId}/regenerate/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ desc, duration })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '실패');
+        capReplacePlayer(`pe_bgm_${bgmId}`, data.audio_url, '#3b82f6', document.getElementById(`pe-bgm-${bgmId}`));
+        if (statusEl) { statusEl.textContent = '✅ BGM 재생성 완료'; statusEl.style.color = '#10b981'; }
+        // 블록 편집기 오디오 맵 갱신
+        if (listIdx !== undefined && listIdx !== null) {
+            const pos = listIdx + 1;
+            if (!_blockAudioMap.bgm) _blockAudioMap.bgm = {};
+            _blockAudioMap.bgm[pos] = data.audio_url;
+            if (!_blockAudioIds.bgm) _blockAudioIds.bgm = {};
+            _blockAudioIds.bgm[pos] = bgmId;
+            renderBgmSection();
+        }
+    } catch (e) {
+        if (statusEl) { statusEl.textContent = '❌ ' + e.message; statusEl.style.color = 'red'; }
+    }
+}
+
+async function createSfxInPageEditor(listIdx) {
+    const containerEl = document.getElementById(`pe-sfx-new-${listIdx}`);
+    const descEl = document.getElementById(`pe-sfx-desc-new-${listIdx}`);
+    const statusEl = document.getElementById(`pe-sfx-status-new-${listIdx}`);
+    const name = containerEl ? (containerEl.dataset.sfxName || 'SFX') : 'SFX';
+    const duration = containerEl ? (parseInt(containerEl.dataset.sfxDuration) || 5) : 5;
+    const desc = descEl ? descEl.value.trim() : '';
+
+    if (statusEl) { statusEl.textContent = '생성 중...'; statusEl.style.color = '#f59e0b'; }
+    try {
+        const res = await fetch(`/book/books/${bookId}/block/create-sfx/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ name, desc: desc || name, duration })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '실패');
+
+        const pos = listIdx + 1;
+        if (!_blockAudioMap.sfx) _blockAudioMap.sfx = {};
+        _blockAudioMap.sfx[pos] = data.audio_url;
+        if (!_blockAudioIds.sfx) _blockAudioIds.sfx = {};
+        _blockAudioIds.sfx[pos] = data.sfx_id;
+
+        // _blockItems의 해당 sfx 아이템 _id 업데이트
+        let sfxCount = 0;
+        for (const item of _blockItems) {
+            if (item.type === 'sfx') {
+                if (sfxCount === listIdx) { item.sfxData._id = String(data.sfx_id); break; }
+                sfxCount++;
+            }
+        }
+        syncBlocksToJSON();
+        renderBlockList();
+
+        // 페이지 편집기 DOM 갱신
+        capReplacePlayer(`pe_sfx_new_${listIdx}`, data.audio_url, '#f59e0b', containerEl);
+        if (statusEl) { statusEl.textContent = '✅ SFX 생성 완료'; statusEl.style.color = '#10b981'; }
+        const actionsEl = statusEl ? statusEl.parentElement : null;
+        if (actionsEl) {
+            const btn = actionsEl.querySelector('button');
+            if (btn) {
+                btn.textContent = '재생성';
+                btn.style.background = '';
+                btn.className = 'pe-regen-btn pe-regen-sfx';
+                btn.onclick = () => regenerateSfx(data.sfx_id, listIdx);
+            }
+        }
+    } catch (e) {
+        if (statusEl) { statusEl.textContent = '❌ ' + e.message; statusEl.style.color = 'red'; }
+    }
+}
+
+async function createBgmInPageEditor(listIdx) {
+    const containerEl = document.getElementById(`pe-bgm-new-${listIdx}`);
+    const descEl = document.getElementById(`pe-bgm-desc-new-${listIdx}`);
+    const statusEl = document.getElementById(`pe-bgm-status-new-${listIdx}`);
+    const name = containerEl ? (containerEl.dataset.bgmName || 'BGM') : 'BGM';
+    const duration = containerEl ? (parseInt(containerEl.dataset.bgmDuration) || 30) : 30;
+    const desc = descEl ? descEl.value.trim() : '';
+
+    if (statusEl) { statusEl.textContent = '생성 중...'; statusEl.style.color = '#3b82f6'; }
+    try {
+        const res = await fetch(`/book/books/${bookId}/block/create-bgm/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ name, desc: desc || name, duration })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '실패');
+
+        const pos = listIdx + 1;
+        if (!_blockAudioMap.bgm) _blockAudioMap.bgm = {};
+        _blockAudioMap.bgm[pos] = data.audio_url;
+        if (!_blockAudioIds.bgm) _blockAudioIds.bgm = {};
+        _blockAudioIds.bgm[pos] = data.bgm_id;
+
+        // _bgmItems의 해당 아이템 _id 업데이트
+        if (_bgmItems && _bgmItems[listIdx]) {
+            _bgmItems[listIdx]._id = String(data.bgm_id);
+        }
+        syncBlocksToJSON();
+        renderBgmSection();
+
+        // 페이지 편집기 DOM 갱신
+        capReplacePlayer(`pe_bgm_new_${listIdx}`, data.audio_url, '#3b82f6', containerEl);
+        if (statusEl) { statusEl.textContent = '✅ BGM 생성 완료'; statusEl.style.color = '#10b981'; }
+        const actionsEl = statusEl ? statusEl.parentElement : null;
+        if (actionsEl) {
+            const btn = actionsEl.querySelector('button');
+            if (btn) {
+                btn.textContent = '재생성';
+                btn.style.background = '';
+                btn.className = 'pe-regen-btn pe-regen-bgm';
+                btn.onclick = () => regenerateBgm(data.bgm_id, duration, listIdx);
+            }
+        }
+    } catch (e) {
+        if (statusEl) { statusEl.textContent = '❌ ' + e.message; statusEl.style.color = 'red'; }
+    }
+}
+
+async function savePageText(pageNumber) {
+    if (!_editorContentUuid) return;
+    const textEl = document.getElementById(`pe-text-${pageNumber}`);
+    const voiceEl = document.getElementById(`pe-voice-${pageNumber}`);
+    const statusEl = document.getElementById(`pe-status-${pageNumber}`);
+
+    if (statusEl) { statusEl.textContent = '저장 중...'; statusEl.style.color = '#6366f1'; }
+    try {
+        const res = await fetch(`/book/episodes/${_editorContentUuid}/pages/${pageNumber}/save/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({
+                text: textEl ? textEl.value.trim() : '',
+                voice_id: voiceEl ? voiceEl.value : ''
+            })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '실패');
+        if (statusEl) { statusEl.textContent = '✅ 저장됨'; statusEl.style.color = '#10b981'; }
+    } catch (e) {
+        if (statusEl) { statusEl.textContent = '❌ ' + e.message; statusEl.style.color = 'red'; }
+    }
+}
+
+async function regeneratePage(pageNumber) {
+    if (!_editorContentUuid) return;
+    const textEl = document.getElementById(`pe-text-${pageNumber}`);
+    const voiceEl = document.getElementById(`pe-voice-${pageNumber}`);
+    const statusEl = document.getElementById(`pe-status-${pageNumber}`);
+    const text = textEl ? textEl.value.trim() : '';
+    const voiceId = voiceEl ? voiceEl.value : '';
+
+    if (!text || !voiceId) {
+        if (statusEl) { statusEl.textContent = '텍스트와 보이스를 입력하세요'; statusEl.style.color = 'red'; }
+        return;
+    }
+
+    if (statusEl) { statusEl.textContent = '재생성 중...'; statusEl.style.color = '#f59e0b'; }
+
+    try {
+        const res = await fetch(`/book/episodes/${_editorContentUuid}/pages/${pageNumber}/regenerate/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ text, voice_id: voiceId })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '실패');
+
+        capReplacePlayer(`pe_tts_${pageNumber}`, data.audio_url, '#6366f1', document.getElementById(`pe-page-${pageNumber}`));
+        if (statusEl) { statusEl.textContent = '✅ 재생성 완료'; statusEl.style.color = '#10b981'; }
+    } catch (e) {
+        if (statusEl) { statusEl.textContent = '❌ ' + e.message; statusEl.style.color = 'red'; }
+    }
+}
+
+// ==================== 블록 전체 삭제 ====================
+function clearAllBlocks() {
+    if (_blockItems.length === 0 && _bgmItems.length === 0) return;
+    if (!confirm('블록을 전체 삭제하시겠습니까?\n삭제 후 되돌릴 수 없습니다.')) return;
+    _blockItems = [];
+    _bgmItems = [];
+    _blockAudioMap = {tts: {}, sfx: {}, bgm: {}};
+    _blockAudioIds = {sfx: {}, bgm: {}};
+    _selectedBlockIndex = null;
+    syncBlocksToJSON();
+    renderBlockList();
+    renderBgmSection();
+}
+
+// ==================== 블록 편집기 생성/재생성 ====================
+async function blockRegenerateTts(pageNum, btn) {
+    if (!_editorContentUuid) {
+        alert('에피소드를 먼저 실행해주세요.');
+        return;
+    }
+    // 해당 page번째 block의 텍스트/voice_id 추출
+    let pageCount = 0, text = '', voiceId = '';
+    for (const item of _blockItems) {
+        if (item.type === 'page' || item.type === 'duet') {
+            pageCount++;
+            if (pageCount === pageNum) {
+                if (item.type === 'page') { text = item.pageData.text; voiceId = item.pageData.voice_id; }
+                else if (item.type === 'duet') { text = (item.duetData.voices || []).map(v => v.text).join(' / '); voiceId = (item.duetData.voices[0] || {}).voice_id || ''; }
+                break;
+            }
+        }
+    }
+    const origText = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = '생성 중...'; btn.disabled = true; }
+    try {
+        const res = await fetch(`/book/episodes/${_editorContentUuid}/pages/${pageNum}/regenerate/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ text, voice_id: voiceId })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '실패');
+        _blockAudioMap.tts[pageNum] = data.audio_url + '?t=' + Date.now();
+        renderBlockList();
+        renderBgmSection();
+        if (btn) btn.textContent = '✅ 완료';
+    } catch (e) {
+        if (btn) btn.textContent = '❌ 실패';
+        alert('TTS 생성 실패: ' + e.message);
+    } finally {
+        setTimeout(() => { if (btn) { btn.textContent = origText; btn.disabled = false; } }, 2000);
+    }
+}
+
+async function blockRegenerateSfx(sfxPos, btn) {
+    let sfxId = (_blockAudioIds.sfx && _blockAudioIds.sfx[sfxPos]) || null;
+    // SFX 블록 순서로 desc + name + item 찾기
+    let sfxCount = 0, desc = '', sfxName = '', sfxItem = null;
+    for (const item of _blockItems) {
+        if (item.type === 'sfx') {
+            sfxCount++;
+            if (sfxCount === sfxPos) {
+                desc = item.sfxData._desc || item.sfxData._name || '';
+                sfxName = item.sfxData._name || `SFX ${sfxPos}`;
+                sfxItem = item;
+                if (!sfxId && item.sfxData._id && !String(item.sfxData._id).startsWith('$')) {
+                    sfxId = item.sfxData._id;
+                }
+                break;
+            }
+        }
+    }
+    const origText = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = '생성 중...'; btn.disabled = true; }
+    try {
+        let audioUrl;
+        if (sfxId && _editorContentUuid) {
+            // 이미 DB ID 있음 → regenerate
+            const res = await fetch(`/book/episodes/${_editorContentUuid}/sfx/${sfxId}/regenerate/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({ desc })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '실패');
+            audioUrl = data.audio_url;
+        } else {
+            // DB ID 없음 → 새로 생성
+            const res = await fetch(`/book/books/${bookId}/block/create-sfx/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({ name: sfxName, desc, duration: 5 })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '실패');
+            audioUrl = data.audio_url;
+            if (sfxItem) sfxItem.sfxData._id = String(data.sfx_id);
+            _blockAudioIds.sfx[sfxPos] = data.sfx_id;
+            syncBlocksToJSON();
+        }
+        _blockAudioMap.sfx[sfxPos] = audioUrl + '?t=' + Date.now();
+        syncBlocksToJSON();  // 오디오 맵 draft에 즉시 반영
+        renderBlockList();
+        if (btn) btn.textContent = '✅ 완료';
+    } catch (e) {
+        if (btn) btn.textContent = '❌ 실패';
+        alert('SFX 생성 실패: ' + e.message);
+    } finally {
+        setTimeout(() => { if (btn) { btn.textContent = origText; btn.disabled = false; } }, 2000);
+    }
+}
+
+async function blockRegenerateBgm(bgmPos, btn) {
+    let bgmId = (_blockAudioIds.bgm && _blockAudioIds.bgm[bgmPos]) || null;
+    const bgmItem = _bgmItems[bgmPos - 1];
+    if (!bgmId && bgmItem && bgmItem._id && !String(bgmItem._id).startsWith('$')) {
+        bgmId = bgmItem._id;
+    }
+    const desc = bgmItem ? (bgmItem._desc || bgmItem._name || '') : '';
+    const bgmName = bgmItem ? (bgmItem._name || `BGM ${bgmPos}`) : `BGM ${bgmPos}`;
+    const duration = bgmItem ? (bgmItem.duration || 30) : 30;
+    const origText = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = '생성 중...'; btn.disabled = true; }
+    try {
+        let audioUrl;
+        if (bgmId && _editorContentUuid) {
+            // 이미 DB ID 있음 → regenerate
+            const res = await fetch(`/book/episodes/${_editorContentUuid}/bgm/${bgmId}/regenerate/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({ desc, duration })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '실패');
+            audioUrl = data.audio_url;
+        } else {
+            // DB ID 없음 → 새로 생성
+            const res = await fetch(`/book/books/${bookId}/block/create-bgm/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({ name: bgmName, desc, duration })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '실패');
+            audioUrl = data.audio_url;
+            if (bgmItem) bgmItem._id = String(data.bgm_id);
+            _blockAudioIds.bgm[bgmPos] = data.bgm_id;
+            syncBlocksToJSON();
+        }
+        _blockAudioMap.bgm[bgmPos] = audioUrl + '?t=' + Date.now();
+        syncBlocksToJSON();  // 오디오 맵 draft에 즉시 반영
+        renderBgmSection();
+        if (btn) btn.textContent = '✅ 완료';
+    } catch (e) {
+        if (btn) btn.textContent = '❌ 실패';
+        alert('BGM 생성 실패: ' + e.message);
+    } finally {
+        setTimeout(() => { if (btn) { btn.textContent = origText; btn.disabled = false; } }, 2000);
+    }
+}
+
+async function remergeEpisode() {
+    if (!_editorContentUuid) return;
+    const statusEl = document.getElementById('peStatus');
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.background = '#fef3c7'; statusEl.style.color = '#92400e'; statusEl.textContent = '재머지 중... 잠시 기다려주세요'; }
+
+    try {
+        const res = await fetch(`/book/episodes/${_editorContentUuid}/remerge/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '실패');
+        if (statusEl) {
+            statusEl.style.background = '#d1fae5';
+            statusEl.style.color = '#065f46';
+            statusEl.textContent = `✅ 재머지 완료! 총 ${data.duration_seconds}초`;
+        }
+    } catch (e) {
+        if (statusEl) { statusEl.style.background = '#fee2e2'; statusEl.style.color = '#991b1b'; statusEl.textContent = '❌ ' + e.message; }
     }
 }

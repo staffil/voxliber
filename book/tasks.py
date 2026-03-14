@@ -144,6 +144,7 @@ def process_batch_audiobook(self, data, user_id):
 
     total_steps = len(steps)
     results = {}
+    warnings = []
     bgm_counter = 0
     sfx_counter = 0
     created_episode_info = None
@@ -160,6 +161,8 @@ def process_batch_audiobook(self, data, user_id):
                 music_desc = step.get('music_description', '')
                 duration = step.get('duration_seconds', 120)
 
+                print(f"🎵 [create_bgm] 시작 — name={repr(music_name)}, desc={repr(music_desc)}, duration={duration}s")
+
                 self.update_state(state='PROGRESS', meta={
                     'status': f'배경음 생성 중: {music_name}',
                     'progress': progress,
@@ -168,8 +171,13 @@ def process_batch_audiobook(self, data, user_id):
                 })
 
                 audio_path = background_music(music_name, music_desc, duration)
+                print(f"🎵 [create_bgm] background_music() 반환값: {repr(audio_path)}")
                 if not audio_path:
-                    return {'success': False, 'error': f'배경음 생성 실패: {music_name}'}
+                    msg = f'배경음 생성 실패: {music_name} (API 오류 — Celery 로그 확인)'
+                    print(f"⚠️ {msg}")
+                    warnings.append(msg)
+                    bgm_counter -= 1  # 카운터 되돌림
+                    continue
                 bgm_obj = BackgroundMusicLibrary(
                     user=user,
                     music_name=music_name,
@@ -179,12 +187,16 @@ def process_batch_audiobook(self, data, user_id):
                 with open(audio_path, 'rb') as f:
                     bgm_obj.audio_file.save(os.path.basename(audio_path), File(f), save=True)
                 results[f'$bgm_{bgm_counter}'] = str(bgm_obj.id)
+                print(f"✅ 배경음 생성 완료: ID={bgm_obj.id}, $bgm_{bgm_counter} → {bgm_obj.id}")
 
             # ==================== SFX 생성 ====================
             elif action == 'create_sfx':
                 sfx_counter += 1
                 effect_name = step.get('effect_name', f'SFX_{sfx_counter}')
                 effect_desc = step.get('effect_description', '')
+                duration = step.get('duration_seconds', 5)
+
+                print(f"🔊 [create_sfx] 시작 — name={repr(effect_name)}, desc={repr(effect_desc)}, duration={duration}s")
 
                 self.update_state(state='PROGRESS', meta={
                     'status': f'효과음 생성 중: {effect_name}',
@@ -193,10 +205,14 @@ def process_batch_audiobook(self, data, user_id):
                     'total_steps': total_steps
                 })
 
-                duration = step.get('duration_seconds', 5)
                 audio_path = sound_effect(effect_name, effect_desc, duration)
+                print(f"🔊 [create_sfx] sound_effect() 반환값: {repr(audio_path)}")
                 if not audio_path:
-                    return {'success': False, 'error': f'효과음 생성 실패: {effect_name}'}
+                    msg = f'효과음 생성 실패: {effect_name} (API 오류 — Celery 로그 확인)'
+                    print(f"⚠️ {msg}")
+                    warnings.append(msg)
+                    sfx_counter -= 1  # 카운터 되돌림
+                    continue
                 sfx_obj = SoundEffectLibrary(
                     user=user,
                     effect_name=effect_name,
@@ -205,6 +221,7 @@ def process_batch_audiobook(self, data, user_id):
                 with open(audio_path, 'rb') as f:
                     sfx_obj.audio_file.save(os.path.basename(audio_path), File(f), save=True)
                 results[f'$sfx_{sfx_counter}'] = str(sfx_obj.id)
+                print(f"✅ 효과음 생성 완료: ID={sfx_obj.id}, $sfx_{sfx_counter} → {sfx_obj.id}")
 
             # ==================== 에피소드 생성 (TTS + WebAudio) ====================
             elif action == 'create_episode':
@@ -221,7 +238,39 @@ def process_batch_audiobook(self, data, user_id):
                 # 페이지별 TTS 생성
                 audio_files = []
                 successful_texts = []  # TTS 성공한 페이지 텍스트 (timestamps 싱크용)
+                page_infos = []  # PageAudio 저장용: audio_files와 동일 순서
                 for page_idx, page in enumerate(pages):
+                    # 기존 TTS 재사용 (_skip_tts 플래그)
+                    if page.get('_skip_tts') and page.get('_existing_content_uuid') and page.get('_existing_page_num'):
+                        try:
+                            from book.models import PageAudio as _PA
+                            existing_pa = _PA.objects.filter(
+                                content__public_uuid=page['_existing_content_uuid'],
+                                page_number=page['_existing_page_num']
+                            ).first()
+                            if existing_pa and existing_pa.audio_file:
+                                import shutil as _shutil, uuid as _uuid2
+                                old_path = existing_pa.audio_file.path
+                                new_name = f'tts_reuse_{_uuid2.uuid4().hex}.mp3'
+                                new_path = os.path.join(settings.MEDIA_ROOT, 'audio', new_name)
+                                _shutil.copy2(old_path, new_path)
+                                page_infos.append({
+                                    'page_type': existing_pa.page_type or 'tts',
+                                    'text': existing_pa.text or page.get('text', ''),
+                                    'voice_id': existing_pa.voice_id or page.get('voice_id', ''),
+                                    'speed_value': existing_pa.speed_value,
+                                    'style_value': existing_pa.style_value,
+                                    'similarity_value': existing_pa.similarity_value,
+                                    'webaudio_effect': existing_pa.webaudio_effect or '',
+                                    'audio_path': new_path,
+                                })
+                                audio_files.append(new_path)
+                                successful_texts.append(existing_pa.text or page.get('text', ''))
+                                print(f"♻️ TTS 재사용 (페이지 {page_idx+1})")
+                                continue
+                        except Exception as e:
+                            print(f"⚠️ TTS 재사용 실패, 새로 생성합니다: {e}")
+
                     # 무음 페이지 처리 (BGM은 mix_bgm 단계에서 merged audio 전체에 걸쳐 재생)
                     silence_seconds = page.get('silence_seconds', 0)
                     if silence_seconds and float(silence_seconds) > 0:
@@ -231,6 +280,7 @@ def process_batch_audiobook(self, data, user_id):
                             if silence_path and os.path.exists(silence_path):
                                 audio_files.append(silence_path)
                                 successful_texts.append('')
+                                page_infos.append({'page_type': 'silence', 'text': '', 'voice_id': '', 'speed_value': 1.0, 'style_value': 0.0, 'similarity_value': 0.75, 'webaudio_effect': 'normal', 'audio_path': silence_path})
                                 print(f"🔇 무음 삽입: {silence_seconds}초")
                         except Exception as e:
                             print(f"⚠️ 무음 생성 오류: {e}")
@@ -263,6 +313,7 @@ def process_batch_audiobook(self, data, user_id):
                                     audio_files.append(duet_mp3)
                                     combined_text = '\n'.join(v.get('text', '') for v in voices if v.get('text'))
                                     successful_texts.append(combined_text)
+                                    page_infos.append({'page_type': 'duet', 'text': combined_text, 'voice_id': '', 'speed_value': 1.0, 'style_value': 0.0, 'similarity_value': 0.75, 'webaudio_effect': 'normal', 'audio_path': duet_mp3})
                                     print(f"🎭 듀엣 페이지 생성 완료 ({page.get('mode','alternate')} 모드)")
                             except Exception as e:
                                 print(f"⚠️ 듀엣 병합 오류 (페이지 {page_idx+1}): {e}")
@@ -322,8 +373,19 @@ def process_batch_audiobook(self, data, user_id):
                                 print(f"⚠️ WebAudio 효과 적용 오류: {e}")
                                 # 원본 파일 그대로 사용
 
+                        tts_path_final = tts_file if isinstance(tts_file, str) else getattr(tts_file, 'path', str(tts_file))
                         audio_files.append(tts_file)
                         successful_texts.append(text)
+                        page_infos.append({
+                            'page_type': 'tts',
+                            'text': text,
+                            'voice_id': voice_id,
+                            'speed_value': page.get('speed_value', 1.0),
+                            'style_value': page.get('style_value', 0.85),
+                            'similarity_value': page.get('similarity_value', 0.75),
+                            'webaudio_effect': page.get('webaudio_effect', 'normal'),
+                            'audio_path': tts_path_final,
+                        })
 
                     except Exception as e:
                         print(f"❌ TTS 생성 오류 ({page_idx + 1}번 페이지): {e}")
@@ -403,6 +465,35 @@ def process_batch_audiobook(self, data, user_id):
                     'page_count': len(pages)
                 }
 
+                # ── PageAudio 개별 저장 ──────────────────────────────────
+                try:
+                    from book.models import PageAudio
+                    for pg_idx, (audio_file, info) in enumerate(zip(audio_files, page_infos)):
+                        fpath = audio_file if isinstance(audio_file, str) else getattr(audio_file, 'path', None)
+                        if not fpath or not os.path.exists(fpath):
+                            continue
+                        try:
+                            pa = PageAudio(
+                                content=content,
+                                page_number=pg_idx + 1,
+                                text=info.get('text', ''),
+                                voice_id=info.get('voice_id', ''),
+                                language_code='ko',
+                                speed_value=info.get('speed_value', 1.0),
+                                style_value=info.get('style_value', 0.85),
+                                similarity_value=info.get('similarity_value', 0.75),
+                                webaudio_effect=info.get('webaudio_effect', 'normal'),
+                                page_type=info.get('page_type', 'tts'),
+                            )
+                            with open(fpath, 'rb') as pf:
+                                pa.audio_file.save(os.path.basename(fpath), File(pf), save=True)
+                        except Exception as e:
+                            print(f"⚠️ PageAudio 저장 실패 (페이지 {pg_idx + 1}): {e}")
+                    print(f"💾 PageAudio {len(page_infos)}개 저장 완료")
+                except Exception as e:
+                    print(f"⚠️ PageAudio 전체 저장 오류: {e}")
+                # ────────────────────────────────────────────────────────
+
                 # 임시 병합 파일 정리 (이미 FileField로 복사됨)
                 if merged_file and os.path.exists(merged_file):
                     os.remove(merged_file)
@@ -438,10 +529,15 @@ def process_batch_audiobook(self, data, user_id):
                 bg_tracks = step.get('background_tracks', [])
 
                 # 변수 치환
+                print(f"[mix_bgm] results keys: {list(results.keys())}")
                 for track in bg_tracks:
                     music_id = track.get('music_id', '')
-                    if music_id.startswith('$') and music_id in results:
-                        track['music_id'] = results[music_id]
+                    if music_id.startswith('$'):
+                        if music_id in results:
+                            track['music_id'] = results[music_id]
+                            print(f"[mix_bgm] BGM 변수 치환: {music_id} → {track['music_id']}")
+                        else:
+                            print(f"[mix_bgm] ⚠️ BGM 변수 미해결: {music_id} (results에 없음)")
 
                 # 타임스탬프 (각 항목에 pageIndex, endTime(ms)만 있음)
                 timestamps = content.audio_timestamps
@@ -504,8 +600,12 @@ def process_batch_audiobook(self, data, user_id):
 
                 for sfx_track in sfx_tracks:
                     eid = sfx_track.get('effect_id', '')
-                    if eid.startswith('$') and eid in results:
-                        sfx_track['effect_id'] = results[eid]
+                    if eid.startswith('$'):
+                        if eid in results:
+                            sfx_track['effect_id'] = results[eid]
+                            print(f"[mix_bgm] SFX 변수 치환: {eid} → {sfx_track['effect_id']}")
+                        else:
+                            print(f"[mix_bgm] ⚠️ SFX 변수 미해결: {eid} (results에 없음)")
 
                     sfx_obj = SoundEffectLibrary.objects.filter(id=sfx_track.get('effect_id', '')).first()
                     if not sfx_obj or not sfx_obj.audio_file:
@@ -581,6 +681,38 @@ def process_batch_audiobook(self, data, user_id):
                     except Exception as e:
                         print(f"❌ BGM 믹싱 오류: {e}")
 
+                # mix_config 저장 (에디터에서 SFX/BGM 재생성 가능하도록)
+                try:
+                    mix_config_bgm = []
+                    for track in bg_tracks:
+                        mid = track.get('music_id', '')
+                        bgm_obj2 = BackgroundMusicLibrary.objects.filter(id=mid).first()
+                        if bgm_obj2:
+                            mix_config_bgm.append({
+                                'id': bgm_obj2.id,
+                                'name': bgm_obj2.music_name,
+                                'desc': bgm_obj2.music_description,
+                                'duration': bgm_obj2.duration_seconds,
+                                'volume': track.get('volume', 0.25),
+                                'start_page': track.get('start_page', 0),
+                                'end_page': track.get('end_page', -1),
+                            })
+                    mix_config_sfx = []
+                    for sfx_track in sfx_tracks:
+                        sfx_obj2 = SoundEffectLibrary.objects.filter(id=sfx_track.get('effect_id', '')).first()
+                        if sfx_obj2:
+                            mix_config_sfx.append({
+                                'id': sfx_obj2.id,
+                                'name': sfx_obj2.effect_name,
+                                'desc': sfx_obj2.effect_description,
+                                'volume': sfx_track.get('volume', 0.7),
+                                'page_number': sfx_track.get('page_number') or sfx_track.get('page') or 1,
+                            })
+                    content.mix_config = {'bgm': mix_config_bgm, 'sfx': mix_config_sfx}
+                    content.save(update_fields=['mix_config'])
+                except Exception as e:
+                    print(f"⚠️ mix_config 저장 오류: {e}")
+
                 # 최종 파일 저장
                 if current_path != content.audio_file.path and os.path.exists(current_path):
                     try:
@@ -615,5 +747,9 @@ def process_batch_audiobook(self, data, user_id):
     if created_episode_info:
         response['episode'] = created_episode_info
         response['redirect_url'] = f'/book/detail/{book_uuid}/'
+
+    if warnings:
+        response['warnings'] = warnings
+        print(f"⚠️ 완료 (경고 {len(warnings)}개): {warnings}")
 
     return response
