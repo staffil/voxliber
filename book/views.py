@@ -238,13 +238,28 @@ def book_serialization(request):
             }, status=400)
 
         try:
-            # 에피소드 생성
-            content = Content.objects.create(
-                book=book,
-                title=content_title,
-                number=int(content_number),
-                text=content_text
-            )
+            # 수정 모드 확인
+            edit_content_uuid_post = request.POST.get('edit_content_uuid', '').strip()
+            if edit_content_uuid_post:
+                content = Content.objects.filter(
+                    public_uuid=edit_content_uuid_post, book=book
+                ).first()
+                if content:
+                    content.title = content_title
+                    content.text = content_text
+                    content.save(update_fields=['title', 'text'])
+                    print(f"✏️ 전문가 모드 에피소드 수정: {edit_content_uuid_post}")
+                else:
+                    edit_content_uuid_post = ''
+
+            if not edit_content_uuid_post:
+                # 에피소드 신규 생성
+                content = Content.objects.create(
+                    book=book,
+                    title=content_title,
+                    number=int(content_number),
+                    text=content_text
+                )
 
             # 🔥 에피소드 이미지 저장
             episode_image = request.FILES.get('episode_image')
@@ -503,12 +518,76 @@ def book_serialization(request):
         voice_list = voice_list.filter(book=book)  # 선택한 책 기준 필터링
 
     voice_list = voice_list.order_by('-is_favorite', '-created_at')
+
+    # 수정 모드: edit_content_uuid가 있으면 에피소드 데이터 전달
+    edit_episode_json = 'null'
+    edit_content_uuid = request.GET.get('edit_content_uuid')
+    if edit_content_uuid:
+        from book.models import PageAudio as _PA, BackgroundMusicLibrary as _BML, SoundEffectLibrary as _SFX
+        edit_content = Content.objects.filter(public_uuid=edit_content_uuid, book=book).first()
+        if edit_content:
+            pa_list = _PA.objects.filter(content=edit_content).order_by('page_number')
+            pages_data = []
+            for pa in pa_list:
+                if pa.page_type == 'duet':
+                    raw_texts = [t for t in (pa.text or '').split('\n') if t.strip()]
+                    pages_data.append({
+                        'page_number': pa.page_number,
+                        'page_type': 'duet',
+                        'audio_url': pa.audio_file.url if pa.audio_file else None,
+                        'duet_texts': raw_texts,
+                    })
+                else:
+                    pages_data.append({
+                        'page_number': pa.page_number,
+                        'text': pa.text or '',
+                        'voice_id': pa.voice_id or '',
+                        'audio_url': pa.audio_file.url if pa.audio_file else None,
+                        'page_type': pa.page_type or 'tts',
+                        'webaudio_effect': pa.webaudio_effect or '',
+                    })
+
+            # mix_config에서 BGM/SFX 복원
+            mc = edit_content.mix_config or {}
+            bgm_data, sfx_data = [], []
+            for bgm in mc.get('bgm', []):
+                bgm_id = bgm.get('id')
+                obj = _BML.objects.filter(id=bgm_id).first() if bgm_id else None
+                bgm_data.append({
+                    'id': bgm_id,
+                    'name': bgm.get('name', ''),
+                    'audio_url': obj.audio_file.url if obj and obj.audio_file else None,
+                    'start_page': bgm.get('start_page', 1),
+                    'end_page': bgm.get('end_page', -1),
+                    'volume': bgm.get('volume', 0.25),
+                })
+            for sfx in mc.get('sfx', []):
+                sfx_id = sfx.get('id')
+                obj = _SFX.objects.filter(id=sfx_id).first() if sfx_id else None
+                sfx_data.append({
+                    'id': sfx_id,
+                    'name': sfx.get('name', ''),
+                    'audio_url': obj.audio_file.url if obj and obj.audio_file else None,
+                    'page_number': sfx.get('page_number', 1),
+                    'volume': sfx.get('volume', 0.7),
+                })
+
+            edit_episode_json = json.dumps({
+                'content_uuid': str(edit_content.public_uuid),
+                'title': edit_content.title or '',
+                'number': edit_content.number,
+                'pages': pages_data,
+                'bgm': bgm_data,
+                'sfx': sfx_data,
+            })
+
     context = {
         "book": book,
         "latest_episode_number": latest_episode_number,
         "voice_list": voice_list,
         "guide_list": audioBookGuide,
-            }
+        "edit_episode_json": edit_episode_json,
+    }
     return render(request, "book/book_serialization.html", context)
 
 
@@ -2863,6 +2942,7 @@ def book_serilazation_fast_view(request, book_uuid):
         'draft_text_json': _json.dumps(book.draft_text or ''),
         'draft_episode_title_json': _json.dumps(book.draft_episode_title or ''),
         'block_draft_json': _json.dumps(book.block_draft or None),
+        'edit_mode': request.GET.get('edit_mode', ''),  # 'fast' | 'expert' | ''
     }
     return render(request, 'book/book_serialization_fast.html', context)
 
@@ -3414,6 +3494,158 @@ def content_youtube_thumbnail(request, content_uuid):
         "book": book,
     }
     return render(request, "book/content_youtube_thumbnail.html", context)
+
+
+# ==================== 에피소드 → 블록 에디터로 불러오기 ====================
+
+@login_required
+@require_http_methods(["GET"])
+def load_episode_for_edit(request, content_uuid):
+    """
+    기존 에피소드 데이터(PageAudio + mix_config)를 block_draft 형식으로 재구성하여
+    Books.block_draft에 저장 후, 초보자/전문가 모드 에디터로 리다이렉트한다.
+    """
+    import json as _json
+    from book.models import Content, PageAudio, SoundEffectLibrary, BackgroundMusicLibrary
+
+    mode = request.GET.get('mode', 'fast')  # 'fast' | 'expert'
+
+    content = get_object_or_404(Content, public_uuid=content_uuid, book__user=request.user, is_deleted=False)
+    book = content.book
+    pages = PageAudio.objects.filter(content=content).order_by('page_number')
+    mix_config = content.mix_config or {}
+
+    # ── 1. pages 재구성 ─────────────────────────────
+    page_list = []
+    audio_map_tts = {}
+    for pa in pages:
+        audio_url = pa.audio_file.url if pa.audio_file else None
+        if audio_url:
+            audio_map_tts[str(pa.page_number)] = audio_url
+
+        if pa.page_type == 'silence':
+            # 무음: 원래 duration을 알 수 없어 1초로 복원
+            page_list.append({'silence_seconds': 1.0})
+        elif pa.page_type == 'duet':
+            # duet: combined_text을 \n으로 분리해 voices 배열 복원 (voice_id는 유실됨)
+            raw_texts = [t for t in (pa.text or '').split('\n') if t.strip()]
+            if not raw_texts:
+                raw_texts = ['', '']
+            voices = [{'text': t, 'voice_id': '', 'webaudio_effect': ''} for t in raw_texts]
+            page_list.append({
+                'voices': voices,
+                'mode': 'alternate',
+                '_skip_tts': True,
+                '_existing_content_uuid': str(content.public_uuid),
+                '_existing_page_num': pa.page_number,
+            })
+        else:
+            page_list.append({
+                'text': pa.text or '',
+                'voice_id': pa.voice_id or '',
+                'webaudio_effect': pa.webaudio_effect or '',
+                '_skip_tts': True,
+                '_existing_content_uuid': str(content.public_uuid),
+                '_existing_page_num': pa.page_number,
+            })
+
+    # ── 2. mix_config → BGM / SFX ───────────────────
+    audio_map_sfx = {}
+    audio_map_bgm = {}
+    audio_ids_sfx = {}
+    audio_ids_bgm = {}
+    background_tracks = []
+    sound_effects = []
+
+    for i, bgm in enumerate(mix_config.get('bgm', [])):
+        pos = i + 1
+        bgm_id = bgm.get('id')
+        if bgm_id:
+            audio_ids_bgm[str(pos)] = bgm_id
+            obj = BackgroundMusicLibrary.objects.filter(id=bgm_id).first()
+            if obj and obj.audio_file:
+                audio_map_bgm[str(pos)] = obj.audio_file.url
+            background_tracks.append({
+                'music_id': str(bgm_id),
+                'start_page': bgm.get('start_page', 1),
+                'end_page': bgm.get('end_page', -1),
+                'volume': bgm.get('volume', 0.25),
+                '_name': bgm.get('name', ''),
+                '_desc': bgm.get('desc', ''),
+            })
+
+    for i, sfx in enumerate(mix_config.get('sfx', [])):
+        pos = i + 1
+        sfx_id = sfx.get('id')
+        if sfx_id:
+            audio_ids_sfx[str(pos)] = sfx_id
+            obj = SoundEffectLibrary.objects.filter(id=sfx_id).first()
+            if obj and obj.audio_file:
+                audio_map_sfx[str(pos)] = obj.audio_file.url
+            sound_effects.append({
+                'effect_id': str(sfx_id),
+                'page_number': sfx.get('page_number', 1),
+                'volume': sfx.get('volume', 0.7),
+                '_name': sfx.get('name', ''),
+                '_desc': sfx.get('desc', ''),
+            })
+
+    # ── 3. block_draft JSON 재구성 ──────────────────
+    ep_step = {
+        'action': 'create_episode',
+        'book_uuid': str(book.public_uuid),
+        'episode_number': content.number,
+        'episode_title': content.title or '',
+        'pages': page_list,
+    }
+
+    steps = [ep_step]
+    if background_tracks or sound_effects:
+        steps.append({
+            'action': 'mix_bgm',
+            'book_uuid': str(book.public_uuid),
+            'episode_number': content.number,
+            'background_tracks': background_tracks,
+            'sound_effects': sound_effects,
+        })
+
+    block_draft = {
+        'action': 'batch',
+        'book_uuid': str(book.public_uuid),
+        'book_name': book.name or '',
+        'steps': steps,
+        '_audio_map': {
+            'tts': audio_map_tts,
+            'sfx': audio_map_sfx,
+            'bgm': audio_map_bgm,
+        },
+        '_audio_ids': {
+            'sfx': audio_ids_sfx,
+            'bgm': audio_ids_bgm,
+        },
+        '_content_uuid': str(content.public_uuid),
+    }
+
+    # ── 4. Books.block_draft 저장 ──────────────────
+    print(f"[load_episode_for_edit] mix_config bgm: {mix_config.get('bgm', [])}")
+    print(f"[load_episode_for_edit] mix_config sfx: {mix_config.get('sfx', [])}")
+    print(f"[load_episode_for_edit] audio_map_bgm: {audio_map_bgm}")
+    print(f"[load_episode_for_edit] audio_map_sfx: {audio_map_sfx}")
+    print(f"[load_episode_for_edit] audio_ids_bgm: {audio_ids_bgm}")
+    print(f"[load_episode_for_edit] audio_ids_sfx: {audio_ids_sfx}")
+    print(f"[load_episode_for_edit] background_tracks: {background_tracks}")
+    print(f"[load_episode_for_edit] sound_effects: {sound_effects}")
+    book.block_draft = block_draft
+    book.draft_episode_title = content.title or ''
+    book.save(update_fields=['block_draft', 'draft_episode_title'])
+
+    # ── 5. 모드에 따라 리다이렉트 ──────────────────
+    if mode == 'expert':
+        # 전문가 모드: 기존 page-by-page 에디터 + edit_content_uuid로 에피소드 데이터 로드
+        return redirect(f'/book/book/serialization/?public_uuid={book.public_uuid}&edit_content_uuid={content.public_uuid}')
+    else:
+        # 초보자 모드: 블록 에디터 (block_draft 기반)
+        return redirect(f'/book/serialization/fast/{book.public_uuid}/')
 
 
 # ==================== 페이지별 TTS 편집 (초급자 모드) ====================

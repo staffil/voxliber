@@ -107,6 +107,8 @@ urlpatterns=[
     path("json/ai-generate/", views.ai_analyze_audiobook, name="ai_analyze_audiobook"),
     path("json/ai-speakers/", views.ai_assign_speakers, name="ai_assign_speakers"),
     path("json/task-status/<str:task_id>/", views.audiobook_task_status, name="audiobook_task_status"),
+    # 에피소드 수정 (블록 에디터로 불러오기)
+    path("episodes/<uuid:content_uuid>/load-for-edit/", views.load_episode_for_edit, name="load_episode_for_edit"),
     # 페이지별 TTS 편집
     path("episodes/<uuid:content_uuid>/pages/", views.get_page_audios, name="get_page_audios"),
     path("episodes/<uuid:content_uuid>/pages/<int:page_number>/regenerate/", views.regenerate_page, name="regenerate_page"),

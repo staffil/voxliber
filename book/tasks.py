@@ -142,6 +142,9 @@ def process_batch_audiobook(self, data, user_id):
         if not book:
             return {'success': False, 'error': f'책을 찾을 수 없습니다: {book_uuid}'}
 
+    # 수정 모드: 기존 에피소드 UUID가 있으면 UPDATE, 없으면 CREATE
+    edit_content_uuid = data.get('_content_uuid')
+
     total_steps = len(steps)
     results = {}
     warnings = []
@@ -432,17 +435,41 @@ def process_batch_audiobook(self, data, user_id):
                     return {'success': False, 'error': f'오디오 병합 실패: {str(e)}'}
 
                 # DB 저장 (절대 경로 → FileField로 올바르게 저장)
+                # 수정 모드: edit_content_uuid가 있으면 기존 Content 업데이트
                 try:
-                    content = Content(
-                        book=book,
-                        title=ep_title,
-                        number=ep_number,
-                        text="\n".join([p.get('text', '') for p in pages]),
-                        audio_timestamps=timestamps,
-                        duration_seconds=int(total_duration)
-                    )
-                    with open(merged_file, 'rb') as f:
-                        content.audio_file.save(os.path.basename(merged_file), File(f), save=True)
+                    from book.models import PageAudio as _PAclean
+                    if edit_content_uuid:
+                        content = Content.objects.filter(
+                            public_uuid=edit_content_uuid,
+                            book__user=user
+                        ).first()
+                        if content:
+                            # 기존 오디오 파일 교체
+                            content.title = ep_title
+                            content.text = "\n".join([p.get('text', '') for p in pages])
+                            content.audio_timestamps = timestamps
+                            content.duration_seconds = int(total_duration)
+                            content.mix_config = {}  # mix_bgm 단계에서 다시 채워짐
+                            with open(merged_file, 'rb') as f:
+                                content.audio_file.save(os.path.basename(merged_file), File(f), save=True)
+                            # 기존 PageAudio 삭제 후 새로 생성
+                            _PAclean.objects.filter(content=content).delete()
+                            print(f"✏️ 기존 에피소드 수정: {edit_content_uuid}")
+                        else:
+                            print(f"⚠️ edit_content_uuid={edit_content_uuid} 를 찾지 못함 → 신규 생성")
+                            edit_content_uuid = None
+
+                    if not edit_content_uuid:
+                        content = Content(
+                            book=book,
+                            title=ep_title,
+                            number=ep_number,
+                            text="\n".join([p.get('text', '') for p in pages]),
+                            audio_timestamps=timestamps,
+                            duration_seconds=int(total_duration)
+                        )
+                        with open(merged_file, 'rb') as f:
+                            content.audio_file.save(os.path.basename(merged_file), File(f), save=True)
                 except Exception as e:
                     # 병합 파일 삭제
                     if merged_file and os.path.exists(merged_file):

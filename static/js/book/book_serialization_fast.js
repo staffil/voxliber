@@ -62,14 +62,22 @@ document.addEventListener('DOMContentLoaded', function() {
             if (editor) editor.value = JSON.stringify(savedBlockDraft, null, 2);
             renderBlocks(savedBlockDraft);
             // 오디오 맵 복원 (새로고침 후에도 생성된 오디오 URL 유지)
+            let needRerender = false;
             if (savedBlockDraft._audio_map) {
                 _blockAudioMap.tts = savedBlockDraft._audio_map.tts || {};
                 _blockAudioMap.sfx = savedBlockDraft._audio_map.sfx || {};
                 _blockAudioMap.bgm = savedBlockDraft._audio_map.bgm || {};
+                console.log('[EditLoad] audio_map.bgm keys:', Object.keys(_blockAudioMap.bgm));
+                console.log('[EditLoad] audio_map.sfx keys:', Object.keys(_blockAudioMap.sfx));
+                console.log('[EditLoad] audio_map.tts keys:', Object.keys(_blockAudioMap.tts));
+                needRerender = true;
             }
             if (savedBlockDraft._audio_ids) {
                 _blockAudioIds.sfx = savedBlockDraft._audio_ids.sfx || {};
                 _blockAudioIds.bgm = savedBlockDraft._audio_ids.bgm || {};
+                console.log('[EditLoad] audio_ids.bgm:', JSON.stringify(_blockAudioIds.bgm));
+                console.log('[EditLoad] audio_ids.sfx:', JSON.stringify(_blockAudioIds.sfx));
+                console.log('[EditLoad] _bgmItems count:', _bgmItems.length);
                 // _bgmItems / _blockItems 에 실제 DB ID 동기화
                 Object.entries(_blockAudioIds.bgm).forEach(([pos, id]) => {
                     const idx = parseInt(pos) - 1;
@@ -83,6 +91,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (id) item.sfxData._id = String(id);
                     }
                 });
+                needRerender = true;
+            }
+            if (needRerender) {
                 renderBlockList();
                 renderBgmSection();
             }
@@ -90,6 +101,11 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             console.warn('블록 드래프트 복원 실패:', e);
         }
+    }
+
+    // 전문가 모드로 진입 시 JSON 탭 열기
+    if (typeof initialEditMode !== 'undefined' && initialEditMode === 'expert') {
+        switchRightTab('json');
     }
 
     // 소설 텍스트/제목 변경 시 debounce 자동 저장 (3초)
@@ -1220,8 +1236,8 @@ function renderBlocks(jsonData) {
                 type: 'sfx',
                 sfxData: {
                     _id: sfx.effect_id || '',
-                    _name: meta.name || '',
-                    _desc: meta.desc || '',
+                    _name: meta.name || sfx._name || '',
+                    _desc: meta.desc || sfx._desc || '',
                     volume: sfx.volume !== undefined ? sfx.volume : 1.0
                 }
             });
@@ -1231,8 +1247,8 @@ function renderBlocks(jsonData) {
             const meta = bgmMeta[t.music_id] || {};
             return {
                 _id: t.music_id || '',
-                _name: meta.name || '',
-                _desc: meta.desc || '',
+                _name: meta.name || t._name || '',
+                _desc: meta.desc || t._desc || '',
                 start_page: t.start_page || 1,
                 end_page: t.end_page || epStep.pages.length,
                 volume: t.volume !== undefined ? t.volume : 0.2

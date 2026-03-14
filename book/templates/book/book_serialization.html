@@ -21,6 +21,7 @@
 {% else %}
 
 
+
 <div class="writing-wrapper">
     <!-- 왼쪽 사이드바 -->
     <div class="sidebar" id="sidebar">
@@ -1551,8 +1552,10 @@ async function saveEpisode() {
         return;
     }
 
-    // 마지막 에피소드 번호 가져오기
-    const contentNumber = {{ latest_episode_number|default:0 }} + 1;
+    // 마지막 에피소드 번호 가져오기 (수정 모드면 기존 번호 사용)
+    const contentNumber = (editEpisodeData && editEpisodeData.number)
+        ? editEpisodeData.number
+        : {{ latest_episode_number|default:0 }} + 1;
 
     // 저장 버튼 비활성화
     const saveBtn = document.querySelector('.publish-btn');
@@ -1570,8 +1573,11 @@ async function saveEpisode() {
         formData.append('content_text', fullContent);
         formData.append('voice_id', selectedVoiceId);
         formData.append('language_code', selectedLanguage);
-        formData.append('speed_value', voiceSpeed);  // 전역 변수 사용 (숫자로 전송)  
-
+        formData.append('speed_value', voiceSpeed);  // 전역 변수 사용 (숫자로 전송)
+        // 수정 모드: edit_content_uuid 포함
+        if (editEpisodeData && editEpisodeData.content_uuid) {
+            formData.append('edit_content_uuid', editEpisodeData.content_uuid);
+        }
 
         // 각 대사의 오디오 파일과 텍스트 추가
         pages.forEach((page, index) => {
@@ -1756,9 +1762,125 @@ function removeAudio() {
 let autoSaveInterval = null;
 
 
+// 에피소드 수정 모드: 서버에서 전달된 기존 에피소드 데이터 로드
+const editEpisodeData = {{ edit_episode_json|safe }};
+
+async function loadEpisodeForExpertEdit(data) {
+    if (!data || !data.pages) return;
+    pages = [];
+
+    // 1단계: TTS/silence/duet 페이지 구성 (PageAudio 기반)
+    for (const p of data.pages) {
+        if (p.page_type === 'silence') {
+            pages.push({
+                id: Date.now() + Math.random(), content: '', charCount: 0,
+                audioFile: null, audioUrl: null,
+                isSilence: true, silenceDuration: 1.0,
+                isSoundEffect: false, effectName: '', novelDraft: '',
+                _skip_tts: true, _existing_content_uuid: data.content_uuid, _existing_page_num: p.page_number
+            });
+        } else if (p.page_type === 'duet') {
+            const duetData = (p.duet_texts || []).map(t => ({ voice_id: '', text: t }));
+            pages.push({
+                id: Date.now() + Math.random(), content: '', charCount: 0,
+                audioFile: null, audioUrl: p.audio_url || null,
+                isSilence: false, silenceDuration: 1.0,
+                isSoundEffect: false, effectName: '',
+                isDuet: true, duetMode: 'overlap',
+                duetData: duetData,
+                duetText: duetData.map(v => v.text).join('\n'),
+                novelDraft: '',
+                _skip_tts: true, _existing_content_uuid: data.content_uuid, _existing_page_num: p.page_number
+            });
+        } else {
+            const page = createPage(p.text || '');
+            page.audioUrl = p.audio_url || null;
+            page.voice_id = p.voice_id || '';
+            page.webaudio_effect = p.webaudio_effect || '';
+            page._skip_tts = true;
+            page._existing_content_uuid = data.content_uuid;
+            page._existing_page_num = p.page_number;
+            pages.push(page);
+        }
+    }
+
+    // 2단계: SFX 페이지 삽입 (mix_config 기반, PageAudio에 없음)
+    // page_number는 SFX가 붙을 TTS 페이지 번호(1-indexed) → 그 앞에 삽입
+    console.log('[EditLoad] sfx data:', JSON.stringify(data.sfx));
+    if (data.sfx && data.sfx.length > 0) {
+        const sfxSorted = [...data.sfx].sort((a, b) => (b.page_number || 1) - (a.page_number || 1));
+        for (const sfx of sfxSorted) {
+            const sfxPage = createPage('', null, true);
+            sfxPage.effectName = sfx.name || 'SFX';
+            sfxPage.audioUrl = sfx.audio_url || null;
+            if (sfx.audio_url) {
+                try {
+                    const resp = await fetch(sfx.audio_url);
+                    if (resp.ok) {
+                        const blob = await resp.blob();
+                        sfxPage.audioFile = new File([blob], `${sfx.name || 'sfx'}.mp3`, { type: 'audio/mp3' });
+                    }
+                } catch(e) { console.warn('SFX fetch 실패:', e); }
+            }
+            sfxPage._skip_tts = true;
+            // page_number = "SFX를 TTS 페이지 N 앞에 삽입" (fast mode 동일 로직)
+            const targetPage = Math.max(1, sfx.page_number || 1);
+            let pageCount = 0, insertIdx = pages.length;
+            for (let i = 0; i < pages.length; i++) {
+                if (!pages[i].isSoundEffect) {
+                    pageCount++;
+                    if (pageCount === targetPage) { insertIdx = i; break; }
+                }
+            }
+            pages.splice(insertIdx, 0, sfxPage);
+        }
+    }
+
+    // 에피소드 제목/번호 설정
+    const titleInput = document.getElementById('episodeTitle');
+    if (titleInput && data.title) titleInput.value = data.title;
+    if (data.number) {
+        const numInput = document.getElementById('contentNumber');
+        if (numInput) numInput.value = data.number;
+    }
+
+    // BGM 트랙 복원
+    if (data.bgm && data.bgm.length > 0) {
+        backgroundTracks = [];
+        for (const bgm of data.bgm) {
+            if (!bgm.audio_url) continue;
+            try {
+                const resp = await fetch(bgm.audio_url);
+                if (resp.ok) {
+                    const blob = await resp.blob();
+                    const audioFile = new File([blob], `${bgm.name || 'bgm'}.mp3`, { type: 'audio/mp3' });
+                    const audioUrl = URL.createObjectURL(blob);
+                    const endPage = (bgm.end_page >= 0) ? bgm.end_page : Math.max(0, pages.length - 1);
+                    backgroundTracks.push({
+                        id: Date.now() + Math.random(),
+                        startPage: bgm.start_page || 0,
+                        endPage: endPage,
+                        audioFile: audioFile,
+                        audioUrl: audioUrl,
+                        musicName: bgm.name || '배경음',
+                        volume: bgm.volume || 0.25
+                    });
+                }
+            } catch(e) { console.warn('BGM fetch 실패:', e); }
+        }
+        if (typeof renderBackgroundTracks === 'function') renderBackgroundTracks();
+    }
+
+    renderPagesList();
+    if (pages.length > 0) loadPage(0);
+}
+
 // 페이지 로드 시 초기화
-document.addEventListener('DOMContentLoaded', function() {
-    initPages();
+document.addEventListener('DOMContentLoaded', async function() {
+    await initPages();
+    if (editEpisodeData) {
+        await loadEpisodeForExpertEdit(editEpisodeData);
+    }
     startAutoSave(); // 자동 저장 시작
 });
 
