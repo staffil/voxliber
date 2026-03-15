@@ -2958,6 +2958,119 @@ def api_regenerate_page(request):
 
 @require_api_key_secure
 @require_http_methods(["POST"])
+def api_register_pages(request):
+    """
+    에피소드 페이지 메타데이터 등록 API (TTS 생성 없이 PageAudio 엔트리만 생성)
+    - create_episode 후 에디터에서 블록을 표시하기 위한 메타 등록
+    - 이미 PageAudio가 존재하면 text/voice_id를 업데이트
+
+    POST /api/v1/register-pages/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "content_uuid": "xxxx",   // content_uuid 또는 book_uuid+episode_number
+        "book_uuid": "xxxx",
+        "episode_number": 1,
+        "pages": [
+            {"text": "[calm] 나레이션 텍스트", "voice_id": "ThT5Kc...", "webaudio_effect": "normal"},
+            {"text": "[formal] 대사", "voice_id": "9BWts...", "webaudio_effect": "normal"},
+            {"silence_seconds": 1.0},
+            {"voices": [{"text": "A 대사", "voice_id": "..."}, {"text": "B 대사", "voice_id": "..."}]}
+        ]
+    }
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    pages_input = data.get("pages", [])
+    if not pages_input:
+        return api_response(error="pages 배열이 필요합니다.", status=400)
+
+    content_uuid = data.get("content_uuid", "").strip()
+    book_uuid = data.get("book_uuid", "").strip()
+    episode_number = data.get("episode_number")
+
+    if content_uuid:
+        content = Content.objects.filter(
+            public_uuid=content_uuid, book__user=request.api_user, is_deleted=False
+        ).first()
+    elif book_uuid and episode_number is not None:
+        book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user, is_deleted=False).first()
+        if not book:
+            return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
+        content = Content.objects.filter(book=book, number=int(episode_number), is_deleted=False).first()
+    else:
+        return api_response(error="content_uuid 또는 book_uuid+episode_number가 필요합니다.", status=400)
+
+    if not content:
+        return api_response(error="에피소드를 찾을 수 없습니다.", status=404)
+
+    created, updated = 0, 0
+    page_num = 0
+    for page in pages_input:
+        page_num += 1
+
+        # 페이지 타입 결정
+        if page.get("silence_seconds") is not None:
+            p_type = 'silence'
+            p_text = ''
+            p_voice = ''
+        elif page.get("voices"):
+            p_type = 'duet'
+            p_text = '\n'.join(v.get("text", "") for v in page["voices"] if v.get("text"))
+            p_voice = page["voices"][0].get("voice_id", "") if page["voices"] else ""
+        else:
+            p_type = 'tts'
+            p_text = page.get("text", "")
+            p_voice = page.get("voice_id", "")
+
+        webaudio = page.get("webaudio_effect", "normal") or "normal"
+        speed = float(page.get("speed_value", 1.0))
+        style = float(page.get("style_value", 0.5))
+        sim = float(page.get("similarity_value", 0.75))
+
+        pa = PageAudio.objects.filter(content=content, page_number=page_num).first()
+        if pa:
+            # 기존 항목 업데이트 (audio_file 유지)
+            pa.text = p_text
+            pa.voice_id = p_voice
+            pa.page_type = p_type
+            pa.webaudio_effect = webaudio
+            pa.speed_value = speed
+            pa.style_value = style
+            pa.similarity_value = sim
+            pa.save(update_fields=['text', 'voice_id', 'page_type', 'webaudio_effect',
+                                   'speed_value', 'style_value', 'similarity_value'])
+            updated += 1
+        else:
+            PageAudio.objects.create(
+                content=content,
+                page_number=page_num,
+                text=p_text,
+                voice_id=p_voice,
+                page_type=p_type,
+                webaudio_effect=webaudio,
+                speed_value=speed,
+                style_value=style,
+                similarity_value=sim,
+                language_code='ko',
+            )
+            created += 1
+
+    print(f"✅ [API] register-pages: created={created} updated={updated} total={page_num}")
+    return api_response(data={
+        "content_uuid": str(content.public_uuid),
+        "total_pages": page_num,
+        "created": created,
+        "updated": updated,
+        "message": f"PageAudio 등록 완료 ({created}개 생성, {updated}개 업데이트)"
+    })
+
+
+@require_api_key_secure
+@require_http_methods(["POST"])
 def api_regenerate_sfx(request):
     """
     SFX 재생성 API (기존 SFX 오디오를 새로 생성)

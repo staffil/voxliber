@@ -86,6 +86,7 @@ urlpatterns = [
     path("api/v1/regenerate-episode/", voxliber_api.api_regenerate_episode, name="api_regenerate_episode"),
     path("api/v1/episode-detail/", voxliber_api.api_episode_detail, name="api_episode_detail"),
     path("api/v1/regenerate-page/", voxliber_api.api_regenerate_page, name="api_regenerate_page"),
+    path("api/v1/register-pages/", voxliber_api.api_register_pages, name="api_register_pages"),
     path("api/v1/regenerate-sfx/", voxliber_api.api_regenerate_sfx, name="api_regenerate_sfx"),
     path("api/v1/regenerate-bgm/", voxliber_api.api_regenerate_bgm, name="api_regenerate_bgm"),
     path("api/v1/my-books/", voxliber_api.api_my_books, name="api_my_books"),
