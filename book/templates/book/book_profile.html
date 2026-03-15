@@ -123,23 +123,30 @@ body.light-mode .mode-modal-sub { color: #64748b; }
 /* ── 카드 그리드 기본: 3열 ── */
 .mode-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
 
-/* ── 1200px 이하: 전문가 모드 숨김 + 2열로 전환 ── */
+/* ── 1200px 이하: 전문가 모드 숨김 + 3열로 전환 ── */
 @media (max-width: 1200px) {
   .mode-card.expert {
     display: none;
   }
   .mode-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── 760px 이하: 2열 ── */
+@media (max-width: 760px) {
+  .mode-cards {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-/* ── 560px 이하: 1열 ── */
-@media (max-width: 560px) {
-  .mode-modal { padding: 28px 20px 24px; }
+/* ── 480px 이하: 1열 ── */
+@media (max-width: 480px) {
+  .mode-modal { padding: 24px 16px 20px; }
   .mode-cards { grid-template-columns: 1fr; }
 }
 
@@ -178,6 +185,10 @@ body.light-mode .mode-card {
 .mode-card.voice { border-color: rgba(16,185,129,.2); }
 .mode-card.voice:hover { background: rgba(16,185,129,.07); border-color: rgba(16,185,129,.38); }
 
+/* 내 작품 */
+.mode-card.myworks { border-color: rgba(236,72,153,.2); }
+.mode-card.myworks:hover { background: rgba(236,72,153,.07); border-color: rgba(236,72,153,.38); }
+
 .mode-card-icon {
   font-size: 1.7rem;
   line-height: 1;
@@ -194,9 +205,11 @@ body.light-mode .mode-card {
 .beginner .mode-card-label { background: rgba(99,102,241,.16); color: #a5b4fc; }
 .expert   .mode-card-label { background: rgba(245,158,11,.16); color: #fbbf24; }
 .voice    .mode-card-label { background: rgba(16,185,129,.16);  color: #6ee7b7; }
+.myworks  .mode-card-label { background: rgba(236,72,153,.16);  color: #f9a8d4; }
 body.light-mode .beginner .mode-card-label { color: #6366f1; }
 body.light-mode .expert   .mode-card-label { color: #d97706; }
 body.light-mode .voice    .mode-card-label { color: #059669; }
+body.light-mode .myworks  .mode-card-label { color: #db2777; }
 
 .mode-card-name {
   font-size: .95rem;
@@ -226,6 +239,7 @@ body.light-mode .mode-card-desc { color: #64748b; }
 .beginner .mode-card-arrow { color: #818cf8; }
 .expert   .mode-card-arrow { color: #fbbf24; }
 .voice    .mode-card-arrow { color: #6ee7b7; }
+.myworks  .mode-card-arrow { color: #f9a8d4; }
 
 /* 보이스 안내 */
 .mode-voice-notice {
@@ -457,6 +471,15 @@ body.light-mode .mode-modal-close:hover { color: rgba(0,0,0,.6); }
         <div class="mode-card-arrow">시작하기 →</div>
       </div>
 
+      <!-- 내 작품으로 가기 -->
+      <div class="mode-card myworks" id="modeMyWorksBtn">
+        <div class="mode-card-icon">📚</div>
+        <div class="mode-card-label">내 작품</div>
+        <div class="mode-card-name">만든 작품<br>모아보기</div>
+        <div class="mode-card-desc">에피소드 관리<br>및 수정</div>
+        <div class="mode-card-arrow">바로가기 →</div>
+      </div>
+
     </div>
 
     <!-- 보이스 안내 -->
@@ -488,6 +511,7 @@ body.light-mode .mode-modal-close:hover { color: rgba(0,0,0,.6); }
   var btnBeginner = document.getElementById('modeBeginnerBtn');
   var btnExpert   = document.getElementById('modeExpertBtn');
   var btnVoice    = document.getElementById('modeVoiceBtn');
+  var btnMyWorks  = document.getElementById('modeMyWorksBtn');
 
   // 저장 버튼 클릭 → 폼 유효성 검사 후 모달 오픈
   openBtn.addEventListener('click', function () {
@@ -516,6 +540,9 @@ body.light-mode .mode-modal-close:hover { color: rgba(0,0,0,.6); }
   btnBeginner.addEventListener('click', function () { submitWithMode('beginner'); });
   btnExpert.addEventListener('click',   function () { submitWithMode('expert');   });
   btnVoice.addEventListener('click',    function () { submitWithMode('voice');    });
+  btnMyWorks.addEventListener('click',  function () {
+    window.location.href = '{% url "my_book_list" %}';
+  });
 })();
 </script>
 {% endblock %}
