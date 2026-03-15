@@ -240,6 +240,7 @@ def api_create_episode(request):
         audio_paths = []
         pages_text = []
         temp_files = []
+        page_infos = []  # PageAudio 저장용: (audio_path, page_number, text, voice_id, page_type, speed, style, sim)
 
         for i, page in enumerate(pages):
             # ── 무음 페이지 ──────────────────────────────
@@ -252,6 +253,9 @@ def api_create_episode(request):
                         audio_paths.append(silence_path)
                         pages_text.append('')
                         temp_files.append(silence_path)
+                        page_infos.append({'path': silence_path, 'page_number': len(audio_paths),
+                            'text': '', 'voice_id': '', 'page_type': 'silence',
+                            'speed': 1.0, 'style': 0.0, 'sim': 0.75})
                         print(f"  🔇 페이지 {i+1} 무음 {silence_seconds}초")
                 except Exception as e:
                     print(f"  ⚠️ 페이지 {i+1} 무음 생성 오류: {e}")
@@ -283,6 +287,9 @@ def api_create_episode(request):
                             temp_files.append(duet_mp3)
                             combined_text = '\n'.join(v.get("text", "") for v in voices if v.get("text"))
                             pages_text.append(combined_text)
+                            page_infos.append({'path': duet_mp3, 'page_number': len(audio_paths),
+                                'text': combined_text, 'voice_id': (voices[0].get('voice_id','') if voices else ''),
+                                'page_type': 'duet', 'speed': 1.0, 'style': 0.0, 'sim': 0.75})
                             print(f"  🎭 페이지 {i+1} 동시 대화 완료 ({page.get('mode','alternate')} 모드)")
                     except Exception as e:
                         print(f"  ⚠️ 페이지 {i+1} 듀엣 병합 오류: {e}")
@@ -314,6 +321,9 @@ def api_create_episode(request):
                 audio_paths.append(audio_path)
                 pages_text.append(page_text)
                 temp_files.append(audio_path)
+                page_infos.append({'path': audio_path, 'page_number': len(audio_paths),
+                    'text': page_text, 'voice_id': page_voice, 'page_type': 'tts',
+                    'speed': page_speed, 'style': page_style, 'sim': page_similarity})
                 print(f"  ✅ 페이지 {i+1} TTS 완료")
             else:
                 print(f"  ⚠️ 페이지 {i+1} TTS 실패 - 건너뜀")
@@ -354,7 +364,34 @@ def api_create_episode(request):
                 os.remove(merged_path)
                 print(f"💾 [API] 병합 오디오 저장 완료: {duration_seconds}초")
 
-            # 7. 임시 개별 TTS 파일 삭제
+            # 7. PageAudio 개별 저장 (regen_page 등에서 참조 가능하도록)
+            try:
+                for info in page_infos:
+                    fpath = info['path']
+                    if not fpath or not os.path.exists(fpath):
+                        continue
+                    try:
+                        pa = PageAudio(
+                            content=content,
+                            page_number=info['page_number'],
+                            text=info['text'],
+                            voice_id=info['voice_id'],
+                            language_code='ko',
+                            speed_value=info['speed'],
+                            style_value=info['style'],
+                            similarity_value=info['sim'],
+                            webaudio_effect='normal',
+                            page_type=info['page_type'],
+                        )
+                        with open(fpath, 'rb') as pf:
+                            pa.audio_file.save(os.path.basename(fpath), File(pf), save=True)
+                    except Exception as e:
+                        print(f"  ⚠️ PageAudio 저장 실패 P{info['page_number']}: {e}")
+                print(f"💾 [API] PageAudio {len(page_infos)}개 저장 완료")
+            except Exception as e:
+                print(f"  ⚠️ PageAudio 전체 저장 오류: {e}")
+
+            # 8. 임시 개별 TTS 파일 삭제
             for temp_path in temp_files:
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
@@ -886,12 +923,208 @@ def api_regenerate_episode(request):
 
 # ==================== 14. 에피소드 + 배경음 믹싱 API ====================
 
+def _resolve_content(api_user, book_uuid=None, episode_number=None, content_uuid=None):
+    """공통 Content 조회 헬퍼. (content, error_msg) 반환"""
+    if content_uuid:
+        content = Content.objects.filter(
+            public_uuid=content_uuid, book__user=api_user, is_deleted=False
+        ).first()
+    elif book_uuid and episode_number is not None:
+        book = Books.objects.filter(public_uuid=book_uuid, user=api_user, is_deleted=False).first()
+        if not book:
+            return None, "책을 찾을 수 없거나 권한이 없습니다."
+        content = Content.objects.filter(book=book, number=int(episode_number), is_deleted=False).first()
+    else:
+        return None, "book_uuid+episode_number 또는 content_uuid가 필요합니다."
+    if not content:
+        return None, "에피소드를 찾을 수 없습니다."
+    if not content.audio_file:
+        return None, "에피소드 오디오 파일이 없습니다."
+    return content, None
+
+
+def _do_episode_mix(content, bg_tracks, sfx_tracks, api_user):
+    """
+    BGM + SFX 믹싱 실행 헬퍼.
+    - content.tts_audio_file이 있으면 그것을 base로 사용 (re-mix 가능)
+    - 없으면 content.audio_file을 base로 사용하고 tts_audio_file에 백업
+    - bg_tracks: [{"music_id":N, "start_page":N, "end_page":N, "volume":0.3}, ...]
+    - sfx_tracks: [{"effect_id":N, "page_number":N, "volume":0.7}, ...]
+    반환: (result_data dict, error_str or None)
+    """
+    import math
+    from pydub import AudioSegment
+
+    # 원본 TTS 오디오 결정 (tts_audio_file 우선)
+    if content.tts_audio_file:
+        base_audio_path = content.tts_audio_file.path
+    else:
+        # 최초 믹싱: 현재 audio_file을 tts_audio_file로 백업
+        base_audio_path = content.audio_file.path
+        with open(base_audio_path, 'rb') as f:
+            import os as _os
+            content.tts_audio_file.save(
+                'tts_' + _os.path.basename(base_audio_path),
+                File(f),
+                save=True
+            )
+        print(f"💾 [MIX] 원본 TTS 오디오 백업 완료")
+
+    timestamps = content.audio_timestamps or []
+    if isinstance(timestamps, str):
+        timestamps = json.loads(timestamps)
+
+    background_tracks_info = []
+    temp_files = []
+    new_bgm_config = []
+    new_sfx_config = []
+
+    # BGM 트랙 처리
+    for track in bg_tracks:
+        music_id = track.get("music_id")
+        start_page = track.get("start_page", 0)
+        end_page = track.get("end_page", len(timestamps) - 1 if timestamps else 0)
+        volume = track.get("volume", 0.3)
+
+        bg_music = BackgroundMusicLibrary.objects.filter(id=music_id, user=api_user).first()
+        if not bg_music or not bg_music.audio_file:
+            print(f"⚠️ [MIX] BGM {music_id} 없음, 건너뜀")
+            continue
+
+        start_time = 0
+        end_time = (content.duration_seconds or 0) * 1000
+        if timestamps:
+            if start_page > 0 and start_page - 1 < len(timestamps):
+                start_time = timestamps[start_page - 1].get("endTime", 0)
+            if end_page < len(timestamps):
+                end_time = timestamps[end_page].get("endTime", end_time)
+
+        volume_db = 20 * math.log10(max(volume, 0.01))
+
+        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp:
+            tmp.write(bg_music.audio_file.read())
+            temp_path = tmp.name
+            temp_files.append(temp_path)
+
+        background_tracks_info.append({
+            'audioPath': temp_path,
+            'startTime': start_time,
+            'endTime': end_time,
+            'volume': volume_db,
+        })
+        new_bgm_config.append({
+            'id': music_id,
+            'name': bg_music.music_name,
+            'desc': bg_music.music_description or '',
+            'volume': volume,
+            'start_page': start_page,
+            'end_page': end_page,
+        })
+
+    # SFX 트랙 처리
+    sfx_timestamp_entries = []
+    for sfx in sfx_tracks:
+        effect_id = sfx.get("effect_id")
+        page = sfx.get("page_number") or sfx.get("page") or 1
+        volume = sfx.get("volume", 0.7)
+
+        sfx_obj = SoundEffectLibrary.objects.filter(id=effect_id, user=api_user).first()
+        if not sfx_obj or not sfx_obj.audio_file:
+            print(f"⚠️ [MIX] SFX {effect_id} 없음, 건너뜀")
+            continue
+
+        start_time = 0
+        if timestamps and 0 <= page - 1 < len(timestamps):
+            start_time = timestamps[page - 1].get("startTime", 0)
+
+        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp:
+            tmp.write(sfx_obj.audio_file.read())
+            temp_path = tmp.name
+            temp_files.append(temp_path)
+
+        sfx_audio = AudioSegment.from_file(temp_path)
+        sfx_duration = len(sfx_audio)
+        end_time = start_time + sfx_duration
+        volume_db = 20 * math.log10(max(volume, 0.01))
+
+        background_tracks_info.append({
+            'audioPath': temp_path,
+            'startTime': start_time,
+            'endTime': end_time,
+            'volume': volume_db,
+        })
+        sfx_timestamp_entries.append({
+            'pageIndex': -1,
+            'startTime': int(start_time),
+            'endTime': int(end_time),
+            'text': '',
+            'type': 'sfx',
+            'effectName': sfx_obj.effect_name,
+        })
+        new_sfx_config.append({
+            'id': effect_id,
+            'name': sfx_obj.effect_name,
+            'desc': sfx_obj.effect_description or '',
+            'volume': volume,
+            'page_number': page,
+        })
+        print(f"🔊 [MIX] SFX '{sfx_obj.effect_name}' → {start_time}ms~{end_time}ms ({volume_db:.1f}dB)")
+
+    if not background_tracks_info:
+        return None, "유효한 BGM/SFX 트랙이 없습니다."
+
+    print(f"🎼 [MIX] 믹싱 실행: BGM {len(new_bgm_config)}개 + SFX {len(new_sfx_config)}개")
+    mixed_path = mix_audio_with_background(base_audio_path, background_tracks_info)
+
+    for tmp_path in temp_files:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+    if not mixed_path or mixed_path == base_audio_path:
+        return None, "믹싱에 실패했습니다."
+
+    try:
+        with open(mixed_path, 'rb') as f:
+            content.audio_file.save(os.path.basename(mixed_path), File(f), save=True)
+
+        audio_segment = AudioSegment.from_file(mixed_path)
+        content.duration_seconds = int(len(audio_segment) / 1000)
+
+        # SFX 타임스탬프 업데이트
+        if sfx_timestamp_entries and timestamps:
+            clean_ts = [t for t in timestamps if t.get('type') != 'sfx']
+            merged_ts = sorted(clean_ts + sfx_timestamp_entries, key=lambda x: x.get('startTime', 0))
+            content.audio_timestamps = merged_ts
+
+        # mix_config 저장
+        content.mix_config = {
+            'bgm': new_bgm_config,
+            'sfx': new_sfx_config,
+        }
+        content.save()
+
+        os.remove(mixed_path)
+        print(f"✅ [MIX] 완료: {content.duration_seconds}초")
+
+        return {
+            "content_uuid": str(content.public_uuid),
+            "episode_number": content.number,
+            "audio_url": content.audio_file.url,
+            "duration_seconds": content.duration_seconds,
+            "mix_config": content.mix_config,
+        }, None
+
+    except Exception as e:
+        if os.path.exists(mixed_path):
+            os.remove(mixed_path)
+        raise
+
+
 @require_api_key_secure
 @require_http_methods(["POST"])
 def api_mix_background_music(request):
     """
-    기존 에피소드에 배경음을 믹싱하는 API
-    - 이미 생성된 에피소드의 오디오에 배경음을 오버레이
+    에피소드에 BGM + SFX 믹싱 API (전체 설정)
 
     POST /api/v1/mix-background/
     Headers: X-API-Key: <your_api_key>
@@ -903,13 +1136,9 @@ def api_mix_background_music(request):
             {"music_id": 5, "start_page": 0, "end_page": 3, "volume": 0.3}
         ],
         "sound_effects": [
-            {"effect_id": 1, "page": 3, "volume": 0.7}
+            {"effect_id": 1, "page_number": 3, "volume": 0.7}
         ]
     }
-
-    volume: 0.0~1.0 (0.3 = 30% 볼륨)
-    start_page/end_page: 타임스탬프 기반으로 해당 페이지 구간에 배경음 삽입
-    sound_effects: 특정 페이지 시작 지점에 사운드 이펙트 오버레이
     """
     try:
         data = json.loads(request.body)
@@ -923,179 +1152,137 @@ def api_mix_background_music(request):
 
     if not book_uuid or not episode_number:
         return api_response(error="book_uuid와 episode_number는 필수입니다.", status=400)
-
     if not bg_tracks and not sfx_tracks:
         return api_response(error="background_tracks 또는 sound_effects 배열이 필요합니다.", status=400)
 
-    book = Books.objects.filter(public_uuid=book_uuid, user=request.api_user, is_deleted=False).first()
-    if not book:
-        return api_response(error="책을 찾을 수 없거나 권한이 없습니다.", status=404)
-
-    content = Content.objects.filter(
-        book=book, number=int(episode_number), is_deleted=False
-    ).first()
-
-    if not content or not content.audio_file:
-        return api_response(error="에피소드 또는 오디오 파일을 찾을 수 없습니다.", status=404)
+    content, err = _resolve_content(request.api_user, book_uuid=book_uuid, episode_number=episode_number)
+    if err:
+        return api_response(error=err, status=404)
 
     try:
-        from pydub import AudioSegment
-
-        # 현재 에피소드 오디오 경로
-        current_audio_path = content.audio_file.path
-
-        # 타임스탬프 파싱
-        timestamps = []
-        if content.audio_timestamps:
-            timestamps = json.loads(content.audio_timestamps) if isinstance(content.audio_timestamps, str) else content.audio_timestamps
-
-        # 배경음 트랙 정보 구성
-        background_tracks_info = []
-        temp_bg_files = []
-
-        for track in bg_tracks:
-            music_id = track.get("music_id")
-            start_page = track.get("start_page", 0)
-            end_page = track.get("end_page", len(timestamps) - 1 if timestamps else 0)
-            volume = track.get("volume", 0.3)
-
-            bg_music = BackgroundMusicLibrary.objects.filter(
-                id=music_id, user=request.api_user
-            ).first()
-
-            if not bg_music or not bg_music.audio_file:
-                continue
-
-            audio_file = bg_music.audio_file
-
-            # 시작/종료 시간 계산 (타임스탬프 기반)
-            start_time = 0
-            end_time = content.duration_seconds * 1000 if content.duration_seconds else 0
-
-            if timestamps:
-                if start_page > 0 and start_page - 1 < len(timestamps):
-                    start_time = timestamps[start_page - 1].get("endTime", 0)
-                if end_page < len(timestamps):
-                    end_time = timestamps[end_page].get("endTime", end_time)
-
-            # 볼륨을 dB로 변환 (0.3 → -10.5dB)
-            import math
-            volume_db = 20 * math.log10(max(volume, 0.01))
-
-            # 임시 파일로 복사
-            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp:
-                tmp.write(audio_file.read())
-                temp_bg_path = tmp.name
-                temp_bg_files.append(temp_bg_path)
-
-            background_tracks_info.append({
-                'audioPath': temp_bg_path,
-                'startTime': start_time,
-                'endTime': end_time,
-                'volume': volume_db,
-            })
-
-        # 사운드 이펙트 트랙 처리
-        sfx_timestamp_entries = []
-        for sfx in sfx_tracks:
-            effect_id = sfx.get("effect_id")
-            page = sfx.get("page_number") or sfx.get("page") or 1
-            volume = sfx.get("volume", 0.7)
-
-            sfx_obj = SoundEffectLibrary.objects.filter(
-                id=effect_id, user=request.api_user
-            ).first()
-
-            if not sfx_obj or not sfx_obj.audio_file:
-                print(f"⚠️ [API] SFX {effect_id} 없음, 건너뜀")
-                continue
-
-            # SFX 시작 시간 = 해당 페이지의 실제 startTime
-            start_time = 0
-            if timestamps and 0 <= page - 1 < len(timestamps):
-                start_time = timestamps[page - 1].get("startTime", 0)
-
-            # SFX 오디오 길이로 종료 시간 계산
-            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp:
-                tmp.write(sfx_obj.audio_file.read())
-                temp_sfx_path = tmp.name
-                temp_bg_files.append(temp_sfx_path)
-
-            sfx_audio = AudioSegment.from_file(temp_sfx_path)
-            sfx_duration = len(sfx_audio)
-            end_time = start_time + sfx_duration
-
-            import math
-            volume_db = 20 * math.log10(max(volume, 0.01))
-
-            background_tracks_info.append({
-                'audioPath': temp_sfx_path,
-                'startTime': start_time,
-                'endTime': end_time,
-                'volume': volume_db,
-            })
-            sfx_timestamp_entries.append({
-                'pageIndex': -1,
-                'startTime': int(start_time),
-                'endTime': int(end_time),
-                'text': '',
-                'type': 'sfx',
-                'effectName': sfx_obj.effect_name,
-            })
-            print(f"🔊 [API] SFX '{sfx_obj.effect_name}' → {start_time}ms~{end_time}ms ({volume_db:.1f}dB)")
-
-        if not background_tracks_info:
-            return api_response(error="유효한 배경음/사운드 이펙트 트랙이 없습니다.", status=400)
-
-        # 믹싱 실행
-        print(f"🎼 [API] 배경음+SFX 믹싱: {len(background_tracks_info)}개 트랙")
-        mixed_path = mix_audio_with_background(current_audio_path, background_tracks_info)
-
-        # 임시 파일 정리
-        for tmp_path in temp_bg_files:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-
-        if mixed_path and mixed_path != current_audio_path:
-            # 새 오디오로 교체
-            with open(mixed_path, 'rb') as f:
-                content.audio_file.save(
-                    os.path.basename(mixed_path),
-                    File(f),
-                    save=True
-                )
-
-            # 길이 재계산
-            audio_segment = AudioSegment.from_file(mixed_path)
-            content.duration_seconds = int(len(audio_segment) / 1000)
-
-            # SFX 타임스탬프 업데이트: 기존 SFX 항목 제거 후 새 항목 추가
-            if sfx_timestamp_entries and timestamps:
-                clean_ts = [t for t in timestamps if t.get('type') != 'sfx']
-                merged_ts = clean_ts + sfx_timestamp_entries
-                merged_ts.sort(key=lambda x: x.get('startTime', 0))
-                content.audio_timestamps = merged_ts
-                print(f"📝 [API] SFX 타임스탬프 {len(sfx_timestamp_entries)}개 추가됨")
-
-            content.save()
-
-            os.remove(mixed_path)
-            print(f"✅ [API] 배경음 믹싱 완료: {content.duration_seconds}초")
-
-            return api_response(data={
-                "content_uuid": str(content.public_uuid),
-                "episode_number": content.number,
-                "audio_url": content.audio_file.url,
-                "duration_seconds": content.duration_seconds,
-                "message": "배경음이 에피소드에 믹싱되었습니다."
-            })
-        else:
-            return api_response(error="배경음 믹싱에 실패했습니다.", status=500)
-
+        result, err = _do_episode_mix(content, bg_tracks, sfx_tracks, request.api_user)
+        if err:
+            return api_response(error=err, status=400)
+        return api_response(data={**result, "message": "BGM/SFX 믹싱 완료"})
     except Exception as e:
         print(f"❌ [API] 배경음 믹싱 오류: {e}")
         traceback.print_exc()
         return api_response(error=f"배경음 믹싱 중 오류: {str(e)}", status=500)
+
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_set_episode_bgm(request):
+    """
+    에피소드 BGM만 교체 (기존 SFX 설정은 유지)
+
+    POST /api/v1/set-bgm/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "book_uuid": "xxxx",          // book_uuid+episode_number 또는
+        "episode_number": 1,          //   content_uuid 중 하나
+        "content_uuid": "xxxx",       // (선택)
+        "background_tracks": [
+            {"music_id": 5, "start_page": 0, "end_page": 9, "volume": 0.22}
+        ]
+    }
+    빈 배열 [] 전달 시 BGM 제거 후 SFX만으로 재믹싱.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    bg_tracks = data.get("background_tracks", [])
+    if bg_tracks is None:
+        return api_response(error="background_tracks 키가 필요합니다.", status=400)
+
+    content, err = _resolve_content(
+        request.api_user,
+        book_uuid=data.get("book_uuid", "").strip(),
+        episode_number=data.get("episode_number"),
+        content_uuid=data.get("content_uuid", "").strip() or None,
+    )
+    if err:
+        return api_response(error=err, status=404)
+
+    # 기존 SFX 설정 유지
+    mc = content.mix_config or {}
+    existing_sfx = mc.get('sfx', [])
+    sfx_tracks = [{'effect_id': s['id'], 'page_number': s.get('page_number', 1), 'volume': s.get('volume', 0.7)}
+                  for s in existing_sfx]
+
+    if not bg_tracks and not sfx_tracks:
+        return api_response(error="background_tracks가 비어있고 기존 SFX도 없습니다.", status=400)
+
+    try:
+        result, err = _do_episode_mix(content, bg_tracks, sfx_tracks, request.api_user)
+        if err:
+            return api_response(error=err, status=400)
+        return api_response(data={**result, "message": "BGM 업데이트 완료 (SFX 유지)"})
+    except Exception as e:
+        print(f"❌ [API] set-bgm 오류: {e}")
+        traceback.print_exc()
+        return api_response(error=f"BGM 설정 오류: {str(e)}", status=500)
+
+
+@require_api_key_secure
+@require_http_methods(["POST"])
+def api_set_episode_sfx(request):
+    """
+    에피소드 SFX만 교체 (기존 BGM 설정은 유지)
+
+    POST /api/v1/set-sfx/
+    Headers: X-API-Key: <your_api_key>
+    Body (JSON):
+    {
+        "book_uuid": "xxxx",          // book_uuid+episode_number 또는
+        "episode_number": 1,          //   content_uuid 중 하나
+        "content_uuid": "xxxx",       // (선택)
+        "sound_effects": [
+            {"effect_id": 243, "page_number": 3, "volume": 0.7}
+        ]
+    }
+    빈 배열 [] 전달 시 SFX 제거 후 BGM만으로 재믹싱.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_response(error="JSON 형식이 올바르지 않습니다.", status=400)
+
+    sfx_tracks = data.get("sound_effects", [])
+    if sfx_tracks is None:
+        return api_response(error="sound_effects 키가 필요합니다.", status=400)
+
+    content, err = _resolve_content(
+        request.api_user,
+        book_uuid=data.get("book_uuid", "").strip(),
+        episode_number=data.get("episode_number"),
+        content_uuid=data.get("content_uuid", "").strip() or None,
+    )
+    if err:
+        return api_response(error=err, status=404)
+
+    # 기존 BGM 설정 유지
+    mc = content.mix_config or {}
+    existing_bgm = mc.get('bgm', [])
+    bg_tracks = [{'music_id': b['id'], 'start_page': b.get('start_page', 0),
+                  'end_page': b.get('end_page', -1), 'volume': b.get('volume', 0.25)}
+                 for b in existing_bgm]
+
+    if not sfx_tracks and not bg_tracks:
+        return api_response(error="sound_effects가 비어있고 기존 BGM도 없습니다.", status=400)
+
+    try:
+        result, err = _do_episode_mix(content, bg_tracks, sfx_tracks, request.api_user)
+        if err:
+            return api_response(error=err, status=400)
+        return api_response(data={**result, "message": "SFX 업데이트 완료 (BGM 유지)"})
+    except Exception as e:
+        print(f"❌ [API] set-sfx 오류: {e}")
+        traceback.print_exc()
+        return api_response(error=f"SFX 설정 오류: {str(e)}", status=500)
 
 
 # ==================== 15. 책 커버 이미지 업로드 API ====================
@@ -2611,6 +2798,79 @@ def api_webnovel_generate_episode(request):
         return api_response(error=f"AI 응답 JSON 파싱 오류: {str(e)}", status=500)
     except Exception as e:
         return api_response(error=f"에피소드 생성 오류: {str(e)}", status=500)
+
+
+# ==================== 에피소드 상세 조회 API ====================
+
+@require_api_key_secure
+@require_http_methods(["GET"])
+def api_episode_detail(request):
+    """
+    에피소드 상세 조회 (페이지 목록 + BGM/SFX 정보)
+
+    GET /api/v1/episode-detail/?content_uuid=xxx
+    GET /api/v1/episode-detail/?book_uuid=xxx&episode_number=2
+    Headers: X-API-Key: <your_api_key>
+    """
+    content_uuid = request.GET.get("content_uuid", "").strip()
+    book_uuid = request.GET.get("book_uuid", "").strip()
+    episode_number = request.GET.get("episode_number")
+
+    if content_uuid:
+        content = Content.objects.filter(
+            public_uuid=content_uuid, book__user=request.api_user, is_deleted=False
+        ).first()
+    elif book_uuid and episode_number:
+        content = Content.objects.filter(
+            book__public_uuid=book_uuid, book__user=request.api_user,
+            number=int(episode_number), is_deleted=False
+        ).first()
+    else:
+        return api_response(error="content_uuid 또는 book_uuid+episode_number 필수", status=400)
+
+    if not content:
+        return api_response(error="에피소드를 찾을 수 없습니다.", status=404)
+
+    pages_data = []
+    for pa in PageAudio.objects.filter(content=content).order_by('page_number'):
+        pages_data.append({
+            "page_number": pa.page_number,
+            "page_type": pa.page_type or "tts",
+            "text": pa.text or "",
+            "voice_id": pa.voice_id or "",
+            "webaudio_effect": pa.webaudio_effect or "",
+            "speed_value": pa.speed_value,
+            "audio_url": pa.audio_file.url if pa.audio_file else None,
+        })
+
+    mc = content.mix_config or {}
+    bgm_list, sfx_list = [], []
+    for b in mc.get('bgm', []):
+        bgm_list.append({
+            "bgm_id": b.get('id'),
+            "name": b.get('name', ''),
+            "start_page": b.get('start_page', 0),
+            "end_page": b.get('end_page', -1),
+            "volume": b.get('volume', 0.25),
+        })
+    for s in mc.get('sfx', []):
+        sfx_list.append({
+            "sfx_id": s.get('id'),
+            "name": s.get('name', ''),
+            "page_number": s.get('page_number', 1),
+            "volume": s.get('volume', 0.7),
+        })
+
+    return api_response(data={
+        "content_uuid": str(content.public_uuid),
+        "book_uuid": str(content.book.public_uuid),
+        "title": content.title or "",
+        "number": content.number,
+        "duration_seconds": content.duration_seconds or 0,
+        "pages": pages_data,
+        "bgm": bgm_list,
+        "sfx": sfx_list,
+    })
 
 
 # ==================== 부분 재생성 API ====================

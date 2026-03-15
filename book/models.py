@@ -133,6 +133,7 @@ class Content(models.Model):
     text = models.TextField(blank=True, null=True)
     episode_image = models.ImageField(upload_to="uploads/episode_images/", null=True, blank=True)  # 에피소드 썸네일
     audio_file = models.FileField(upload_to="uploads/audio/", null=True, blank=True, max_length=1000)
+    tts_audio_file = models.FileField(upload_to="uploads/audio/tts_original/", null=True, blank=True, max_length=1000, help_text="믹싱 전 원본 TTS 오디오 (re-mix 시 base)")
     audio_timestamps = models.JSONField(null=True, blank=True)  # 각 대사의 시작/종료 시간 저장
     duration_seconds = models.IntegerField(default=0, help_text="오디오 길이(초)")
     mix_config = models.JSONField(null=True, blank=True, help_text="믹싱 설정 {bgm:[{id,name,desc,volume,start_page,end_page}], sfx:[{id,name,desc,volume,page_number}]}")  # 오디오 길이 (초 단위)

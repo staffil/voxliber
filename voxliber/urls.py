@@ -84,6 +84,7 @@ urlpatterns = [
     path("api/v1/create-episode/", voxliber_api.api_create_episode, name="api_create_episode"),
     path("api/v1/delete-episode/", voxliber_api.api_delete_episode, name="api_delete_episode"),
     path("api/v1/regenerate-episode/", voxliber_api.api_regenerate_episode, name="api_regenerate_episode"),
+    path("api/v1/episode-detail/", voxliber_api.api_episode_detail, name="api_episode_detail"),
     path("api/v1/regenerate-page/", voxliber_api.api_regenerate_page, name="api_regenerate_page"),
     path("api/v1/regenerate-sfx/", voxliber_api.api_regenerate_sfx, name="api_regenerate_sfx"),
     path("api/v1/regenerate-bgm/", voxliber_api.api_regenerate_bgm, name="api_regenerate_bgm"),
@@ -101,6 +102,8 @@ urlpatterns = [
     path("api/v1/background-music/create/", voxliber_api.api_create_background_music, name="api_create_background_music"),
     path("api/v1/background-music/", voxliber_api.api_background_music_library, name="api_background_music_library"),
     path("api/v1/mix-background/", voxliber_api.api_mix_background_music, name="api_mix_background"),
+    path("api/v1/set-bgm/", voxliber_api.api_set_episode_bgm, name="api_set_episode_bgm"),
+    path("api/v1/set-sfx/", voxliber_api.api_set_episode_sfx, name="api_set_episode_sfx"),
 
     # 이미지 업로드
     path("api/v1/upload-book-cover/", voxliber_api.api_upload_book_cover, name="api_upload_book_cover"),
