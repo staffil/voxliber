@@ -1804,6 +1804,19 @@ async function loadEpisodeForExpertEdit(data) {
         }
     }
 
+    // 1-2단계: TTS 페이지 오디오 병렬 fetch (preview merge 시 audioBlob 필요)
+    await Promise.all(pages.map(async (page, i) => {
+        if (!page.isSoundEffect && !page.isSilence && !page.isDuet && page.audioUrl && !page.audioFile) {
+            try {
+                const resp = await fetch(page.audioUrl);
+                if (resp.ok) {
+                    const blob = await resp.blob();
+                    page.audioFile = new File([blob], `tts_${i + 1}.mp3`, { type: 'audio/mp3' });
+                }
+            } catch(e) { console.warn(`TTS 페이지 ${i + 1} fetch 실패:`, e); }
+        }
+    }));
+
     // 2단계: SFX 페이지 삽입 (mix_config 기반, PageAudio에 없음)
     // page_number는 SFX가 붙을 TTS 페이지 번호(1-indexed) → 그 앞에 삽입
     console.log('[EditLoad] sfx data:', JSON.stringify(data.sfx));
