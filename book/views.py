@@ -156,7 +156,7 @@ def book_profile(request):
         elif write_mode == "voice":
             return redirect(f"/voice/voice/list/")
         elif write_mode == "myworks":
-            return redirect("my_book_list")
+            return redirect("mypage:my_book_list")
         else:  # beginner (기본)
             return redirect(f"/book/serialization/fast/{book.public_uuid}/")
 
