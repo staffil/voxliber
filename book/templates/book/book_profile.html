@@ -260,9 +260,7 @@
   btnBeginner.addEventListener('click', function () { submitWithMode('beginner'); });
   btnExpert.addEventListener('click',   function () { submitWithMode('expert');   });
   btnVoice.addEventListener('click',    function () { submitWithMode('voice');    });
-  btnMyWorks.addEventListener('click',  function () {
-    window.location.href = '{% url "mypage:my_book_list" %}';
-  });
+  btnMyWorks.addEventListener('click',  function () { submitWithMode('myworks'); });
 })();
 </script>
 {% endblock %}
