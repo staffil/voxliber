@@ -101,7 +101,7 @@
 
                     <div class="book-card-footer">
                         <div class="book-card-actions">
-                            <a href="{% url 'book:book_detail' book.public_uuid %}" class="btn-icon" title="상세보기">
+                            <a href="{% if book.book_type == 'webnovel' %}{% url 'book:webnovel_detail' book.public_uuid %}{% else %}{% url 'book:book_detail' book.public_uuid %}{% endif %}" class="btn-icon" title="상세보기">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                                     <circle cx="12" cy="12" r="3"/>
