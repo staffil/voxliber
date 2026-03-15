@@ -696,12 +696,7 @@ def weekly_create_books():
             concept["writing_style"],
         )
 
-        # DALL-E 3 HD 표지 자동 생성
-        generate_cover_dalle3(
-            uuid, concept["name"],
-            concept.get("description", ""),
-            concept["writing_style"],
-        )
+        # 표지 자동 생성 비활성화 (DALL-E 비용 절감)
 
         # auto_books 리스트에 추가 (스케줄러가 다음 사이클부터 자동 연재)
         auto_books.append({
