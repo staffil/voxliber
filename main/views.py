@@ -123,7 +123,8 @@ def main(request):
             if user_genres:
                 # 해당 장르의 책 중 아직 보지 않은 책 추천
                 recommended_books = Books.objects.filter(book_type='audiobook',
-                    genres__in=user_genres
+                    genres__in=user_genres,             is_deleted =False
+
                 ).exclude(
                     id__in=listened_books
                 ).select_related('user').prefetch_related('genres').distinct().order_by('-book_score')[:9]
