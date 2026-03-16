@@ -93,7 +93,8 @@ def main(request):
     for genre in all_genres:
         genre_books = Books.objects.filter(
             book_type='audiobook',
-            genres=genre
+            genres=genre, 
+            is_delete = False
         ).select_related('user').prefetch_related('genres').order_by('-book_score', '-created_at')[:6]
 
         if genre_books.exists():
