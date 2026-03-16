@@ -94,7 +94,7 @@ def main(request):
         genre_books = Books.objects.filter(
             book_type='audiobook',
             genres=genre, 
-            is_delete = False
+            is_deleted =False
         ).select_related('user').prefetch_related('genres').order_by('-book_score', '-created_at')[:6]
 
         if genre_books.exists():
