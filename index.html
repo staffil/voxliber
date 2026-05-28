@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오디오북 생성기</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>오디오북 생성기</h1>
+    <label for="book-title">책 제목:</label>
+    <input type="text" id="book-title" placeholder="책 제목을 입력하세요">
+    <button onclick="generateAudiobook()">오디오북 생성하기</button>
+    <p id="result"></p>
+
+    <script>
+        function generateAudiobook() {
+            const title = document.getElementById('book-title').value;
+            document.getElementById('result').innerText = `${title}에 대한 오디오북이 생성되었습니다!`;
+        }
+    </script>
+</body>
+</html>

@@ -66,6 +66,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "book.tasks.run_ai_factory",
         "schedule": crontab(minute="*/120"),  # 30분마다 실행
     },
+    "sync-notion-weekly": {
+        "task": "main.tasks.sync_notion_task",
+        "schedule": crontab(hour=3, minute=0, day_of_week=1),  # 매주 월요일 새벽 3시
+    },
 }
 
 
