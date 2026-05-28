@@ -590,6 +590,9 @@ def process_batch_audiobook(self, data, user_id):
                 converted_tracks = []
                 for track in bg_tracks:
                     mid = track.get('music_id', '')
+                    if not mid or str(mid).startswith('$'):
+                        print(f"⚠️ BGM 변수 미해결: {mid}, 건너뜀 (create_bgm 실패)")
+                        continue
                     bgm_obj = BackgroundMusicLibrary.objects.filter(id=mid).first()
                     if not bgm_obj or not bgm_obj.audio_file:
                         print(f"⚠️ BGM ID={mid} 없음, 건너뜀")
@@ -634,7 +637,11 @@ def process_batch_audiobook(self, data, user_id):
                         else:
                             print(f"[mix_bgm] ⚠️ SFX 변수 미해결: {eid} (results에 없음)")
 
-                    sfx_obj = SoundEffectLibrary.objects.filter(id=sfx_track.get('effect_id', '')).first()
+                    eid_resolved = sfx_track.get('effect_id', '')
+                    if not eid_resolved or str(eid_resolved).startswith('$'):
+                        print(f"⚠️ SFX 변수 미해결: {eid_resolved}, 건너뜀 (create_sfx 실패)")
+                        continue
+                    sfx_obj = SoundEffectLibrary.objects.filter(id=eid_resolved).first()
                     if not sfx_obj or not sfx_obj.audio_file:
                         continue
 
