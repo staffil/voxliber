@@ -97,26 +97,16 @@
                 <p class="story-desc">{{ story.description }}</p>
                 {% endif %}
         {% endif %}
-        <!-- 북마크 버튼 영역 -->
-{% if user.is_authenticated %}
-<div style="position: absolute; top: 12px; right: 12px; z-index: 2;">
-    {% if story_bookmarks %}
-    <!-- 북마크 있음 → 제거 버튼 -->
-    <button onclick="event.preventDefault(); event.stopPropagation(); removeStoryBookmark('{{ story.public_uuid }}')"
-            style="width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: #fbbf24; cursor: pointer; display: flex; align-items: center; justify-content: center;" data-login-required>
-                        <svg id="bookmarkIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                        </svg>    </button>
-    {% else %}
-    <!-- 북마크 없음 → 추가 버튼 -->
-    <button onclick="event.preventDefault(); event.stopPropagation(); addStoryBookmark('{{ story.public_uuid }}')"
-            style="width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.4); border: 2px solid #353535; color: #4a4a4a; cursor: pointer; display: flex; align-items: center; justify-content: center;" data-login-required>
-                        <svg id="bookmarkIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                        </svg>
-    </button>
-    {% endif %}
-</div>
+        <!-- 북마크 버튼 -->
+{% if request.user.is_authenticated %}
+<button id="storyBookmarkBtn"
+        class="story-bookmark-btn {% if story_bookmarks %}bookmarked{% endif %}"
+        onclick="event.preventDefault(); event.stopPropagation(); toggleStoryBookmark('{{ story.public_uuid }}')"
+        title="북마크">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="{% if story_bookmarks %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2">
+    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+  </svg>
+</button>
 {% endif %}
 
 
@@ -531,33 +521,26 @@ async function removeBookmark(bookId) {
     }
 }
 
-async function removeStoryBookmark(storyUuid) {
-    if (!confirm('AI 스토리 북마크를 제거하시겠습니까?')) {
-        return;
-    }
-
+async function toggleStoryBookmark(storyUuid) {
     try {
         const response = await fetch(`/character/story/${storyUuid}/bookmark/toggle/`, {
             method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            },
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
             credentials: 'same-origin'
         });
-
-        if (response.ok) {
-            alert('북마크가 제거되었습니다');
-            location.reload();
-        } else {
-                console.error('Status:', response.status);
-    console.error('Status Text:', response.statusText);
-            throw new Error('북마크 제거 실패');
+        const data = await response.json();
+        if (data.success) {
+            const btn = document.getElementById('storyBookmarkBtn');
+            const svg = btn.querySelector('svg');
+            btn.classList.toggle('bookmarked', data.bookmarked);
+            svg.setAttribute('fill', data.bookmarked ? 'currentColor' : 'none');
         }
     } catch (error) {
-        console.error('북마크 제거 실패:', error);
-        alert('북마크 제거에 실패했습니다');
+        console.error('북마크 오류:', error);
     }
 }
+
+async function removeStoryBookmark(storyUuid) { toggleStoryBookmark(storyUuid); }
 
 function getCookie(name) {
     let cookieValue = null;
@@ -575,28 +558,6 @@ function getCookie(name) {
 }
 
 
-async function addStoryBookmark(storyUuid) {
-    if (!confirm('이 스토리를 북마크에 추가하시겠습니까?')) return;
-
-    try {
-        const response = await fetch(`/character/story/${storyUuid}/bookmark/toggle/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            credentials: 'same-origin'
-        });
-
-        if (response.ok) {
-            alert('북마크에 추가되었습니다');
-            location.reload();
-        } else {
-            throw new Error('추가 실패');
-        }
-    } catch (error) {
-        console.error('추가 실패:', error);
-        alert('북마크 추가에 실패했습니다');
-    }
-}
+async function addStoryBookmark(storyUuid) { toggleStoryBookmark(storyUuid); }
 </script>
 {% endblock %}

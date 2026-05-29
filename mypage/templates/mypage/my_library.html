@@ -4,7 +4,7 @@
 {% block title %}VOXLIBER - 내 서재{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/mypage/my_library.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/mypage/my_library.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -21,44 +21,33 @@
     <div class="stat-card"><div class="stat-label">전체 책</div><div class="stat-value">{{ stats.total }}</div></div>
     <div class="stat-card"><div class="stat-label">읽는 중</div><div class="stat-value">{{ stats.reading }}</div></div>
     <div class="stat-card"><div class="stat-label">완독</div><div class="stat-value">{{ stats.completed }}</div></div>
-    {% comment %}AI 통계 비활성화
-    <div class="stat-card"><div class="stat-label">AI 스토리</div><div class="stat-value">{{ stats.ai_stories }}</div></div>
-    <div class="stat-card"><div class="stat-label">대화한 AI들</div><div class="stat-value">{{ stats.llms }}</div></div>
-    {% endcomment %}
+    <div class="stat-card"><div class="stat-label">대화한 AI</div><div class="stat-value">{{ stats.llms }}</div></div>
   </div>
 
-  <!-- 필터 -->
+  <!-- 필터 탭 -->
   <div class="filter-tabs">
-    <a href="?status=all" class="filter-tab {% if filter_status == 'all' %}active{% endif %}">전체</a>
-    <a href="?status=reading" class="filter-tab {% if filter_status == 'reading' %}active{% endif %}">읽는 중</a>
+    <a href="?status=all"       class="filter-tab {% if filter_status == 'all' %}active{% endif %}">전체</a>
+    <a href="?status=reading"   class="filter-tab {% if filter_status == 'reading' %}active{% endif %}">읽는 중</a>
     <a href="?status=completed" class="filter-tab {% if filter_status == 'completed' %}active{% endif %}">완독</a>
-    {% comment %}AI 필터 비활성화
-    <a href="?status=ai" class="filter-tab {% if filter_status == 'ai' %}active{% endif %}">AI 스토리</a>
-    <a href="?status=llms" class="filter-tab {% if filter_status == 'llms' %}active{% endif %}">대화한 AI들</a>
-    {% endcomment %}
+    <a href="?status=llms"      class="filter-tab filter-tab-ai {% if filter_status == 'llms' %}active{% endif %}">🤖 대화한 AI</a>
     <a href="{% url 'book:my_bookmarks' %}" class="filter-tab">북마크 →</a>
   </div>
 
 
   <!-- ========================= -->
-  <!-- 📚 책 목록 -->
+  <!-- 📚 책 목록                -->
   <!-- ========================= -->
   {% if filter_status != 'ai' and filter_status != 'llms' %}
-
     {% if reading_progress_list %}
       <div class="books-grid">
         {% for progress in reading_progress_list %}
         <div class="book-progress-card">
-
           <div class="book-cover-section">
             {% if progress.book.cover_img %}
               <img src="{{ progress.book.cover_img.url }}" alt="{{ progress.book.name }}">
             {% else %}
-              <div class="cover-placeholder">
-                {{ progress.book.name|slice:":2" }}
-              </div>
+              <div class="cover-placeholder">{{ progress.book.name|slice:":2" }}</div>
             {% endif %}
-
             <div class="book-status-badge status-{{ progress.status }}">
               {% if progress.status == 'reading' %}읽는 중
               {% elif progress.status == 'completed' %}완독
@@ -69,28 +58,22 @@
               {% if progress.book.book_type == 'webnovel' %}📖 웹소설{% else %}🎧 오디오북{% endif %}
             </div>
           </div>
-
           <div class="book-info-section">
-
             <h3 class="book-title">{{ progress.book.name }}</h3>
-
             <div class="book-meta">
               {% for genre in progress.book.genres.all|slice:":2" %}
                 {{ genre.name }}{% if not forloop.last %}, {% endif %}
               {% endfor %}
             </div>
-
             <div class="progress-section">
               <div class="progress-info">
                 <span>{{ progress.last_read_content_number }}화 / {{ progress.book.contents.count }}화</span>
                 <span>{{ progress.get_progress_percentage }}%</span>
               </div>
-
               <div class="progress-bar-container">
                 <div class="progress-bar" style="width: {{ progress.get_progress_percentage }}%"></div>
               </div>
             </div>
-
             <div class="book-actions">
               {% if progress.book.book_type == 'webnovel' %}
                 {% if progress.current_content %}
@@ -98,237 +81,123 @@
                   {% if progress.status == 'completed' %}다시 읽기{% else %}이어 읽기{% endif %}
                 </a>
                 {% else %}
-                <a href="{% url 'book:webnovel_detail' progress.book.public_uuid %}" class="btn-action btn-continue">
-                  읽기 시작
-                </a>
+                <a href="{% url 'book:webnovel_detail' progress.book.public_uuid %}" class="btn-action btn-continue">읽기 시작</a>
                 {% endif %}
-                <a href="{% url 'book:webnovel_detail' progress.book.public_uuid %}" class="btn-action btn-secondary">
-                  상세 정보
-                </a>
+                <a href="{% url 'book:webnovel_detail' progress.book.public_uuid %}" class="btn-action btn-secondary">상세 정보</a>
               {% else %}
                 <a href="#" class="btn-action btn-continue" onclick="showAppInstallModal()">
                   {% if progress.status == 'completed' %}다시 읽기{% else %}이어 읽기{% endif %}
                 </a>
-                <a href="{% url 'book:book_detail' progress.book.public_uuid %}" class="btn-action btn-secondary">
-                  상세 정보
-                </a>
+                <a href="{% url 'book:book_detail' progress.book.public_uuid %}" class="btn-action btn-secondary">상세 정보</a>
               {% endif %}
             </div>
-
           </div>
         </div>
         {% endfor %}
       </div>
-
     {% else %}
       <div class="empty-state">
         <div class="empty-state-icon">📚</div>
         <h3>아직 읽은 책이 없습니다</h3>
       </div>
     {% endif %}
-
   {% endif %}
 
-  {% comment %}AI 스토리 및 LLM 목록 비활성화
-  <!-- AI 스토리 목록 -->
-{% if filter_status == 'ai' or filter_status == 'all' %}
-  {% if chatted_stories %}
-  <div class="section-header">
-    <h2 class="section-title">🤖 대화한 AI 스토리</h2>
-  </div>
-  <div class="ai-stories-grid">
-   {% for story in chatted_stories %}
-<div class="story-cover-section" style="height: 280px; position: relative;">
 
-  <!-- 전체 카드 링크 -->
-  <a href="{% url 'character:story_intro' story.public_uuid %}"
-     class="ai-story-card"
-     style="text-decoration: none; display: block;">
 
-    <!-- 커버 이미지 -->
-        {% if story.cover_image %}
-          <img src="{{ story.cover_image.url }}" alt="{{ story.title }}">
 
-        {% elif story.story_desc_video %}
-          <video
-            src="{{ story.story_desc_video.url }}"
-            autoplay
-            muted
-            loop
-            playsinline
-          ></video>
-
-        {% else %}
-          <div class="story-cover-placeholder">🤖</div>
-        {% endif %}
-
-    <!-- 그라데이션 오버레이 -->
-    <div style="position: absolute; inset: 0;
-                background: linear-gradient(to top,
-                rgba(0,0,0,0.9) 0%,
-                rgba(0,0,0,0.5) 40%,
-                transparent 70%);">
+  <!-- ========================= -->
+  <!-- 💬 대화한 AI 캐릭터        -->
+  <!-- ========================= -->
+  {% if filter_status == 'llms' or filter_status == 'all' %}
+    {% if chatted_llms %}
+    <div class="section-header" style="margin-top:40px;">
+      <h2 class="section-title">💬 대화한 AI 캐릭터</h2>
     </div>
-
-    <!-- 상세 보기 버튼 (a → div) -->
-<div class="detail-btn"
-     title="이야기 상세 보기"
-     onclick="event.preventDefault(); event.stopPropagation(); location.href='{% url 'mypage:ai_detail' story.public_uuid %}';">
-
-      <svg xmlns="http://www.w3.org/2000/svg"
-           width="18"
-           height="18"
-           viewBox="0 0 24 24"
-           fill="none"
-           stroke="currentColor"
-           stroke-width="2"
-           stroke-linecap="round"
-           stroke-linejoin="round"
-           aria-hidden="true">
-        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-      </svg>
-    </div>
-
-    <!-- 콘텐츠 오버레이 -->
-    <div style="position: absolute; bottom: 0; left: 0; right: 0;
-                padding: 16px; z-index: 1;">
-
-      <h3 style="font-size: 16px; font-weight: 700; color: #fff;
-                 margin: 0 0 6px 0; overflow: hidden;
-                 text-overflow: ellipsis; white-space: nowrap;">
-        {{ story.title }}
-      </h3>
-
-      <p style="font-size: 12px; color: rgba(255,255,255,0.7);
-                margin: 0 0 10px 0;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                line-height: 1.4;">
-        {{ story.description|truncatewords:12|default:"" }}
-      </p>
-
-      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-        <span style="font-size: 11px; color: #a78bfa; font-weight: 600;">
-          👥 {{ story.characters.count }}명
-        </span>
-
-        {% for genre in story.genres.all|slice:":2" %}
-        <span style="padding: 2px 8px;
-                     background: rgba(99, 102, 241, 0.3);
-                     border-radius: 10px;
-                     font-size: 10px;
-                     color: #c4b5fd;">
-          {{ genre.name }}
-        </span>
-        {% endfor %}
+    <div class="ai-stories-grid">
+      {% for llm in chatted_llms %}
+      <div class="lib-ai-card">
+        <a href="{% url 'character:ai_intro' llm.public_uuid %}" class="lib-ai-card-link">
+          <div class="lib-ai-cover">
+            {% if llm.llm_image %}
+              <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}">
+            {% else %}
+              <div class="lib-ai-cover-empty">🤖</div>
+            {% endif %}
+            <div class="lib-ai-overlay"></div>
+            <div class="lib-ai-info">
+              <div class="lib-ai-title">{{ llm.name }}</div>
+              {% if llm.description %}
+              <div class="lib-ai-meta">{{ llm.description|truncatechars:40 }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </a>
+        <a href="{% url 'character:chat-view' llm.public_uuid %}" class="lib-ai-chat-btn">
+          💬 대화 이어가기
+        </a>
       </div>
-
+      {% endfor %}
     </div>
-  </a>
-</div>
-{% endfor %}
-
-  </div>
-    {% elif filter_status == 'ai' %}
+    {% elif filter_status == 'llms' %}
     <div class="empty-state">
-      <div class="empty-state-icon">🤖</div>
-      <h3 class="empty-state-title">아직 대화한 AI 스토리가 없습니다</h3>
-      <p class="empty-state-text">AI 캐릭터와 대화를 시작해보세요!</p>
-      <a href="{% url 'main:ai_novel_main' %}" class="btn-browse">AI 스토리 둘러보기</a>
+      <div class="empty-state-icon">💬</div>
+      <h3>아직 대화한 AI가 없습니다</h3>
     </div>
     {% endif %}
   {% endif %}
 
-<!-- ========================= -->
-<!-- 🤖 LLM (스토리 카드 스타일) -->
-<!-- ========================= -->
-{% if filter_status == 'llms' or filter_status == 'all' %}
 
-  {% if chatted_llms %}
-    <div class="section-header">
-      <h2 class="section-title">🤖 대화한 AI들</h2>
-    </div>
-
-    <div class="ai-stories-grid">
-      {% for llm in chatted_llms %}
-
-      <div class="story-cover-section" style="height: 260px; position: relative;">
-
-        <a href="{% url 'character:ai_intro' llm.public_uuid %}"
-           class="ai-story-card"
-           style="display: block; text-decoration: none;">
-
-          <!-- 커버 -->
-          {% if llm.llm_image %}
-            <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}">
+  <!-- ========================= -->
+  <!-- 🔖 북마크한 AI 스토리      -->
+  <!-- ========================= -->
+  {% if filter_status == 'all' and bookmarked_stories %}
+  <div class="section-header" style="margin-top:40px;">
+    <h2 class="section-title">🔖 북마크한 AI 스토리</h2>
+  </div>
+  <div class="ai-stories-grid">
+    {% for story in bookmarked_stories %}
+    <div class="lib-ai-card">
+      <button class="lib-bookmark-btn active"
+              onclick="toggleBookmark(this, '{{ story.public_uuid }}')" title="북마크 해제">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+        </svg>
+      </button>
+      <a href="{% url 'character:story_intro' story.public_uuid %}" class="lib-ai-card-link">
+        <div class="lib-ai-cover">
+          {% if story.story_desc_video %}
+            <video src="{{ story.story_desc_video.url }}" autoplay muted loop playsinline></video>
+          {% elif story.story_desc_img %}
+            <img src="{{ story.story_desc_img.url }}" alt="{{ story.title }}">
+          {% elif story.cover_image %}
+            <img src="{{ story.cover_image.url }}" alt="{{ story.title }}">
           {% else %}
-            <div class="story-cover-placeholder">
-              <span>🤖</span>
-            </div>
+            <div class="lib-ai-cover-empty">🤖</div>
           {% endif %}
-
-          <!-- 그라데이션 -->
-          <div style="
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-              to top,
-              rgba(0,0,0,0.9) 0%,
-              rgba(0,0,0,0.55) 40%,
-              transparent 70%
-            );
-          "></div>
-
-          <!-- 콘텐츠 -->
-          <div style="
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 16px;
-            z-index: 1;
-          ">
-
-            <h3 style="
-              font-size: 16px;
-              font-weight: 700;
-              color: #fff;
-              margin: 0 0 6px 0;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            ">
-              {{ llm.name }}
-            </h3>
-
-            <p style="
-              font-size: 12px;
-              color: rgba(255,255,255,0.75);
-              margin: 0;
-              line-height: 1.4;
-              display: -webkit-box;
-              -webkit-line-clamp: 2;
-              -webkit-box-orient: vertical;
-              overflow: hidden;
-            ">
-              {{ llm.description|truncatewords:14 }}
-            </p>
-
+          <div class="lib-ai-overlay"></div>
+          <div class="lib-ai-info">
+            <div class="lib-ai-avatars">
+              {% for char in story.characters.all|slice:":3" %}
+              <div class="lib-ai-avatar">
+                {% if char.llm_image %}<img src="{{ char.llm_image.url }}" alt="{{ char.name }}">
+                {% else %}<span>{{ char.name|first }}</span>{% endif %}
+              </div>
+              {% endfor %}
+            </div>
+            <div class="lib-ai-title">{{ story.title }}</div>
           </div>
-
-        </a>
-      </div>
-
-      {% endfor %}
+        </div>
+      </a>
+      {% with char=story.characters.first %}
+      {% if char %}
+      <a href="{% url 'character:chat-view' char.public_uuid %}" class="lib-ai-chat-btn">💬 대화 이어가기</a>
+      {% endif %}
+      {% endwith %}
     </div>
-
+    {% endfor %}
+  </div>
   {% endif %}
-{% endif %}
-  {% endcomment %}
-
 
 </div>
 {% endblock %}
@@ -336,20 +205,18 @@
 {% block extra_js %}
 <script>
 function toggleBookmark(btn, storyUuid) {
-    fetch(`/character/story/${storyUuid}/bookmark/toggle/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            btn.classList.toggle('active', data.bookmarked);
-        }
-    })
-    .catch(error => console.error('북마크 오류:', error));
+  fetch('/character/story/' + storyUuid + '/bookmark/toggle/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      btn.classList.toggle('active', data.bookmarked);
+      const path = btn.querySelector('path');
+      if (path) path.setAttribute('fill', data.bookmarked ? 'currentColor' : 'none');
+    }
+  });
 }
 </script>
 {% endblock %}

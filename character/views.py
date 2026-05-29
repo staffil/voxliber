@@ -1155,15 +1155,9 @@ def story_intro(request, story_uuid=None):
     # 북마크
     # =========================
     if request.user.is_authenticated:
-        story_bookmarks = (
-            StoryBookmark.objects
-            .filter(user=request.user)
-            .select_related('story', 'story__user')
-            .prefetch_related('story__genres', 'story__characters')
-            .order_by('-created_at')
-        )
+        story_bookmarks = StoryBookmark.objects.filter(user=request.user, story=story).exists()
     else:
-        story_bookmarks = StoryBookmark.objects.none()
+        story_bookmarks = False
 
     # =========================
     # 📊 통계용 데이터

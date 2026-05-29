@@ -15,59 +15,54 @@
         <p class="page-subtitle" style="color: rgba(255, 255, 255, 0.6);">나중에 읽고 싶은 책을 모아보세요</p>
     </div>
 
-    {% comment %}AI 스토리 북마크 섹션 비활성화
     <!-- AI 스토리 북마크 섹션 -->
     {% if story_bookmarks %}
-    <div style="margin-bottom: 48px;">
-        <h2 style="font-size: 20px; font-weight: 700; color: #434343; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-            AI 스토리 북마크
-            <span style="padding: 4px 12px; background: rgba(99, 102, 241, 0.15); border-radius: 20px; font-size: 14px; color: #a78bfa;">{{ story_bookmarks|length }}</span>
+    <div class="bm-ai-section">
+        <h2 class="bm-section-title">
+            🤖 AI 스토리 북마크
+            <span class="bm-count-badge">{{ story_bookmarks|length }}</span>
         </h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+        <div class="bm-ai-grid">
             {% for sb in story_bookmarks %}
-            <a href="{% url 'character:story_intro' sb.story.public_uuid %}" class="bookmark-item" style="flex-direction: column; padding: 0; overflow: hidden; text-decoration: none; display: block;" data-login-required>
-                <div style="position: relative; width: 100%; height: 280px; overflow: hidden;">
-                    <!-- 커버 이미지 -->
-                    {% if sb.story.cover_image %}
-                        <img src="{{ sb.story.cover_image.url }}" alt="{{ sb.story.title }}" style="width: 100%; height: 100%; object-fit: cover;">
-                    {% else %}
-                        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 64px;">
-
-                        </div>
-                    {% endif %}
-
-                    <!-- 그라데이션 오버레이 -->
-                    <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, transparent 70%);"></div>
-
-                    <!-- 북마크 버튼 -->
-                    <button onclick="event.preventDefault(); event.stopPropagation(); removeStoryBookmark('{{ sb.story.public_uuid }}')"
-                            style="position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: #fbbf24; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2;" data-login-required>
-                        <i class="fas fa-bookmark"></i>
-                    </button>
-
-                    <!-- 콘텐츠 오버레이 -->
-                    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 16px; z-index: 1;">
-                        <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 6px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ sb.story.title }}</h3>
-                        <p style="font-size: 12px; color: rgba(255,255,255,0.7); margin: 0 0 10px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
-                            {{ sb.story.description|truncatewords:12|default:"" }}
-                        </p>
-                        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
-                            <span style="font-size: 11px; color: #a78bfa; font-weight: 600;">👥 {{ sb.story.characters.count }}명</span>
-                            {% for genre in sb.story.genres.all|slice:":2" %}
-                            <span style="padding: 2px 8px; background: rgba(99, 102, 241, 0.3); border-radius: 10px; font-size: 10px; color: #c4b5fd;">{{ genre.name }}</span>
-                            {% endfor %}
-                        </div>
-                        <div style="font-size: 10px; color: rgba(255, 255, 255, 0.5);">
-                            저장일: {{ sb.created_at|date:"Y.m.d" }}
+            <div class="bm-ai-card">
+                <a href="{% url 'character:story_intro' sb.story.public_uuid %}" class="bm-ai-card-link">
+                    <div class="bm-ai-cover">
+                        {% if sb.story.story_desc_video %}
+                            <video src="{{ sb.story.story_desc_video.url }}" autoplay muted loop playsinline></video>
+                        {% elif sb.story.story_desc_img %}
+                            <img src="{{ sb.story.story_desc_img.url }}" alt="{{ sb.story.title }}">
+                        {% elif sb.story.cover_image %}
+                            <img src="{{ sb.story.cover_image.url }}" alt="{{ sb.story.title }}">
+                        {% else %}
+                            <div class="bm-ai-cover-empty">🤖</div>
+                        {% endif %}
+                        <div class="bm-ai-overlay"></div>
+                        <div class="bm-ai-info">
+                            <div class="bm-ai-chars">
+                                {% for char in sb.story.characters.all|slice:":3" %}
+                                <div class="bm-ai-avatar">
+                                    {% if char.llm_image %}<img src="{{ char.llm_image.url }}" alt="{{ char.name }}">
+                                    {% else %}<span>{{ char.name|first }}</span>{% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="bm-ai-title">{{ sb.story.title }}</div>
+                            <div class="bm-ai-date">{{ sb.created_at|date:"Y.m.d" }}</div>
                         </div>
                     </div>
-                </div>
-            </a>
+                </a>
+                <button class="bm-ai-remove-btn"
+                        onclick="removeStoryBookmark(this, '{{ sb.story.public_uuid }}')"
+                        title="북마크 제거">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </button>
+            </div>
             {% endfor %}
         </div>
     </div>
     {% endif %}
-    {% endcomment %}
 
     <!-- 웹소설 북마크 섹션 -->
     {% if webnovel_bookmarks %}
@@ -220,33 +215,21 @@ async function removeBookmark(bookId) {
     }
 }
 
-/* AI 스토리 북마크 제거 (비활성화)
-async function removeStoryBookmark(storyUuid) {
-    if (!confirm('AI 스토리 북마크를 제거하시겠습니까?')) {
-        return;
-    }
-
+async function removeStoryBookmark(btn, storyUuid) {
     try {
-        const response = await fetch(`/character/story/${storyUuid}/bookmark/toggle/`, {
+        const res = await fetch(`/character/story/${storyUuid}/bookmark/toggle/`, {
             method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            },
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
             credentials: 'same-origin'
         });
-
-        if (response.ok) {
-            alert('북마크가 제거되었습니다');
-            location.reload();
-        } else {
-            throw new Error('북마크 제거 실패');
+        const data = await res.json();
+        if (data.success && !data.bookmarked) {
+            btn.closest('.bm-ai-card').remove();
         }
-    } catch (error) {
-        console.error('북마크 제거 실패:', error);
-        alert('북마크 제거에 실패했습니다');
+    } catch (e) {
+        console.error('북마크 제거 실패:', e);
     }
 }
-*/
 
 function getCookie(name) {
     let cookieValue = null;

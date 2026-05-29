@@ -1065,3 +1065,14 @@ body.light-mode .cover-placeholder {
     );
     color: #9ca3af;
 }
+
+/* ── 북마크 버튼 ── */
+.story-bookmark-btn {
+  position: absolute; top: 12px; right: 12px; z-index: 3;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(0,0,0,.5); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.6); transition: background .18s, color .18s, transform .18s;
+}
+.story-bookmark-btn:hover { background: rgba(0,0,0,.75); color: #fff; transform: scale(1.1); }
+.story-bookmark-btn.bookmarked { color: #fbbf24; background: rgba(0,0,0,.65); }

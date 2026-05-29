@@ -290,8 +290,11 @@ def my_library(request):
         id__in=chatted_llm_ids
     ).distinct()
 
-    # 북마크 ID (아이콘 표시용)
-    bookmarked_story_ids = StoryBookmark.objects.filter(user=user).values_list('story_id', flat=True)
+    # 북마크한 스토리
+    bookmarked_story_ids = list(StoryBookmark.objects.filter(user=user).values_list('story_id', flat=True))
+    bookmarked_stories = Story.objects.filter(
+        id__in=bookmarked_story_ids
+    ).prefetch_related('characters', 'genres').order_by('-created_at')
 
     stats = {
         'total': all_progress.count(),
@@ -299,7 +302,7 @@ def my_library(request):
         'completed': completed_count,
         'favorite': all_progress.filter(is_favorite=True).count(),
         'ai_stories': chatted_stories.count(),
-        "llms":llms.count()
+        'llms': llms.count(),
     }
 
     context = {
@@ -307,8 +310,9 @@ def my_library(request):
         'filter_status': filter_status,
         'stats': stats,
         'chatted_stories': chatted_stories,
-        'bookmarked_story_ids': list(bookmarked_story_ids),
-        'chatted_llms': llms, 
+        'bookmarked_story_ids': bookmarked_story_ids,
+        'bookmarked_stories': bookmarked_stories,
+        'chatted_llms': llms,
     }
 
     return render(request, "mypage/my_library.html", context)
