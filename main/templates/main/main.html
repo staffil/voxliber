@@ -592,8 +592,131 @@ body.light-mode .vm-tab.active { color: #0f172a; border-bottom-color: #6366f1; }
 body.light-mode .vm-tab[data-p="vm-ab"].active { color: #1d4ed8; border-bottom-color: #3b82f6; }
 .vm-tab[data-p="vm-ai"].active { color: #f9a8d4; border-bottom-color: #ec4899; }
 body.light-mode .vm-tab[data-p="vm-ai"].active { color: #be185d; border-bottom-color: #ec4899; }
+.vm-tab[data-p="vm-chat"].active { color: #6ee7b7; border-bottom-color: #10b981; }
+body.light-mode .vm-tab[data-p="vm-chat"].active { color: #065f46; border-bottom-color: #10b981; }
+.vm-tab-chat { position: relative; }
 .vm-panel { display: none; }
 .vm-panel.active { display: block; }
+
+/* ── AI 채팅 소설 카드 그리드 ── */
+.aic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+/* 카드 — 이미지/영상이 전체를 꽉 채우고 정보는 하단 오버레이 */
+.aic-card {
+  position: relative;
+  aspect-ratio: 3/4;
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  display: block;
+  background: #111;
+  transition: transform .2s, box-shadow .2s;
+}
+.aic-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 16px 40px rgba(0,0,0,.5);
+}
+
+/* 커버 미디어 — 카드 전체 */
+.aic-cover {
+  position: absolute;
+  inset: 0;
+}
+.aic-cover img, .aic-cover video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform .4s;
+}
+.aic-card:hover .aic-cover img,
+.aic-card:hover .aic-cover video { transform: scale(1.06); }
+.aic-cover-empty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, rgba(16,185,129,.15), rgba(6,78,59,.3));
+}
+.aic-cover-empty img { width: 100%; height: 100%; object-fit: cover; }
+
+/* 그라디언트 오버레이 */
+.aic-cover-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,.88) 0%,
+    rgba(0,0,0,.4) 45%,
+    rgba(0,0,0,.05) 100%
+  );
+}
+
+/* 19+ 뱃지 */
+.aic-badge-adult {
+  position: absolute; top: 10px; right: 10px;
+  background: #7c3aed; color: #fff;
+  font-size: .62rem; font-weight: 800;
+  padding: 3px 8px; border-radius: 6px;
+  z-index: 2;
+}
+
+/* 캐릭터 아바타 — aic-info 안에서 flow */
+.aic-chars {
+  display: flex; align-items: center; gap: 4px;
+  margin-bottom: 6px;
+}
+.aic-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%; overflow: hidden;
+  border: 2px solid rgba(255,255,255,.5);
+  flex-shrink: 0;
+}
+.aic-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.aic-avatar-e {
+  width: 100%; height: 100%;
+  background: rgba(16,185,129,.35);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .68rem; font-weight: 800; color: #6ee7b7;
+}
+.aic-avatar-more {
+  background: rgba(255,255,255,.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .64rem; font-weight: 700; color: rgba(255,255,255,.7);
+}
+
+/* 카드 정보 */
+.aic-info {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 10px 12px 14px;
+  z-index: 2;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.aic-genres { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 2px; }
+.aic-genre-tag {
+  font-size: .6rem; font-weight: 700;
+  color: #6ee7b7; background: rgba(16,185,129,.2);
+  border: 1px solid rgba(16,185,129,.35);
+  border-radius: 4px; padding: 1px 5px;
+}
+.aic-title {
+  font-size: .9rem; font-weight: 800;
+  color: #fff; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  text-shadow: 0 1px 4px rgba(0,0,0,.6);
+}
+.aic-desc {
+  font-size: .72rem; color: rgba(255,255,255,.55);
+  line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+}
+.aic-cta {
+  font-size: .72rem; font-weight: 700; color: #6ee7b7;
+  margin-top: 4px;
+}
+@media (max-width: 600px) {
+  .aic-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
 
 /* ============================================================
    GENRE CHIP
@@ -1445,6 +1568,7 @@ body.light-mode .wn-intro { color: #64748b; }
     <div class="vm-tabs-inner">
       <div class="vm-tab active" data-p="vm-ab">오디오북</div>
       <div class="vm-tab" data-p="vm-ai">웹소설</div>
+      <div class="vm-tab vm-tab-chat" data-p="vm-chat">🤖 AI 채팅 소설</div>
     </div>
   </div>
 
@@ -1774,8 +1898,87 @@ body.light-mode .wn-intro { color: #64748b; }
 
     </div>
 
-  </div>
+  </div><!-- /vm-ai -->
 
+  <!-- ============================================================
+       PANEL: AI 채팅 소설
+       ============================================================ -->
+  <div id="vm-chat" class="vm-panel">
+    <div class="vm-inner vm-section">
+
+      <div class="vm-hdr">
+        <div>
+          <div class="vm-eyebrow">🤖 인터랙티브 AI</div>
+          <h2 class="vm-title">캐릭터와 <span class="ac">직접 대화</span>하는 소설</h2>
+          <p style="margin-top:10px;font-size:.9rem;color:rgba(255,255,255,.55);line-height:1.6;">
+            소설 속 캐릭터에게 말을 걸어보세요.<br>당신의 선택이 이야기를 만들어갑니다.
+          </p>
+        </div>
+      </div>
+
+      {% if ai_chat_stories %}
+      <div class="aic-grid">
+        {% for story in ai_chat_stories %}
+        <a href="{% url 'character:story_intro' story_uuid=story.public_uuid %}" class="aic-card">
+          <div class="aic-cover">
+            {% if story.story_desc_video %}
+              <video src="{{ story.story_desc_video.url }}" autoplay muted loop playsinline></video>
+            {% elif story.story_desc_img %}
+              <img src="{{ story.story_desc_img.url }}" alt="{{ story.title }}" loading="lazy">
+            {% elif story.cover_image %}
+              <img src="{{ story.cover_image.url }}" alt="{{ story.title }}" loading="lazy">
+            {% else %}
+              <div class="aic-cover-empty">
+                {% if story.characters.all.0 and story.characters.all.0.llm_image %}
+                  <img src="{{ story.characters.all.0.llm_image.url }}" alt="">
+                {% else %}🤖{% endif %}
+              </div>
+            {% endif %}
+            <div class="aic-cover-overlay"></div>
+            {% if story.adult_choice %}<div class="aic-badge-adult">19+</div>{% endif %}
+          </div>
+          <div class="aic-info">
+            <div class="aic-chars">
+              {% for char in story.characters.all|slice:":4" %}
+              <div class="aic-avatar" title="{{ char.name }}">
+                {% if char.llm_image %}
+                  <img src="{{ char.llm_image.url }}" alt="{{ char.name }}">
+                {% else %}
+                  <div class="aic-avatar-e">{{ char.name|first }}</div>
+                {% endif %}
+              </div>
+              {% endfor %}
+              {% with cnt=story.characters.count %}
+                {% if cnt > 4 %}<div class="aic-avatar aic-avatar-more">+{{ cnt|add:"-4" }}</div>{% endif %}
+              {% endwith %}
+            </div>
+            <div class="aic-genres">
+              {% for g in story.genres.all|slice:":2" %}
+                <span class="aic-genre-tag" {% if g.genres_color %}style="background:{{ g.genres_color }}30;border-color:{{ g.genres_color }};color:{{ g.genres_color }};"{% endif %}>{{ g.name }}</span>
+              {% endfor %}
+            </div>
+            <div class="aic-title">{{ story.title }}</div>
+            {% if story.description %}
+              <div class="aic-desc">{{ story.description|truncatechars:50 }}</div>
+            {% endif %}
+            <div class="aic-cta">대화 시작하기 →</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:80px 0;">
+        <div style="font-size:3rem;margin-bottom:16px;">🤖</div>
+        <div style="font-size:1rem;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:8px;">아직 공개된 AI 채팅 소설이 없어요</div>
+        <div style="font-size:.85rem;color:rgba(255,255,255,.35);">첫 번째 AI 채팅 소설을 만들어보세요!</div>
+        {% if request.user.is_authenticated %}
+        <a href="{% url 'character:make_ai_story' %}" style="display:inline-block;margin-top:20px;padding:12px 28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:12px;font-weight:700;font-size:.88rem;">AI 스토리 만들기</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
+  </div><!-- /vm-chat -->
 
 
   <!-- ============================================================

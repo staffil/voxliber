@@ -39,6 +39,16 @@ def main(request):
     advertisment_list = Advertisment.objects.all()
     story_list = Story.objects.all()
 
+    # AI 채팅 소설 — 공개된 스토리 + 캐릭터 프리페치
+    ai_chat_stories = list(
+        Story.objects.filter(is_public=True)
+        .prefetch_related('characters', 'genres')
+        .select_related('user')
+        .order_by('-created_at')[:40]
+    )
+    random.shuffle(ai_chat_stories)
+    ai_chat_stories = ai_chat_stories[:20]
+
 
 
     
@@ -256,6 +266,7 @@ def main(request):
         "poem_list":poem_list,
         "snippet_list":snippet_list,
         "ai_stories":story_list,
+        "ai_chat_stories": ai_chat_stories,
         "ai_advertismemt_img":ai_advertismemt_img,
         "user_share_list":user_share_list,
         "popular_genres":popular_genres,

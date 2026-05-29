@@ -193,6 +193,30 @@
                 </div>
             </div>
 
+            <!-- 슈퍼유저 전용: AI 스토리 관리 -->
+            {% if user.is_superuser %}
+            <div class="form-section" style="margin-top:24px;">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                        </svg>
+                        AI 스토리 관리 <span style="font-size:.68rem;font-weight:700;color:#a78bfa;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:6px;padding:2px 8px;margin-left:8px;vertical-align:middle;">ADMIN</span>
+                    </h2>
+                </div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                    <a href="{% url 'character:make_ai_story' %}" class="btn btn-primary" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;display:inline-flex;align-items:center;gap:8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        새 AI 스토리 만들기
+                    </a>
+                    <a href="{% url 'mypage:ai_list' %}" class="btn btn-primary" style="background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.4);color:#a78bfa;display:inline-flex;align-items:center;gap:8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                        AI 스토리 목록
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- 저장 버튼 -->
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary" data-login-required>

@@ -439,3 +439,267 @@ body.light-mode .wn-bookmark-btn.active { background: rgba(99, 102, 241, .15); }
   .wn-detail-page { padding: 20px 16px 60px; }
   .wn-tab-btn { padding: 10px 14px; font-size: .82rem; }
 }
+
+/* ── AI 스토리 탭 ── */
+.wn-tab-ai { position: relative; }
+.wn-ai-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 700;
+  border-radius: 99px;
+  padding: 1px 7px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.wn-ai-intro {
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: rgba(99, 102, 241, .08);
+  border: 1px solid rgba(99, 102, 241, .2);
+  border-radius: 12px;
+}
+.wn-ai-intro-text {
+  margin: 0;
+  font-size: .9rem;
+  color: rgba(255,255,255,.7);
+}
+
+.wn-ai-story-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.wn-ai-story-card {
+  display: flex;
+  gap: 16px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  padding: 16px;
+  text-decoration: none;
+  transition: transform .18s, border-color .18s, background .18s;
+}
+.wn-ai-story-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(99,102,241,.5);
+  background: rgba(99,102,241,.08);
+}
+
+.wn-ai-story-cover {
+  flex-shrink: 0;
+  width: 80px;
+  height: 100px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.wn-ai-story-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wn-ai-story-cover-empty {
+  width: 100%;
+  height: 100%;
+  background: rgba(99,102,241,.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.wn-ai-story-info { flex: 1; min-width: 0; }
+.wn-ai-story-badge {
+  display: inline-block;
+  font-size: .68rem;
+  font-weight: 700;
+  color: #a78bfa;
+  background: rgba(139,92,246,.15);
+  border: 1px solid rgba(139,92,246,.3);
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-bottom: 6px;
+}
+.wn-ai-story-title {
+  font-size: .95rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wn-ai-story-desc {
+  font-size: .78rem;
+  color: rgba(255,255,255,.5);
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+.wn-ai-story-chars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.wn-ai-char-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(99,102,241,.4);
+  flex-shrink: 0;
+}
+.wn-ai-char-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wn-ai-char-avatar-empty {
+  width: 100%;
+  height: 100%;
+  background: rgba(99,102,241,.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .7rem;
+  font-weight: 700;
+  color: #a78bfa;
+}
+.wn-ai-char-more {
+  font-size: .72rem;
+  color: rgba(255,255,255,.4);
+  padding-left: 4px;
+}
+
+.wn-ai-story-cta {
+  font-size: .78rem;
+  font-weight: 600;
+  color: #818cf8;
+}
+
+.wn-ai-empty {
+  text-align: center;
+  padding: 60px 0;
+  color: rgba(255,255,255,.3);
+}
+.wn-ai-empty-icon { font-size: 3rem; margin-bottom: 12px; }
+.wn-ai-empty-text { font-size: .9rem; }
+
+@media (max-width: 600px) {
+  .wn-ai-story-grid { grid-template-columns: 1fr; }
+}
+
+/* ── 인라인 스타일 → 클래스 ── */
+
+.wn-type-badge-adult { background: #7c3aed; margin-left: 6px; }
+
+.wn-tag-row { margin-top: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wn-tag-item { display: inline-block; margin-right: 10px; font-size: .8em; color: #6366f1; font-weight: 500; }
+body.light-mode .wn-tag-item { color: #4f46e5; }
+
+.wn-bookmark-section { margin-top: 16px; }
+
+.wn-cover-upload-section { margin-top: 10px; }
+.wn-cover-upload-form { display: inline-flex; align-items: center; gap: 8px; }
+.wn-cover-upload-label {
+  cursor: pointer;
+  background: rgba(124,58,237,.2);
+  border: 1px solid rgba(124,58,237,.5);
+  color: #a78bfa;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+body.light-mode .wn-cover-upload-label { background: rgba(124,58,237,.1); color: #7c3aed; }
+
+/* 빈 상태 공통 */
+.wn-empty {
+  text-align: center;
+  padding: 60px 0;
+  color: rgba(255,255,255,.3);
+}
+body.light-mode .wn-empty { color: rgba(0,0,0,.3); }
+
+/* 공지 본문 */
+.wn-announce-content {
+  margin-top: 8px;
+  font-size: .88rem;
+  color: rgba(255,255,255,.6);
+  line-height: 1.6;
+}
+body.light-mode .wn-announce-content { color: rgba(0,0,0,.55); }
+
+/* 폼 액션 */
+.wn-form-actions { margin-top: 10px; }
+
+/* 아이템 날짜 */
+.wn-item-date {
+  font-size: .73rem;
+  color: rgba(255,255,255,.3);
+  margin-top: 6px;
+}
+body.light-mode .wn-item-date { color: rgba(0,0,0,.35); }
+
+/* 별점 */
+.wn-stars-gold { color: #fbbf24; }
+
+/* AI 스토리 만들기 버튼 */
+.wn-ai-make-btn { display: inline-block; margin-top: 16px; }
+
+/* 성별 바 색상 */
+.wn-bar-male  { background: #6366f1; }
+.wn-bar-female { background: #ec4899; }
+
+/* ── 라이트모드 누락 색상 보완 ── */
+
+/* 제목 */
+body.light-mode .wn-title { color: #0f172a; }
+
+/* 에피소드 */
+body.light-mode .wn-ep-title { color: #1e293b; }
+
+/* 통계 */
+body.light-mode .wn-reader-count { color: #0f172a; }
+
+/* 리뷰 · 댓글 작성자 */
+body.light-mode .wn-review-user,
+body.light-mode .wn-comment-user { color: #0f172a; }
+
+/* 공지사항 */
+body.light-mode .wn-announce-title { color: #0f172a; }
+body.light-mode .wn-announce-item {
+  background: rgba(99,102,241,.06);
+  border-color: rgba(99,102,241,.15);
+}
+
+/* AI 스토리 탭 인트로 */
+body.light-mode .wn-ai-intro { background: rgba(99,102,241,.06); border-color: rgba(99,102,241,.15); }
+body.light-mode .wn-ai-intro-text { color: rgba(0,0,0,.6); }
+
+/* AI 스토리 카드 */
+body.light-mode .wn-ai-story-card {
+  background: #fff;
+  border-color: rgba(0,0,0,.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+body.light-mode .wn-ai-story-card:hover {
+  border-color: rgba(99,102,241,.35);
+  background: rgba(99,102,241,.04);
+}
+body.light-mode .wn-ai-story-title { color: #0f172a; }
+body.light-mode .wn-ai-story-desc { color: rgba(0,0,0,.5); }
+body.light-mode .wn-ai-char-more { color: rgba(0,0,0,.4); }
+body.light-mode .wn-ai-story-cta { color: #6366f1; }
+
+/* AI 스토리 빈 상태 */
+body.light-mode .wn-ai-empty { color: rgba(0,0,0,.3); }
+
+/* 댓글 답글 */
+body.light-mode .wn-reply { color: #1e293b; }

@@ -45,6 +45,9 @@ def character_terms(request):
 
 @login_required_to_main
 def make_ai_story(request, story_uuid=None):
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("AI 스토리 생성은 관리자만 가능합니다.")
     """
     스토리 생성 / 편집
     """
@@ -59,6 +62,13 @@ def make_ai_story(request, story_uuid=None):
     initial_voice_id = None
     initial_genres = []
     initial_tags = []
+
+    # 웹소설에서 넘어온 경우 자동 연결
+    linked_book_uuid = request.GET.get('book') or request.POST.get('linked_book_uuid')
+    linked_book = None
+    if linked_book_uuid:
+        from book.models import Books
+        linked_book = Books.objects.filter(public_uuid=linked_book_uuid, user=request.user).first()
 
     if story_uuid:
         story = get_object_or_404(Story, public_uuid=story_uuid)
@@ -78,19 +88,27 @@ def make_ai_story(request, story_uuid=None):
         is_adult = request.POST.get("adult_choice") == "on"
         media_file = request.FILES.get("cover_media")
         desc_img = request.FILES.get("desc_img")
-        print(f"[DEBUG] is_adult 값: {is_adult}")      
+        print(f"[DEBUG] is_adult 값: {is_adult}")
 
         if not title:
             return JsonResponse({"error": "스토리 제목을 입력해주세요."}, status=400)
 
         # 생성 vs 편집
         if story is None:
-            story = Story.objects.create(user=request.user, title=title, description=description, adult_choice = is_adult)
+            story = Story.objects.create(
+                user=request.user,
+                title=title,
+                description=description,
+                adult_choice=is_adult,
+                linked_book=linked_book,
+            )
             llm = LLM.objects.create(user=request.user, story=story)
         else:
             story.title = title
             story.description = description
             story.adult_choice = is_adult
+            if linked_book:
+                story.linked_book = linked_book
 
 
 
@@ -151,6 +169,7 @@ def make_ai_story(request, story_uuid=None):
         "initial_voice_id": initial_voice_id,
         "initial_genres": initial_genres,
         "initial_tags": initial_tags,
+        "linked_book": linked_book or (story.linked_book if story else None),
     }
     return render(request, "character/make_ai_story.html", context)
 
@@ -184,6 +203,9 @@ def story_detail(request, story_uuid):
 # AI 채팅 설정
 @login_required_to_main
 def make_ai(request, story_uuid):
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("AI 캐릭터 생성은 관리자만 가능합니다.")
     # 1. 스토리 필수로 가져오기 (없으면 404)
     story = get_object_or_404(Story, public_uuid=story_uuid, user=request.user)
 
@@ -333,6 +355,9 @@ def make_ai(request, story_uuid):
 
 @login_required_to_main
 def make_ai_update(request, llm_uuid):
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("AI 캐릭터 수정은 관리자만 가능합니다.")
     llm = get_object_or_404(LLM, public_uuid=llm_uuid, user=request.user)
     voice_list = VoiceList.objects.prefetch_related('types').all()
     voice_types = VoiceType.objects.all()

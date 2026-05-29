@@ -1003,6 +1003,7 @@ def webnovel_detail(request, book_uuid):
     from book.models import BookReview, BookComment, ReadingProgress, AuthorAnnouncement, BookmarkBook
     from django.db.models import Avg, Count
     from register.models import Users
+    from character.models import Story
 
     book = get_object_or_404(
         Books.objects.select_related('user').prefetch_related('genres', 'tags'),
@@ -1048,6 +1049,10 @@ def webnovel_detail(request, book_uuid):
     is_authorized = request.user.is_authenticated and request.user.is_adult()
     show_blur = is_adult_content and not is_authorized
 
+    ai_stories = Story.objects.filter(
+        linked_book=book, is_public=True
+    ).prefetch_related('characters').order_by('-created_at')
+
     context = {
         "book": book,
         "contents": contents,
@@ -1063,6 +1068,7 @@ def webnovel_detail(request, book_uuid):
         "age_data": age_data,
         "is_bookmarked": is_bookmarked,
         "show_blur": show_blur,
+        "ai_stories": ai_stories,
     }
     return render(request, "book/webnovel_detail.html", context)
 

@@ -24,6 +24,19 @@
         {% if story_uuid %}
             <input type="hidden" name="story_uuid" value="{{ story_uuid }}" >
         {% endif %}
+        {% if linked_book %}
+            <input type="hidden" name="linked_book_uuid" value="{{ linked_book.public_uuid }}">
+        {% endif %}
+
+        {% if linked_book %}
+        <div style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:12px;padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">
+            <span style="font-size:1.4rem;">📖</span>
+            <div>
+                <div style="font-size:.78rem;color:rgba(255,255,255,.5);">연결된 웹소설</div>
+                <div style="font-size:.95rem;font-weight:700;color:#a78bfa;">{{ linked_book.name }}</div>
+            </div>
+        </div>
+        {% endif %}
 
         <div class="form-section">
             <!-- 제목 -->

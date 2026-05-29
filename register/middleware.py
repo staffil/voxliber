@@ -1,9 +1,33 @@
 from django.utils import timezone
+from django.shortcuts import redirect
 from .models import UserVisitLog
 
 BOT_AGENTS = ['googlebot', 'bingbot', 'yandex', 'baidu', 'slurp', 'duckduck',
               'facebot', 'ia_archiver', 'python-requests', 'curl', 'wget',
               'scrapy', 'crawler', 'spider', 'bot', 'preview']
+
+SIGNUP_EXEMPT_PATHS = [
+    '/login/',
+    '/admin/',
+    '/static/',
+    '/media/',
+    '/api/',
+    '/accounts/',
+]
+
+class ProfileCompleteMiddleware:
+    """닉네임 설정 전(is_profile_completed=False)인 유저를 signup 페이지로 강제 이동"""
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if (
+            request.user.is_authenticated
+            and not request.user.is_profile_completed
+            and not any(request.path.startswith(p) for p in SIGNUP_EXEMPT_PATHS)
+        ):
+            return redirect('/login/signup/')
+        return self.get_response(request)
 
 class VisitLogMiddleware:
     def __init__(self, get_response):

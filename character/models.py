@@ -12,10 +12,19 @@ class Story(models.Model):
     is_public = models.BooleanField(default=False)
     cover_image = models.ImageField(upload_to='uploads/story_covers/', null=True, blank=True)
     genres = models.ManyToManyField('book.Genres', related_name='llms', blank=True)
-    tags = models.ManyToManyField('book.Tags', related_name='llms', blank=True) 
+    tags = models.ManyToManyField('book.Tags', related_name='llms', blank=True)
     adult_choice = models.BooleanField(default=False)
     story_desc_video = models.FileField(upload_to='uploads/story_covers/desc', null=True, blank=True)
     story_desc_img = models.ImageField(upload_to='uploads/story_covers/desc/img', null=True, blank=True)
+    linked_book = models.ForeignKey(
+        'book.Books',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ai_stories',
+        verbose_name="연결된 웹소설",
+        db_constraint=False,
+    )
 
 
 

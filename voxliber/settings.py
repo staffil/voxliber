@@ -142,8 +142,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'django_user_agents.middleware.UserAgentMiddleware',
-    'register.middleware.VisitLogMiddleware'
-
+    'register.middleware.VisitLogMiddleware',
+    'register.middleware.ProfileCompleteMiddleware',
 ]
 
 # SEO: www 리다이렉트는 웹 서버(nginx)에서 처리 권장
