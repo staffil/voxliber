@@ -40,11 +40,7 @@ APPEND_SLASH = False
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 if not SECRET_KEY:
-    if os.getenv('DEBUG', 'False') == 'True':
-        # 개발 환경에서만 기본값 사용
-        SECRET_KEY = "django-insecure-4q07*j%nngs$zmv6m%*c(&3#8n=!)xnz_wjv@a=53mmaejhe7%"
-    else:
-        raise ValueError("⚠️ DJANGO_SECRET_KEY environment variable must be set in production!")
+    raise ValueError("⚠️ DJANGO_SECRET_KEY environment variable must be set!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'  # 기본값 False로 변경
@@ -252,7 +248,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.getenv('DB_NAME', 'voxliber'),
         'USER': os.getenv('DB_USER', 'chung'),
-        'PASSWORD': os.getenv('DB_PASSWORD') or ('kch62213!' if DEBUG else None),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '3306'),
         'OPTIONS': {

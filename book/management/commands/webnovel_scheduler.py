@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from django.core.management.base import BaseCommand
 
 # ── 설정 ──────────────────────────────────────────────────────────────
-API_KEY = "59DQqKqImxvNkePzZE70_7-qCIaU00PYor9ubKtgeX5DYmzn3EbjdenZyo3iudC1"
+API_KEY = os.getenv('API_KEY')
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 BASE_URL = "https://voxliber.ink/api/v1"
 HEADERS  = {"X-API-Key": API_KEY, "Content-Type": "application/json"}
