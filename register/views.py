@@ -8,6 +8,7 @@ from datetime import date, datetime
 import json
 from urllib.parse import quote
 from book.models import APIKey
+from register.oauth_google import google_login, google_callback  # noqa: F401
 
 load_dotenv()
 
@@ -21,9 +22,6 @@ KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET")
 
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
-
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
 # -------------------------
 # 로그인/로그아웃
@@ -203,7 +201,6 @@ def kakao_login(request):
 def kakao_callback(request):
     code = request.GET.get("code")
 
-    # 동적 Redirect URI 생성
     callback_path = '/login/oauth/kakao/callback/'
     kakao_redirect_uri = request.build_absolute_uri(callback_path)
 
@@ -222,7 +219,13 @@ def kakao_callback(request):
     headers = {"Authorization": f"Bearer {access_token}"}
     profile_json = requests.get(profile_url, headers=headers).json()
 
-    return _oauth_callback(request, 'kakao', profile_json, 'id', 'kakao_account')
+    # kakao_account 안에 email이 중첩되어 있으므로 플랫하게 변환
+    kakao_account = profile_json.get('kakao_account', {})
+    flat_profile = {
+        'id': profile_json.get('id'),
+        'email': kakao_account.get('email', ''),
+    }
+    return _oauth_callback(request, 'kakao', flat_profile, 'id', 'email')
 
 # -------------------------
 # 네이버 OAuth
@@ -265,49 +268,6 @@ def naver_callback(request):
     response = profile_json.get("response", {})
 
     return _oauth_callback(request, 'naver', response, 'id', 'email')
-
-# -------------------------
-# 구글 OAuth
-# -------------------------
-def google_login(request):
-    flutter_redirect_uri = request.GET.get('redirect_uri')
-    if flutter_redirect_uri:
-        request.session['oauth_redirect_uri'] = flutter_redirect_uri
-
-    # 동적 Redirect URI 생성
-    callback_path = '/login/oauth/google/callback/'
-    google_redirect_uri = request.build_absolute_uri(callback_path)
-
-    scope = "openid email profile"
-    google_auth_url = (
-        f"https://accounts.google.com/o/oauth2/v2/auth?"
-        f"response_type=code&client_id={GOOGLE_CLIENT_ID}&redirect_uri={google_redirect_uri}&scope={scope}"
-    )
-    return redirect(google_auth_url)
-
-def google_callback(request):
-    code = request.GET.get("code")
-
-    # 동적 Redirect URI 생성
-    callback_path = '/login/oauth/google/callback/'
-    google_redirect_uri = request.build_absolute_uri(callback_path)
-
-    token_url = "https://oauth2.googleapis.com/token"
-    data = {
-        "code": code,
-        "client_id": GOOGLE_CLIENT_ID,
-        "client_secret": GOOGLE_CLIENT_SECRET,
-        "redirect_uri": google_redirect_uri,
-        "grant_type": "authorization_code",
-    }
-    token_response = requests.post(token_url, data=data).json()
-    access_token = token_response.get("access_token")
-
-    userinfo_url = "https://www.googleapis.com/oauth2/v2/userinfo"
-    headers = {"Authorization": f"Bearer {access_token}"}
-    profile_json = requests.get(userinfo_url, headers=headers).json()
-
-    return _oauth_callback(request, 'google', profile_json, 'id', 'email')
 
 # -------------------------
 # 네이티브 앱 OAuth (Google, Kakao, Naver)

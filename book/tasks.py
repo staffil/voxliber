@@ -4,6 +4,7 @@ import os
 import json
 import math
 import traceback
+import requests
 from django.conf import settings
 from django.core.files import File
 
@@ -781,6 +782,23 @@ def process_batch_audiobook(self, data, user_id):
     if created_episode_info:
         response['episode'] = created_episode_info
         response['redirect_url'] = f'/book/detail/{book_uuid}/'
+
+        # n8n TTS 완료 알림 웹훅 호출
+        n8n_webhook_url = os.getenv('N8N_TTS_WEBHOOK_URL')
+        if n8n_webhook_url and book:
+            try:
+                requests.post(n8n_webhook_url, json={
+                    'book_uuid': str(book.public_uuid),
+                    'book_title': book.name,
+                    'episode_number': created_episode_info['number'],
+                    'episode_title': created_episode_info['title'],
+                    'author_email': book.user.email,
+                    'audio_url': f"https://voxliber.ink/book/detail/{book_uuid}/",
+                    'duration_seconds': int(created_episode_info.get('duration', 0)),
+                }, timeout=5)
+                print(f"✅ n8n TTS 완료 알림 발송: {book.name} {created_episode_info['number']}화")
+            except Exception as e:
+                print(f"⚠️ n8n 웹훅 호출 실패 (무시): {e}")
 
     if warnings:
         response['warnings'] = warnings
