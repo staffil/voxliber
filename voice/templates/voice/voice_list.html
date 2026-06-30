@@ -105,7 +105,7 @@
                         </button>
                         <div class="vl-prog-sm"><div class="vl-fill-sm"></div></div>
                         <span class="vl-time-sm">0:00</span>
-                        <audio src="{{ item.voice.audio_url }}" preload="metadata" loading="lazy"></audio>
+                        <audio src="{{ item.voice.audio_url }}" preload="none"></audio>
                     </div>
                     {% endif %}
 
@@ -159,7 +159,7 @@
                         </button>
                         <div class="vl-card-prog"><div class="vl-card-fill"></div></div>
                         <span class="vl-card-time">0:00 / 0:00</span>
-                        <audio src="{{ voice.audio_url }}" preload="metadata" loading="lazy"></audio>
+                        <audio src="{{ voice.audio_url }}" preload="none"></audio>
                     </div>
                     {% endif %}
 
