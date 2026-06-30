@@ -45,7 +45,7 @@ function _vlPlay(audio, btn, player, isSmall) {
         _vlActiveBtn   = btn;
     }).catch(function (err) {
         _vlPlayPending = false;
-        if (err.name !== 'AbortError') console.warn(err);
+        console.warn('[vl] play error:', err.name, err.message);
         _vlResetPlayer(btn, player, isSmall);
     });
 
