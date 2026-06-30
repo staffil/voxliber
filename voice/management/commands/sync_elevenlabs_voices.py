@@ -15,9 +15,9 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        api_key = os.getenv('ELEVENLABS_API_KEY')
+        api_key = os.getenv('ELEVEN_API_KEY')
         if not api_key:
-            self.stderr.write(self.style.ERROR('ELEVENLABS_API_KEY 환경변수가 없습니다.'))
+            self.stderr.write(self.style.ERROR('ELEVEN_API_KEY 환경변수가 없습니다.'))
             return
 
         self.stdout.write('ElevenLabs API 호출 중...')
