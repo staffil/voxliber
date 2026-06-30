@@ -1,0 +1,613 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}VOXLIBER — 소리로 읽는 서재{% endblock %}
+{% block meta_description %}Voxliber에서 최고의 오디오북을 만나보세요. AI TTS 낭독, 다양한 장르, 작가 직접 제작 콘텐츠.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/main/main.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="main-v2">
+
+<!-- ══ 광고 배너 ══ -->
+{% if advertisment_list %}
+<div class="mv-ad-wrap" style="filter: blur(Spx) ;">
+  <div class="mv-ad-banner" >
+    <div class="mv-ad-track" id="mvAdTrack">
+      {% for ad in advertisment_list %}
+      <a class="mv-ad-slide" href="{{ ad.link }}" target="_blank" rel="noopener">
+        {% if ad.advertisment_img %}
+        <img src="{{ ad.advertisment_img.url }}" alt="{{ ad.title }}">
+        {% else %}
+        <div class="mv-ad-placeholder">
+          <span>{{ ad.title }}</span>
+        </div>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% if advertisment_list|length > 1 %}
+    <button class="mv-ad-prev" onclick="mvAdSlide(-1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <button class="mv-ad-next" onclick="mvAdSlide(1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+    <div class="mv-ad-dots" id="mvAdDots">
+      {% for ad in advertisment_list %}<button class="mv-b-dot {% if forloop.first %}on{% endif %}" data-idx="{{ forloop.counter0 }}" onclick="mvAdGo(+this.dataset.idx)"></button>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  <div class="mv-ad-edge mv-ad-edge-l"></div>
+  <div class="mv-ad-edge mv-ad-edge-r"></div>
+</div>
+{% endif %}
+
+<!-- ══ 검색바 ══ -->
+<div class="mv-searchbar">
+  <form class="mv-search-form" action="{% url 'main:search_books' %}" method="get">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" name="q" placeholder="작품, 작가, 태그 검색..." value="{{ request.GET.q }}" autocomplete="off">
+    <button type="submit">검색</button>
+  </form>
+</div>
+
+<!-- ══ 이어듣기 ══ -->
+{% if recent_listening %}
+<div class="mv-sec white">
+  <div class="mv-sec-hd">
+    <div class="mv-sec-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>이어듣기</div>
+    <a class="mv-sec-more" href="{% url 'mypage:my_library' %}">내 서재 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+  </div>
+  <div class="mv-resume-scroll">
+    {% for lh in recent_listening %}
+    <a href="{% url 'book:content_detail' lh.content.public_uuid %}" class="mv-resume-card">
+      <div class="mv-resume-cov">{% if lh.book.cover_img %}<img src="{{ lh.book.cover_img.url }}" alt="{{ lh.book.name }}">{% endif %}</div>
+      <div class="mv-resume-info">
+        <div class="mv-resume-title">{{ lh.book.name }}</div>
+        <div class="mv-resume-ep">{{ lh.content.number }}화 이어듣기</div>
+        <div class="mv-resume-prog"><div class="mv-resume-fill" data-progress="{{ lh.last_position|default:0 }}"></div></div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+
+
+<!-- ══ 최신 업데이트 ══ -->
+{% if new_books %}
+<div class="mv-sec white">
+  <div class="mv-sec-hd">
+    <div class="mv-sec-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>최신 업데이트</div>
+    <a class="mv-sec-more" href="{% url 'main:new_books' %}">전체 보기 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+  </div>
+  <div class="mv-book-scroll">
+    {% for book in new_books %}
+    <a class="mv-bk" href="{% url 'book:book_detail' book.public_uuid %}">
+      <div class="mv-bk-img{% if book.adult_choice and is_minor %} _ab{% endif %}">{% if book.cover_img %}<img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">{% else %}<div class="mv-bk-img-bg" style="background:linear-gradient(145deg,#c4a8f0,#5020b0)"></div>{% endif %}{% if book.adult_choice and is_minor %}<div class="ab-bd"><div class="ab-bd-icon">🔞</div><div class="ab-bd-txt">19+</div></div>{% endif %}</div>
+      <div class="mv-bk-name">{{ book.name }}</div>
+      {% for g in book.genres.all|slice:":1" %}
+      <div class="mv-bk-sub" style="color:{{ g.genres_color }}">{{ g.name }}</div>
+      {% endfor %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+
+<!-- ══ 스니펫 ══ -->
+{% if snippet_list %}
+<div class="mv-snip-section">
+  <div class="mv-snip-section-hd">
+    <div class="mv-sec-title light"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14"/></svg>오늘의 스니펫</div>
+    <div class="mv-snip-hd-right">
+      <button class="mv-refresh-btn" onclick="mvSpinRefresh(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>새로 고침</button>
+      <a class="mv-sec-more light" href="{% url 'main:snippet_all' %}">전체 보기 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+    </div>
+  </div>
+  <div class="mv-banner" id="snippetBanner">
+    <div class="mv-banner-track" id="snippetTrack">
+      {% for snippet in snippet_list|slice:":5" %}
+      <div class="mv-slide">
+        <div class="mv-slide-bg">
+          {% if snippet.book.cover_img %}<img src="{{ snippet.book.cover_img.url }}" alt="" loading="lazy">{% endif %}
+        </div>
+        <div class="mv-slide-txt">
+          <div class="mv-b-eyebrow">
+            <span class="mv-b-tag">{{ snippet.content.book.name }}</span>
+            {% if snippet.content.book.user.nickname %}<span class="mv-b-tag">{{ snippet.content.book.user.nickname }}</span>{% endif %}
+          </div>
+          <div class="mv-b-title">"{{ snippet.sentence }}"</div>
+          <div class="mv-b-acts">
+            {% if snippet.audio_file %}
+            <button class="mv-b-btn mv-snip-play" onclick="mvPlaySnippet(this,'{{ snippet.audio_file.url }}')">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> 듣기
+            </button>
+            {% endif %}
+            <a href="{% url 'book:book_detail' snippet.book.public_uuid %}" class="mv-b-ghost">책 보러가기 →</a>
+          </div>
+        </div>
+        <div class="mv-b-cover-col">
+          <div class="mv-b-glow"></div>
+          <div class="mv-b-cover">
+            {% if snippet.book.cover_img %}
+            <img src="{{ snippet.book.cover_img.url }}" alt="{{ snippet.book.name }}" loading="lazy">
+            {% else %}
+            <div class="mv-b-cover-bg" style="background:linear-gradient(145deg,#c4a8f0,#5020b0)"></div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="mv-b-prev"><button class="mv-b-nav" onclick="mvSnipSlide(-1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+    <div class="mv-b-next"><button class="mv-b-nav" onclick="mvSnipSlide(1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button></div>
+    <div class="mv-b-dots" id="snippetDots">
+      {% for snippet in snippet_list|slice:":5" %}
+      <button class="mv-b-dot {% if forloop.first %}on{% endif %}" data-idx="{{ forloop.counter0 }}" onclick="mvSnipGo(+this.dataset.idx)"></button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ══ 인기 있는 작품 ══ -->
+{% if popular_books %}
+<div class="mv-sec">
+  <div class="mv-sec-hd">
+    <div class="mv-sec-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>인기 있는 작품</div>
+    <a class="mv-sec-more" href="{% url 'main:search_books' %}?sort=popular">전체 보기 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+  </div>
+  <div class="mv-book-scroll">
+    {% for book in popular_books %}
+    <a class="mv-bk" href="{% url 'book:book_detail' book.public_uuid %}">
+      <div class="mv-bk-img{% if book.adult_choice and is_minor %} _ab{% endif %}">{% if book.cover_img %}<img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">{% else %}<div class="mv-bk-img-bg" style="background:linear-gradient(145deg,#f0b0b8,#b02040)"></div>{% endif %}{% if book.adult_choice and is_minor %}<div class="ab-bd"><div class="ab-bd-icon">🔞</div><div class="ab-bd-txt">19+</div></div>{% endif %}</div>
+      <div class="mv-bk-name">{{ book.name }}</div>
+      {% for g in book.genres.all|slice:":1" %}
+      <div class="mv-bk-sub" style="color:{{ g.genres_color }}">{{ g.name }}</div>
+      {% endfor %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ══ 높은 평점 TOP 5 ══ -->
+{% if top_rated_books %}
+<div class="mv-sec dark">
+  <div class="mv-sec-hd">
+    <div class="mv-sec-title light"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>높은 평점 순위 TOP 5</div>
+    <div class="mv-tnav-row">
+      <div class="mv-tnav">
+        <button class="mv-tnav-btn" onclick="mvTopSlide(-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="mv-tnav-btn" onclick="mvTopSlide(1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+    </div>
+  </div>
+  <div class="mv-top-grid">
+    {% with hero=top_rated_books.0 %}{% if hero %}
+    <div class="mv-top-hero">
+      <div class="mv-top-cover{% if hero.adult_choice and is_minor %} _ab{% endif %}">
+        {% if hero.cover_img %}<img src="{{ hero.cover_img.url }}" alt="{{ hero.name }}">{% else %}<div class="mv-top-cover-bg" style="background:linear-gradient(145deg,#c4a8f0,#5020b0)"></div>{% endif %}
+        {% if hero.adult_choice and is_minor %}<div class="ab-bd"><div class="ab-bd-icon">🔞</div><div class="ab-bd-txt">19+</div></div>{% endif %}
+        <div class="mv-top-rank-num">1</div>
+      </div>
+      <div class="mv-top-info">
+        <div class="mv-thi-eyebrow">★ {{ hero.book_score|default:"4.5" }} · 1위</div>
+        <div class="mv-thi-title">{{ hero.name }}</div>
+        <div class="mv-thi-author">{{ hero.user.nickname|default:"" }}</div>
+        <div class="mv-thi-desc">{{ hero.description|default:""|truncatechars:80 }}</div>
+        <a href="{% url 'book:book_detail' hero.public_uuid %}" class="mv-thi-btn"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>상세 보기</a>
+      </div>
+    </div>
+    {% endif %}{% endwith %}
+    <div class="mv-top-list">
+      {% for book in top_rated_books|slice:"1:5" %}
+      <a href="{% url 'book:book_detail' book.public_uuid %}" class="mv-tl-item">
+        <div class="mv-tl-num">{{ forloop.counter|add:1 }}</div>
+        <div class="mv-tl-cov{% if book.adult_choice and is_minor %} _ab{% endif %}">{% if book.cover_img %}<img src="{{ book.cover_img.url }}" alt="">{% else %}<div class="mv-tl-cov-bg" style="background:linear-gradient(145deg,#a8c8f0,#1840a0)"></div>{% endif %}{% if book.adult_choice and is_minor %}<div class="ab-bd"><div class="ab-bd-icon">🔞</div></div>{% endif %}</div>
+        <div class="mv-tl-info"><div class="mv-tl-title">{{ book.name }}</div><div class="mv-tl-author">{{ book.user.nickname|default:"" }}</div></div>
+        <div class="mv-tl-score">{{ book.book_score|default:"" }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+
+<!-- ══ AI 맞춤 추천 ══ -->
+{% if ai_recommended_books or recommended_books %}
+<div class="mv-sec">
+  <div class="mv-sec-hd">
+    <div class="mv-sec-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>AI가 고른 맞춤 작품</div>
+    <a class="mv-sec-more" href="{% url 'main:ai_recommended' %}">전체 보기 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+  </div>
+  <div class="mv-ai-scroll">
+    {% for book in ai_recommended_books %}
+    <a class="mv-ai-bk" href="{% url 'book:book_detail' book.public_uuid %}">
+      <div class="mv-ai-img{% if book.adult_choice and is_minor %} _ab{% endif %}">{% if book.cover_img %}<img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">{% else %}<div class="mv-ai-img-bg" style="background:linear-gradient(145deg,#c4a8f0,#5020b0)"></div>{% endif %}{% if book.adult_choice and is_minor %}<div class="ab-bd"><div class="ab-bd-icon">🔞</div><div class="ab-bd-txt">19+</div></div>{% endif %}</div>
+      <div class="mv-ai-name">{{ book.name }}</div>
+      {% for g in book.genres.all|slice:":1" %}<div class="mv-ai-match" style="color:{{ g.genres_color }}">{{ g.name }}</div>{% empty %}<div class="mv-ai-match">✦ AI 추천</div>{% endfor %}
+    </a>
+    {% endfor %}
+    {% for book in recommended_books %}
+    <a class="mv-ai-bk" href="{% url 'book:book_detail' book.public_uuid %}">
+      <div class="mv-ai-img{% if book.adult_choice and is_minor %} _ab{% endif %}">{% if book.cover_img %}<img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">{% else %}<div class="mv-ai-img-bg" style="background:linear-gradient(145deg,#d4c0f0,#4820a0)"></div>{% endif %}{% if book.adult_choice and is_minor %}<div class="ab-bd"><div class="ab-bd-icon">🔞</div><div class="ab-bd-txt">19+</div></div>{% endif %}</div>
+      <div class="mv-ai-name">{{ book.name }}</div>
+      {% for g in book.genres.all|slice:":1" %}<div class="mv-ai-match" style="color:{{ g.genres_color }}">{{ g.name }}</div>{% empty %}<div class="mv-ai-match">✦ AI 추천</div>{% endfor %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ══ 북스냅 ══ -->
+{% if snap_list %}
+<div class="mv-sec dark">
+  <div class="mv-sec-hd">
+    <div class="mv-sec-title light">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14"/></svg>
+      북스냅
+    </div>
+    <a class="mv-sec-more light" href="{% url 'book:book_snap_list' %}">전체 보기 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+  </div>
+  <div class="mv-snap-scroll">
+    {% for snap in snap_list %}
+    <div class="mv-snap-item">
+      <a href="{% url 'book:book_snap_detail' snap.public_uuid %}">
+        <div class="mv-snap-media{% if snap.adult_choice and is_minor %} _ab{% endif %}">
+          {% if snap.thumbnail %}
+          <img class="mv-snap-thumb" src="{{ snap.thumbnail.url }}" alt="{{ snap.snap_title|default:'스냅' }}" loading="lazy">
+          {% else %}
+          <div class="mv-snap-bg-fallback"></div>
+          {% endif %}
+          {% if snap.snap_video %}
+          <video class="mv-snap-vid" muted playsinline preload="none" data-src="{{ snap.snap_video.url }}"></video>
+          {% endif %}
+          {% if snap.adult_choice and is_minor %}
+          <div class="ab-bd"><div class="ab-bd-icon">🔞</div><div class="ab-bd-txt">19+</div></div>
+          {% else %}
+          <div class="mv-snap-overlay">{{ snap.snap_title|default:"제목 없음" }}</div>
+          <div class="mv-snap-play"><svg width="11" height="11" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+          {% endif %}
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ══ 플레이리스트 ══ -->
+{% if genre_playlists %}
+<div class="mv-sec white">
+  <div class="mv-sec-hd">
+    <div class="mv-sec-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>플레이리스트</div>
+    <a class="mv-sec-more" href="{% url 'main:playlist_list' %}">전체 보기 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+  </div>
+  <div class="mv-plc-scroll">
+    {% for pl in genre_playlists %}
+    <div class="mv-plc-card">
+      <div class="mv-plc-mosaic">
+        {% for item in pl.items.all|slice:":4" %}
+        <div class="mv-plc-cell">
+          {% if item.content.book.cover_img %}<img src="{{ item.content.book.cover_img.url }}" alt="">{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="mv-plc-info">
+        <div class="mv-plc-title">{{ pl.title }}</div>
+        <div class="mv-plc-count">작품 {{ pl.items.count }}개</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ══ 장르별 작품 ══ -->
+{% if genres_with_books %}
+<div class="mv-sec">
+  <div class="mv-sec-hd">
+    <div class="mv-sec-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>장르별 작품</div>
+    <a class="mv-sec-more" href="{% url 'main:genres_all' %}">전체 보기 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+  </div>
+  <div class="mv-genre-chips">
+    {% for item in genres_with_books %}
+    <button class="mv-gc {% if forloop.first %}on{% endif %}" onclick="mvSetGenre(this,{{ forloop.counter0 }})">{{ item.genre.name }}</button>
+    {% endfor %}
+  </div>
+  {% for item in genres_with_books %}
+  <div class="mv-book-scroll mv-genre-panel" id="mvGenre{{ forloop.counter0 }}" {% if not forloop.first %}style="display:none"{% endif %}>
+    {% for book in item.books %}
+    <a class="mv-bk" href="{% url 'book:book_detail' book.public_uuid %}">
+      <div class="mv-bk-img{% if book.adult_choice and is_minor %} _ab{% endif %}">{% if book.cover_img %}<img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">{% else %}<div class="mv-bk-img-bg" style="background:linear-gradient(145deg,#e8c8f0,#7830a0)"></div>{% endif %}{% if book.adult_choice and is_minor %}<div class="ab-bd"><div class="ab-bd-icon">🔞</div><div class="ab-bd-txt">19+</div></div>{% endif %}</div>
+      <div class="mv-bk-name">{{ book.name }}</div>
+      {% for g in book.genres.all|slice:":1" %}
+      <div class="mv-bk-sub" style="color:{{ g.genres_color }}">{{ g.name }}</div>
+      {% endfor %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ══ 보이스 라이브러리 ══ -->
+{% if voice_profiles %}
+<div class="mv-sec dark">
+  <div class="mv-sec-hd">
+    <div class="mv-sec-title light">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>보이스 라이브러리
+    </div>
+  </div>
+  <div class="mv-vl-scroll">
+    {% for voice in voice_profiles %}
+    <div class="mv-vl-card">
+      <div class="mv-vl-avatar">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+        <div class="mv-vl-wave">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="mv-vl-name">{{ voice.name }}</div>
+      <div class="mv-vl-creator">{{ voice.user.nickname|default:voice.user.username }}</div>
+      <div class="mv-vl-badge">AI 보이스</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ══ 작가 콘텐츠 신청 배너 ══ -->
+<div class="mv-apply">
+  <div>
+    <div class="mv-apply-eyebrow">Author Program</div>
+    <div class="mv-apply-title">당신의 이야기를<br>오디오북으로 만들어보세요</div>
+    <div class="mv-apply-sub">Voxliber에서 작가로 활동하고 독자와 직접 만나세요</div>
+  </div>
+  <a href="{% url 'register:author_apply' %}" class="mv-apply-btn">작가 콘텐츠 신청 →</a>
+</div>
+
+<!-- ══ 활동중인 크리에이터 ══ -->
+{% if popular_authors %}
+<div class="mv-sec white">
+  <div class="mv-sec-hd">
+    <div class="mv-sec-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>활동중인 크리에이터</div>
+  </div>
+  <div class="mv-creator-scroll">
+    {% for author in popular_authors %}
+    <a href="{% url 'main:user_info' author.public_uuid %}" class="mv-cr-card">
+      <div class="mv-cr-av">{% if author.user_img %}<img src="{{ author.user_img.url }}" alt="{{ author.nickname }}">{% else %}{{ author.nickname|first|upper|default:"A" }}{% endif %}</div>
+      <div class="mv-cr-name">{{ author.nickname|default:"-" }}</div>
+      <div class="mv-cr-meta">작품 {{ author.book_count }}개</div>
+      <div class="mv-cr-rank">{{ forloop.counter }}위</div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+
+</div><!-- /main-v2 -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── 북스냅 hover video ──
+document.querySelectorAll('.mv-snap-item').forEach(function(item) {
+  var vid = item.querySelector('.mv-snap-vid');
+  var img = item.querySelector('.mv-snap-thumb');
+  if (!vid) return;
+  var hto;
+  item.addEventListener('mouseenter', function() {
+    if (!vid.src && vid.dataset.src) vid.src = vid.dataset.src;
+    vid.style.display = 'block';
+    if (img) img.style.opacity = '0';
+    vid.currentTime = 0;
+    vid.play().catch(function(){});
+    hto = setTimeout(function() {
+      vid.pause(); vid.style.display = 'none';
+      if (img) img.style.opacity = '1';
+    }, 9000);
+  });
+  item.addEventListener('mouseleave', function() {
+    clearTimeout(hto);
+    vid.pause(); vid.style.display = 'none';
+    if (img) img.style.opacity = '1';
+  });
+});
+
+// ── 광고 배너 ──
+let mvAdCur = 0;
+const mvAdTrack = document.getElementById('mvAdTrack');
+const mvAdDots  = document.querySelectorAll('#mvAdDots .mv-b-dot');
+const mvAdTotal = mvAdTrack ? mvAdTrack.children.length : 0;
+function mvAdGo(n) {
+  mvAdCur = (n + mvAdTotal) % mvAdTotal;
+  if (mvAdTrack) mvAdTrack.style.transform = `translateX(-${mvAdCur * 100}%)`;
+  mvAdDots.forEach((d, i) => d.classList.toggle('on', i === mvAdCur));
+}
+function mvAdSlide(d) { mvAdGo(mvAdCur + d); }
+if (mvAdTotal > 1) setInterval(() => mvAdGo(mvAdCur + 1), 4000);
+
+// ── 플레이리스트 탭 ──
+function mvSetPl(btn, idx) {
+  document.querySelectorAll('#mvPlTabs .mv-pl-tab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.mv-pl-pane').forEach((p, i) => p.classList.toggle('on', i === idx));
+}
+
+// ── 장르 탭 ──
+function mvSetGenre(btn, idx) {
+  document.querySelectorAll('.mv-gc').forEach(g => g.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.mv-genre-panel').forEach(p => p.style.display = 'none');
+  const panel = document.getElementById('mvGenre' + idx);
+  if (panel) panel.style.display = 'flex';
+}
+
+// ── 스니펫 슬라이더 ──
+let mvSnipCur = 0;
+const mvSnipTrack = document.getElementById('snippetTrack');
+const mvSnipDots = document.querySelectorAll('#snippetDots .mv-b-dot');
+const mvSnipTotal = mvSnipTrack ? mvSnipTrack.children.length : 0;
+function mvSnipGo(n) {
+  mvSnipCur = (n + mvSnipTotal) % mvSnipTotal;
+  if (mvSnipTrack) mvSnipTrack.style.transform = `translateX(-${mvSnipCur * 100}%)`;
+  mvSnipDots.forEach((d, i) => d.classList.toggle('on', i === mvSnipCur));
+}
+function mvSnipSlide(d) { mvSnipGo(mvSnipCur + d); }
+if (mvSnipTotal > 1) setInterval(() => mvSnipGo(mvSnipCur + 1), 5000);
+
+// ── 스니펫 재생 ──
+let mvActiveAudio = null;
+function mvPlaySnippet(btn, url) {
+  if (mvActiveAudio) { mvActiveAudio.pause(); mvActiveAudio = null; }
+  document.querySelectorAll('.mv-snip-play').forEach(b => { b.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> 듣기'; });
+  const a = new Audio(url); a.play(); mvActiveAudio = a;
+  btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> 정지';
+  a.onended = () => { btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> 듣기'; mvActiveAudio = null; };
+}
+
+// ── 새로고침 스핀 ──
+function mvSpinRefresh(btn) {
+  const s = btn.querySelector('svg'); s.style.transform = 'rotate(360deg)';
+  setTimeout(() => { s.style.transition = 'none'; s.style.transform = 'rotate(0deg)'; setTimeout(() => { s.style.transition = 'transform .5s'; }, 10); }, 500);
+}
+
+// ── 진행 바 ──
+document.querySelectorAll('.mv-resume-fill[data-progress]').forEach(el => { el.style.width = el.dataset.progress + '%'; });
+
+// ── 데모 플레이어 ──
+const mvAudio = document.getElementById('mvDemoAudio');
+function mvFmt(s) { if (!isFinite(s)) return '0:00'; return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
+function mvToggleDemo() {
+  if (!mvAudio) return;
+  if (mvAudio.paused) { mvAudio.play(); document.getElementById('mvBpPlay').style.display = 'none'; document.getElementById('mvBpPause').style.display = ''; }
+  else { mvAudio.pause(); document.getElementById('mvBpPlay').style.display = ''; document.getElementById('mvBpPause').style.display = 'none'; }
+}
+if (mvAudio) {
+  mvAudio.ontimeupdate = () => {
+    const pct = mvAudio.duration ? mvAudio.currentTime / mvAudio.duration * 100 : 0;
+    document.getElementById('mvBpFill').style.width = pct + '%';
+    document.getElementById('mvBpCur').textContent = mvFmt(mvAudio.currentTime);
+    document.getElementById('mvBpTot').textContent = mvFmt(mvAudio.duration || 0);
+  };
+}
+const mvSpeeds = [1, 1.25, 1.5, 2, 0.75]; let mvSpeedIdx = 0;
+function mvCycleSpeed() {
+  mvSpeedIdx = (mvSpeedIdx + 1) % mvSpeeds.length;
+  if (mvAudio) mvAudio.playbackRate = mvSpeeds[mvSpeedIdx];
+  document.getElementById('mvBpSpeed').textContent = mvSpeeds[mvSpeedIdx] + '×';
+}
+
+// ── TOP5 슬라이드 ──
+(function() {
+  const hero   = document.querySelector('.mv-top-hero');
+  const items  = Array.from(document.querySelectorAll('.mv-tl-item'));
+  if (!hero || items.length === 0) return;
+
+  // 원본 데이터 수집
+  const extractData = el => ({
+    href:  el.href || el.closest('a')?.href || '',
+    score: el.querySelector('.mv-tl-score')?.textContent || '',
+    title: el.querySelector('.mv-tl-title')?.textContent || '',
+    author:el.querySelector('.mv-tl-author')?.textContent || '',
+    img:   el.querySelector('img')?.outerHTML || (el.querySelector('[class*=cov-bg]')?.outerHTML || ''),
+    num:   el.querySelector('.mv-tl-num')?.textContent || ''
+  });
+  const heroData = {
+    href:   hero.querySelector('a')?.href || '',
+    score:  hero.querySelector('.mv-thi-eyebrow')?.textContent || '',
+    title:  hero.querySelector('.mv-thi-title')?.textContent || '',
+    author: hero.querySelector('.mv-thi-author')?.textContent || '',
+    img:    hero.querySelector('.mv-top-cover img')?.outerHTML || (hero.querySelector('.mv-top-cover-bg')?.outerHTML || ''),
+    num:    '1'
+  };
+
+  const all = [heroData, ...items.map(extractData)];
+  let topCur = 0;
+
+  function renderTop(idx) {
+    topCur = (idx + all.length) % all.length;
+    const h = all[topCur];
+    // hero 업데이트
+    const coverBox = hero.querySelector('.mv-top-cover');
+    if (coverBox) {
+      const rankEl = coverBox.querySelector('.mv-top-rank-num');
+      coverBox.innerHTML = h.img + (rankEl ? rankEl.outerHTML : `<div class="mv-top-rank-num">1</div>`);
+    }
+    const infoEl = hero.querySelector('.mv-top-info');
+    if (infoEl) {
+      infoEl.querySelector('.mv-thi-eyebrow').textContent = h.score;
+      infoEl.querySelector('.mv-thi-title').textContent = h.title;
+      infoEl.querySelector('.mv-thi-author').textContent = h.author;
+      const btn = infoEl.querySelector('.mv-thi-btn');
+      if (btn) btn.href = h.href;
+    }
+    // 리스트 업데이트
+    const rest = all.filter((_, i) => i !== topCur).slice(0, items.length);
+    rest.forEach((d, i) => {
+      if (!items[i]) return;
+      items[i].href = d.href;
+      const numEl = items[i].querySelector('.mv-tl-num'); if (numEl) numEl.textContent = i + 2;
+      const covEl = items[i].querySelector('.mv-tl-cov'); if (covEl) covEl.innerHTML = d.img;
+      const tEl   = items[i].querySelector('.mv-tl-title'); if (tEl) tEl.textContent = d.title;
+      const aEl   = items[i].querySelector('.mv-tl-author'); if (aEl) aEl.textContent = d.author;
+      const sEl   = items[i].querySelector('.mv-tl-score'); if (sEl) sEl.textContent = d.score;
+    });
+  }
+  window.mvTopSlide = function(d) { renderTop(topCur + d); };
+})();
+
+// ── 드래그 스크롤 ──
+(function() {
+  var selectors = [
+    '.mv-resume-scroll',
+    '.mv-book-scroll',
+    '.mv-ai-scroll',
+    '.mv-snap-scroll',
+    '.mv-plc-scroll',
+    '.mv-vl-scroll',
+    '.mv-creator-scroll',
+    '.mv-genre-panel'
+  ];
+
+  selectors.forEach(function(sel) {
+    document.querySelectorAll(sel).forEach(function(el) {
+      var isDown = false, startX, scrollLeft;
+
+      el.addEventListener('mousedown', function(e) {
+        if (e.button !== 0) return;
+        isDown = true;
+        el.classList.add('drag-active');
+        startX = e.pageX - el.offsetLeft;
+        scrollLeft = el.scrollLeft;
+        e.preventDefault();
+      });
+
+      el.addEventListener('mouseleave', function() {
+        isDown = false;
+        el.classList.remove('drag-active');
+      });
+
+      el.addEventListener('mouseup', function() {
+        isDown = false;
+        el.classList.remove('drag-active');
+      });
+
+      el.addEventListener('mousemove', function(e) {
+        if (!isDown) return;
+        e.preventDefault();
+        var x = e.pageX - el.offsetLeft;
+        var walk = (x - startX) * 1.2;
+        el.scrollLeft = scrollLeft - walk;
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

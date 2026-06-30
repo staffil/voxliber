@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}플랜 선택 — Voxliber{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/register/subscribe_plan.css' %}">{% endblock %}
+
+{% block content %}
+<div class="plan-page">
+
+  <div class="plan-header">
+    <p class="plan-header__label">플랜 선택</p>
+    <h1 class="plan-header__title">원하는 플랜을 선택하세요</h1>
+    <p class="plan-header__sub">언제든 해지하거나 변경할 수 있습니다</p>
+  </div>
+
+  <div class="plans-grid">
+
+    <!-- 무료 플랜 -->
+    <div class="plan-card">
+      <div class="plan-card__name">무료</div>
+      <div class="plan-card__price">0<span class="plan-card__unit">원</span></div>
+      <p class="plan-card__cycle">&nbsp;</p>
+      <ul class="plan-card__features">
+        <li class="feat-ok">로그인 후 2화까지 청취</li>
+        <li class="feat-no">전체 에피소드 청취 불가</li>
+        <li class="feat-no">다운로드 불가</li>
+        <li class="feat-no">하이라이트 / 스니펫 불가</li>
+      </ul>
+      {% if subscription %}
+        <button class="plan-btn plan-btn--disabled" disabled>이미 구독 중</button>
+      {% else %}
+        <button class="plan-btn plan-btn--disabled" disabled>현재 이용 중</button>
+      {% endif %}
+    </div>
+
+    <!-- 월간 플랜 -->
+    <div class="plan-card plan-card--featured">
+      <div class="plan-card__badge">추천</div>
+      <div class="plan-card__name">월간</div>
+      <div class="plan-card__price">7,900<span class="plan-card__unit">원</span></div>
+      <p class="plan-card__cycle">/ 월</p>
+      <ul class="plan-card__features">
+        <li class="feat-ok">전체 에피소드 청취</li>
+        <li class="feat-ok">이어듣기</li>
+        <li class="feat-ok">다운로드</li>
+        <li class="feat-ok">하이라이트 / 스니펫</li>
+      </ul>
+      {% if subscription %}
+        <a href="{% url 'register:subscription_manage' %}" class="plan-btn plan-btn--outline">내 구독 관리</a>
+      {% else %}
+        <a href="{% url 'register:subscribe_checkout' 'monthly' %}" class="plan-btn plan-btn--featured">월간 구독 시작</a>
+      {% endif %}
+    </div>
+
+    <!-- 연간 플랜 -->
+    <div class="plan-card">
+      <div class="plan-card__badge plan-card__badge--gold">15% 절약</div>
+      <div class="plan-card__name">연간</div>
+      <div class="plan-card__price">80,000<span class="plan-card__unit">원</span></div>
+      <p class="plan-card__cycle">/ 년 (월 6,667원)</p>
+      <ul class="plan-card__features">
+        <li class="feat-ok">월간 혜택 전체 포함</li>
+        <li class="feat-ok">연간 우선 신작 알림</li>
+        <li class="feat-ok">이어듣기</li>
+        <li class="feat-ok">하이라이트 / 스니펫</li>
+      </ul>
+      {% if subscription %}
+        <a href="{% url 'register:subscription_manage' %}" class="plan-btn plan-btn--outline">내 구독 관리</a>
+      {% else %}
+        <a href="{% url 'register:subscribe_checkout' 'yearly' %}" class="plan-btn plan-btn--accent">연간 구독 시작</a>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <p class="plan-note">VAT(10%) 별도 · 언제든 해지 가능 · 개인 계정 전용</p>
+
+</div>
+{% endblock %}

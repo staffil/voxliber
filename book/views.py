@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse,HttpResponseForbidden
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
@@ -10,7 +10,6 @@ from voxliber.security import validate_image_file, validate_video_file, validate
 import os
 from django.conf import settings
 from register.decorator import login_required_to_main
-from character.models import LLM, Story, Conversation, ConversationMessage
 from book.utils import merge_audio_files
 from django.urls import reverse
 COLAB_TTS_URL = os.getenv('COLAB_TTS_URL', 'https://xxxx.ngrok-free.app')
@@ -88,7 +87,7 @@ def book_profile(request):
         episode_interval_weeks = request.POST.get("episode_interval_weeks", "1")
         is_adult = request.POST.get("adult_choice") == "on"
         write_mode = request.POST.get("write_mode", "beginner")  # ★ 모드 수신
-        print(f"[DEBUG] is_adult 값: {is_adult}, write_mode: {write_mode}")
+        print(f"[DEBUG] is_adult : {is_adult}, write_mode: {write_mode}")
 
         if not novel_title:
             context = {
@@ -231,7 +230,7 @@ def book_serialization(request):
         for i in range(len(pages_text)):
             if not pages_text[i].strip() and i < len(content_paragraphs) and content_paragraphs[i]:
                 pages_text[i] = content_paragraphs[i]
-                print(f"  ℹ️ page_text_{i} 비어있어 content_text 단락으로 복원: {content_paragraphs[i][:40]}")
+                print(f"   page_text_{i}  content_text  : {content_paragraphs[i][:40]}")
 
         if not all([content_number, content_title, content_text]):
             return JsonResponse({
@@ -250,7 +249,7 @@ def book_serialization(request):
                     content.title = content_title
                     content.text = content_text
                     content.save(update_fields=['title', 'text'])
-                    print(f"✏️ 전문가 모드 에피소드 수정: {edit_content_uuid_post}")
+                    print(f"    : {edit_content_uuid_post}")
                 else:
                     edit_content_uuid_post = ''
 
@@ -272,7 +271,7 @@ def book_serialization(request):
                 except ValidationError as e:
                     return JsonResponse({'success': False, 'error': f'이미지 검증 실패: {str(e)}'}, status=400)
                 content.save()
-                print(f"📷 에피소드 이미지 저장 완료: {content.episode_image.url}")
+                print(f"    : {content.episode_image.url}")
 
             from book.utils import merge_audio_files, generate_tts, mix_audio_with_background
             from django.core.files import File
@@ -287,8 +286,8 @@ def book_serialization(request):
                 except ValidationError as e:
                     return JsonResponse({'success': False, 'error': f'오디오 검증 실패: {str(e)}'}, status=400)
                 # ✅ 미리듣기에서 이미 merge된 오디오 사용 (배경음 포함)
-                print('🎵 미리듣기에서 생성된 최종 merge 오디오 사용 (배경음 포함)')
-                print(f'📎 파일 크기: {merged_audio_file.size / 1024 / 1024:.2f} MB')
+                print('    merge   ( )')
+                print(f'  : {merged_audio_file.size / 1024 / 1024:.2f} MB')
 
                 # 임시 파일로 저장
                 temp_path = os.path.join(settings.MEDIA_ROOT, 'audio', f'merged_{uuid4().hex}.mp3')
@@ -305,7 +304,7 @@ def book_serialization(request):
                         File(audio_file),
                         save=True
                     )
-                print(f"💾 최종 오디오 파일 저장 완료: {content.audio_file.url}")
+                print(f"     : {content.audio_file.url}")
 
                 # 오디오 길이 계산 (pydub 사용)
                 from pydub import AudioSegment
@@ -319,14 +318,14 @@ def book_serialization(request):
                     try:
                         dialogue_durations = json.loads(merged_timestamps_json)
                         content.audio_timestamps = dialogue_durations
-                        print(f"⏱️ 미리듣기 타임스탬프 {len(dialogue_durations)}개 사용 (정확)")
+                        print(f"   {len(dialogue_durations)}  ()")
                     except Exception as ts_err:
-                        print(f"⚠️ 타임스탬프 파싱 실패: {ts_err}")
+                        print(f"   : {ts_err}")
                         dialogue_durations = []
                 else:
                     # fallback: 균등 분할 (미리듣기 없이 발행한 경우)
                     page_count = sum(1 for pt in pages_text if pt.strip())
-                    print(f"📝 타임스탬프 균등 생성: {page_count}개 대사")
+                    print(f"   : {page_count} ")
                     if page_count > 0:
                         dialogue_durations = []
                         segment_duration = total_duration_ms / page_count
@@ -343,19 +342,19 @@ def book_serialization(request):
                                 })
                                 dialogue_index += 1
                         content.audio_timestamps = dialogue_durations
-                        print(f"⏱️ {len(dialogue_durations)}개 대사의 타임스탬프 생성 완료 (균등 분할)")
+                        print(f" {len(dialogue_durations)}     ( )")
 
                 content.save()
-                print(f"⏱️ 총 길이: {content.duration_seconds}초")
+                print(f"  : {content.duration_seconds}")
 
                 # 임시 파일 삭제
                 os.remove(temp_path)
-                print("🗑️ 임시 파일 삭제 완료")
-                print("✅ 미리듣기 오디오를 사용하여 빠르게 발행 완료!")
+                print("    ")
+                print("      !")
 
             else:
                 # ⚠️ 미리듣기를 하지 않은 경우 - 기존 방식으로 merge 수행
-                print("⚠️ 미리듣기 오디오가 없음 - 개별 파일 merge 수행")
+                print("    -   merge ")
 
                 # 업로드된 오디오 파일들 수집 (페이지 인덱스 순서 유지)
                 audio_items = []
@@ -364,7 +363,7 @@ def book_serialization(request):
                         suffix = key[len('audio_'):]
                         if suffix.isdigit():
                             audio_items.append((int(suffix), request.FILES[key]))
-                            print(f"📎 오디오 파일 수신: {key}")
+                            print(f"   : {key}")
                 audio_items.sort(key=lambda x: x[0])
                 audio_files = [f for _, f in audio_items]
                 # 페이지 인덱스에 맞는 텍스트 정렬 (인덱스 불일치 방지)
@@ -373,22 +372,22 @@ def book_serialization(request):
                 # 배경음 정보 수집
                 background_tracks_count = int(request.POST.get('background_tracks_count', 0))
                 background_tracks = []
-                print(f"🎼 배경음 트랙 개수: {background_tracks_count}")
+                print(f"   : {background_tracks_count}")
 
                 # 오디오 파일이 있으면 합치기, 없으면 TTS 생성
                 if audio_files:
-                    print(f"🎵 {len(audio_files)}개의 오디오 파일 합치기 시작...")
+                    print(f" {len(audio_files)}    ...")
 
                     # merge_audio_files는 이제 타임스탬프 정보도 함께 반환
                     merged_audio_path, dialogue_durations = merge_audio_files(audio_files, aligned_pages_text)
 
                     if merged_audio_path and dialogue_durations and os.path.exists(merged_audio_path):
-                        print(f"✅ 오디오 합치기 완료: {merged_audio_path}")
-                        print(f"⏱️ 타임스탬프 {len(dialogue_durations)}개 생성 완료")
+                        print(f"   : {merged_audio_path}")
+                        print(f"  {len(dialogue_durations)}  ")
 
                         # 배경음 처리
                         if background_tracks_count > 0:
-                            print(f"🎼 배경음 {background_tracks_count}개 처리 시작...")
+                            print(f"  {background_tracks_count}  ...")
 
                             # 배경음 파일과 정보 수집
                             import math
@@ -402,12 +401,12 @@ def book_serialization(request):
 
                                     # 배경음 볼륨 (0-1 범위) → dB로 변환
                                     volume_linear = float(request.POST.get(f'background_volume_{i}', 1))
-                                    print(f"   📊 받은 볼륨 값 (0-1): {volume_linear}")
+                                    print(f"       (0-1): {volume_linear}")
                                     if volume_linear > 0:
                                         volume_db = 20 * math.log10(volume_linear)
                                     else:
                                         volume_db = -60  # 거의 무음
-                                    print(f"   📊 변환된 dB 값: {volume_db:.1f}dB")
+                                    print(f"     dB : {volume_db:.1f}dB")
 
                                     # 배경음 파일을 임시 파일로 저장
                                     with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_bg:
@@ -426,7 +425,7 @@ def book_serialization(request):
                                         'volume': volume_db,  # 배경음 볼륨 (dB 단위)
                                         'name': music_name
                                     })
-                                    print(f"   🎵 배경음 {i+1}: {music_name} ({start_time}ms ~ {end_time}ms), 볼륨: {volume_db:.1f}dB")
+                                    print(f"     {i+1}: {music_name} ({start_time}ms ~ {end_time}ms), : {volume_db:.1f}dB")
 
                             # 배경음 믹싱
                             if background_tracks:
@@ -450,7 +449,7 @@ def book_serialization(request):
                                 File(audio_file),
                                 save=True
                             )
-                        print(f"💾 합쳐진 오디오 파일 저장 완료: {content.audio_file.url}")
+                        print(f"     : {content.audio_file.url}")
 
                         # 타임스탬프 정보와 총 길이 저장
                         content.audio_timestamps = dialogue_durations
@@ -458,14 +457,14 @@ def book_serialization(request):
                         if dialogue_durations:
                             content.duration_seconds = int(dialogue_durations[-1]['endTime'] / 1000)
                         content.save()
-                        print(f"⏱️ {len(dialogue_durations)}개 대사의 타임스탬프 저장 완료")
-                        print(f"⏱️ 총 길이: {content.duration_seconds}초")
+                        print(f" {len(dialogue_durations)}    ")
+                        print(f"  : {content.duration_seconds}")
 
                         # 임시 파일 삭제
                         os.remove(merged_audio_path)
-                        print("🗑️ 임시 파일 삭제 완료")
+                        print("    ")
                     else:
-                        print("⚠️ 오디오 합치기 실패 - 대체로 TTS 생성")
+                        print("    -  TTS ")
                         audio_path = generate_tts(content_text, voice_id, language_code, speed_value,similarity_value,style_value)
                         if audio_path and os.path.exists(audio_path):
                             with open(audio_path, 'rb') as audio_file:
@@ -477,22 +476,22 @@ def book_serialization(request):
                             os.remove(audio_path)
                 else:
                     # 오디오 파일이 없으면 전체 텍스트로 TTS 생성
-                    print("🎵 TTS 생성 시작...")
+                    print(" TTS  ...")
                     audio_path = generate_tts(content_text, voice_id, language_code, speed_value,similarity_value,style_value)
                     if audio_path and os.path.exists(audio_path):
-                        print(f"✅ TTS 생성 완료: {audio_path}")
+                        print(f" TTS  : {audio_path}")
                         with open(audio_path, 'rb') as audio_file:
                             content.audio_file.save(
                                 os.path.basename(audio_path),
                                 File(audio_file),
                                 save=True
                             )
-                        print(f"💾 오디오 파일 저장 완료: {content.audio_file.url}")
+                        print(f"    : {content.audio_file.url}")
                         # 임시 파일 삭제
                         os.remove(audio_path)
-                        print("🗑️ 임시 파일 삭제 완료")
+                        print("    ")
                     else:
-                        print("⚠️ TTS 생성 실패 - 에피소드는 저장되었지만 오디오는 없음")
+                        print(" TTS   -    ")
 
             return JsonResponse({
                 "success": True,
@@ -501,7 +500,7 @@ def book_serialization(request):
                 "redirect_url": f"/book/detail/{book.public_uuid}/"
             })
         except Exception as e:
-            print(f"❌ 에피소드 저장 오류: {e}")
+            print(f"   : {e}")
             import traceback
             traceback.print_exc()
             return JsonResponse({
@@ -641,7 +640,7 @@ def generate_tts_api(request):
         return HttpResponse(audio_data, content_type="audio/mpeg")
 
     except Exception as e:
-        print("❌ 오류:", e)
+        print(" :", e)
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
@@ -699,7 +698,7 @@ def duet_tts_generate(request):
         return HttpResponse(audio_data, content_type="audio/mpeg")
 
     except Exception as e:
-        print("❌ 듀엣 TTS 오류:", e)
+        print("  TTS :", e)
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
@@ -723,7 +722,7 @@ def generate_sound_effect_api(request):
         if not effect_name or not effect_description:
             return JsonResponse({"success": False, "error": "이팩트 이름과 설명을 입력해주세요."}, status=400)
 
-        print(f"🎵 사운드 이팩트 생성 요청: {effect_name} - {effect_description} ({duration_seconds}초)")
+        print(f"    : {effect_name} - {effect_description} ({duration_seconds})")
 
         # 사운드 이팩트 생성 (utils.sound_effect는 파일 경로를 반환)
         audio_path = sound_effect(effect_name, effect_description, duration_seconds)
@@ -731,7 +730,7 @@ def generate_sound_effect_api(request):
         if not audio_path:
             return JsonResponse({"success": False, "error": "사운드 이팩트 생성에 실패했습니다."}, status=500)
 
-        print(f"✅ 사운드 이팩트 생성 완료: {audio_path}")
+        print(f"    : {audio_path}")
 
         # 라이브러리에 저장
         if save_to_library and request.user.is_authenticated:
@@ -742,7 +741,7 @@ def generate_sound_effect_api(request):
                     user=request.user
                 )
                 effect.audio_file.save(f"effect_{effect.id}.mp3", File(f), save=True)
-            print(f"💾 사운드 이팩트 라이브러리에 저장 완료: {effect.id}")
+            print(f"     : {effect.id}")
 
         # 파일 읽어서 반환
         with open(audio_path, "rb") as f:
@@ -751,7 +750,7 @@ def generate_sound_effect_api(request):
         return HttpResponse(audio_data, content_type="audio/mpeg")
 
     except Exception as e:
-        print("❌ 사운드 이팩트 생성 오류:", e)
+        print("    :", e)
         import traceback
         traceback.print_exc()
         return JsonResponse({"success": False, "error": str(e)}, status=500)
@@ -777,7 +776,7 @@ def generate_background_music_api(request):
         if not music_name or not music_description:
             return JsonResponse({"success": False, "error": "배경음 이름과 설명을 입력해주세요."}, status=400)
 
-        print(f"🎵 배경음 생성 요청: {music_name} - {music_description} ({duration_seconds}초)")
+        print(f"   : {music_name} - {music_description} ({duration_seconds})")
 
         # 배경음 생성 (utils.background_music는 파일 경로를 반환)
         audio_path = background_music(music_name, music_description, duration_seconds)
@@ -785,7 +784,7 @@ def generate_background_music_api(request):
         if not audio_path:
             return JsonResponse({"success": False, "error": "배경음 생성에 실패했습니다."}, status=500)
 
-        print(f"✅ 배경음 생성 완료: {audio_path}")
+        print(f"   : {audio_path}")
 
         # 라이브러리에 저장
         if save_to_library and request.user.is_authenticated:
@@ -797,7 +796,7 @@ def generate_background_music_api(request):
                     user=request.user
                 )
                 music.audio_file.save(f"music_{music.id}.mp3", File(f), save=True)
-            print(f"💾 배경음 라이브러리에 저장 완료: {music.id}")
+            print(f"    : {music.id}")
 
         # 파일 읽어서 반환
         with open(audio_path, "rb") as f:
@@ -806,7 +805,7 @@ def generate_background_music_api(request):
         return HttpResponse(audio_data, content_type="audio/mpeg")
 
     except Exception as e:
-        print("❌ 배경음 생성 오류:", e)
+        print("   :", e)
         import traceback
         traceback.print_exc()
         return JsonResponse({"success": False, "error": str(e)}, status=500)
@@ -832,7 +831,7 @@ def get_sound_effects_library(request):
 
         return JsonResponse({'success': True, 'effects': effects_data})
     except Exception as e:
-        print("❌ 사운드 이팩트 라이브러리 조회 오류:", e)
+        print("     :", e)
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
@@ -857,7 +856,7 @@ def get_background_music_library(request):
 
         return JsonResponse({'success': True, 'music': music_data})
     except Exception as e:
-        print("❌ 배경음 라이브러리 조회 오류:", e)
+        print("    :", e)
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 from register.models import Users
@@ -931,9 +930,9 @@ def book_detail(request, book_uuid):
         age__gt=0  # age가 0보다 큰 것만
     ).values_list('age', flat=True)
     # 디버깅: 연령대 데이터 확인
-    print(f"📊 [{book.name}] 독자 수: {reader_count}")
-    print(f"📊 [{book.name}] 독자 user_id 목록: {list(reader_user_ids)[:10]}...")
-    print(f"📊 [{book.name}] 조회된 나이 데이터: {list(ages)}")
+    print(f" [{book.name}]  : {reader_count}")
+    print(f" [{book.name}]  user_id : {list(reader_user_ids)[:10]}...")
+    print(f" [{book.name}]   : {list(ages)}")
 
     age_data = {
         "어린이":0,
@@ -958,7 +957,7 @@ def book_detail(request, book_uuid):
         elif age >= 50:
             age_data["50대 이상"] += 1
 
-    print(f"📊 [{book.name}] 연령대 분포: {age_data}")
+    print(f" [{book.name}]  : {age_data}")
 
     book_stats.append({
         "book": book,
@@ -978,6 +977,16 @@ def book_detail(request, book_uuid):
 
     })
     print ("책 상태:",book_stats_json)
+    related_books = Books.objects.filter(user=book.user, is_deleted=False).exclude(id=book.id).order_by('-created_at')[:4]
+    rating_distribution = []
+    for star in [5, 4, 3, 2, 1]:
+        cnt = book.reviews.filter(rating=star).count()
+        pct = round(cnt / review_count * 100) if review_count else 0
+        rating_distribution.append({'star': star, 'count': cnt, 'pct': pct})
+
+    from voice.models import VoiceProfile
+    author_voices = book.user.voice_profiles.filter(is_activate=True, status='completed').order_by('-created_at')[:6]
+
     context = {
         "book": book,
         "contents": contents_page,
@@ -992,6 +1001,9 @@ def book_detail(request, book_uuid):
         "show_blur":show_blur,
         "book_stats": book_stats,
         "book_stats_json": json.dumps(book_stats_json),
+        "related_books": related_books,
+        "rating_distribution": rating_distribution,
+        "author_voices": author_voices,
     }
 
     return render(request, "book/book_detail.html", context)
@@ -1003,7 +1015,6 @@ def webnovel_detail(request, book_uuid):
     from book.models import BookReview, BookComment, ReadingProgress, AuthorAnnouncement, BookmarkBook
     from django.db.models import Avg, Count
     from register.models import Users
-    from character.models import Story
 
     book = get_object_or_404(
         Books.objects.select_related('user').prefetch_related('genres', 'tags'),
@@ -1049,10 +1060,6 @@ def webnovel_detail(request, book_uuid):
     is_authorized = request.user.is_authenticated and request.user.is_adult()
     show_blur = is_adult_content and not is_authorized
 
-    ai_stories = Story.objects.filter(
-        linked_book=book, is_public=True
-    ).prefetch_related('characters').order_by('-created_at')
-
     context = {
         "book": book,
         "contents": contents,
@@ -1068,7 +1075,6 @@ def webnovel_detail(request, book_uuid):
         "age_data": age_data,
         "is_bookmarked": is_bookmarked,
         "show_blur": show_blur,
-        "ai_stories": ai_stories,
     }
     return render(request, "book/webnovel_detail.html", context)
 
@@ -1169,7 +1175,6 @@ def delete_book(request, book_uuid):
 
 def content_detail(request, content_uuid):
     from book.models import Content, ReadingProgress, ListeningHistory, AuthorAnnouncement
-    from advertisment.models import UserAdCounter, Advertisement
     from django.utils import timezone
 
     content = get_object_or_404(Content, public_uuid=content_uuid, is_deleted=False)
@@ -1212,39 +1217,23 @@ def content_detail(request, content_uuid):
                 progress.status = 'reading'
             progress.save()
 
-        # ── 광고 카운터 체크 ──────────────────────────────
-        skip_count = request.GET.get('skip_count')
-        
-        # 🔍 디버그
-        print(f"\n{'='*50}")
-        print(f"[content_detail] {content.number}화 진입")
-        print(f"[content_detail] skip_count 파라미터: {repr(skip_count)}")
-        print(f"[content_detail] 전체 URL: {request.get_full_path()}")
 
-        if not skip_count:
-            counter, _ = UserAdCounter.objects.get_or_create(user=request.user)
-            print(f"[content_detail] 카운터 증가 전: {counter.episode_play_count}")
-            counter.episode_play_count += 1
-            counter.save()
-            print(f"[content_detail] 카운터 증가 후: {counter.episode_play_count}")
+    all_episodes = Content.objects.filter(book=book, is_deleted=False).order_by('number')
+    total_episodes = all_episodes.count()
 
-            if counter.episode_play_count % 3 == 0:
-                ad = Advertisement.objects.filter(
-                    placement='episode',
-                    ad_type='audio',
-                    is_active=True,
-                ).order_by('?').first()
+    user_bookmarks = []
+    if request.user.is_authenticated:
+        from book.models import ContentBookmark
+        user_bookmarks = list(ContentBookmark.objects.filter(user=request.user, content=content).order_by('position'))
 
-                if ad:
-                    next_uuid = content.public_uuid if content  else None
-                    redirect_url = reverse('book:ad_audio', kwargs={'uuid': ad.public_uuid})
-                    if next_uuid:
-                        redirect_url += f'?next={next_uuid}'
-                    return redirect(redirect_url)
-        else:
-            print(f"[content_detail] skip_count 있음 → 카운터 증가 안 함")
-        print(f"{'='*50}\n")
-        # ────────────────────────────────────────────────
+    from book.models import ContentComment
+    content_comments = ContentComment.objects.filter(
+        content=content, parent=None, is_deleted=False
+    ).select_related('user').prefetch_related('replies__user').order_by('-created_at')
+
+    my_voice_list = []
+    if request.user.is_authenticated:
+        my_voice_list = MyVoiceList.objects.filter(user=request.user).select_related('voice')
 
     context = {
         "content": content,
@@ -1252,9 +1241,69 @@ def content_detail(request, content_uuid):
         "prev_content": prev_content,
         "next_content": next_content,
         "last_position": last_position,
+        "all_episodes": all_episodes,
+        "total_episodes": total_episodes,
         "announcements": announcements,
+        "user_bookmarks": user_bookmarks,
+        "content_comments": content_comments,
+        "my_voice_list": my_voice_list,
     }
     return render(request, "book/content_detail.html", context)
+
+# ── 스니펫 저장 ──
+@login_required
+@require_POST
+def save_snippet(request, content_uuid):
+    import json as _json, os, tempfile
+    from book.models import Content, BookSnippet
+    from django.core.files.base import ContentFile
+
+    content = get_object_or_404(Content, public_uuid=content_uuid, is_deleted=False)
+    try:
+        data = _json.loads(request.body)
+    except Exception:
+        return JsonResponse({'ok': False, 'error': '잘못된 요청'}, status=400)
+
+    sentence  = data.get('sentence', '').strip()
+    start_sec = data.get('start_time')
+    end_sec   = data.get('end_time')
+
+    if not sentence:
+        return JsonResponse({'ok': False, 'error': '문장을 입력하세요'}, status=400)
+
+    snippet = BookSnippet(
+        book=content.book,
+        content=content,
+        sentence=sentence,
+        start_time=start_sec,
+        end_time=end_sec,
+        link=request.build_absolute_uri(f'/book/content/{content_uuid}/'),
+    )
+
+    # pydub 로 구간 클립
+    if start_sec is not None and end_sec is not None and content.audio_file:
+        try:
+            from pydub import AudioSegment
+            audio_path = content.audio_file.path
+            audio = AudioSegment.from_file(audio_path)
+            start_ms = int(float(start_sec) * 1000)
+            end_ms   = int(float(end_sec)   * 1000)
+            clip = audio[start_ms:end_ms]
+            buf = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
+            clip.export(buf.name, format='mp3', bitrate='128k')
+            buf.close()
+            with open(buf.name, 'rb') as f:
+                snippet.audio_file.save(
+                    f'snippet_{content_uuid}_{start_ms}.mp3',
+                    ContentFile(f.read()), save=False
+                )
+            os.unlink(buf.name)
+        except Exception as e:
+            print(f'[snippet clip error] {e}')
+
+    snippet.save()
+    return JsonResponse({'ok': True, 'id': snippet.id})
+
 
 # 청취 시간 기록
 @login_required
@@ -1380,7 +1429,7 @@ def update_listening_position_api(request):
             'last_position': listening_history.last_position
         })
     except Exception as e:
-        print(f"❌ 청취 위치 업데이트 오류: {str(e)}")
+        print(f"    : {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
@@ -1398,7 +1447,7 @@ def submit_review(request, book_uuid):
         rating = int(request.POST.get('rating', 5))
         review_text = request.POST.get('review_text', '').strip()
 
-        print(f"📝 리뷰 제출: 사용자={request.user.nickname}, 책={book.name}, 평점={rating}")
+        print(f"  : ={request.user.nickname}, ={book.name}, ={rating}")
 
         # 리뷰 생성 또는 업데이트
         review, created = BookReview.objects.update_or_create(
@@ -1407,19 +1456,19 @@ def submit_review(request, book_uuid):
             defaults={'rating': rating, 'review_text': review_text}
         )
 
-        print(f"✅ 리뷰 {'생성' if created else '수정'} 완료: ID={review.id}")
+        print(f"  {'' if created else ''} : ID={review.id}")
 
         # 책 평균 평점 업데이트
         avg_rating = book.reviews.aggregate(Avg('rating'))['rating__avg'] or 0
         book.book_score = round(avg_rating, 1)
         book.save()
 
-        print(f"📊 평균 평점 업데이트: {book.book_score} (총 {book.reviews.count()}개 리뷰)")
+        print(f"   : {book.book_score} ( {book.reviews.count()} )")
 
         referer = request.META.get('HTTP_REFERER', '/')
         return redirect(referer)
     except Exception as e:
-        print(f"❌ 리뷰 제출 오류: {str(e)}")
+        print(f"   : {str(e)}")
         referer = request.META.get('HTTP_REFERER', '/')
         return redirect(referer)
 
@@ -1453,6 +1502,56 @@ def submit_book_comment(request, book_uuid):
     )
 
     return redirect(referer)
+
+
+# 에피소드 댓글 작성
+@login_required
+@require_POST
+def submit_content_comment(request, content_uuid):
+    import json as _json
+    from book.models import ContentComment, Content
+
+    content = get_object_or_404(Content, public_uuid=content_uuid, is_deleted=False)
+    is_ajax = request.content_type == 'application/json'
+
+    if is_ajax:
+        try:
+            body = _json.loads(request.body)
+        except Exception:
+            body = {}
+        comment_text = body.get('comment', '').strip()
+        parent_id    = body.get('parent_id', None)
+    else:
+        comment_text = (request.POST.get('content') or request.POST.get('comment', '')).strip()
+        parent_id    = request.POST.get('parent_id', None)
+
+    if not comment_text:
+        if is_ajax:
+            return JsonResponse({'ok': False, 'error': '내용을 입력하세요.'}, status=400)
+        return redirect(request.META.get('HTTP_REFERER', '/'))
+
+    parent = None
+    if parent_id:
+        try:
+            parent = ContentComment.objects.get(id=parent_id)
+        except ContentComment.DoesNotExist:
+            pass
+
+    obj = ContentComment.objects.create(
+        user=request.user,
+        content=content,
+        comment=comment_text,
+        parent=parent
+    )
+
+    if is_ajax:
+        return JsonResponse({
+            'ok': True,
+            'comment':    obj.comment,
+            'nickname':   request.user.nickname,
+            'created_at': obj.created_at.strftime('%Y.%m.%d %H:%M'),
+        })
+    return redirect(request.META.get('HTTP_REFERER', '/'))
 
 
 # 미리듣기 페이지
@@ -1570,7 +1669,7 @@ def generate_preview_audio(request):
         return HttpResponse(audio_data, content_type="audio/mpeg")
 
     except Exception as e:
-        print("❌ 미리듣기 오디오 생성 오류:", e)
+        print("    :", e)
         import traceback
         traceback.print_exc()
         return JsonResponse({"success": False, "error": str(e)}, status=500)
@@ -1597,7 +1696,7 @@ def generate_preview_audio_async(request):
             f.write(f"FILES keys: {list(request.FILES.keys())[:5]}...\n")  # 처음 5개만
             f.write(f"POST keys: {list(request.POST.keys())[:10]}...\n")  # 처음 10개만
     except Exception as log_error:
-        print(f"로그 작성 실패: {log_error}")
+        print(f"  : {log_error}")
 
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "POST 요청만 가능합니다."}, status=405)
@@ -1680,7 +1779,7 @@ def generate_preview_audio_async(request):
         })
 
     except Exception as e:
-        print("❌ 비동기 미리듣기 오디오 생성 오류:", e)
+        print("     :", e)
         import traceback
         traceback.print_exc()
 
@@ -1718,24 +1817,24 @@ def preview_task_status(request, task_id):
         }
     elif task.state == 'SUCCESS':
         result = task.result
-        print(f"✅ Task 결과: {result}")
+        print(f" Task : {result}")
 
         if result and result.get('success'):
             # 파일 읽어서 반환
             merged_audio_path = result.get('merged_audio_path')
-            print(f"📂 파일 경로: {merged_audio_path}")
-            print(f"📂 파일 존재: {os.path.exists(merged_audio_path) if merged_audio_path else False}")
+            print(f"  : {merged_audio_path}")
+            print(f"  : {os.path.exists(merged_audio_path) if merged_audio_path else False}")
 
             if merged_audio_path and os.path.exists(merged_audio_path):
                 with open(merged_audio_path, 'rb') as f:
                     audio_data = f.read()
-                print(f"✅ 파일 크기: {len(audio_data)} bytes")
+                print(f"  : {len(audio_data)} bytes")
 
                 # 임시 파일 삭제
                 try:
                     os.remove(merged_audio_path)
                 except Exception as e:
-                    print(f"⚠️ 파일 삭제 실패: {e}")
+                    print(f"   : {e}")
 
                 # 오디오 파일을 base64로 인코딩하여 전송
                 import base64
@@ -1749,7 +1848,7 @@ def preview_task_status(request, task_id):
                     'timestamps': result.get('timestamps', [])
                 }
             else:
-                print(f"❌ 파일 없음: {merged_audio_path}")
+                print(f"  : {merged_audio_path}")
                 response = {
                     'state': 'FAILURE',
                     'status': '오디오 파일을 찾을 수 없습니다.',
@@ -1821,11 +1920,6 @@ def create_book_snap(request):
         for book in Books.objects.filter(user=user)
     ]
 
-    my_story_options = [
-        (f"/character/story/intro/{story.public_uuid}/", story.title)
-        for story in Story.objects.filter(user=user)
-    ]
-
     if request.method == "POST":
         snap_title       = request.POST.get("title", "").strip()
         snap_description = request.POST.get("description", "").strip()
@@ -1834,11 +1928,10 @@ def create_book_snap(request):
         snap_video       = request.FILES.get("video")
 
         selected_book_url  = request.POST.get("selected_book_url", "").strip()
-        selected_story_url = request.POST.get("selected_story_url", "").strip()
         custom_url         = request.POST.get("custom_url", "").strip()
 
         # 우선순위
-        final_url = selected_book_url or selected_story_url or custom_url
+        final_url = selected_book_url or custom_url
 
         # ─────────────────────────────
         # 파일 검증
@@ -1855,33 +1948,21 @@ def create_book_snap(request):
             return render(request, "book/snap/create_snap.html", {
                 "error": "제목, 설명, 썸네일은 필수입니다.",
                 "my_book_options": my_book_options,
-                "my_story_options": my_story_options,
             })
 
         # ─────────────────────────────
         # 🔥 핵심: 연결 대상 판별
         # ─────────────────────────────
         connected_book = None
-        connected_story = None
         book_link = None
-        story_link = None
 
         if final_url:
             book_match = re.search(r'/book/detail/([a-f0-9\-]+)/?$', final_url)
-            story_match = re.search(r'/character/story/intro/([a-f0-9\-]+)/?$', final_url)
-
             if book_match:
                 try:
                     connected_book = Books.objects.get(public_uuid=book_match.group(1))
                     book_link = final_url
                 except Books.DoesNotExist:
-                    pass
-
-            elif story_match:
-                try:
-                    connected_story = Story.objects.get(public_uuid=story_match.group(1))
-                    story_link = final_url
-                except Story.DoesNotExist:
                     pass
 
         # ─────────────────────────────
@@ -1894,9 +1975,7 @@ def create_book_snap(request):
             thumbnail=thumbnail_image,
             snap_video=snap_video,
             book=connected_book,
-            story=connected_story,
             book_link=book_link,
-            story_link=story_link,
             adult_choice=is_adult,
         )
 
@@ -1905,7 +1984,6 @@ def create_book_snap(request):
     # GET
     return render(request, "book/snap/create_snap.html", {
         "my_book_options": my_book_options,
-        "my_story_options": my_story_options,
     })
 
 
@@ -1926,11 +2004,6 @@ def edit_snap(request, snap_uuid):
         for book in Books.objects.filter(user=user)
     ]
 
-    my_story_options = [
-        (f"/character/story/intro/{story.public_uuid}/", story.title)
-        for story in Story.objects.filter(user=user)
-    ]
-
     if request.method == "POST":
         snap_title       = request.POST.get("title", "").strip()
         snap_description = request.POST.get("description", "").strip()
@@ -1939,43 +2012,30 @@ def edit_snap(request, snap_uuid):
         video_new        = request.FILES.get("video")
 
         selected_book_url  = request.POST.get("selected_book_url", "").strip()
-        selected_story_url = request.POST.get("selected_story_url", "").strip()
         custom_url         = request.POST.get("custom_url", "").strip()
 
-        final_url = selected_book_url or selected_story_url or custom_url
+        final_url = selected_book_url or custom_url
 
         if not snap_title or not snap_description:
             return render(request, "book/snap/edit_snap.html", {
                 "error": "제목과 설명은 필수입니다.",
                 "snap": snap,
                 "my_book_options": my_book_options,
-                "my_story_options": my_story_options,
             })
 
         # ─────────────────────────────
-        # 연결 재설정 (중요)
+        # 연결 재설정
         # ─────────────────────────────
         connected_book = None
-        connected_story = None
         book_link = None
-        story_link = None
 
         if final_url:
             book_match = re.search(r'/book/detail/([a-f0-9\-]+)/?$', final_url)
-            story_match = re.search(r'/character/story/intro/([a-f0-9\-]+)/?$', final_url)
-
             if book_match:
                 try:
                     connected_book = Books.objects.get(public_uuid=book_match.group(1))
                     book_link = final_url
                 except Books.DoesNotExist:
-                    pass
-
-            elif story_match:
-                try:
-                    connected_story = Story.objects.get(public_uuid=story_match.group(1))
-                    story_link = final_url
-                except Story.DoesNotExist:
                     pass
 
         # ─────────────────────────────
@@ -1986,9 +2046,7 @@ def edit_snap(request, snap_uuid):
         snap.adult_choice = is_adult
 
         snap.book  = connected_book
-        snap.story = connected_story
         snap.book_link  = book_link
-        snap.story_link = story_link
 
         if thumbnail_new:
             snap.thumbnail = thumbnail_new
@@ -2002,7 +2060,6 @@ def edit_snap(request, snap_uuid):
     return render(request, "book/snap/edit_snap.html", {
         "snap": snap,
         "my_book_options": my_book_options,
-        "my_story_options": my_story_options,
     })
 
 
@@ -2028,30 +2085,14 @@ import random
 
 @login_required_to_main
 def book_snap_detail(request, snap_uuid):
-    from advertisment.models import Advertisement, AdImpression
 
     snap = get_object_or_404(BookSnap, public_uuid=snap_uuid)
-    print(f"요청된 snap_uuid (str): {snap_uuid}")
+    print(f" snap_uuid (str): {snap_uuid}")
 
     # 성인 콘텐츠 처리
     is_adult_content = snap.adult_choice
     is_authorized = request.user.is_authenticated and request.user.is_adult()
     show_blur = is_adult_content and not is_authorized
-
-    # ── 광고 (20% 확률, 광고에서 돌아온 경우 skip) ──────────────
-    skip_ad = request.GET.get('skip_ad')
-    if not skip_ad and request.user.is_authenticated:
-        if random.random() < 0.2:
-            ad = Advertisement.objects.filter(
-                placement='snap',
-                ad_type='video',
-                is_active=True,
-            ).order_by('?').first()
-            if ad:
-                redirect_url = reverse('book:ad_video', kwargs={'uuid': ad.public_uuid})
-                redirect_url += f'?next={snap_uuid}'
-                return redirect(redirect_url)
-    # ────────────────────────────────────────────────────────────
 
     # UUID 전체 목록
     all_snap_uuids = list(
@@ -2062,13 +2103,13 @@ def book_snap_detail(request, snap_uuid):
     all_snap_uuids = [str(u) for u in all_snap_uuids]
     current_str_uuid = str(snap.public_uuid)
 
-    print(f"[DEBUG] 전체 스냅 개수: {len(all_snap_uuids)}")
+    print(f"[DEBUG]   : {len(all_snap_uuids)}")
 
     try:
         current_index = all_snap_uuids.index(current_str_uuid)
-        print(f"[DEBUG] 현재 인덱스: {current_index}")
+        print(f"[DEBUG]  : {current_index}")
     except ValueError:
-        print(f"[ERROR] UUID 매칭 실패")
+        print(f"[ERROR] UUID  ")
         current_index = 0
 
     prev_snap_uuid = (
@@ -2109,32 +2150,6 @@ def book_snap_detail(request, snap_uuid):
     return render(request, "book/snap/snap_detail.html", context)
 
 
-
-def video_view(request, uuid):
-    from book.models import Content, BookSnap
-    ad = get_object_or_404(Advertisement, public_uuid=uuid, ad_type='video', is_active=True)
-
-    AdImpression.objects.create(
-        ad=ad,
-        user=request.user if request.user.is_authenticated else None,
-        placement=ad.placement,
-    )
-
-    next_uuid = request.GET.get('next', None)
-
-    # snap에서 온 경우 vs content에서 온 경우 구분
-    next_content = None
-    next_snap = None
-    if next_uuid:
-        next_content = Content.objects.filter(public_uuid=next_uuid, is_deleted=False).first()
-        if not next_content:
-            next_snap = BookSnap.objects.filter(public_uuid=next_uuid).first()
-
-    return render(request, "book/snap/video.html", {
-        'ad': ad,
-        'next_content': next_content,
-        'next_snap': next_snap,
-    })
 
 # 좋아요 API
 @require_POST
@@ -2390,75 +2405,6 @@ def author_dashboard(request):
         .count()
     )
 
-
-
-    #__________________________
-    # AI 통계 
-    user = request.user
-    ai_stats = (
-        LLM.objects
-        .filter(user=request.user)
-        .select_related('story')  # story.title 같은 거 쓸 때
-        .annotate(
-            # 👥 AI 당 대화 유저 수
-            reader_count=Count(
-                'conversation__user',
-                distinct=True
-            ),
-
-            # ❤️ 좋아요 수
-            like_count=Count(
-                'llmlike',
-                distinct=True
-            ),
-
-            # 🎧 TTS 오디오 총 duration
-            total_tts_duration=Coalesce(
-                Sum(
-                    'conversation__messages__audio_duration',
-                    filter=Q(
-                        conversation__messages__audio_duration__isnull=False
-                    )
-                ),
-                0.0
-            )
-        )
-        .order_by('-reader_count')
-    )
-
-    ai_summary = (
-        LLM.objects
-        .filter(user=request.user)
-        .aggregate(
-            # 🤖 총 LLM 수
-            total_llms=Count('id', distinct=True),
-
-            # 👥 전체 AI 독자 수 (중복 제거)
-            total_ai_readers=Count(
-                'conversation__user',
-                distinct=True
-            ),
-
-            # ❤️ 전체 LLM 좋아요 수
-            total_llm_likes=Count(
-                'llmlike',
-                distinct=True
-            ),
-
-            # 🎧 전체 TTS 오디오 길이
-            total_ai_tts_duration=Coalesce(
-                Sum(
-                    'conversation__messages__audio_duration',
-                    filter=Q(
-                        conversation__messages__audio_duration__isnull=False
-                    )
-                ),
-                0.0
-            )
-        )
-    )
-
-
     context = {
         "total_books": total_books,
         "total_contents": total_contents,
@@ -2468,8 +2414,6 @@ def author_dashboard(request):
         "recent_readers": recent_readers,
         "book_stats": book_stats,
         "book_stats_json": json.dumps(book_stats_json),
-        "ai_stats": ai_stats,
-        "ai_summary": ai_summary,
     }
 
     return render(request, "book/author_dashboard.html", context)
@@ -2737,19 +2681,19 @@ def toggle_bookmark(request, book_uuid):
     """
     북마크 토글 (추가/제거)
     """
-    print(f"🔖 북마크 토글 요청 - 사용자: {request.user}, 책 UUID: {book_uuid}")
+    print(f"    - : {request.user},  UUID: {book_uuid}")
 
     if request.method != 'POST':
-        print(f"❌ 잘못된 메서드: {request.method}")
+        print(f"  : {request.method}")
         return JsonResponse({'error': '잘못된 요청입니다'}, status=400)
 
     from book.models import BookmarkBook
 
     try:
         book = Books.objects.get(public_uuid=book_uuid)
-        print(f"📖 책 찾음: {book.name}")
+        print(f"  : {book.name}")
     except Books.DoesNotExist:
-        print(f"❌ 책을 찾을 수 없음: {book_uuid}")
+        print(f"    : {book_uuid}")
         return JsonResponse({'error': '책을 찾을 수 없습니다'}, status=404)
 
     # 북마크 토글
@@ -2758,9 +2702,9 @@ def toggle_bookmark(request, book_uuid):
             user=request.user,
             book=book
         )
-        print(f"✅ 북마크 객체: created={created}, bookmark_id={bookmark.id if bookmark else None}")
+        print(f"  : created={created}, bookmark_id={bookmark.id if bookmark else None}")
     except Exception as e:
-        print(f"❌ 북마크 생성/조회 오류: {e}")
+        print(f"  / : {e}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'error': f'데이터베이스 오류: {str(e)}'}, status=500)
@@ -2770,29 +2714,25 @@ def toggle_bookmark(request, book_uuid):
         bookmark.delete()
         is_bookmarked = False
         message = '북마크에서 제거되었습니다'
-        print(f"🗑️ 북마크 제거됨")
+        print(f"  ")
     else:
         is_bookmarked = True
         message = '북마크에 추가되었습니다'
-        print(f"➕ 북마크 추가됨")
+        print(f"  ")
 
     response_data = {
         'success': True,
         'is_bookmarked': is_bookmarked,
         'message': message
     }
-    print(f"📤 응답: {response_data}")
+    print(f" : {response_data}")
     return JsonResponse(response_data)
 
 
 @login_required
 @login_required_to_main
 def my_bookmarks(request):
-    """
-    내 북마크 목록 페이지 (책 + AI 스토리)
-    """
-    from book.models import BookmarkBook
-    from character.models import StoryBookmark, Story
+    from book.models import BookmarkBook, ContentBookmark
     from django.core.paginator import Paginator
 
     all_bookmarks = BookmarkBook.objects.filter(
@@ -2801,25 +2741,17 @@ def my_bookmarks(request):
         'book__genres', 'book__tags'
     ).order_by('-created_at')
 
-    # 오디오북 / 웹소설 분리
-    audiobook_bms = [bm for bm in all_bookmarks if getattr(bm.book, 'book_type', 'audiobook') == 'audiobook']
-    webnovel_bms  = [bm for bm in all_bookmarks if getattr(bm.book, 'book_type', 'audiobook') == 'webnovel']
-
-    paginator = Paginator(audiobook_bms, 20)
+    paginator = Paginator(list(all_bookmarks), 20)
     page = request.GET.get('page')
     bookmarks_page = paginator.get_page(page)
 
-    # AI 스토리 북마크
-    story_bookmarks = StoryBookmark.objects.filter(
+    episode_bookmarks = ContentBookmark.objects.filter(
         user=request.user
-    ).select_related('story', 'story__user').prefetch_related(
-        'story__genres', 'story__characters'
-    ).order_by('-created_at')
+    ).select_related('content', 'content__book', 'content__book__user').order_by('-created_at')
 
     context = {
         'bookmarks': bookmarks_page,
-        'webnovel_bookmarks': webnovel_bms,
-        'story_bookmarks': story_bookmarks,
+        'episode_bookmarks': episode_bookmarks,
     }
 
     return render(request, 'book/my_bookmarks.html', context)
@@ -3031,7 +2963,7 @@ def load_draft(request, book_uuid):
 
 # ==================== AI 오디오북 분석 (Grok) ====================
 import json as json_module
-from book.utils import grok_client, generate_tts, merge_audio_files, sound_effect, background_music, mix_audio_with_background
+from book.utils import openai_client, generate_tts, merge_audio_files, sound_effect, background_music, mix_audio_with_background
 
 @login_required
 @require_POST
@@ -3109,8 +3041,8 @@ def ai_analyze_audiobook(request):
 }}"""
 
     try:
-        response = grok_client.chat.completions.create(
-            model="grok-3-mini",
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "JSON만 응답하세요. 설명이나 마크다운 코드블록 없이 순수 JSON만 출력하세요."},
                 {"role": "user", "content": prompt}
@@ -3120,15 +3052,18 @@ def ai_analyze_audiobook(request):
         )
 
         ai_text = response.choices[0].message.content.strip()
+        print(f"[ai_analyze] Grok 원본 응답:\n{ai_text[:800]}")
 
-        # 마크다운 코드블록 제거
+        # 마크다운 코드블록 제거 (```json 또는 ``` 모두 처리)
         if ai_text.startswith('```'):
-            ai_text = ai_text.split('\n', 1)[1] if '\n' in ai_text else ai_text[3:]
+            ai_text = ai_text.split('\n', 1)[1] if '\n' in ai_text else ''
         if ai_text.endswith('```'):
             ai_text = ai_text[:-3]
         ai_text = ai_text.strip()
 
+        print(f"[ai_analyze] 파싱 대상 텍스트:\n{ai_text[:500]}")
         ai_result = json_module.loads(ai_text)
+        print(f"[ai_analyze] bgm={ai_result.get('bgm')}, sfx={ai_result.get('sfx')}")
 
     except json_module.JSONDecodeError:
         return JsonResponse({'error': 'AI 응답 파싱 실패', 'raw': ai_text[:500]}, status=500)
@@ -3427,68 +3362,6 @@ def audiobook_task_status(request, task_id):
 
 
 
-from advertisment.models import Advertisement, AdImpression
-
-
-
-def audio_view(request, uuid):
-    from book.models import Content
-    ad = get_object_or_404(Advertisement, public_uuid=uuid, ad_type='audio', is_active=True)
-
-    AdImpression.objects.create(
-        ad=ad,
-        user=request.user if request.user.is_authenticated else None,
-        placement=ad.placement,
-    )
-
-    next_content_uuid = request.GET.get('next', None)
-    next_content = None
-    if next_content_uuid:
-        next_content = Content.objects.filter(public_uuid=next_content_uuid, is_deleted=False).first()
-
-    # 🔍 디버그
-    print(f"\n{'='*50}")
-    print(f"[audio_view] 광고 페이지 진입")
-    print(f"[audio_view] next_content_uuid: {next_content_uuid}")
-    print(f"[audio_view] next_content: {next_content.number if next_content else None}화")
-    print(f"[audio_view] 전체 URL: {request.get_full_path()}")
-    print(f"{'='*50}\n")
-
-    return render(request, "book/audio.html", {
-        'ad': ad,
-        'next_content': next_content,
-    })
-
-
-# 클릭 기록 API
-@require_POST
-def ad_skip(request, uuid):
-    ad = get_object_or_404(Advertisement, public_uuid=uuid)
-    data = json.loads(request.body)
-    watched_seconds = data.get('watched_seconds', 0)
-
-    AdImpression.objects.filter(
-        ad=ad,
-        user=request.user if request.user.is_authenticated else None,
-    ).order_by('-created_at').update(
-        is_skipped=True,
-        watched_seconds=watched_seconds
-    )
-    return JsonResponse({'status': 'ok'})
-
-
-@require_POST  
-def ad_click(request, uuid):
-    ad = get_object_or_404(Advertisement, public_uuid=uuid)
-
-    AdImpression.objects.filter(
-        ad=ad,
-        user=request.user if request.user.is_authenticated else None,
-    ).order_by('-created_at').update(
-        is_clicked=True,
-        clicked_at=timezone.now()
-    )
-    return JsonResponse({'status': 'ok', 'redirect_url': ad.link_url})
 
 
 def content_youtube_thumbnail(request, content_uuid):

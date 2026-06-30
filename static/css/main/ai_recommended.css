@@ -1,0 +1,116 @@
+.ar-page { min-height: 100vh; background: #f7f7f7; }
+
+.ar-hero {
+  background: #111;
+  padding: 52px 48px 44px;
+}
+.ar-hero-inner { max-width: 1100px; margin: 0 auto; }
+.ar-eyebrow {
+  font-size: 10px; font-weight: 700; color: #5b4cf5;
+  letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px;
+}
+.ar-title {
+  font-size: 2rem; font-weight: 800; color: #fff;
+  letter-spacing: -.02em; margin-bottom: 8px;
+}
+.ar-sub { font-size: .84rem; color: rgba(255,255,255,.35); }
+
+.ar-tabs {
+  background: #fff; border-bottom: 1px solid #e8e8e8;
+  display: flex; padding: 0 48px;
+}
+.ar-tab {
+  padding: 13px 18px; font-size: .84rem; font-weight: 600;
+  color: #888; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; cursor: pointer; transition: color .12s, border-color .12s;
+}
+.ar-tab:hover { color: #111; }
+.ar-tab.on { color: #111; border-bottom-color: #111; }
+
+.ar-body { max-width: 1100px; margin: 0 auto; padding: 36px 48px 80px; }
+
+.ar-sec-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.ar-sec-label {
+  font-size: 11px; font-weight: 700; color: #888;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.ar-sec-count { font-size: 11px; color: #bbb; }
+
+.ar-login-box {
+  background: #fff; border: 1px solid #e8e8e8;
+  padding: 64px 24px; text-align: center;
+}
+.ar-login-box svg { color: #ccc; }
+.ar-login-title { font-size: 1rem; font-weight: 700; color: #555; margin: 16px 0 6px; }
+.ar-login-sub { font-size: .82rem; color: #aaa; margin-bottom: 24px; }
+.ar-login-btn {
+  display: inline-block; padding: 12px 28px;
+  background: #111; color: #fff;
+  font-size: .84rem; font-weight: 700; text-decoration: none;
+  transition: opacity .15s;
+}
+.ar-login-btn:hover { opacity: .8; }
+
+.ar-empty {
+  background: #fff; border: 1px solid #e8e8e8;
+  padding: 64px 24px; text-align: center;
+  font-size: .84rem; color: #aaa;
+}
+
+.ar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 24px 20px;
+  margin-bottom: 48px;
+}
+
+.ar-card { text-decoration: none; display: block; }
+.ar-cover {
+  position: relative; aspect-ratio: 9/16;
+  background: #ececec; overflow: hidden; margin-bottom: 10px;
+}
+.ar-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s; }
+.ar-card:hover .ar-cover img { transform: scale(1.04); }
+.ar-cover-ph {
+  width: 100%; height: 100%; display: flex; align-items: center;
+  justify-content: center; font-size: 1.2rem; font-weight: 800; color: #bbb;
+}
+.ar-badge {
+  position: absolute; top: 6px; left: 6px;
+  font-size: .56rem; font-weight: 700; padding: 3px 7px;
+  letter-spacing: .04em; text-transform: uppercase;
+}
+.ar-badge-ai { background: #5b4cf5; color: #fff; }
+.ar-badge-genre { background: #111; color: #fff; }
+
+.ar-card-genre {
+  font-size: .68rem; color: #bbb; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px;
+}
+.ar-card-title {
+  font-size: .88rem; font-weight: 700; color: #111;
+  line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ar-card-author { font-size: .74rem; color: #aaa; margin-top: 2px; }
+
+@media (max-width: 768px) {
+  .ar-hero { padding: 36px 20px 28px; }
+  .ar-tabs { padding: 0 20px; }
+  .ar-body { padding: 24px 20px 60px; }
+  .ar-title { font-size: 1.5rem; }
+}
+@media (max-width: 640px) {
+  .ar-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+}
+@media (max-width: 480px) {
+  .ar-hero { padding: 28px 16px 20px; }
+  .ar-tabs { padding: 0 16px; }
+  .ar-body { padding: 20px 16px 60px; }
+  .ar-title { font-size: 1.3rem; }
+  .ar-tab { padding: 10px 12px; font-size: .78rem; }
+}

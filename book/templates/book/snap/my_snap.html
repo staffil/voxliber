@@ -1,74 +1,51 @@
-{% extends "base.html" %}
+{% extends "base_author.html" %}
 {% load static %}
 
-{% block title %}내 북 스냅 - VOXLIBER{% endblock %}
+{% block title %}내 스냅 — Voxliber{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/home/main.css' %}">
-<link rel="stylesheet" href="{% static 'css/book/snap/my_snap.css' %}">
-
-{% endblock %}
-
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/book/snap/my_snap.css' %}">{%  endblock %}
 
 {% block content %}
+<div class="my-snap-page">
+  <div class="page-header">
+    <h1>내 스냅</h1>
+    <a href="{% url 'book:create_snap' %}" class="btn-create">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      새 스냅 만들기
+    </a>
+  </div>
 
-<!-- <script>
-// 페이지 접근 제한 - 메인으로 리다이렉트
-(function() {
-    window.location.href = '/';
-})();
-</script> -->
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
 
-<div class="snap-list-container">
-
-    <div class="snap-header">
-        <div class="snap-title">내 북 스냅</div>
-        <a href="/book/create/snap/" class="btn-primary-glow">+ 스냅 만들기</a>
-    </div>
-    <div class="bakc-btn-wrapper">
-    </div>
-    {% if book_snap_list %}
-    <div class="snap-grid">
-
-        {% for snap in book_snap_list %}
-        <div class="snap-card" onclick="location.href='/book/book/snap/{{ snap.public_uuid }}/'" data-login-required>
-
-            {% if snap.thumbnail %}
-                <img src="{{ snap.thumbnail.url }}" class="snap-thumb">
-            {% else %}
-                <img src="{% static 'img/default_thumb.jpg' %}" class="snap-thumb">
-            {% endif %}
-
-            <div class="snap-info">
-                <div class="snap-title-text">
-                    {{ snap.snap_title|default:"제목 없음" }}
-                </div>
-
-                <div class="snap-stats">
-                    <span>❤️ {{ snap.booksnap_like.count }}</span>
-                    <span>👁️ {{ snap.views }}</span>
-                </div>
-
-                <div class="snap-actions">
-                    <a href="/book/snap/{{ snap.public_uuid }}/edit/" class="btn-mini" data-login-required>수정</a>
-                    <a href="/book/snap/{{ snap.public_uuid }}/delete/" class="btn-mini" onclick="return confirm('진짜 삭제하시겠습니까?')" data-login-required>삭제</a>
-                </div>
-            </div>
-
+  {% if book_snap_list %}
+  <div class="snap-grid">
+    {% for snap in book_snap_list %}
+    <div class="snap-card">
+      <a href="{% url 'book:snap_detail' snap.public_uuid %}">
+        <div class="snap-thumb">
+          {% if snap.thumbnail %}<img src="{{ snap.thumbnail.url }}" alt="{{ snap.snap_title }}" loading="lazy">
+          {% else %}<div class="snap-thumb-ph">🎬</div>{% endif %}
+          <div class="snap-overlay">
+            <div class="snap-overlay-title">{{ snap.snap_title }}</div>
+          </div>
         </div>
-        {% endfor %}
-
+      </a>
+      <div class="snap-card-actions">
+        <a href="{% url 'book:edit_snap' snap.public_uuid %}" class="snap-edit-btn">편집</a>
+        <button class="snap-del-btn" onclick="deleteSnap('{{ snap.public_uuid }}', '{{ snap.snap_title|escapejs }}')">삭제</button>
+      </div>
     </div>
-    {% else %}
-        <div class="empty-box">
-            아직 만든 스냅이 없습니다.<br>
-            <a href="/book/create/snap/" class="btn-primary-glow" style="margin-top:15px; display:inline-block;" data-login-required>
-                스냅 만들기
-            </a>
-        </div>
-    {% endif %}
-
-
-
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">🎬</div>
+    <h3>아직 스냅이 없습니다</h3>
+    <p>오디오북 구간을 영상으로 만들어보세요</p>
+    <a href="{% url 'book:create_snap' %}" class="btn-primary" style="margin-top:20px;display:inline-block;">첫 스냅 만들기</a>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/book/snap/my_snap.js' %}"></script>{%  endblock %}

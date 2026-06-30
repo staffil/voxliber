@@ -3,7 +3,6 @@ from django.db import models
 from django.utils import timezone
 from django.conf import settings
 import uuid
-from character.models import Story
 
 
 
@@ -73,14 +72,13 @@ class Books(models.Model):
 
     BOOK_TYPE_CHOICES = [
         ('audiobook', '오디오북'),
-        ('webnovel', '웹소설'),
     ]
     book_type = models.CharField(
         max_length=20,
         choices=BOOK_TYPE_CHOICES,
         default='audiobook',
         db_index=True,
-        help_text="콘텐츠 유형 (오디오북 / 웹소설)"
+        help_text="콘텐츠 유형 (오디오북)"
     )
 
     class Meta:
@@ -420,8 +418,6 @@ class BookSnap(models.Model):
     public_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     book = models.ForeignKey('Books', on_delete=models.CASCADE, null=True, blank=True, related_name='snaps')
-    story = models.ForeignKey(Story, null=True, blank=True, on_delete=models.SET_NULL)
-
     snap_title = models.CharField(max_length=200, null=True, blank=True)
 
     # Media
@@ -612,52 +608,20 @@ class AudioBookGuide(models.Model):
 
 
 
-# 에피소드 요약본
-class EpisodeSummary(models.Model):
-    content = models.OneToOneField("Content", on_delete=models.CASCADE, related_name="summary")
-    summary_text = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "episode_summary"
-        verbose_name = "에피소드 요약"
-
-    def __str__(self):
-        return f"{self.content.title} 요약"
-
-
-
-class Poem_list(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    title = models.CharField(max_length=200)
-    content = models.TextField()
-    poem_audio = models.FileField(upload_to="uploads/poem/", null=True, blank=True, max_length=1000)
-    
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
-    image = models.ImageField(upload_to="uploads/poem_img", blank=True, null=True, verbose_name="이미지", max_length=300)
-
-    is_public = models.BooleanField(default=True)  # 공개 여부
-    status = models.CharField(
-        max_length=20, 
-        choices=[('submitted', '제출됨'), ('winner', '수상작')], 
-        default='submitted'
-    )
-
-    class Meta:
-        db_table = "poem_list"
-        verbose_name = "시 공모전 출품작"
 
 
 #북 스니펫
 class BookSnippet(models.Model):
     book = models.ForeignKey(Books, on_delete=models.CASCADE, related_name="snippets")
+    content = models.ForeignKey('Content', on_delete=models.SET_NULL, null=True, blank=True, related_name='snippets')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='snippets')
     sentence = models.CharField(max_length=500)
     audio_file = models.FileField(upload_to="uploads/snippets/", null=True, blank=True)
+    start_time = models.FloatField(null=True, blank=True, help_text="클립 시작(초)")
+    end_time = models.FloatField(null=True, blank=True, help_text="클립 종료(초)")
     created_at = models.DateTimeField(auto_now_add=True)
     link = models.CharField(max_length=300, null=True)
-    
+
     class Meta:
         db_table = "book_snippet"
         verbose_name= '북 스니펫'
@@ -844,6 +808,74 @@ class PlaylistItem(models.Model):
 
     def __str__(self):
         return f"{self.playlist.title} - {self.order}. {self.content.title}"
+
+
+# 책-작가 중간 테이블 (공동 작가 지원)
+class BookAuthor(models.Model):
+    ROLE_CHOICES = [
+        ('main', '주 작가'),
+        ('co', '공동 작가'),
+    ]
+    book = models.ForeignKey('Books', on_delete=models.CASCADE, related_name='authors')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='authored_books')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='main')
+
+    class Meta:
+        db_table = 'book_author'
+        verbose_name = '책 작가'
+        unique_together = ('book', 'user')
+
+    def __str__(self):
+        return f"{self.book.name} - {self.user.nickname} ({self.get_role_display()})"
+
+
+# TTS 사용 기록 테이블
+class TtsUsageLog(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tts_logs')
+    content = models.ForeignKey('Content', on_delete=models.SET_NULL, null=True, blank=True, related_name='tts_logs')
+    text = models.TextField(null=True, blank=True)
+    char_count = models.IntegerField(default=0)
+    voice_id = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'tts_usage_log'
+        verbose_name = 'TTS 사용 기록'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.nickname} - {self.char_count}자 ({self.created_at.strftime('%Y-%m-%d')})"
+
+
+# TTS 의심 케이스 알림 테이블
+class TtsAlert(models.Model):
+    REASON_CHOICES = [
+        ('no_content_link', '에피소드 미연결'),
+        ('bulk_generation', '단시간 대량 생성'),
+        ('duplicate_text', '동일 텍스트 반복'),
+        ('monthly_spike', '월간 급증'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', '검토 대기'),
+        ('reviewed', '검토 완료'),
+        ('sent', '안내 발송'),
+        ('dismissed', '무시'),
+    ]
+    tts_log = models.ForeignKey('TtsUsageLog', on_delete=models.CASCADE, related_name='alerts')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tts_alerts')
+    reason = models.CharField(max_length=50, choices=REASON_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_note = models.TextField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'tts_alert'
+        verbose_name = 'TTS 알림'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.nickname} - {self.get_reason_display()} ({self.get_status_display()})"
 
 
 # TTS 사용량 쿼터 테이블 (한도 적용 준비용 — 현재는 제한 없음)

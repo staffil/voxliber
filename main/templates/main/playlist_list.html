@@ -1,0 +1,91 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}플레이리스트 — Voxliber{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/main/playlist_list.css' %}">
+
+{% endblock %}
+
+{% block content %}
+<div class="pl-page">
+
+  <div class="pl-hero">
+    <div class="pl-hero-inner">
+      <div class="pl-eyebrow">Curated Playlists</div>
+      <h1 class="pl-title">플레이리스트</h1>
+      <p class="pl-sub">장르별로 엄선한 오디오북 모음집</p>
+    </div>
+  </div>
+
+  <div class="pl-body">
+
+    <!-- 장르 필터 칩 -->
+    <div class="pl-chips">
+      <button class="pl-chip on" onclick="plFilter('all', this)">전체</button>
+      {% for pl in playlists %}
+      {% if pl.genre %}
+      <button class="pl-chip" onclick="plFilter('{{ pl.genre.name }}', this)"
+              style="display:none" data-genre="{{ pl.genre.name }}">
+        {{ pl.genre.name }}
+      </button>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="pl-grid" id="plGrid">
+      {% for pl in playlists %}
+      <a href="{% url 'main:playlist_detail' pl.id %}" class="pl-card"
+         data-genre="{% if pl.genre %}{{ pl.genre.name }}{% endif %}">
+        <div class="pl-mosaic">
+          {% for item in pl.items.all|slice:":4" %}
+          <div class="pl-cell">
+            {% if item.content.book.cover_img %}
+            <img src="{{ item.content.book.cover_img.url }}" alt="" loading="lazy">
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        <div class="pl-card-body">
+          {% if pl.genre %}
+          <div class="pl-card-genre">{{ pl.genre.name }}</div>
+          {% endif %}
+          <div class="pl-card-title">{{ pl.title }}</div>
+          <div class="pl-card-meta">
+            <span class="pl-card-count">{{ pl.items.count }}개 작품</span>
+            {% if pl.playlist_type %}
+            <span>· {{ pl.get_playlist_type_display }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% empty %}
+      <div class="pl-empty">등록된 플레이리스트가 없습니다</div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+// 장르 칩 중복 제거 후 표시
+(function() {
+  var seen = {};
+  document.querySelectorAll('.pl-chip[data-genre]').forEach(function(c) {
+    var g = c.dataset.genre;
+    if (!seen[g]) { seen[g] = true; c.style.display = ''; }
+  });
+})();
+
+function plFilter(genre, el) {
+  document.querySelectorAll('.pl-chip').forEach(function(c){ c.classList.remove('on'); });
+  el.classList.add('on');
+  document.querySelectorAll('#plGrid .pl-card').forEach(function(card) {
+    var match = genre === 'all' || card.dataset.genre === genre;
+    card.style.display = match ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}
+

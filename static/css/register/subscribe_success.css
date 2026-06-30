@@ -1,0 +1,141 @@
+/* ==========================================
+   subscribe_success.css — 결제 완료 / 플랜 변경
+   ========================================== */
+
+.success-page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 60px 28px 80px;
+  text-align: center;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  background: rgba(91,76,245,.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.success-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #111;
+  letter-spacing: -.02em;
+  margin-bottom: 10px;
+}
+
+.success-sub {
+  font-size: .9rem;
+  color: #666;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.success-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  padding: 24px 28px;
+  text-align: left;
+  margin-bottom: 28px;
+}
+
+.success-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: .88rem;
+}
+.success-row:last-child { border-bottom: none; }
+
+.success-label { color: #888; }
+.success-val { font-weight: 600; color: #111; }
+.success-val--price { color: #5b4cf5; font-size: 1rem; }
+
+.success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.success-btn {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  padding: 14px 24px;
+  border-radius: 0;
+  font-size: .9rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: background .15s, color .15s;
+}
+.success-btn--primary {
+  background: #111;
+  color: #fff;
+}
+.success-btn--primary:hover { background: #5b4cf5; }
+
+.success-btn--secondary {
+  background: transparent;
+  color: #888;
+  border: 1px solid #ddd;
+}
+.success-btn--secondary:hover { border-color: #111; color: #111; }
+
+/* ── 플랜 변경 전용 ── */
+.change-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .82rem;
+  color: #888;
+  text-decoration: none;
+}
+.change-back:hover { color: #111; }
+
+.change-card { margin-bottom: 24px; }
+
+.change-plans {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.change-plan {
+  flex: 1;
+  padding: 16px;
+  border: 1px solid #e8e8e8;
+  text-align: center;
+}
+.change-plan--target { border-color: #5b4cf5; }
+
+.change-plan__label { font-size: .72rem; color: #999; margin-bottom: 4px; }
+.change-plan__name  { font-size: .9rem; font-weight: 700; color: #111; margin-bottom: 4px; }
+.change-plan__price { font-size: .82rem; color: #5b4cf5; }
+
+.change-arrow { flex-shrink: 0; }
+
+.change-notice {
+  font-size: .82rem;
+  padding: 10px 14px;
+  border-radius: 4px;
+  line-height: 1.6;
+}
+.change-notice--benefit { background: rgba(91,76,245,.07); color: #3730a3; }
+.change-notice--warn    { background: rgba(239,68,68,.07);  color: #991b1b; }
+
+@media (max-width: 480px) {
+  .success-page { padding: 40px 16px 60px; }
+  .change-plans { flex-direction: column; }
+  .change-arrow { transform: rotate(90deg); }
+}

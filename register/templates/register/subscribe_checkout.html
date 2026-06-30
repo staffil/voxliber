@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}결제 — Voxliber{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/register/subscribe_checkout.css' %}">{% endblock %}
+
+{% block content %}
+<div class="checkout-page">
+
+  <a href="{% url 'register:subscribe_plan' %}" class="checkout-back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    플랜 선택으로
+  </a>
+
+  <h1 class="checkout-title">결제</h1>
+
+  <div class="checkout-layout">
+
+    <!-- 왼쪽: 결제 수단 + 이메일 -->
+    <div class="checkout-left">
+
+      <!-- 선택 플랜 요약 -->
+      <section class="checkout-section">
+        <h2 class="checkout-section__title">선택한 플랜</h2>
+        <div class="plan-summary">
+          {% if plan_type == 'monthly' %}
+            <div class="plan-summary__name">월간 구독</div>
+            <div class="plan-summary__desc">전체 에피소드 · 이어듣기 · 다운로드 · 하이라이트/스니펫</div>
+            <div class="plan-summary__price">7,900<span>원/월</span></div>
+          {% else %}
+            <div class="plan-summary__name">연간 구독</div>
+            <div class="plan-summary__desc">월간 혜택 전체 + 연간 우선 신작 알림 (월 6,667원)</div>
+            <div class="plan-summary__price">80,000<span>원/년</span></div>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- 결제 수단 -->
+      <section class="checkout-section">
+        <h2 class="checkout-section__title">결제 수단</h2>
+        <div class="pay-methods" id="payMethods">
+          <button type="button" class="pay-btn" data-method="kakao">
+            <span class="pay-btn__icon pay-btn__icon--kakao">K</span>카카오페이
+          </button>
+          <button type="button" class="pay-btn" data-method="naver">
+            <span class="pay-btn__icon pay-btn__icon--naver">N</span>네이버페이
+          </button>
+          <button type="button" class="pay-btn" data-method="card">
+            <span class="pay-btn__icon">💳</span>신용카드
+          </button>
+          <button type="button" class="pay-btn" data-method="toss">
+            <span class="pay-btn__icon pay-btn__icon--toss">T</span>토스페이
+          </button>
+        </div>
+
+        <!-- 신용카드 입력 필드 (카드 선택 시만 표시) -->
+        <div class="card-fields" id="cardFields" style="display:none;">
+          <div class="form-row">
+            <label class="form-label">카드 번호</label>
+            <input type="text" class="form-input" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19">
+          </div>
+          <div class="form-row form-row--half">
+            <div>
+              <label class="form-label">유효 기간</label>
+              <input type="text" class="form-input" id="cardExpiry" placeholder="MM / YY" maxlength="7">
+            </div>
+            <div>
+              <label class="form-label">청구 이름</label>
+              <input type="text" class="form-input" id="cardName" placeholder="홍길동">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 이메일 -->
+      <section class="checkout-section">
+        <h2 class="checkout-section__title">영수증 이메일</h2>
+        <div class="form-row">
+          <input type="email" class="form-input" id="receiptEmail" value="{{ user_email }}" placeholder="이메일 주소">
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 오른쪽: 금액 요약 + 결제 버튼 -->
+    <div class="checkout-right">
+      <div class="price-summary">
+        <h2 class="checkout-section__title">결제 금액</h2>
+
+        <div class="price-row">
+          <span>서비스 금액</span>
+          <span>{{ price|floatformat:"0" }}원</span>
+        </div>
+        <div class="price-row">
+          <span>VAT (10%)</span>
+          <span>{{ vat|floatformat:"0" }}원</span>
+        </div>
+        <div class="price-row price-row--total">
+          <span>합계</span>
+          <span>{{ total|floatformat:"0" }}원</span>
+        </div>
+
+        <div class="price-start">
+          <span class="price-start__label">구독 시작일</span>
+          <span class="price-start__date">{{ today|date:"Y년 n월 j일" }}</span>
+        </div>
+
+        <form method="post" action="{% url 'register:subscribe_process' plan_type %}" id="checkoutForm">
+          {% csrf_token %}
+          <input type="hidden" name="pay_method" id="hiddenMethod" value="">
+          <input type="hidden" name="receipt_email" id="hiddenEmail" value="{{ user_email }}">
+          <button type="submit" class="pay-submit" id="submitBtn">결제하기</button>
+        </form>
+
+        <p class="pay-notice">결제 후 이용약관 및 개인정보처리방침에 동의하는 것으로 간주됩니다.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  const methods = document.querySelectorAll('.pay-btn');
+  const cardFields = document.getElementById('cardFields');
+  const hiddenMethod = document.getElementById('hiddenMethod');
+  const hiddenEmail = document.getElementById('hiddenEmail');
+  const receiptEmail = document.getElementById('receiptEmail');
+  const cardNumber = document.getElementById('cardNumber');
+  const cardExpiry = document.getElementById('cardExpiry');
+
+  methods.forEach(btn => {
+    btn.addEventListener('click', function () {
+      methods.forEach(b => b.classList.remove('pay-btn--active'));
+      this.classList.add('pay-btn--active');
+      const method = this.dataset.method;
+      hiddenMethod.value = method;
+      cardFields.style.display = method === 'card' ? 'block' : 'none';
+    });
+  });
+
+  // 카드 번호 자동 포맷
+  cardNumber.addEventListener('input', function () {
+    let v = this.value.replace(/\D/g, '').slice(0, 16);
+    this.value = v.replace(/(.{4})/g, '$1 ').trim();
+  });
+
+  // 유효기간 자동 포맷
+  cardExpiry.addEventListener('input', function () {
+    let v = this.value.replace(/\D/g, '').slice(0, 4);
+    if (v.length >= 3) v = v.slice(0, 2) + ' / ' + v.slice(2);
+    this.value = v;
+  });
+
+  // 이메일 동기화
+  receiptEmail.addEventListener('input', function () {
+    hiddenEmail.value = this.value;
+  });
+})();
+</script>
+{% endblock %}

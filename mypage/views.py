@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
@@ -8,7 +8,6 @@ from django.utils import timezone
 from book.models import Books, ReadingProgress, Content, MyVoiceList, BackgroundMusicLibrary, VoiceList, ListeningHistory
 from book.utils import generate_tts, merge_audio_files, mix_audio_with_background
 from django.conf import settings
-from character.models import Story, LLM, LLMSubImage, LoreEntry, Conversation, StoryBookmark, ConversationMessage, ConversationState, HPImageMapping, LastWard, UserLastWard
 import re
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth, TruncWeek, TruncDate, TruncYear
@@ -180,10 +179,19 @@ def my_profile(request):
     # =====================================================
     # GET
     # =====================================================
+    from register.models import PaymentHistory, Subscription
+    recent_payments = PaymentHistory.objects.filter(user=request.user)[:3]
+    try:
+        subscription = request.user.subscription
+    except Subscription.DoesNotExist:
+        subscription = None
+
     context = {
         "books_count": books_count,
         "books": books,
         "chart_data": chart_data,
+        "recent_payments": recent_payments,
+        "subscription": subscription,
     }
     return render(request, "mypage/my_profile.html", context)
 
@@ -279,40 +287,19 @@ def my_library(request):
     # 동적 상태 기반 통계 계산
     reading_count = sum(1 for p in all_progress if p.get_reading_status() == 'reading')
     completed_count = sum(1 for p in all_progress if p.get_reading_status() == 'completed')
-    chatted_llm_ids = Conversation.objects.filter(user=user).values_list('llm_id', flat=True).distinct()
-
-    # AI 스토리: 사용자가 대화한 스토리 목록
-    chatted_stories = Story.objects.filter(
-        characters__id__in=chatted_llm_ids
-    ).distinct().prefetch_related('characters', 'genres')
-
-    llms = LLM.objects.filter(
-        id__in=chatted_llm_ids
-    ).distinct()
-
-    # 북마크한 스토리
-    bookmarked_story_ids = list(StoryBookmark.objects.filter(user=user).values_list('story_id', flat=True))
-    bookmarked_stories = Story.objects.filter(
-        id__in=bookmarked_story_ids
-    ).prefetch_related('characters', 'genres').order_by('-created_at')
-
     stats = {
         'total': all_progress.count(),
         'reading': reading_count,
         'completed': completed_count,
         'favorite': all_progress.filter(is_favorite=True).count(),
-        'ai_stories': chatted_stories.count(),
-        'llms': llms.count(),
+
     }
 
     context = {
         'reading_progress_list': reading_progress_list,
         'filter_status': filter_status,
         'stats': stats,
-        'chatted_stories': chatted_stories,
-        'bookmarked_story_ids': bookmarked_story_ids,
-        'bookmarked_stories': bookmarked_stories,
-        'chatted_llms': llms,
+
     }
 
     return render(request, "mypage/my_library.html", context)
@@ -516,98 +503,6 @@ def select_book(request, pk):
 
 
 
-import os
-from book.models import Poem_list
-# 시 리스트
-@login_required_to_main
-def poem_list(request):
-    user = request.user
-    poem_list = Poem_list.objects.filter(user=user).order_by("-created_at")
-
-    context  ={
-        "poem_list":poem_list
-    }
-    return render(request,"mypage/poem/poem_list.html", context)
-
-from django.core.files.base import ContentFile
-
-
-def poem_create(request):
-    my_voice_list = MyVoiceList.objects.filter(user=request.user)
-
-    if request.method == "POST":
-        action = request.POST.get("action")
-        title = request.POST.get("title")
-        content = request.POST.get("content")
-        voice_id = request.POST.get("voice")
-        poem_img = request.FILES.get('cover_image')
-
-
-        # ✨ 시 제출하기
-        if action == "submit_poem":
-            # TTS 생성 → 파일 경로 리턴
-            audio_path = generate_tts(
-                novel_text=content,
-                voice_id=voice_id,
-                language_code="ko",
-                speed_value=1.0
-            )
-
-            poem = Poem_list.objects.create(
-                user=request.user,
-                title=title,
-                content=content,
-                is_public=True,
-                status="submitted",
-                image= poem_img
-            )
-            if audio_path and os.path.exists(audio_path):
-                with open(audio_path, 'rb') as f:
-                    poem.poem_audio.save(
-                        f"poem_{request.user.user_id}_{int(timezone.now().timestamp())}.mp3",
-                        ContentFile(f.read()),
-                        save=True
-                    )
-
-            return redirect("mypage:poem_list")
-
-    return render(request, "mypage/poem/poem_create.html", {
-        "my_voice_list": my_voice_list
-    })
-
-
-@login_required_to_main
-def poem_detail(request, pk):
-    poem = get_object_or_404(Poem_list, pk=pk, user=request.user)
-
-    if request.method == "POST":
-        poem.title = request.POST.get("title", poem.title)
-        poem.content = request.POST.get("content", poem.content)
-        poem.save()
-        return redirect("mypage:poem_detail", pk=pk)
-
-    return render(request, "mypage/poem/poem_detail.html", {"poem": poem})
-
-@login_required_to_main
-def poem_update(request, pk):
-    poem = get_object_or_404(Poem_list, pk=pk, user=request.user)
-
-    if request.method == "POST":
-        form = Poem_list(request.POST, instance=poem)
-        if form.is_valid():
-            form.save()
-            return redirect("mypage:poem_detail", pk=pk)
-    else:
-        form = Poem_list(instance=poem)
-
-    return render(request, "mypage/poem/poem_update.html", {"form": form, "poem": poem})
-
-
-def poem_delete(request, pk):
-    poem = get_object_or_404(Poem_list, pk=pk, user=request.user)
-    poem.delete()
-    return redirect("mypage:poem_list")
-
 
 # views.py
 from django.shortcuts import get_object_or_404, redirect, render
@@ -697,213 +592,7 @@ def delete_account(request):
     return render(request, 'mypage/delete_account_confirm.html')
 
 
-@login_required_to_main
-def ai_list(request):
-    
 
-    if request.method == 'POST':
-        user = request.user
-    story_list = Story.objects.filter(user=request.user)
-
-    content = {
-        "story_list": story_list
-    }
-    return render(request,"mypage/ai_list.html", content)
-
-
-
-
-# ai 와 했던 대화 목록 소설로 저장
-@login_required_to_main
-def ai_detail(request, public_uuid ):
-    story = get_object_or_404(Story, public_uuid=public_uuid )
-    llm_list = LLM.objects.filter(story=story,conversation__messages__isnull=False ).distinct()
-    context = {
-        "llm_list": llm_list
-    }
-    return render(request, "mypage/ai_detail.html" ,context)
-
-
-
-from collections import OrderedDict
-
-@login_required_to_main
-def novel_result(request, llm_uuid):
-    llm = get_object_or_404(LLM, public_uuid=llm_uuid)
-
-    # 대화 찾기 (본인 대화만)
-    conversation = Conversation.objects.filter(user=request.user, llm=llm).last()
-    if not conversation:
-        return render(request, 'novel/no_conversation.html')
-
-    # POST: 공개 여부 토글 (본인만 가능)
-    if request.method == "POST":
-        share_choice = request.POST.get('share_choice') == "on"
-        conversation.is_public = share_choice
-        if share_choice:
-            conversation.shared_at = timezone.now()
-        else:
-            conversation.shared_at = None
-        conversation.save()
-        print(f"[SHARE TOGGLE] 대화 {conversation.id} → is_public: {conversation.is_public}")
-
-        # POST 후 새로고침 (GET으로 다시 로드)
-        return redirect('mypage:novel_result', llm_uuid=llm_uuid)
-
-    # GET: 페이지 렌더링
-    # HP 매핑 + novel 생성 로직 (기존 그대로)
-    hp_mappings = list(
-        HPImageMapping.objects.filter(llm=llm, sub_image__isnull=False)
-        .select_related('sub_image')
-        .order_by('min_hp')
-    )
-
-    messages = conversation.messages.order_by('created_at')
-
-    novel = {
-        'title': f"{llm.name}과의 이야기",
-        'prologue': f"*그날, {llm.name}과의 대화는 조용히 시작되었다.*",
-        'chapters': [],
-        'epilogue': f"*HP {messages.last().hp_after_message if messages.exists() else 0}에 도달했다.*",
-    }
-
-    current_chapter = None
-    current_range = None
-
-    for msg in messages:
-        msg_range = (msg.hp_range_min, msg.hp_range_max)
-
-        if msg_range != current_range:
-            current_range = msg_range
-            matched_mapping = next(
-                (m for m in hp_mappings if (m.min_hp or 0) == (msg.hp_range_min or 0)),
-                None
-            )
-
-            current_chapter = {
-                'title': matched_mapping.note if matched_mapping else f"HP {msg.hp_range_min or 0} ~ {msg.hp_range_max or 100}",
-                'image': matched_mapping.sub_image if matched_mapping else None,
-                'hp_range': msg_range,
-                'messages': [],
-            }
-            novel['chapters'].append(current_chapter)
-
-        if current_chapter:
-            current_chapter['messages'].append({
-                'role': msg.role,
-                'speaker': llm.name if msg.role == 'assistant' else '너',
-                'content': msg.content,
-                'audio': msg.audio.url if msg.audio else None,
-            })
-
-    last_wards = []
-
-    conv_state = ConversationState.objects.get(conversation=conversation)
-
-    current_hp = conv_state.character_stats.get('hp', 100)
-
-    if current_hp >= 100:
-        last_wards = LastWard.objects.filter(llm= conversation.llm).order_by('order')
-
-
-
-
-
-    import os as _os
-    bgm_list_raw = BackgroundMusicLibrary.objects.exclude(audio_file='').exclude(audio_file=None).order_by('music_name')
-    bgm_list = [b for b in bgm_list_raw if _os.path.exists(b.audio_file.path)]
-
-    context = {
-        'novel': novel,
-        'conversation': conversation,
-        'is_public': conversation.is_public,
-        'last_wards': last_wards,
-        'llm': llm,
-        'bgm_list': bgm_list,
-    }
-    return render(request, 'mypage/novel_result.html', context)
-
-
-@login_required_to_main
-@require_POST
-def chat_to_episode(request):
-    """채팅 → 대화 오디오 변환 AJAX 뷰 (기존 생성된 오디오만 병합, 새 TTS 생성 없음)"""
-    import os
-    from uuid import uuid4
-    from django.core.files.base import ContentFile
-
-    try:
-        llm_uuid = request.POST.get('llm_uuid')
-        audio_title = request.POST.get('audio_title', '').strip()
-        bgm_id = request.POST.get('bgm_id', '').strip()
-
-        if not llm_uuid or not audio_title:
-            return JsonResponse({'error': '필수 값이 누락되었습니다.'}, status=400)
-
-        llm = get_object_or_404(LLM, public_uuid=llm_uuid)
-        conversation = Conversation.objects.filter(user=request.user, llm=llm).last()
-        if not conversation:
-            return JsonResponse({'error': '대화를 찾을 수 없습니다.'}, status=404)
-
-        messages_qs = conversation.messages.order_by('created_at')
-
-        audio_files = []
-        pages_text = []
-
-        # 이미 생성된 오디오 파일만 수집 (새 TTS 생성 없음, 역할 무관)
-        for msg in messages_qs:
-            if msg.audio and msg.audio.name:
-                audio_path = msg.audio.path
-                if os.path.exists(audio_path):
-                    audio_files.append(audio_path)
-                    pages_text.append(msg.content[:200])
-
-        if not audio_files:
-            return JsonResponse({'error': '생성할 오디오가 없습니다.'}, status=400)
-
-        merged_path, timestamps, duration_seconds = merge_audio_files(audio_files, pages_text)
-        if not merged_path:
-            return JsonResponse({'error': '오디오 병합에 실패했습니다.'}, status=500)
-
-        # BGM 믹싱 (선택) — endTime은 ms 단위
-        if bgm_id:
-            try:
-                bgm_obj = BackgroundMusicLibrary.objects.get(id=int(bgm_id))
-                if bgm_obj.audio_file and bgm_obj.audio_file.name:
-                    bgm_path = bgm_obj.audio_file.path
-                    if not os.path.exists(bgm_path):
-                        print(f"[chat_to_episode] BGM 파일 없음 (무시): {bgm_path}")
-                    else:
-                        bg_tracks = [{
-                            'audioPath': bgm_path,
-                            'startTime': 0,
-                            'endTime': int((duration_seconds or 0) * 1000),
-                            'volume': -12,
-                        }]
-                        mixed = mix_audio_with_background(merged_path, bg_tracks)
-                        if mixed and mixed != merged_path:
-                            merged_path = mixed
-            except Exception as e:
-                print(f"[chat_to_episode] BGM 믹싱 실패 (무시): {e}")
-
-        # Conversation에 저장
-        conversation.merged_audio_title = audio_title
-        with open(merged_path, 'rb') as f:
-            file_name = f"conv_{conversation.id}_{uuid4().hex[:8]}.mp3"
-            conversation.merged_audio.save(file_name, ContentFile(f.read()), save=False)
-        conversation.save(update_fields=['merged_audio', 'merged_audio_title'])
-
-        return JsonResponse({
-            'success': True,
-            'audio_url': conversation.merged_audio.url,
-            'audio_title': audio_title,
-            'message': f'"{audio_title}" 오디오가 생성되었습니다.',
-        })
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({'error': f'오류가 발생했습니다: {str(e)}'}, status=500)
 
 
 @login_required_to_main

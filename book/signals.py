@@ -35,9 +35,9 @@ def create_api_key_on_login(sender, request, user, **kwargs):
             name='모바일 앱',
             key=api_key
         )
-        print(f"✅ API Key 자동 생성 완료: {user.nickname} (ID: {user.pk})")
+        print(f"[API Key] Created for: {user.nickname} (ID: {user.pk})")
     else:
-        print(f"ℹ️ 기존 API Key 사용: {user.nickname} (ID: {user.pk})")
+        print(f"[API Key] Reusing existing key for: {user.nickname} (ID: {user.pk})")
 
 
 @receiver(pre_save, sender=Books)
@@ -66,6 +66,6 @@ def optimize_book_cover_image(sender, instance, **kwargs):
         optimized = optimize_image(instance.cover_img, max_width=1200, max_height=1200, quality=85)
         if optimized:
             instance.cover_img = optimized
-            print(f"✅ 이미지 최적화 완료: {instance.name}")
+            print(f"[Image] Optimized: {instance.name}")
     except Exception as e:
-        print(f"⚠️ 이미지 최적화 실패: {str(e)}")
+        print(f"[Image] Optimize failed: {str(e)}")

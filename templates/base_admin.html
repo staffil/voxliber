@@ -1,0 +1,104 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}관리자 — VOXLIBER{% endblock %}</title>
+
+  <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Base styles (variables only, no sidebar) -->
+  <link rel="stylesheet" href="{% static 'css/common/variables.css' %}">
+
+  {% block extra_css %}{% endblock %}
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f5;
+      color: #111;
+      min-height: 100vh;
+    }
+    /* ── 상단 어드민 바 ── */
+    .admin-topbar {
+      background: #111; color: #fff;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; height: 52px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .admin-topbar-brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: #fff;
+    }
+    .admin-topbar-brand img { height: 22px; }
+    .admin-topbar-brand span { font-size: 13px; font-weight: 700; letter-spacing: .08em; }
+    .admin-topbar-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 7px;
+      background: #5b4cf5; color: #fff; margin-left: 6px;
+    }
+    .admin-topbar-nav { display: flex; align-items: center; gap: 4px; }
+    .admin-topbar-link {
+      padding: 6px 12px; color: rgba(255,255,255,.6);
+      text-decoration: none; font-size: 12px; font-weight: 600;
+      transition: color .12s;
+    }
+    .admin-topbar-link:hover { color: #fff; }
+    .admin-topbar-link.active { color: #fff; }
+    .admin-topbar-user { font-size: 12px; color: rgba(255,255,255,.5); margin-left: 12px; }
+    .admin-topbar-back {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; color: rgba(255,255,255,.5); text-decoration: none;
+      padding: 5px 10px; border: 1px solid rgba(255,255,255,.15);
+      transition: all .12s;
+    }
+    .admin-topbar-back:hover { color: #fff; border-color: rgba(255,255,255,.4); }
+    /* ── 컨텐츠 영역 ── */
+    .admin-body { max-width: 1400px; margin: 0 auto; padding: 32px; }
+    @media (max-width: 768px) { .admin-body { padding: 20px 16px; } }
+  </style>
+</head>
+<body>
+
+  <!-- 어드민 상단 바 -->
+  <div class="admin-topbar">
+    <a href="{% url 'main:admin_dashboard' %}" class="admin-topbar-brand">
+      <img src="{% static 'img/logo3.png' %}" alt="Voxliber">
+      <span>VOXLIBER</span>
+      <span class="admin-topbar-badge">ADMIN</span>
+    </a>
+    <nav class="admin-topbar-nav">
+      <a href="{% url 'main:admin_dashboard' %}" class="admin-topbar-link{% if request.resolver_match.url_name == 'admin_dashboard' %} active{% endif %}">대시보드</a>
+      <a href="/admin/" class="admin-topbar-link" target="_blank">Django Admin</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="admin-topbar-user">{{ request.user.nickname|default:request.user.email }}</span>
+      <a href="{% url 'main:main' %}" class="admin-topbar-back">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        사이트로
+      </a>
+    </div>
+  </div>
+
+  <!-- 메시지 -->
+  {% if messages %}
+  <div style="max-width:1400px;margin:12px auto 0;padding:0 32px;">
+    {% for message in messages %}
+    <div style="padding:10px 16px;background:{% if 'error' in message.tags %}#fee2e2;color:#dc2626{% else %}#f0fdf4;color:#16a34a{% endif %};border:1px solid;margin-bottom:8px;font-size:13px;">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="admin-body">
+    {% block content %}{% endblock %}
+  </div>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

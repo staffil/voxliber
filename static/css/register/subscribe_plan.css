@@ -1,0 +1,243 @@
+/* ==========================================
+   subscribe_plan.css — 구독 플랜 선택
+   ========================================== */
+
+.plan-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 28px 80px;
+  background: #fafafa;
+}
+
+/* ── 헤더 ── */
+.plan-header {
+  padding-bottom: 20px;
+  border-bottom: 2px solid #111;
+  margin-bottom: 48px;
+}
+
+.plan-header__label {
+  font-size: .72rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 8px;
+}
+
+.plan-header__title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #111;
+  margin: 0 0 6px;
+  letter-spacing: -.02em;
+}
+
+.plan-header__sub {
+  font-size: .85rem;
+  color: #888;
+  margin: 0;
+}
+
+/* ── 그리드 ── */
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border: 1px solid #e8e8e8;
+  margin-bottom: 24px;
+}
+
+/* ── 카드 ── */
+.plan-card {
+  background: #fff;
+  border-right: 1px solid #e8e8e8;
+  padding: 32px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.plan-card:last-child {
+  border-right: none;
+}
+
+.plan-card--featured {
+  background: #fff;
+  border-top: 3px solid #5b4cf5;
+}
+
+/* ── 배지 ── */
+.plan-card__badge {
+  display: inline-block;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  background: rgba(91,76,245,.1);
+  color: #5b4cf5;
+  margin-bottom: 14px;
+}
+
+.plan-card__badge--gold {
+  background: rgba(161,128,0,.1);
+  color: #9a7b00;
+}
+
+/* ── 플랜 이름 ── */
+.plan-card__name {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 20px;
+}
+
+.plan-card--featured .plan-card__name {
+  color: #5b4cf5;
+}
+
+/* ── 가격 ── */
+.plan-card__price {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #111;
+  line-height: 1;
+  margin-bottom: 4px;
+  letter-spacing: -.03em;
+}
+
+.plan-card__unit {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #666;
+}
+
+.plan-card__cycle {
+  font-size: .8rem;
+  color: #aaa;
+  margin-bottom: 28px;
+}
+
+/* ── 피처 리스트 ── */
+.plan-card__features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 32px;
+  flex: 1;
+  padding: 0;
+}
+
+.plan-card__features li {
+  font-size: .83rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.feat-ok {
+  color: #333;
+}
+
+.feat-ok::before {
+  content: '✓';
+  color: #5b4cf5;
+  font-weight: 800;
+  flex-shrink: 0;
+  font-size: .85rem;
+}
+
+.feat-no {
+  color: #bbb !important;
+}
+
+.feat-no::before {
+  content: '✕';
+  color: #ccc;
+  font-weight: 500;
+  flex-shrink: 0;
+  font-size: .8rem;
+}
+
+/* ── 버튼 ── */
+.plan-btn {
+  display: block;
+  width: 100%;
+  padding: 12px 0;
+  text-align: center;
+  font-size: .85rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  text-decoration: none;
+  letter-spacing: .02em;
+  transition: opacity .15s;
+  font-family: inherit;
+}
+
+.plan-btn--accent {
+  background: #111;
+  color: #fff;
+}
+
+.plan-btn--accent:hover {
+  opacity: .82;
+  color: #fff;
+}
+
+.plan-btn--featured {
+  background: #5b4cf5;
+  color: #fff;
+}
+
+.plan-btn--featured:hover {
+  opacity: .88;
+  color: #fff;
+}
+
+.plan-btn--outline {
+  background: transparent;
+  color: #111;
+  border: 1px solid #ccc;
+}
+
+.plan-btn--outline:hover {
+  border-color: #999;
+}
+
+.plan-btn--disabled {
+  background: #f0f0f0;
+  color: #bbb;
+  cursor: not-allowed;
+}
+
+/* ── 하단 안내 ── */
+.plan-note {
+  font-size: .76rem;
+  color: #aaa;
+  text-align: center;
+  margin-top: 16px;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 720px) {
+  .plans-grid {
+    grid-template-columns: 1fr;
+    border: 1px solid #e8e8e8;
+  }
+
+  .plan-card {
+    border-right: none;
+    border-bottom: 1px solid #e8e8e8;
+  }
+
+  .plan-card:last-child {
+    border-bottom: none;
+  }
+}

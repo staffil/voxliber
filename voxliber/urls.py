@@ -25,7 +25,7 @@ from book.sitemaps import BookSitemap, StaticViewSitemap
 from django.http import FileResponse
 from voxliber import api_views as voxliber_api
 import os
-from book.admin import EpisodeRankingView, ListeningStatsView,ListeningCalendarView,CharacterStatsView,CharacterCalendarView,SnapStatsView,AdStatsView,SnapCalendarView,AdCalendarView
+from book.admin import EpisodeRankingView, ListeningStatsView, ListeningCalendarView, SnapStatsView
 from register.admin import VisitStatsView
 from book.admin_cover import CoverGenerateView
 from notifications.admin import SendPushView ,FCMToken
@@ -46,16 +46,7 @@ urlpatterns = [
 
     path('admin/send-push/', SendPushView(FCMToken, admin.site).push_view),
 
-    path('admin/book/snap-calendar/',   SnapCalendarView.as_view()),
-    path('admin/register/ad-calendar/', AdCalendarView.as_view()),
     path('admin/book/snap-stats/',      SnapStatsView.as_view(),  name='snap_stats'),
-
-    # 📢 광고 통계
-    path('admin/register/ad-stats/',    AdStatsView.as_view(),    name='ad_stats'),
-    path('admin/character/calendar/', CharacterCalendarView.as_view(), name='character_calendar'),
-
-    path('admin/character/stats/', CharacterStatsView.as_view(), name='character_stats'),
-
     path('admin/book/listening-calendar/', ListeningCalendarView.as_view(), name='listening_calendar'),
 
     path('admin/book/episode-ranking/', EpisodeRankingView.as_view(), name='episode_ranking'),
@@ -67,8 +58,6 @@ urlpatterns = [
     path("book/", include(("book.urls", "book"), namespace="book")),
     path("mypage/", include(("mypage.urls", "mypage"), namespace="mypage")),
     path("voice/", include(("voice.urls", "voice"), namespace="voice")),
-    path("character/", include(("character.urls", "character"), namespace="character")),
-    path("advertisment/", include(("advertisment.urls", "advertisment"), namespace="advertisment")),
     # 딥링크용 snap URL
     path("snap/detail/<uuid:snap_uuid>/", lambda request, snap_uuid: __import__('django.shortcuts', fromlist=['redirect']).redirect('book:book_snap_detail', snap_uuid=snap_uuid)),
     path("robots.txt", TemplateView.as_view(
@@ -122,27 +111,13 @@ urlpatterns = [
     # path("api/v1/create-ai-story/", voxliber_api.api_create_ai_story, name="api_create_ai_story"),
     # path("api/v1/create-ai-llm/", voxliber_api.api_create_ai_llm, name="api_create_ai_llm"),
 
-    # 로어북
-    path("api/v1/lore-entry/", voxliber_api.api_lore_entry_list, name="api_lore_entry_list"),
-    path("api/v1/lore-entry/create/", voxliber_api.api_lore_entry_create, name="api_lore_entry_create"),
-
     # 홈 차트/작가 (앱용)
     path("api/v1/popular-authors/", voxliber_api.api_popular_authors, name="api_popular_authors"),
     path("api/v1/realtime-chart/", voxliber_api.api_realtime_chart, name="api_realtime_chart"),
-    path("api/v1/announcement/", voxliber_api.api_announcement, name="api_announcement"),
-
-    # 웹소설 자동 생성
-    path("api/v1/webnovel/generate-episode/", voxliber_api.api_webnovel_generate_episode, name="api_webnovel_generate_episode"),
-
     # 알림 API (앱용)
     path("api/v1/notifications/", include("notifications.urls")),
-
-    # 광고 API (앱용)
-    path("api/v1/ads/check/", voxliber_api.api_ad_check, name="api_ad_check"),
-    path("api/v1/ads/impression/", voxliber_api.api_ad_impression, name="api_ad_impression"),
-    path("api/v1/ads/click/", voxliber_api.api_ad_click, name="api_ad_click"),
-    path("api/v1/ads/skip/", voxliber_api.api_ad_skip, name="api_ad_skip"),
-    path("api/v1/ads/complete/", voxliber_api.api_ad_complete, name="api_ad_complete"),
+    # 알림 웹 페이지
+    path("notifications/", include("notifications.web_urls", namespace="notifications")),
 
     # Deep Link Verification Files
     path('.well-known/apple-app-site-association',

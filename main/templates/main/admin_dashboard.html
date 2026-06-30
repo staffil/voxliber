@@ -1,0 +1,1040 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 대시보드 — Voxliber</title>
+  <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/main/admin_dashboard.css' %}">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     사이드바
+══════════════════════════════════════════════ -->
+<aside class="sb">
+  <a href="{% url 'main:admin_dashboard' %}" class="sb-logo">
+    <img src="{% static 'img/logo3.png' %}" alt="Voxliber">
+    <span class="sb-logo-text">VOXLIBER</span>
+    <span class="sb-logo-badge">ADMIN</span>
+  </a>
+
+  <nav class="sb-nav">
+    <div class="sb-group">개요</div>
+    <button class="sb-btn on" onclick="go(this,'pg-stats')">통계 대시보드</button>
+
+    <div class="sb-group">문의 관리</div>
+    <button class="sb-btn" onclick="go(this,'pg-contact')">
+      일반 문의
+      {% if pending_contacts %}<span class="sb-badge">{{ pending_contacts }}</span>{% endif %}
+    </button>
+    <button class="sb-btn" onclick="go(this,'pg-author-inq')">
+      작가 문의
+      {% if stats.pending_inquiries %}<span class="sb-badge">{{ stats.pending_inquiries }}</span>{% endif %}
+    </button>
+
+    <div class="sb-group">작가 관리</div>
+    <button class="sb-btn" onclick="go(this,'pg-author-apply')">
+      작가 신청
+      {% if pending_apps %}<span class="sb-badge">{{ pending_apps }}</span>{% endif %}
+    </button>
+    <button class="sb-btn" onclick="go(this,'pg-authors')">작가 목록</button>
+
+    <div class="sb-group">회원 관리</div>
+    <button class="sb-btn" onclick="go(this,'pg-users')">회원 목록</button>
+    <button class="sb-btn" onclick="go(this,'pg-reports')">신고 처리</button>
+
+    <div class="sb-group">구독 관리</div>
+    <button class="sb-btn" onclick="go(this,'pg-subs')">구독자 목록</button>
+
+    <div class="sb-group">TTS</div>
+    <button class="sb-btn" onclick="go(this,'pg-tts')">TTS 모니터링</button>
+
+    <div class="sb-group">정산</div>
+    <button class="sb-btn" onclick="go(this,'pg-settle')">정산 내역</button>
+
+    <div class="sb-group">세금/경비</div>
+    <button class="sb-btn" onclick="go(this,'pg-tax')">세금·경비</button>
+
+    <div class="sb-group">공지/이벤트</div>
+    <button class="sb-btn" onclick="go(this,'pg-notices')">공지/FAQ/이벤트</button>
+  </nav>
+
+  <div class="sb-bottom">
+    <a href="{% url 'main:main' %}" class="sb-back">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      사이트로 돌아가기
+    </a>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════════════════
+     메인 영역
+══════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ── 상단 바 ── -->
+  <div class="topbar">
+    <span class="topbar-title" id="topbarTitle">통계 대시보드</span>
+    <div class="topbar-right">
+      <span class="topbar-user">{{ request.user.nickname|default:request.user.email }}</span>
+      <span class="topbar-sep">|</span>
+      <a href="/admin/" class="topbar-link" target="_blank">Django Admin</a>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       페이지 섹션들
+  ══════════════════════════════════════════ -->
+  <div class="pg-wrap">
+
+    <!-- ────────────── 통계 대시보드 ────────────── -->
+    <div class="pg active" id="pg-stats">
+
+      <!-- 통계 카드 -->
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-box-label">전체 회원</div>
+          <div class="stat-box-val">{{ stats.total_users|default:0 }}</div>
+          <div class="stat-box-sub">이번 달 +{{ stats.new_users_month|default:0 }}명</div>
+        </div>
+        <div class="stat-box stat-box-ac">
+          <div class="stat-box-label">전체 작품</div>
+          <div class="stat-box-val">{{ stats.total_books|default:0 }}</div>
+          <div class="stat-box-sub">오디오북 {{ stats.audiobooks }} / 웹소설 {{ stats.webnovels }}</div>
+        </div>
+        <div class="stat-box stat-box-gr">
+          <div class="stat-box-label">전체 에피소드</div>
+          <div class="stat-box-val">{{ stats.total_episodes|default:0 }}</div>
+          <div class="stat-box-sub">7일 세션 {{ stats.listening_sessions }}회</div>
+        </div>
+        <div class="stat-box stat-box-or">
+          <div class="stat-box-label">활성 구독자</div>
+          <div class="stat-box-val">{{ stats.active_subs|default:0 }}</div>
+          <div class="stat-box-sub">월간 {{ sub_monthly }} / 연간 {{ sub_yearly }}</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">7일 청취(h)</div>
+          <div class="stat-box-val">{{ stats.listening_hours|default:0 }}</div>
+          <div class="stat-box-sub">{{ stats.listening_users }}명 청취</div>
+        </div>
+        <div class="stat-box stat-box-re">
+          <div class="stat-box-label">작가 신청 대기</div>
+          <div class="stat-box-val">{{ stats.pending_author_apps|default:0 }}</div>
+          <div class="stat-box-sub">미답변 문의 {{ stats.pending_inquiries }}건</div>
+        </div>
+      </div>
+
+      <!-- 빠른 링크 -->
+      <div class="sec-head"><span class="sec-title">빠른 링크</span></div>
+      <div class="quick-grid">
+        <a href="/admin/book/books/" class="q-btn" target="_blank">
+          <span class="q-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+          <span class="q-btn-text">작품 관리</span>
+        </a>
+        <a href="/admin/register/users/" class="q-btn" target="_blank">
+          <span class="q-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
+          <span class="q-btn-text">회원 관리</span>
+        </a>
+        <a href="/admin/register/authorapplication/" class="q-btn" target="_blank">
+          <span class="q-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+          <span class="q-btn-text">작가 신청</span>
+        </a>
+        <a href="/admin/register/subscription/" class="q-btn" target="_blank">
+          <span class="q-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
+          <span class="q-btn-text">구독 관리</span>
+        </a>
+        <a href="/admin/book/listening-stats/" class="q-btn" target="_blank">
+          <span class="q-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+          <span class="q-btn-text">청취 통계</span>
+        </a>
+        <a href="/admin/book/episode-ranking/" class="q-btn" target="_blank">
+          <span class="q-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg></span>
+          <span class="q-btn-text">에피소드 랭킹</span>
+        </a>
+        <a href="/admin/send-push/" class="q-btn" target="_blank">
+          <span class="q-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+          <span class="q-btn-text">푸시 알림</span>
+        </a>
+        <a href="/admin/book/cover-generate/" class="q-btn" target="_blank">
+          <span class="q-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
+          <span class="q-btn-text">커버 생성</span>
+        </a>
+      </div>
+
+      <!-- 2단 레이아웃 -->
+      <div class="two-col">
+        <!-- 최근 가입 회원 -->
+        <div>
+          <div class="sec-head">
+            <span class="sec-title">최근 가입 회원</span>
+            <a href="/admin/register/users/" class="btn btn-sm" target="_blank">전체 보기</a>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>닉네임</th><th>이메일</th><th>가입일</th><th>구분</th></tr></thead>
+              <tbody>
+                {% for user in recent_users %}
+                <tr>
+                  <td>
+                    <div class="u-cell">
+                      <div class="u-av">{% if user.user_img %}<img src="{{ user.user_img.url }}" alt="">{% else %}{{ user.nickname|first|upper|default:"U" }}{% endif %}</div>
+                      <span class="td-bold">{{ user.nickname|default:"—" }}</span>
+                    </div>
+                  </td>
+                  <td class="td-sm td-ell">{{ user.email|truncatechars:24 }}</td>
+                  <td class="td-sm td-nowrap">{{ user.created_at|date:"m/d" }}</td>
+                  <td>{% if user.is_author %}<span class="bdg bdg-purple">작가</span>{% else %}<span class="bdg bdg-gray">일반</span>{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="tbl-empty">데이터 없음</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 이번 주 인기 작품 -->
+        <div>
+          <div class="sec-head">
+            <span class="sec-title">이번 주 인기 작품 Top 10</span>
+            <a href="/admin/book/episode-ranking/" class="btn btn-sm" target="_blank">전체 보기</a>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>#</th><th>작품명</th><th>청취자</th></tr></thead>
+              <tbody>
+                {% for item in top_books %}
+                <tr>
+                  <td class="td-sm td-rank">{{ forloop.counter }}</td>
+                  <td class="td-ell"><a href="{% url 'book:book_detail' item.book__public_uuid %}" target="_blank" class="tbl-ac-link">{{ item.book__name|truncatechars:28 }}</a></td>
+                  <td class="td-sm td-nowrap">{{ item.listeners }}명</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="tbl-empty">이번 주 청취 데이터 없음</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 최근 등록 작품 -->
+      <div class="sec-head sec-head-mt">
+        <span class="sec-title">최근 등록 작품</span>
+        <a href="/admin/book/books/" class="btn btn-sm" target="_blank">전체 보기</a>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>작품명</th><th>작가</th><th>유형</th><th>상태</th><th>등록일</th><th>관리</th></tr></thead>
+          <tbody>
+            {% for book in recent_books %}
+            <tr>
+              <td class="td-ell td-bold">
+                <a href="{% url 'book:book_detail' book.public_uuid %}" target="_blank" class="tbl-plain-link">{{ book.name|truncatechars:28 }}</a>
+              </td>
+              <td class="td-sm">{{ book.user.nickname|default:"—" }}</td>
+              <td>{% if book.book_type == 'audiobook' %}<span class="bdg bdg-purple">오디오북</span>{% else %}<span class="bdg bdg-blue">웹소설</span>{% endif %}</td>
+              <td>{% if book.is_published %}<span class="bdg bdg-green">공개</span>{% else %}<span class="bdg bdg-gray">비공개</span>{% endif %}</td>
+              <td class="td-sm td-nowrap">{{ book.created_at|date:"m/d" }}</td>
+              <td><a href="/admin/book/books/{{ book.id }}/change/" class="btn btn-sm" target="_blank">편집</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="tbl-empty">등록된 작품 없음</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /pg-stats -->
+
+
+    <!-- ────────────── 일반 문의 ────────────── -->
+    <div class="pg" id="pg-contact">
+      <div class="sec-head">
+        <span class="sec-title">일반 문의</span>
+        <span class="sec-count">미답변 {{ pending_contacts }}건</span>
+      </div>
+
+      <div class="i-tabs">
+        <button class="i-tab on" onclick="setTab(this,'ct-pending')">미답변</button>
+        <button class="i-tab" onclick="setTab(this,'ct-all')">전체</button>
+      </div>
+
+      <!-- 미답변 -->
+      <div class="i-pane on" id="ct-pending">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>날짜</th><th>이메일</th><th>제목</th><th>답변</th></tr></thead>
+            <tbody>
+              {% for ct in contact_inquiries %}{% if ct.status == 'pending' %}
+              <tr>
+                <td class="td-sm td-nowrap">{{ ct.created_at|date:"m.d H:i" }}</td>
+                <td class="td-sm">{{ ct.email|truncatechars:26 }}</td>
+                <td class="td-ell">{{ ct.subject }}</td>
+                <td><button class="btn btn-sm btn-ac" onclick="openContactReply({{ ct.id }},'{{ ct.subject|escapejs }}','{{ ct.message|escapejs|truncatechars:80 }}')">답변 작성</button></td>
+              </tr>
+              {% endif %}{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 전체 -->
+      <div class="i-pane" id="ct-all">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>날짜</th><th>이메일</th><th>제목</th><th>상태</th><th>관리</th></tr></thead>
+            <tbody>
+              {% for ct in contact_inquiries %}
+              <tr>
+                <td class="td-sm td-nowrap">{{ ct.created_at|date:"m.d H:i" }}</td>
+                <td class="td-sm">{{ ct.email|truncatechars:26 }}</td>
+                <td class="td-ell">{{ ct.subject }}</td>
+                <td>{% if ct.status == 'pending' %}<span class="bdg bdg-orange">대기</span>{% else %}<span class="bdg bdg-green">답변완료</span>{% endif %}</td>
+                <td><button class="btn btn-sm" onclick="openContactReply({{ ct.id }},'{{ ct.subject|escapejs }}','{{ ct.message|escapejs|truncatechars:80 }}')">보기/답변</button></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="tbl-empty">문의 없음</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /pg-contact -->
+
+
+    <!-- ────────────── 작가 문의 ────────────── -->
+    <div class="pg" id="pg-author-inq">
+      <div class="sec-head">
+        <span class="sec-title">작가 문의</span>
+        <span class="sec-count">미답변 {{ stats.pending_inquiries }}건</span>
+      </div>
+
+      <div class="i-tabs">
+        <button class="i-tab on" onclick="setTab(this,'inq-pending')">미답변</button>
+        <button class="i-tab" onclick="setTab(this,'inq-all')">전체</button>
+      </div>
+
+      <div class="i-pane on" id="inq-pending">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>날짜</th><th>카테고리</th><th>제목</th><th>작가</th><th>작품</th><th>답변</th></tr></thead>
+            <tbody>
+              {% for inq in pending_inquiries %}
+              <tr>
+                <td class="td-sm td-nowrap">{{ inq.created_at|date:"m.d H:i" }}</td>
+                <td><span class="bdg bdg-gray">{{ inq.get_category_display }}</span></td>
+                <td class="td-ell">{{ inq.title }}</td>
+                <td class="td-sm">{{ inq.user.nickname }}</td>
+                <td class="td-sm">{% if inq.book %}{{ inq.book.name|truncatechars:8 }}{% else %}—{% endif %}</td>
+                <td><button class="btn btn-sm btn-ac" onclick="openInqReply({{ inq.id }},'{{ inq.title|escapejs }}')">답변 작성</button></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="tbl-empty">미답변 문의 없음</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="i-pane" id="inq-all">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>날짜</th><th>카테고리</th><th>제목</th><th>작가</th><th>상태</th><th>관리</th></tr></thead>
+            <tbody>
+              {% for inq in all_author_inquiries %}
+              <tr>
+                <td class="td-sm td-nowrap">{{ inq.created_at|date:"m.d H:i" }}</td>
+                <td><span class="bdg bdg-gray">{{ inq.get_category_display }}</span></td>
+                <td class="td-ell">{{ inq.title }}</td>
+                <td class="td-sm">{{ inq.user.nickname }}</td>
+                <td>
+                  {% if inq.status == 'pending' %}<span class="bdg bdg-orange">대기</span>
+                  {% elif inq.status == 'answered' %}<span class="bdg bdg-green">답변완료</span>
+                  {% else %}<span class="bdg bdg-gray">종료</span>{% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'register:author_inquiry_detail' inq.id %}" class="btn btn-sm" target="_blank">보기</a>
+                  <button class="btn btn-sm" onclick="openInqReply({{ inq.id }},'{{ inq.title|escapejs }}')">답변</button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="tbl-empty">문의 없음</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /pg-author-inq -->
+
+
+    <!-- ────────────── 작가 신청 ────────────── -->
+    <div class="pg" id="pg-author-apply">
+      <div class="sec-head">
+        <span class="sec-title">작가 신청</span>
+        <span class="sec-count">대기 {{ pending_apps }}건</span>
+      </div>
+
+      <div class="i-tabs">
+        <button class="i-tab on" onclick="setTab(this,'ap-pending')">검토 대기</button>
+        <button class="i-tab" onclick="setTab(this,'ap-all')">전체</button>
+      </div>
+
+      <div class="i-pane on" id="ap-pending">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>신청일</th><th>신청자</th><th>이메일</th><th>포트폴리오</th><th>작품소개</th><th>상세</th></tr></thead>
+            <tbody>
+              {% for app in author_apps %}{% if app.status == 'pending' %}
+              <tr>
+                <td class="td-sm td-nowrap">{{ app.applied_at|date:"Y.m.d" }}</td>
+                <td>
+                  <div class="u-cell">
+                    <div class="u-av">{% if app.user.user_img %}<img src="{{ app.user.user_img.url }}" alt="">{% else %}{{ app.user.nickname|first|upper|default:"U" }}{% endif %}</div>
+                    <span class="td-bold">{{ app.user.nickname|default:"—" }}</span>
+                  </div>
+                </td>
+                <td class="td-sm">{{ app.user.email }}</td>
+                <td>{% if app.portfolio %}<a href="{{ app.portfolio }}" target="_blank" class="btn btn-sm">포폴 →</a>{% else %}<span class="td-sm">—</span>{% endif %}</td>
+                <td class="td-ell td-sm">{{ app.planned_work|truncatechars:28 }}</td>
+                <td>
+                  <button class="btn btn-sm btn-ac"
+                    onclick="openApModal(
+                      {{ app.id }},
+                      '{{ app.user.nickname|default:"—"|escapejs }}',
+                      '{{ app.user.email|escapejs }}',
+                      '{% if app.user.user_img %}{{ app.user.user_img.url }}{% endif %}',
+                      '{{ app.applied_at|date:"Y.m.d H:i" }}',
+                      '{{ app.portfolio|default:""|escapejs }}',
+                      {{ app.user.age|default:0 }},
+                      '{{ app.planned_work|escapejs }}'
+                    )">상세 보기</button>
+                </td>
+              </tr>
+              {% endif %}{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="i-pane" id="ap-all">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>신청일</th><th>신청자</th><th>이메일</th><th>상태</th><th>거절 사유</th><th>검토일</th><th>상세</th></tr></thead>
+            <tbody>
+              {% for app in author_apps %}
+              <tr>
+                <td class="td-sm td-nowrap">{{ app.applied_at|date:"Y.m.d" }}</td>
+                <td>
+                  <div class="u-cell">
+                    <div class="u-av">{% if app.user.user_img %}<img src="{{ app.user.user_img.url }}" alt="">{% else %}{{ app.user.nickname|first|upper|default:"U" }}{% endif %}</div>
+                    <span class="td-bold">{{ app.user.nickname|default:"—" }}</span>
+                  </div>
+                </td>
+                <td class="td-sm">{{ app.user.email }}</td>
+                <td>
+                  {% if app.status == 'pending' %}<span class="bdg bdg-orange">대기</span>
+                  {% elif app.status == 'approved' %}<span class="bdg bdg-green">승인</span>
+                  {% else %}<span class="bdg bdg-red">거절</span>{% endif %}
+                </td>
+                <td class="td-sm td-ell td-reject">{{ app.reject_reason|default:"—"|truncatechars:30 }}</td>
+                <td class="td-sm">{% if app.reviewed_at %}{{ app.reviewed_at|date:"Y.m.d" }}{% else %}—{% endif %}</td>
+                <td>
+                  <button class="btn btn-sm"
+                    onclick="openApModal(
+                      {{ app.id }},
+                      '{{ app.user.nickname|default:"—"|escapejs }}',
+                      '{{ app.user.email|escapejs }}',
+                      '{% if app.user.user_img %}{{ app.user.user_img.url }}{% endif %}',
+                      '{{ app.applied_at|date:"Y.m.d H:i" }}',
+                      '{{ app.portfolio|default:""|escapejs }}',
+                      {{ app.user.age|default:0 }},
+                      '{{ app.planned_work|escapejs }}'
+                    )">상세</button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="tbl-empty">신청 없음</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /pg-author-apply -->
+
+    <!-- ── 작가 신청 상세 모달 ── -->
+    <div class="ap-modal-ov" id="apModalOv" onclick="closeApModal(event)">
+      <div class="ap-modal" id="apModal">
+        <div class="ap-modal-hd">
+          <div class="ap-modal-hd-user">
+            <div class="ap-modal-av" id="apAv"></div>
+            <div>
+              <div class="ap-modal-name" id="apName"></div>
+              <div class="ap-modal-email" id="apEmail"></div>
+            </div>
+          </div>
+          <button class="ap-modal-close" onclick="closeApModal()">✕</button>
+        </div>
+        <div class="ap-modal-body">
+          <div>
+            <div class="ap-field-label">신청일</div>
+            <div class="ap-field-val" id="apDate"></div>
+          </div>
+          <div>
+            <div class="ap-field-label">나이</div>
+            <div class="ap-field-val" id="apAge"></div>
+          </div>
+          <div>
+            <div class="ap-field-label">포트폴리오</div>
+            <div class="ap-field-val" id="apPortfolio"></div>
+          </div>
+          <div>
+            <div class="ap-field-label">작품 소개</div>
+            <div class="ap-work-box" id="apWork"></div>
+          </div>
+        </div>
+        <div class="ap-modal-ft" id="apModalFt">
+          <button class="btn btn-green" id="apApproveBtn" onclick="apApprove()">✓ 승인</button>
+          <button class="btn btn-red" onclick="apShowReject()">✕ 거절</button>
+        </div>
+        <div class="ap-reject-wrap" id="apRejectWrap">
+          <textarea id="apRejectReason" placeholder="거절 사유를 입력하세요 (신청자에게 표시됩니다)"></textarea>
+          <div class="ap-reject-actions">
+            <button class="btn" onclick="apHideReject()">취소</button>
+            <button class="btn btn-red" onclick="apReject()">거절 저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ────────────── 작가 목록 ────────────── -->
+    <div class="pg" id="pg-authors">
+      <div class="sec-head">
+        <span class="sec-title">작가 목록</span>
+        <span class="sec-count">총 {{ authors|length }}명</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>닉네임</th><th>이메일</th><th>가입일</th><th>작품 수</th><th>구독</th><th>관리</th></tr></thead>
+          <tbody>
+            {% for author in authors %}
+            <tr>
+              <td>
+                <div class="u-cell">
+                  <div class="u-av">{% if author.user_img %}<img src="{{ author.user_img.url }}" alt="">{% else %}{{ author.nickname|first|upper|default:"A" }}{% endif %}</div>
+                  <span class="td-bold">{{ author.nickname|default:"—" }}</span>
+                </div>
+              </td>
+              <td class="td-sm">{{ author.email|truncatechars:28 }}</td>
+              <td class="td-sm td-nowrap">{{ author.created_at|date:"Y.m.d" }}</td>
+              <td class="td-sm">{{ author.books.count }}</td>
+              <td>{% if author.subscription and author.subscription.status == 'active' %}<span class="bdg bdg-green">구독중</span>{% else %}<span class="bdg bdg-gray">일반</span>{% endif %}</td>
+              <td><a href="/admin/register/users/{{ author.id }}/change/" class="btn btn-sm" target="_blank">편집</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="tbl-empty">등록된 작가 없음</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /pg-authors -->
+
+
+    <!-- ────────────── 회원 목록 ────────────── -->
+    <div class="pg" id="pg-users">
+      <div class="sec-head">
+        <span class="sec-title">회원 목록</span>
+        <span class="sec-count">최근 가입 순 10명 / <a href="/admin/register/users/" target="_blank" class="tbl-ac-link">전체 보기</a></span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>닉네임</th><th>이메일</th><th>가입일</th><th>작가</th><th>구독</th><th>관리</th></tr></thead>
+          <tbody>
+            {% for user in recent_users %}
+            <tr>
+              <td>
+                <div class="u-cell">
+                  <div class="u-av">{% if user.user_img %}<img src="{{ user.user_img.url }}" alt="">{% else %}{{ user.nickname|first|upper|default:"U" }}{% endif %}</div>
+                  <span class="td-bold">{{ user.nickname|default:"—" }}</span>
+                </div>
+              </td>
+              <td class="td-sm">{{ user.email|truncatechars:28 }}</td>
+              <td class="td-sm td-nowrap">{{ user.created_at|date:"Y.m.d" }}</td>
+              <td>{% if user.is_author %}<span class="bdg bdg-purple">작가</span>{% else %}<span class="bdg bdg-gray">일반</span>{% endif %}</td>
+              <td>{% if user.subscription and user.subscription.status == 'active' %}<span class="bdg bdg-green">구독중</span>{% else %}<span class="bdg bdg-gray">무료</span>{% endif %}</td>
+              <td><a href="/admin/register/users/{{ user.id }}/change/" class="btn btn-sm" target="_blank">편집</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="tbl-empty">회원 없음</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /pg-users -->
+
+
+    <!-- ────────────── 신고 처리 ────────────── -->
+    <div class="pg" id="pg-reports">
+      <div class="sec-head"><span class="sec-title">신고 처리</span></div>
+      <div class="dash-empty-msg-lg">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="dash-empty-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <p class="dash-empty-p">신고 관리 기능은 준비 중입니다</p>
+        <a href="/admin/" class="btn btn-ac" target="_blank">Django Admin에서 관리</a>
+      </div>
+    </div><!-- /pg-reports -->
+
+
+    <!-- ────────────── 구독자 목록 ────────────── -->
+    <div class="pg" id="pg-subs">
+      <div class="sec-head">
+        <span class="sec-title">구독자 목록</span>
+        <div class="sub-stat-row">
+          <span>연간 <strong class="sub-stat-val">{{ sub_yearly }}</strong></span>
+          <span>월간 <strong class="sub-stat-val">{{ sub_monthly }}</strong></span>
+          <span>무료 <strong class="sub-stat-val">{{ sub_free }}</strong></span>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl" id="subTable">
+          <thead><tr><th>닉네임</th><th>이메일</th><th>플랜</th><th>상태</th><th>만료일</th><th>플랜 변경</th></tr></thead>
+          <tbody>
+            {% for sub in all_subs %}
+            <tr id="subRow{{ sub.user.id }}">
+              <td>
+                <div class="u-cell">
+                  <div class="u-av">{% if sub.user.user_img %}<img src="{{ sub.user.user_img.url }}" alt="">{% else %}{{ sub.user.nickname|first|upper|default:"U" }}{% endif %}</div>
+                  <span class="td-bold">{{ sub.user.nickname|default:"—" }}</span>
+                </div>
+              </td>
+              <td class="td-sm">{{ sub.user.email|truncatechars:28 }}</td>
+              <td>
+                {% if sub.plan == 'yearly' %}<span class="bdg bdg-purple">연간</span>
+                {% elif sub.plan == 'monthly' %}<span class="bdg bdg-blue">월간</span>
+                {% else %}<span class="bdg bdg-gray">—</span>{% endif %}
+              </td>
+              <td>
+                {% if sub.status == 'active' and sub.expires_at > now %}<span class="bdg bdg-green">활성</span>
+                {% elif sub.status == 'cancelled' %}<span class="bdg bdg-gray">해지</span>
+                {% else %}<span class="bdg bdg-orange">만료</span>{% endif %}
+              </td>
+              <td class="td-sm td-nowrap">{{ sub.expires_at|date:"Y.m.d" }}</td>
+              <td>
+                <div class="sub-btns">
+                  <button class="sub-btn {% if sub.plan == 'yearly' and sub.status == 'active' %}on{% endif %}" onclick="changeSub({{ sub.user.id }},'yearly',this)">연간</button>
+                  <button class="sub-btn {% if sub.plan == 'monthly' and sub.status == 'active' %}on{% endif %}" onclick="changeSub({{ sub.user.id }},'monthly',this)">월간</button>
+                  <button class="sub-btn {% if sub.status != 'active' %}on{% endif %}" onclick="changeSub({{ sub.user.id }},'free',this)">무료</button>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="tbl-empty">구독 내역 없음</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /pg-subs -->
+
+
+    <!-- ────────────── TTS 모니터링 ────────────── -->
+    <div class="pg" id="pg-tts">
+      <div class="sec-head"><span class="sec-title">TTS 모니터링</span></div>
+      <div class="two-col">
+        <div class="tts-card">
+          <div class="tts-label">API 할당량 사용률 (이번 달)</div>
+          <div class="tts-gauge">
+            <div class="tts-bar-wrap"><div class="tts-bar-fill" style="width:42%"></div></div>
+            <span class="tts-pct">42%</span>
+          </div>
+          <div class="tts-meta-txt">42,000 / 100,000 chars</div>
+        </div>
+        <div class="tts-card">
+          <div class="tts-label">오류율 (최근 7일)</div>
+          <div class="tts-gauge">
+            <div class="tts-bar-wrap"><div class="tts-bar-fill" style="width:3%;background:#ef4444"></div></div>
+            <span class="tts-pct" style="color:#ef4444">3%</span>
+          </div>
+          <div class="tts-meta-txt">실시간 데이터는 Django Admin에서 확인</div>
+        </div>
+      </div>
+      <div class="dash-empty-msg-sm">
+        <p class="dash-empty-p">상세 TTS 로그 및 API 키 관리</p>
+        <a href="/admin/book/apikey/" class="btn btn-ac" target="_blank">API 키 관리</a>
+        <a href="/admin/" class="btn btn-ml" target="_blank">Django Admin</a>
+      </div>
+    </div><!-- /pg-tts -->
+
+
+    <!-- ────────────── 정산 내역 ────────────── -->
+    <div class="pg" id="pg-settle">
+      <div class="sec-head">
+        <span class="sec-title">정산 내역</span>
+        <a href="/admin/register/settlementrecord/" class="btn btn-sm" target="_blank">전체 보기</a>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>정산 월</th><th>작가</th><th>청취(초)</th><th>금액</th><th>상태</th><th>관리</th></tr></thead>
+          <tbody>
+            {% for rec in settle_records %}
+            <tr>
+              <td class="td-bold td-nowrap">{{ rec.period }}</td>
+              <td>
+                <div class="u-cell">
+                  <div class="u-av">{{ rec.user.nickname|first|upper|default:"A" }}</div>
+                  <span>{{ rec.user.nickname|default:"—" }}</span>
+                </div>
+              </td>
+              <td class="td-sm">{{ rec.total_listen_seconds|default:0 }}</td>
+              <td class="td-bold">₩{{ rec.amount|floatformat:0 }}</td>
+              <td>
+                {% if rec.status == 'paid' %}<span class="bdg bdg-green">지급완료</span>
+                {% elif rec.status == 'pending' %}<span class="bdg bdg-orange">대기</span>
+                {% else %}<span class="bdg bdg-gray">취소</span>{% endif %}
+              </td>
+              <td><a href="/admin/register/settlementrecord/{{ rec.id }}/change/" class="btn btn-sm" target="_blank">편집</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="tbl-empty">정산 내역 없음</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /pg-settle -->
+
+
+    <!-- ────────────── 세금/경비 ────────────── -->
+    <div class="pg" id="pg-tax">
+      <div class="sec-head"><span class="sec-title">세금·경비 관리</span></div>
+      <div class="i-tabs">
+        <button class="i-tab on" onclick="setTab(this,'tax-invoice')">세금계산서</button>
+        <button class="i-tab" onclick="setTab(this,'tax-expense')">경비</button>
+      </div>
+      <div class="i-pane on" id="tax-invoice">
+        <div class="dash-empty-msg">
+          <p class="dash-empty-p">세금계산서 상세 관리는 Django Admin에서 진행하세요</p>
+          <a href="/admin/main/taxinvoice/" class="btn btn-ac" target="_blank">세금계산서 관리</a>
+        </div>
+      </div>
+      <div class="i-pane" id="tax-expense">
+        <div class="dash-empty-msg">
+          <p class="dash-empty-p">경비 항목 관리</p>
+          <a href="/admin/main/expense/" class="btn btn-ac" target="_blank">경비 관리</a>
+        </div>
+      </div>
+    </div><!-- /pg-tax -->
+
+
+    <!-- ────────────── 공지/FAQ/이벤트 ────────────── -->
+    <div class="pg" id="pg-notices">
+      <div class="sec-head"><span class="sec-title">공지/FAQ/이벤트</span></div>
+      <div class="i-tabs">
+        <button class="i-tab on" onclick="setTab(this,'ntc-notice')">공지사항</button>
+        <button class="i-tab" onclick="setTab(this,'ntc-faq')">FAQ</button>
+        <button class="i-tab" onclick="setTab(this,'ntc-event')">이벤트</button>
+      </div>
+      <div class="i-pane on" id="ntc-notice">
+        <div class="notice-add-btn"><a href="/admin/main/notice/add/" class="btn btn-ac btn-sm" target="_blank">+ 공지 작성</a></div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>제목</th><th>작성일</th><th>관리</th></tr></thead>
+            <tbody>
+              {% for n in notices %}
+              <tr>
+                <td class="td-ell td-bold">{{ n.title }}</td>
+                <td class="td-sm td-nowrap">{{ n.created_at|date:"Y.m.d" }}</td>
+                <td><a href="/admin/main/notice/{{ n.id }}/change/" class="btn btn-sm" target="_blank">편집</a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="tbl-empty">공지사항 없음 — <a href="/admin/main/notice/" target="_blank" class="tbl-ac-link">Django Admin에서 관리</a></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="i-pane" id="ntc-faq">
+        <div class="notice-add-btn"><a href="/admin/main/faq/add/" class="btn btn-ac btn-sm" target="_blank">+ FAQ 작성</a></div>
+        <div class="dash-empty-msg">
+          <a href="/admin/main/faq/" class="btn btn-ac" target="_blank">FAQ 관리 (Django Admin)</a>
+        </div>
+      </div>
+      <div class="i-pane" id="ntc-event">
+        <div class="notice-add-btn"><a href="/admin/main/event/add/" class="btn btn-ac btn-sm" target="_blank">+ 이벤트 작성</a></div>
+        <div class="dash-empty-msg">
+          <a href="/admin/main/event/" class="btn btn-ac" target="_blank">이벤트 관리 (Django Admin)</a>
+        </div>
+      </div>
+    </div><!-- /pg-notices -->
+
+  </div><!-- /pg-wrap -->
+</div><!-- /main -->
+
+
+<!-- ══════════════════════════════════════════════
+     모달: 작가 문의 답변
+══════════════════════════════════════════════ -->
+<div id="inqReplyModal" class="dash-modal-ov" style="display:none;">
+  <div class="dash-modal-content">
+    <div class="dash-modal-hd">
+      <div>
+        <h3 id="inqModalTitle" class="dash-modal-title"></h3>
+        <p class="dash-modal-meta">작가 문의 ID: <span id="inqModalId"></span></p>
+      </div>
+      <button onclick="closeInqModal()" class="dash-modal-close">×</button>
+    </div>
+    <select id="inqStatusSel" class="dash-modal-select">
+      <option value="answered">답변 완료</option>
+      <option value="closed">종료</option>
+    </select>
+    <textarea id="inqAnswerText" rows="7" placeholder="답변 내용을 입력하세요..." class="dash-modal-textarea"></textarea>
+    <div id="inqReplyMsg" style="display:none;margin-top:8px;font-size:.8rem;padding:8px 12px;"></div>
+    <div class="dash-modal-actions">
+      <button onclick="closeInqModal()" class="btn">취소</button>
+      <button onclick="submitInqReply()" class="btn btn-ac">답변 등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     모달: 일반 문의 답변
+══════════════════════════════════════════════ -->
+<div id="contactReplyModal" class="dash-modal-ov" style="display:none;">
+  <div class="dash-modal-content">
+    <div class="dash-modal-hd">
+      <div>
+        <h3 id="ctModalTitle" class="dash-modal-title"></h3>
+        <p id="ctModalMsg" class="dash-modal-desc"></p>
+      </div>
+      <button onclick="closeContactModal()" class="dash-modal-close">×</button>
+    </div>
+    <textarea id="ctAnswerText" rows="6" placeholder="답변 내용을 입력하세요..." class="dash-modal-textarea"></textarea>
+    <div id="ctReplyMsg" style="display:none;margin-top:8px;font-size:.8rem;padding:8px 12px;"></div>
+    <div class="dash-modal-actions">
+      <button onclick="closeContactModal()" class="btn">취소</button>
+      <button onclick="submitContactReply()" class="btn btn-ac">답변 등록</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/* ── 섹션 전환 ── */
+function go(btn, id) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const titleEl = document.getElementById('topbarTitle');
+  if (titleEl) titleEl.textContent = btn.textContent.trim().replace(/\d+$/, '').trim();
+}
+
+/* ── 이너 탭 ── */
+function setTab(btn, id) {
+  const parent = btn.closest('.pg') || btn.closest('div');
+  const tabs  = btn.parentElement.querySelectorAll('.i-tab');
+  const panes = btn.closest('.pg') ? btn.closest('.pg').querySelectorAll('.i-pane') : [];
+  tabs.forEach(t => t.classList.remove('on'));
+  panes.forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  const el = document.getElementById(id);
+  if (el) el.classList.add('on');
+}
+
+/* ── 작가 문의 답변 ── */
+let _inqId = null;
+function openInqReply(inqId, title) {
+  _inqId = inqId;
+  document.getElementById('inqModalTitle').textContent = title;
+  document.getElementById('inqModalId').textContent = inqId;
+  document.getElementById('inqAnswerText').value = '';
+  document.getElementById('inqStatusSel').value = 'answered';
+  const msg = document.getElementById('inqReplyMsg');
+  msg.style.display = 'none';
+  document.getElementById('inqReplyModal').style.display = 'flex';
+}
+function closeInqModal() {
+  document.getElementById('inqReplyModal').style.display = 'none';
+  _inqId = null;
+}
+function submitInqReply() {
+  const answer = document.getElementById('inqAnswerText').value.trim();
+  const status = document.getElementById('inqStatusSel').value;
+  const msg    = document.getElementById('inqReplyMsg');
+  if (!answer) {
+    msg.textContent = '답변 내용을 입력해주세요.';
+    msg.style.cssText = 'display:block;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:8px 12px;font-size:.8rem;';
+    return;
+  }
+  const baseUrl = '{% url "main:admin_inquiry_reply" 0 %}'.replace('/0/', '/' + _inqId + '/');
+  fetch(baseUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+    body: JSON.stringify({ answer, status }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      msg.textContent = '답변이 등록되었습니다.';
+      msg.style.cssText = 'display:block;background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;padding:8px 12px;font-size:.8rem;';
+      setTimeout(() => { closeInqModal(); location.reload(); }, 800);
+    } else {
+      msg.textContent = data.error || '오류가 발생했습니다.';
+      msg.style.cssText = 'display:block;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:8px 12px;font-size:.8rem;';
+    }
+  })
+  .catch(() => {
+    msg.textContent = '요청 실패';
+    msg.style.cssText = 'display:block;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:8px 12px;font-size:.8rem;';
+  });
+}
+
+/* ── 일반 문의 답변 ── */
+let _ctId = null;
+function openContactReply(ctId, title, preview) {
+  _ctId = ctId;
+  document.getElementById('ctModalTitle').textContent = title;
+  document.getElementById('ctModalMsg').textContent = preview + (preview.length >= 80 ? '…' : '');
+  document.getElementById('ctAnswerText').value = '';
+  const msg = document.getElementById('ctReplyMsg');
+  msg.style.display = 'none';
+  document.getElementById('contactReplyModal').style.display = 'flex';
+}
+function closeContactModal() {
+  document.getElementById('contactReplyModal').style.display = 'none';
+  _ctId = null;
+}
+function submitContactReply() {
+  const msg = document.getElementById('ctReplyMsg');
+  msg.textContent = 'Django Admin에서 직접 답변을 처리해주세요.';
+  msg.style.cssText = 'display:block;background:#fef3c7;color:#92400e;border:1px solid #fde68a;padding:8px 12px;font-size:.8rem;';
+}
+
+/* ── 구독 플랜 변경 ── */
+function changeSub(userId, plan, btn) {
+  const row = document.getElementById('subRow' + userId);
+  if (!row) return;
+  const btns = row.querySelectorAll('.sub-btn');
+  btns.forEach(b => b.disabled = true);
+  fetch('{% url "main:admin_subscription_change" 0 %}'.replace('/0/', '/' + userId + '/'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+    body: JSON.stringify({ plan })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      btns.forEach(b => { b.classList.remove('on'); b.disabled = false; });
+      btn.classList.add('on');
+      const planCell = row.cells[2];
+      const statusCell = row.cells[3];
+      const expiry = row.cells[4];
+      if (plan === 'yearly') {
+        planCell.innerHTML = '<span class="bdg bdg-purple">연간</span>';
+        statusCell.innerHTML = '<span class="bdg bdg-green">활성</span>';
+        const d = new Date(); d.setFullYear(d.getFullYear()+1);
+        expiry.textContent = d.toLocaleDateString('ko-KR').replace(/\. /g,'.').slice(0,-1);
+      } else if (plan === 'monthly') {
+        planCell.innerHTML = '<span class="bdg bdg-blue">월간</span>';
+        statusCell.innerHTML = '<span class="bdg bdg-green">활성</span>';
+        const d = new Date(); d.setDate(d.getDate()+30);
+        expiry.textContent = d.toLocaleDateString('ko-KR').replace(/\. /g,'.').slice(0,-1);
+      } else {
+        planCell.innerHTML = '<span class="bdg bdg-gray">무료</span>';
+        statusCell.innerHTML = '<span class="bdg bdg-gray">해지</span>';
+        expiry.textContent = '—';
+      }
+    } else {
+      alert('변경 실패: ' + (data.error || ''));
+      btns.forEach(b => b.disabled = false);
+    }
+  })
+  .catch(() => { alert('요청 실패'); btns.forEach(b => b.disabled = false); });
+}
+
+/* ── 모달 외부 클릭 닫기 ── */
+['inqReplyModal','contactReplyModal'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+});
+
+/* ── 작가 신청 상세 모달 ── */
+let _apId = null;
+
+function openApModal(id, name, email, imgUrl, date, portfolio, age, work) {
+  _apId = id;
+
+  const av = document.getElementById('apAv');
+  av.innerHTML = imgUrl
+    ? `<img src="${imgUrl}" alt="">`
+    : `<span>${(name[0] || 'U').toUpperCase()}</span>`;
+
+  document.getElementById('apName').textContent = name;
+  document.getElementById('apEmail').textContent = email;
+  document.getElementById('apDate').textContent = date;
+  document.getElementById('apAge').textContent = age ? age + '세' : '미입력';
+  document.getElementById('apPortfolio').innerHTML = portfolio
+    ? `<a href="${portfolio}" target="_blank" rel="noopener">${portfolio}</a>`
+    : '—';
+  document.getElementById('apWork').textContent = work || '—';
+
+  // reset reject area
+  apHideReject();
+
+  document.getElementById('apModalOv').classList.add('open');
+}
+
+function closeApModal(e) {
+  if (e && e.target !== document.getElementById('apModalOv')) return;
+  document.getElementById('apModalOv').classList.remove('open');
+  _apId = null;
+}
+
+function apShowReject() {
+  document.getElementById('apRejectWrap').style.display = 'flex';
+  document.getElementById('apRejectReason').focus();
+}
+
+function apHideReject() {
+  document.getElementById('apRejectWrap').style.display = 'none';
+  document.getElementById('apRejectReason').value = '';
+}
+
+function apApprove() {
+  if (!_apId) return;
+  const btn = document.getElementById('apApproveBtn');
+  btn.disabled = true;
+  btn.textContent = '처리 중...';
+  fetch(`/voxliber-admin/author-app/${_apId}/approve/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) { location.reload(); }
+    else { alert(d.error || '오류가 발생했습니다.'); btn.disabled = false; btn.textContent = '✓ 승인'; }
+  })
+  .catch(() => { alert('요청 실패'); btn.disabled = false; btn.textContent = '✓ 승인'; });
+}
+
+function apReject() {
+  if (!_apId) return;
+  const reason = document.getElementById('apRejectReason').value.trim();
+  if (!reason) { alert('거절 사유를 입력해주세요.'); return; }
+  fetch(`/voxliber-admin/author-app/${_apId}/reject/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) { location.reload(); }
+    else { alert(d.error || '오류가 발생했습니다.'); }
+  })
+  .catch(() => alert('요청 실패'));
+}
+</script>
+</body>
+</html>

@@ -1,56 +1,49 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}VOXLIBER - {{ genre.name }} 장르{% endblock %}
+{% block title %}{{ genre.name }} — Voxliber{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/home/main.css' %}">
-<link rel="stylesheet" href="{% static 'css/main/genres_books.css' %}">
-
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/main/genres_books.css' %}">{%  endblock %}
 
 {% block content %}
-<div class="genre-page-header">
-            <br>
-        <br>
-    <h1 class="genre-page-title">{{ genre.name }} 장르의 작품</h1>
-</div>
-
-<div class="genre-books-section">
-    <div class="genre-books-grid">
-        {% for book in page_obj %}
-        <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-card-wrapper">
-            <!-- 사진만 있는 블록 -->
-            <div class="book-cover-block">
-                {% if book.cover_img %}
-                    <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" class="book-cover" loading="lazy">
-                {% else %}
-                    <img src="{% static 'images/book_placeholder.png' %}" alt="책 이미지 없음" class="book-cover" loading="lazy">
-                {% endif %}
-            </div>
-
-            <!-- 작가 이름과 책 제목만 있는 블록 -->
-            <div class="book-info-block">
-                <div class="book-title">{{ book.name }}</div>
-                <div class="book-author">{{ book.author|default:"작자 미상" }}</div>
-            </div>
-        </a>
-        {% empty %}
-        <p class="empty-message">등록된 작품이 없습니다.</p>
-        {% endfor %}
+<div class="genre-page">
+  <div class="genre-hero">
+    <div class="genre-color-dot" style="background: {{ genre.genres_color|default:'#7c3aed' }};"></div>
+    <div class="genre-hero-text">
+      <h1>{{ genre.name }}</h1>
+      <p>{{ page_obj.paginator.count }}권의 오디오북</p>
     </div>
+  </div>
 
-    <!-- 페이지네이션 -->
-    <div class="pagination">
-        {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}" class="page-link">◀ 이전</a>
-        {% endif %}
+  {% if books %}
+  <div class="books-grid">
+    {% for book in books %}
+    <a href="{% url 'book:book_detail' book.public_uuid %}" class="book-card">
+      <div class="book-cover">
+        {% if book.cover_img %}<img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+        {% else %}<div class="book-cover-ph">🎧</div>{% endif %}
+      </div>
+      <div class="book-info">
+        <div class="book-title">{{ book.name }}</div>
+        <div class="book-author">{{ book.user.nickname|default:"작가 미상" }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
 
-        <span class="current-page">페이지 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="page-btn">‹</a>{% endif %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num == page_obj.number %}<span class="page-btn current">{{ num }}</span>
+      {% elif num|add:"-3" <= page_obj.number and num|add:"3" >= page_obj.number %}<a href="?page={{ num }}" class="page-btn">{{ num }}</a>{% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="page-btn">›</a>{% endif %}
+  </div>
+  {% endif %}
 
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="page-link">다음 ▶</a>
-        {% endif %}
-    </div>
+  {% else %}
+  <div class="empty-state"><div class="empty-state-icon">📚</div><h3>{{ genre.name }} 장르 작품이 없습니다</h3></div>
+  {% endif %}
 </div>
 {% endblock %}

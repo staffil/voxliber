@@ -1,81 +1,177 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}스니펫 리스트 | VoxLiber{% endblock %}
+{% block title %}스니펫 모아보기 — Voxliber{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/snippet/snippet_list.css' %}">
+<link rel="stylesheet" href="{% static 'css/main/snippet_list.css' %}">
 {% endblock %}
 
 {% block content %}
-<section class="snippet-section">
-  <h2>📖 랜덤 북 스니펫</h2>
-  <div class="snippet-grid">
-    {% for snippet in snippet_list|slice:":10" %}
-    <div class="snippet-card">
-      {% if snippet.book.cover_img %}
-      <img src="{{ snippet.book.cover_img.url }}" alt="{{ snippet.book.name }}" class="snippet-card-bg" loading="lazy">
-      {% else %}
-      <div class="snippet-card-bg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-      {% endif %}
-      <div class="snippet-card-overlay"></div>
+<div class="snip-page">
 
-      <div class="snippet-card-content">
-        <p class="snippet-meta">{{ snippet.book.name }}</p>
-        <div class="snippet-text">{{ snippet.sentence }}</div>
+  <!-- 헤더 -->
+  <div class="snip-hd">
+    <div class="snip-hd-inner">
+      <div class="snip-hd-label">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14"/></svg>
+        VOXLIBER SNIPPETS
+      </div>
+      <h1 class="snip-hd-title">스니펫 모아보기</h1>
+      <p class="snip-hd-sub">청취자들이 저장한 명장면을 들어보세요</p>
+    </div>
+  </div>
 
-        <div class="snippet-bottom">
-          {% if snippet.audio_file %}
-          <div class="snippet-audio-player">
-            <button onclick="toggleSnippetAudio(this)">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </button>
-            <audio src="{{ snippet.audio_file.url }}" preload="metadata"></audio>
+  {% if snippet_list %}
+
+  <!-- 메인 슬라이더 -->
+  <div class="snip-banner" id="snipBanner">
+    <div class="snip-track" id="snipTrack">
+      {% for snip in snippet_list %}
+      <div class="snip-slide">
+        <div class="snip-slide-bg">
+          {% if snip.book.cover_img %}<img src="{{ snip.book.cover_img.url }}" alt="" loading="lazy">{% endif %}
+        </div>
+        <div class="snip-slide-txt">
+          <div class="snip-eyebrow">
+            <span class="snip-tag">{{ snip.book.name }}</span>
+            {% if snip.book.user.nickname %}<span class="snip-tag">{{ snip.book.user.nickname }}</span>{% endif %}
           </div>
-          {% endif %}
-          <a href="{{ snippet.link }}" class="snippet-link" data-login-required>책 보러가기 →</a>
+          <div class="snip-quote">"{{ snip.sentence|truncatechars:120 }}"</div>
+          <div class="snip-acts">
+            {% if snip.audio_file %}
+            <button class="snip-btn-play" onclick="snipToggle(this)" data-src="{{ snip.audio_file.url }}">
+              <svg class="ico-play" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg class="ico-pause" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              <span class="snip-btn-label">듣기</span>
+            </button>
+            {% endif %}
+            <a href="{% url 'book:book_detail' snip.book.public_uuid %}" class="snip-btn-ghost">책 보러가기 →</a>
+          </div>
+        </div>
+        <div class="snip-cover-col">
+          <div class="snip-cover-glow"></div>
+          <div class="snip-cover">
+            {% if snip.book.cover_img %}
+            <img src="{{ snip.book.cover_img.url }}" alt="{{ snip.book.name }}" loading="lazy">
+            {% else %}
+            <div style="position:absolute;inset:0;background:linear-gradient(145deg,#c4a8f0,#5020b0)"></div>
+            {% endif %}
+          </div>
         </div>
       </div>
+      {% endfor %}
     </div>
-    {% empty %}
-    <p style="padding: 0 2rem;">현재 랜덤 스니펫이 없습니다.</p>
-    {% endfor %}
+
+    <div class="snip-nav snip-nav-prev">
+      <button class="snip-nav-btn" onclick="snipSlide(-1)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+    </div>
+    <div class="snip-nav snip-nav-next">
+      <button class="snip-nav-btn" onclick="snipSlide(1)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <div class="snip-dots" id="snipDots">
+      {% for snip in snippet_list %}
+      <button class="snip-dot {% if forloop.first %}on{% endif %}" data-idx="{{ forloop.counter0 }}" onclick="snipGo(+this.dataset.idx)"></button>
+      {% endfor %}
+    </div>
   </div>
-</section>
+
+  <!-- 카드 그리드 -->
+  <div class="snip-grid-wrap">
+    <div class="snip-grid">
+      {% for snip in snippet_list %}
+      <div class="snip-card">
+        <div class="snip-card-bg">
+          {% if snip.book.cover_img %}<img src="{{ snip.book.cover_img.url }}" alt="" loading="lazy">{% endif %}
+        </div>
+        <div class="snip-card-overlay"></div>
+        <div class="snip-card-body">
+          <div class="snip-card-tag">{{ snip.book.name }}</div>
+          <div class="snip-card-quote">"{{ snip.sentence|truncatechars:80 }}"</div>
+          <div class="snip-card-foot">
+            {% if snip.audio_file %}
+            <button class="snip-card-play" onclick="snipToggle(this)" data-src="{{ snip.audio_file.url }}">
+              <svg class="ico-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg class="ico-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            {% endif %}
+            <a href="{% url 'book:book_detail' snip.book.public_uuid %}" class="snip-card-link">책 보기 →</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% else %}
+  <div class="snip-empty">
+    <div style="font-size:3rem;margin-bottom:16px;">✂️</div>
+    <h3>아직 스니펫이 없습니다</h3>
+    <p>오디오북을 들으며 마음에 드는 구간을 저장해보세요</p>
+  </div>
+  {% endif %}
+
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function toggleSnippetAudio(button) {
-  const audioPlayer = button.closest('.snippet-audio-player');
-  const audio = audioPlayer.querySelector('audio');
+// ── 슬라이더 ──
+var snipCur = 0;
+var snipTrack = document.getElementById('snipTrack');
+var snipDots  = document.querySelectorAll('#snipDots .snip-dot');
+var snipTotal = snipTrack ? snipTrack.children.length : 0;
 
-  // 모든 다른 오디오 일시정지
-  document.querySelectorAll('.snippet-audio-player audio').forEach(a => {
-    if (a !== audio && !a.paused) {
-      a.pause();
-      const btn = a.closest('.snippet-audio-player').querySelector('button');
-      btn.classList.remove('playing');
-      btn.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-    }
-  });
+function snipGo(n) {
+  snipCur = (n + snipTotal) % snipTotal;
+  if (snipTrack) snipTrack.style.transform = 'translateX(-' + (snipCur * 100) + '%)';
+  snipDots.forEach(function(d, i) { d.classList.toggle('on', i === snipCur); });
+}
+function snipSlide(d) { snipGo(snipCur + d); }
+if (snipTotal > 1) setInterval(function() { snipGo(snipCur + 1); }, 5000);
 
-  if (audio.paused) {
-    audio.play();
-    button.classList.add('playing');
-    button.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>';
-  } else {
-    audio.pause();
-    button.classList.remove('playing');
-    button.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+// ── 오디오 재생 ──
+var snipAudio = null;
+var snipActiveBtn = null;
+
+function snipToggle(btn) {
+  var src = btn.dataset.src;
+  if (!src) return;
+
+  if (snipActiveBtn && snipActiveBtn !== btn) {
+    snipStop(snipActiveBtn);
   }
 
-  audio.addEventListener('ended', () => {
-    button.classList.remove('playing');
-    button.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-  });
+  if (!snipAudio || snipAudio.src !== new URL(src, location.href).href) {
+    if (snipAudio) { snipAudio.pause(); }
+    snipAudio = new Audio(src);
+    snipAudio.addEventListener('ended', function() { snipStop(btn); });
+  }
+
+  if (snipAudio.paused) {
+    snipAudio.play();
+    snipActiveBtn = btn;
+    btn.querySelector('.ico-play').style.display = 'none';
+    btn.querySelector('.ico-pause').style.display = '';
+    var lbl = btn.querySelector('.snip-btn-label');
+    if (lbl) lbl.textContent = '정지';
+  } else {
+    snipAudio.pause();
+    snipStop(btn);
+  }
+}
+
+function snipStop(btn) {
+  btn.querySelector('.ico-play').style.display = '';
+  btn.querySelector('.ico-pause').style.display = 'none';
+  var lbl = btn.querySelector('.snip-btn-label');
+  if (lbl) lbl.textContent = '듣기';
+  snipActiveBtn = null;
 }
 </script>
 {% endblock %}

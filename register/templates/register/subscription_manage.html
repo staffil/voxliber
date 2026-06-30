@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}내 구독 — Voxliber{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/register/subscription_manage.css' %}">{% endblock %}
+
+{% block content %}
+<div class="manage-page">
+
+  <h1 class="manage-title">내 구독</h1>
+
+  <!-- 현재 구독 카드 -->
+  <div class="sub-card">
+    <div class="sub-card__header">
+      <div class="sub-card__plan">
+        {% if subscription.plan == 'monthly' %}월간 구독{% else %}연간 구독{% endif %}
+      </div>
+      {% if subscription.is_active %}
+        <span class="sub-badge sub-badge--active">자동갱신</span>
+      {% elif subscription.status == 'cancelled' %}
+        <span class="sub-badge sub-badge--cancelled">해지됨</span>
+      {% else %}
+        <span class="sub-badge sub-badge--expired">만료</span>
+      {% endif %}
+    </div>
+
+    <div class="sub-card__rows">
+      <div class="sub-row">
+        <span class="sub-row__label">구독 시작일</span>
+        <span class="sub-row__value">{{ subscription.started_at|date:"Y년 n월 j일" }}</span>
+      </div>
+      <div class="sub-row">
+        <span class="sub-row__label">{% if subscription.status == 'cancelled' %}이용 종료일{% else %}다음 결제일{% endif %}</span>
+        <span class="sub-row__value">{{ subscription.expires_at|date:"Y년 n월 j일" }}</span>
+      </div>
+      <div class="sub-row">
+        <span class="sub-row__label">결제 금액</span>
+        <span class="sub-row__value">
+          {% if subscription.plan == 'monthly' %}7,900원 / 월{% else %}80,000원 / 년{% endif %}
+        </span>
+      </div>
+      <div class="sub-row">
+        <span class="sub-row__label">결제 수단</span>
+        <span class="sub-row__value">—</span>
+      </div>
+      <div class="sub-row">
+        <span class="sub-row__label">이메일</span>
+        <span class="sub-row__value">{{ request.user.email }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 플랜 변경 배너 -->
+  {% if subscription.is_active %}
+  <div class="upgrade-banner">
+    {% if subscription.plan == 'monthly' %}
+    <div class="upgrade-banner__text">
+      <strong>연간으로 전환 시 15% 할인</strong>
+      <span>월 6,667원 / 연 80,000원</span>
+    </div>
+    <a href="{% url 'register:subscribe_change' %}" class="upgrade-banner__btn">전환하기</a>
+    {% else %}
+    <div class="upgrade-banner__text">
+      <strong>연간 구독 중</strong>
+      <span>월간 구독으로 변경할 수 있습니다</span>
+    </div>
+    <a href="{% url 'register:subscribe_change' %}" class="upgrade-banner__btn upgrade-banner__btn--outline">플랜 변경</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- 결제 내역 -->
+  <section class="history-section">
+    <div class="history-section__head">
+      <h2 class="history-section__title">결제 내역</h2>
+      {% if payments %}<a href="{% url 'register:payment_history' %}" class="history-more">전체 보기</a>{% endif %}
+    </div>
+    {% if payments %}
+    <div class="history-list">
+      {% for p in payments %}
+      <div class="history-item">
+        <div class="history-item__left">
+          <div class="history-item__plan">{{ p.get_plan_display }}</div>
+          <div class="history-item__date">{{ p.paid_at|date:"Y.m.d" }} · {{ p.get_method_display }}</div>
+        </div>
+        <div class="history-item__right">
+          <span class="history-item__amount">{{ p.amount|floatformat:"0" }}원</span>
+          <span class="history-item__status history-item__status--{{ p.status }}">{{ p.get_status_display }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="history-empty">아직 결제 내역이 없습니다.</div>
+    {% endif %}
+  </section>
+
+  <!-- 취소 안내 및 버튼 -->
+  {% if subscription.is_active %}
+  <div class="cancel-area">
+    {% if subscription.status == 'cancelled' %}
+      <p class="cancel-notice">구독이 해지되었습니다. {{ subscription.expires_at|date:"Y년 n월 j일" }}까지 계속 이용 가능합니다.</p>
+    {% else %}
+      <p class="cancel-notice">구독을 해지하면 만료일까지는 계속 이용 가능합니다.</p>
+      <form method="post" action="{% url 'register:subscription_cancel' %}" id="cancelForm">
+        {% csrf_token %}
+        <button type="button" class="cancel-btn" onclick="confirmCancel()">구독 취소</button>
+      </form>
+    {% endif %}
+  </div>
+  {% elif subscription.status == 'cancelled' %}
+  <div class="cancel-area">
+    <p class="cancel-notice">구독이 해지되었습니다. {{ subscription.expires_at|date:"Y년 n월 j일" }}까지 계속 이용 가능합니다.</p>
+    <a href="{% url 'register:subscribe_plan' %}" class="plan-link">다른 플랜 보기</a>
+  </div>
+  {% else %}
+  <div class="cancel-area">
+    <a href="{% url 'register:subscribe_plan' %}" class="plan-link">플랜 다시 선택하기</a>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function confirmCancel() {
+  if (confirm('정말로 구독을 취소하시겠습니까?\n만료일까지는 계속 이용 가능합니다.')) {
+    document.getElementById('cancelForm').submit();
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}결제 내역 — Voxliber{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/register/payment_history.css' %}">{% endblock %}
+
+{% block content %}
+<div class="ph-page">
+
+  <div class="ph-header">
+    <a href="{% url 'register:subscription_manage' %}" class="ph-back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      구독 관리
+    </a>
+    <h1 class="ph-title">결제 내역</h1>
+  </div>
+
+  {% if records %}
+  <div class="ph-table-wrap">
+    <table class="ph-table">
+      <thead>
+        <tr>
+          <th>결제일</th>
+          <th>플랜</th>
+          <th>결제 금액</th>
+          <th>결제 수단</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td>{{ r.paid_at|date:"Y.m.d H:i" }}</td>
+          <td>{{ r.get_plan_display }}</td>
+          <td class="ph-amount">{{ r.amount|floatformat:"0" }}원</td>
+          <td>{{ r.get_method_display }}</td>
+          <td>
+            <span class="ph-status ph-status--{{ r.status }}">{{ r.get_status_display }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ph-total">
+    총 {{ records|length }}건
+  </div>
+
+  {% else %}
+  <div class="ph-empty">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+    <p>결제 내역이 없습니다.</p>
+    <a href="{% url 'register:subscribe_plan' %}" class="ph-cta">구독 시작하기</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

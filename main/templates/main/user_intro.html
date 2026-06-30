@@ -92,11 +92,11 @@
             <a href="{% url 'book:book_detail' book.public_uuid %}" class="work-card">
                 <div class="work-cover">
                     {% if book.cover_img %}
-                    <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+                    <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="work-cover-placeholder" style="display:none">{{ book.name|slice:":2"|upper }}</div>
                     {% else %}
-                    <div class="work-cover-placeholder">
-                        {{ book.name|slice:":2"|upper }}
-                    </div>
+                    <div class="work-cover-placeholder">{{ book.name|slice:":2"|upper }}</div>
                     {% endif %}
                 </div>
                 <div class="work-info">

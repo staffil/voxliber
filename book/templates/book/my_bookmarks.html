@@ -1,251 +1,138 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}내 북마크 - VOXLIBER{% endblock %}
+{% block title %}내 북마크 — Voxliber{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/book/my_books.css' %}">
-
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/book/my_bookmarks.css' %}">{% endblock %}
 
 {% block content %}
-<div style="max-width: 1200px; margin: 120px auto 40px; padding: 0 20px;">
-    <div style="margin-bottom: 32px;">
-        <h1 class="page-title" style="font-size: 32px; font-weight: 700; margin-bottom: 8px; color: #fff;">📚 내 북마크</h1>
-        <p class="page-subtitle" style="color: rgba(255, 255, 255, 0.6);">나중에 읽고 싶은 책을 모아보세요</p>
-    </div>
+<div class="bm-page">
+  <div class="page-header">
+    <h1>내 북마크</h1>
+    <p>저장한 오디오북과 에피소드 북마크 목록</p>
+  </div>
 
-    <!-- AI 스토리 북마크 섹션 -->
-    {% if story_bookmarks %}
-    <div class="bm-ai-section">
-        <h2 class="bm-section-title">
-            🤖 AI 스토리 북마크
-            <span class="bm-count-badge">{{ story_bookmarks|length }}</span>
-        </h2>
-        <div class="bm-ai-grid">
-            {% for sb in story_bookmarks %}
-            <div class="bm-ai-card">
-                <a href="{% url 'character:story_intro' sb.story.public_uuid %}" class="bm-ai-card-link">
-                    <div class="bm-ai-cover">
-                        {% if sb.story.story_desc_video %}
-                            <video src="{{ sb.story.story_desc_video.url }}" autoplay muted loop playsinline></video>
-                        {% elif sb.story.story_desc_img %}
-                            <img src="{{ sb.story.story_desc_img.url }}" alt="{{ sb.story.title }}">
-                        {% elif sb.story.cover_image %}
-                            <img src="{{ sb.story.cover_image.url }}" alt="{{ sb.story.title }}">
-                        {% else %}
-                            <div class="bm-ai-cover-empty">🤖</div>
-                        {% endif %}
-                        <div class="bm-ai-overlay"></div>
-                        <div class="bm-ai-info">
-                            <div class="bm-ai-chars">
-                                {% for char in sb.story.characters.all|slice:":3" %}
-                                <div class="bm-ai-avatar">
-                                    {% if char.llm_image %}<img src="{{ char.llm_image.url }}" alt="{{ char.name }}">
-                                    {% else %}<span>{{ char.name|first }}</span>{% endif %}
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <div class="bm-ai-title">{{ sb.story.title }}</div>
-                            <div class="bm-ai-date">{{ sb.created_at|date:"Y.m.d" }}</div>
-                        </div>
-                    </div>
-                </a>
-                <button class="bm-ai-remove-btn"
-                        onclick="removeStoryBookmark(this, '{{ sb.story.public_uuid }}')"
-                        title="북마크 제거">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                    </svg>
-                </button>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
+  <!-- 탭 -->
+  <div class="bm-tabs">
+    <button class="bm-tab active" onclick="bmSetTab(this,'book')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      작품 북마크 <span class="bm-tab-count">{{ bookmarks.paginator.count|default:0 }}</span>
+    </button>
+    <button class="bm-tab" onclick="bmSetTab(this,'episode')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      에피소드 북마크 <span class="bm-tab-count">{{ episode_bookmarks|length }}</span>
+    </button>
+  </div>
 
-    <!-- 웹소설 북마크 섹션 -->
-    {% if webnovel_bookmarks %}
-    <h2 style="font-size: 20px; font-weight: 700; color: #575757; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-        📖 웹소설 북마크
-        <span style="padding: 4px 12px; background: rgba(139, 92, 246, 0.15); border-radius: 20px; font-size: 14px; color: #c4b5fd;">{{ webnovel_bookmarks|length }}</span>
-    </h2>
-    <div style="margin-bottom: 40px;">
-        {% for bookmark in webnovel_bookmarks %}
-        <div class="bookmark-item">
-            <div class="bookmark-cover">
-                {% if bookmark.book.cover_img %}
-                    <img src="{{ bookmark.book.cover_img.url }}" alt="{{ bookmark.book.name }}">
-                {% else %}
-                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:white;">{{ bookmark.book.name|slice:":2" }}</div>
-                {% endif %}
-            </div>
-            <div class="bookmark-info">
-                <div style="display:inline-block;padding:2px 8px;background:rgba(99,102,241,.15);border-radius:4px;font-size:10px;color:#a5b4fc;margin-bottom:6px;">✨ 웹소설</div>
-                <h3 class="bookmark-title">{{ bookmark.book.name }}</h3>
-                <div class="bookmark-author">{{ bookmark.book.user.nickname }}</div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-                    {% for genre in bookmark.book.genres.all %}
-                    <span style="padding:3px 10px;background:rgba(99,102,241,.15);border-radius:10px;font-size:11px;color:#818cf8;font-weight:500;">{{ genre.name }}</span>
-                    {% endfor %}
-                </div>
-                <div class="bookmark-actions">
-                    <a href="{% url 'book:webnovel_detail' bookmark.book.public_uuid %}" class="btn-primary">상세 보기</a>
-                    <button onclick="removeBookmark('{{ bookmark.book.public_uuid }}')" class="btn-secondary">북마크 제거</button>
-                </div>
-                <div style="margin-top:12px;font-size:12px;color:rgba(255,255,255,.4);">저장일: {{ bookmark.created_at|date:"Y년 m월 d일" }}</div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- 오디오북 북마크 섹션 -->
+  <!-- 작품 북마크 탭 -->
+  <div id="bmPanelBook" class="bm-panel">
     {% if bookmarks %}
-    <h2 style="font-size: 20px; font-weight: 700; color: #575757; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-        🎧 오디오북 북마크
-        <span style="padding: 4px 12px; background: rgba(99, 102, 241, 0.15); border-radius: 20px; font-size: 14px; color: #a78bfa;">{{ bookmarks.paginator.count }}</span>
-    </h2>
-        <div>
-            {% for bookmark in bookmarks %}
-            <div class="bookmark-item">
-                <div class="bookmark-cover">
-                    {% if bookmark.book.cover_img %}
-                        <img src="{{ bookmark.book.cover_img.url }}" alt="{{ bookmark.book.name }}">
-                    {% else %}
-                        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: white;">
-                            {{ bookmark.book.name|slice:":2" }}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="bookmark-info">
-                    <h3 class="bookmark-title">{{ bookmark.book.name }}</h3>
-                    <div class="bookmark-author">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        {{ bookmark.book.user.nickname }}
-                    </div>
-
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px;">
-                        {% for genre in bookmark.book.genres.all %}
-                        <span style="padding: 3px 10px; background: rgba(99, 102, 241, 0.15); border-radius: 10px; font-size: 11px; color: #818cf8; font-weight: 500;">
-                            {{ genre.name }}
-                        </span>
-                        {% endfor %}
-                    </div>
-
-                    {% if bookmark.note %}
-                    <div class="bookmark-note">
-                        <strong>메모:</strong> {{ bookmark.note }}
-                    </div>
-                    {% endif %}
-<!-- {% url 'book:book_detail' bookmark.book.public_uuid %} -->
-                    <div class="bookmark-actions">
-                        <a href="{% url 'book:book_detail' bookmark.book.public_uuid %}" class="btn-primary">상세 보기</a>
-                        <button onclick="removeBookmark({{ bookmark.book.public_uuid }})" class="btn-secondary" data-login-required>
-                            북마크 제거
-                        </button>
-                    </div>
-
-                    <div style="margin-top: 12px; font-size: 12px; color: rgba(255, 255, 255, 0.4);">
-                        저장일: {{ bookmark.created_at|date:"Y년 m월 d일" }}
-                    </div>
-                </div>
+    <div class="bm-sort-row">
+      <span class="bm-count">총 <strong>{{ bookmarks.paginator.count }}</strong>권 저장됨</span>
+    </div>
+    <div class="bm-grid">
+      {% for bm in bookmarks %}
+      <div class="bm-card" id="bm-{{ bm.book.public_uuid }}">
+        <a href="{% url 'book:book_detail' bm.book.public_uuid %}" class="bm-card-cover">
+          {% if bm.book.cover_img %}
+            <img src="{{ bm.book.cover_img.url }}" alt="{{ bm.book.name }}" loading="lazy">
+          {% else %}
+            <div class="bm-card-cover-placeholder">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18v-13a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v13"/><path d="M3 18a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2"/><path d="M9 3v15"/></svg>
             </div>
+          {% endif %}
+        </a>
+        <button class="bm-remove-btn" onclick="removeBookmark('{{ bm.book.public_uuid }}')" title="북마크 제거">✕</button>
+        <div class="bm-card-body">
+          <div class="bm-book-title">{{ bm.book.name }}</div>
+          <div class="bm-book-author">{{ bm.book.user.nickname|default:"작가 미상" }}</div>
+          <div class="bm-book-genres">
+            {% for genre in bm.book.genres.all|slice:":2" %}
+            <span class="bm-genre-tag">{{ genre.name }}</span>
             {% endfor %}
+          </div>
+          <a href="{% url 'book:book_detail' bm.book.public_uuid %}" class="bm-listen-btn">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            듣기
+          </a>
         </div>
+      </div>
+      {% endfor %}
+    </div>
 
-        <!-- 페이지네이션 -->
-        {% if bookmarks.has_other_pages %}
-        <div style="display: flex; justify-content: center; gap: 8px; margin-top: 32px;">
-            {% if bookmarks.has_previous %}
-                <a href="?page={{ bookmarks.previous_page_number }}" style="padding: 8px 16px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; color: white; text-decoration: none;" data-login-required>이전</a>
-            {% endif %}
-
-            <span style="padding: 8px 16px; color: rgba(255, 255, 255, 0.6);">
-                {{ bookmarks.number }} / {{ bookmarks.paginator.num_pages }}
-            </span>
-
-            {% if bookmarks.has_next %}
-                <a href="?page={{ bookmarks.next_page_number }}" style="padding: 8px 16px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; color: white; text-decoration: none;" data-login-required>다음</a>
-            {% endif %}
-        </div>
-        {% endif %}
-    {% else %}
-        <div class="empty-state">
-            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-            </svg>
-            <h2 style="font-size: 24px; margin-bottom: 12px;">북마크가 없습니다</h2>
-            <p style="margin-bottom: 24px;">나중에 읽고 싶은 책을 북마크해보세요!</p>
-            <a href="{% url 'main:main' %}" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; text-decoration: none; font-weight: 600;" data-login-required>
-                둘러보기
-            </a>
-        </div>
+    {% if bookmarks.has_other_pages %}
+    <div style="justify-content:center;margin-top:32px;display:flex;gap:6px;">
+      {% if bookmarks.has_previous %}<a href="?page={{ bookmarks.previous_page_number }}" class="page-btn">‹</a>{% endif %}
+      {% for num in bookmarks.paginator.page_range %}
+        {% if num == bookmarks.number %}<span class="page-btn" style="background:#111;color:#fff;">{{ num }}</span>
+        {% elif num|add:"-2" <= bookmarks.number and num|add:"2" >= bookmarks.number %}<a href="?page={{ num }}" class="page-btn">{{ num }}</a>{% endif %}
+      {% endfor %}
+      {% if bookmarks.has_next %}<a href="?page={{ bookmarks.next_page_number }}" class="page-btn">›</a>{% endif %}
+    </div>
     {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <h3>저장한 책이 없습니다</h3>
+      <p>마음에 드는 오디오북을 북마크해 보세요</p>
+      <a href="{% url 'main:main' %}" class="btn-primary" style="margin-top:20px;display:inline-block;">책 둘러보기</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- 에피소드 북마크 탭 -->
+  <div id="bmPanelEpisode" class="bm-panel" style="display:none">
+    {% if episode_bookmarks %}
+    <div class="bm-sort-row">
+      <span class="bm-count">총 <strong>{{ episode_bookmarks|length }}</strong>개 저장됨</span>
+    </div>
+    <div class="bm-ep-list">
+      {% for ebm in episode_bookmarks %}
+      <div class="bm-ep-item">
+        <a href="{% url 'book:book_detail' ebm.content.book.public_uuid %}" class="bm-ep-cover">
+          {% if ebm.content.book.cover_img %}
+          <img src="{{ ebm.content.book.cover_img.url }}" alt="{{ ebm.content.book.name }}">
+          {% else %}
+          <div class="bm-ep-cover-bg"></div>
+          {% endif %}
+        </a>
+        <div class="bm-ep-info">
+          <div class="bm-ep-book">{{ ebm.content.book.name }}</div>
+          <div class="bm-ep-title">{{ ebm.content.title }} · {{ ebm.content.number }}화</div>
+          {% if ebm.memo %}<div class="bm-ep-memo">"{{ ebm.memo|truncatechars:60 }}"</div>{% endif %}
+          <div class="bm-ep-pos">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {{ ebm.position|floatformat:0 }}초 위치
+          </div>
+        </div>
+        <a href="{% url 'book:content_detail' ebm.content.public_uuid %}" class="bm-ep-play-btn" title="해당 위치에서 듣기">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          듣기
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <h3>저장한 에피소드 북마크가 없습니다</h3>
+      <p>에피소드 재생 중 문단 옆 북마크 버튼을 눌러 저장해 보세요</p>
+    </div>
+    {% endif %}
+  </div>
+
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/book/my_bookmarks.js' %}"></script>
 <script>
-async function removeBookmark(bookId) {
-    if (!confirm('북마크를 제거하시겠습니까?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/book/bookmark/${bookId}/toggle/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            credentials: 'same-origin'
-        });
-
-        if (response.ok) {
-            alert('북마크가 제거되었습니다');
-            location.reload();
-        } else {
-            throw new Error('북마크 제거 실패');
-        }
-    } catch (error) {
-        console.error('북마크 제거 실패:', error);
-        alert('북마크 제거에 실패했습니다');
-    }
+function bmSetTab(btn, panel) {
+  document.querySelectorAll('.bm-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('bmPanelBook').style.display = panel === 'book' ? '' : 'none';
+  document.getElementById('bmPanelEpisode').style.display = panel === 'episode' ? '' : 'none';
 }
-
-async function removeStoryBookmark(btn, storyUuid) {
-    try {
-        const res = await fetch(`/character/story/${storyUuid}/bookmark/toggle/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': getCookie('csrftoken') },
-            credentials: 'same-origin'
-        });
-        const data = await res.json();
-        if (data.success && !data.bookmarked) {
-            btn.closest('.bm-ai-card').remove();
-        }
-    } catch (e) {
-        console.error('북마크 제거 실패:', e);
-    }
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-
 </script>
 {% endblock %}

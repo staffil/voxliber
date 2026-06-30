@@ -1,120 +1,214 @@
-{% extends "base.html" %}
+{% extends "base_author.html" %}
 {% load static %}
 
-{% block title %}북 스냅 만들기 - VOXLIBER{% endblock %}
+{% block title %}스냅 만들기 — Voxliber{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/snap/create_snap.css' %}">
 {% endblock %}
 
-
 {% block content %}
+<div class="cs-page">
 
-<!-- <script>
-// 페이지 접근 제한 - 메인으로 리다이렉트
-(function() {
-    window.location.href = '/';
-})();
-</script> -->
-
-<div class="snap-container">
-
-    <!-- LEFT: Preview -->
-    <div class="snap-preview-wrapper">
-        <div class="snap-preview" id="snap-preview">
-            9:16 미리보기
-        </div>
+  <div class="cs-header">
+    <div class="cs-header-text">
+      <h1 class="cs-title">스냅 만들기</h1>
+      <p class="cs-desc">오디오북의 인상적인 구간을 짧은 영상 클립으로 공유하세요</p>
     </div>
+    <a href="{% url 'book:my_book_snap_list' %}" class="cs-back-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      내 스냅 목록
+    </a>
+  </div>
 
-    <!-- RIGHT: Form -->
-    <form method="POST" enctype="multipart/form-data" class="snap-form">
+  {% if error %}
+  <div class="cs-alert-error">{{ error }}</div>
+  {% endif %}
+
+  <div class="cs-layout">
+
+    <!-- ── 왼쪽: 입력 폼 ── -->
+    <div class="cs-form-col">
+      <form method="post" enctype="multipart/form-data" id="snapForm">
         {% csrf_token %}
 
-        <h2 class="section-title">📱 쇼츠 스냅 만들기</h2>
+        <div class="cs-field">
+          <label class="cs-label" for="snapTitle">제목 <span class="cs-required">*</span></label>
+          <input type="text" name="title" id="snapTitle" class="cs-input"
+                 placeholder="스냅 제목을 입력하세요" maxlength="100" required
+                 oninput="updatePreviewTitle(this.value)">
+        </div>
 
-        {% if error %}
-            <div class="message error">{{ error }}</div>
+        <div class="cs-field">
+          <label class="cs-label" for="snapDesc">설명 <span class="cs-required">*</span></label>
+          <textarea name="description" id="snapDesc" class="cs-textarea" rows="4"
+                    placeholder="어떤 장면인지 설명해주세요" required
+                    oninput="updatePreviewDesc(this.value)"></textarea>
+        </div>
+
+        <!-- 썸네일 -->
+        <div class="cs-field">
+          <label class="cs-label">썸네일 이미지 <span class="cs-required">*</span></label>
+          <div class="cs-upload-box" id="thumbBox" onclick="document.getElementById('thumbInput').click()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <div class="cs-upload-text">
+              <strong>이미지 선택</strong>
+              <span>JPG, PNG, WebP · 최대 10MB</span>
+            </div>
+            <span class="cs-file-name" id="thumbName">선택 없음</span>
+          </div>
+          <input type="file" name="image" id="thumbInput" accept="image/*" required style="display:none"
+                 onchange="onThumbChange(this)">
+        </div>
+
+        <!-- 영상 -->
+        <div class="cs-field">
+          <label class="cs-label">영상 파일 <span class="cs-optional">(선택)</span></label>
+          <div class="cs-upload-box" id="videoBox" onclick="document.getElementById('videoInput').click()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            <div class="cs-upload-text">
+              <strong>영상 파일 선택</strong>
+              <span>MP4, MOV · 최대 100MB</span>
+            </div>
+            <span class="cs-file-name" id="videoName">선택 없음</span>
+          </div>
+          <input type="file" name="video" id="videoInput" accept="video/*" style="display:none"
+                 onchange="onVideoChange(this)">
+        </div>
+
+        {% if my_book_options %}
+        <div class="cs-field">
+          <label class="cs-label" for="bookSel">연결할 책 <span class="cs-optional">(선택)</span></label>
+          <select name="selected_book_url" id="bookSel" class="cs-select"
+                  onchange="updatePreviewBook(this.options[this.selectedIndex].text)">
+            <option value="">— 선택 안 함 —</option>
+            {% for url, name in my_book_options %}
+            <option value="{{ url }}">{{ name }}</option>
+            {% endfor %}
+          </select>
+        </div>
         {% endif %}
-        {% if success %}
-            <div class="message success">{{ success }}</div>
-        {% endif %}
 
-        <div class="input-group">
-            <label class="input-label">이미지 업로드</label>
-            <input type="file" name="image" accept="image/*" id="image-input" class="input-field"  data-login-required>
+        <div class="cs-field">
+          <label class="cs-label" for="customUrl">외부 링크 <span class="cs-optional">(선택)</span></label>
+          <input type="url" name="custom_url" id="customUrl" class="cs-input" placeholder="https://...">
         </div>
 
-        <div class="input-group">
-            <label class="input-label">비디오 업로드 (선택)</label>
-            <input type="file" name="video" accept="video/*" id="video-input" class="input-field"  data-login-required>
+        <div class="cs-field cs-field-toggle">
+          <label class="cs-toggle-row">
+            <div class="cs-toggle">
+              <input type="checkbox" name="adult_choice" id="adultToggle">
+              <span class="cs-toggle-slider"></span>
+            </div>
+            <span class="cs-toggle-label">성인 콘텐츠</span>
+          </label>
         </div>
 
-
-
-        <!-- 🔥 링크 입력 추가 -->
-
-        <div class="input-group">
-
-            <label class="input-label">연결할 오디오북 링크</label>
-            <select name="selected_book_url" id="selected_book_url" class="input-field"  data-login-required>
-                <option value="">선택 안 함</option>
-                    {% for url, name in my_book_options %}
-                            <option value="{{ url }}">{{ name }}</option>
-                        {% endfor %}
-                                </select>
+        <div class="cs-submit-row">
+          <a href="{% url 'book:my_book_snap_list' %}" class="cs-cancel-btn">취소</a>
+          <button type="submit" class="cs-submit-btn">스냅 등록</button>
         </div>
 
-                <!-- AI 소설 링크 비활성화
-        <div class="input-group">
+      </form>
+    </div>
 
-            <label class="input-label">연결할 AI 소설 링크</label>
-            <select name="selected_story_url" id="selected_story_url" class="input-field"  data-login-required>
-                <option value="">선택 안 함</option>
-                {% for url, name in my_story_options %}
-                        <option value="{{ url }}">{{ name }}</option>
-                    {% endfor %}
-                            </select>
+    <!-- ── 오른쪽: 미리보기 ── -->
+    <div class="cs-preview-col">
+      <div class="cs-preview-label">미리보기</div>
+
+      <div class="cs-preview-card">
+
+        <!-- 영상/이미지 썸네일 영역 -->
+        <div class="cs-preview-media" id="previewMedia">
+          <!-- 기본 빈 상태 -->
+          <div class="cs-preview-empty" id="previewEmpty">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>썸네일을 선택하면<br>미리보기가 표시됩니다</span>
+          </div>
+          <!-- 썸네일 이미지 -->
+          <img id="previewThumb" class="cs-preview-thumb" style="display:none;" alt="thumbnail">
+          <!-- 비디오 플레이어 -->
+          <video id="previewVideo" class="cs-preview-video" controls style="display:none;" muted></video>
+          <!-- 성인 배지 -->
+          <span class="cs-preview-adult" id="previewAdultBadge" style="display:none;">19</span>
         </div>
-        -->
-        
-        
-        <div class="input-group">
-            <label class="input-label">타 링크 선택 (연결할 책을 우설 링크로 합니다)</label>
-            <input type="url" name="link" placeholder="https://example.com" class="input-field"  data-login-required>
+
+        <!-- 텍스트 정보 -->
+        <div class="cs-preview-info">
+          <div class="cs-preview-title" id="previewTitle">제목 없음</div>
+          <div class="cs-preview-desc" id="previewDesc">설명이 여기에 표시됩니다</div>
+          <div class="cs-preview-book" id="previewBook" style="display:none;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span id="previewBookName"></span>
+          </div>
+          <div class="cs-preview-meta">
+            <span>{{ request.user.nickname }}</span>
+            <span class="cs-preview-dot">·</span>
+            <span>방금 전</span>
+          </div>
         </div>
+      </div>
 
-        <div class="input-group">
-            <label class="input-label">제목</label>
-            <input type="text" name="title" class="input-field" placeholder="스냅 제목 입력" maxlength="200"  data-login-required >
-        </div>
+      <p class="cs-preview-hint">실제 표시와 다소 다를 수 있습니다</p>
+    </div>
 
-        <div class="input-group">
-            <label class="input-label">설명</label>
-            <textarea name="description" class="input-field" placeholder="설명 입력" maxlength="200" data-login-required></textarea>
-        </div>
-        <div class="terms-checkbox-wrapper">
-                                <label class="custom-checkbox">
-<input type="checkbox"
-       id="adult_choice"
-       name="adult_choice"
-       value="on"
-       {% if snap and snap.adult_choice %}checked{% endif %} >
-                                           <span class="checkbox-icon"></span>
-                                    <span class="checkbox-text">
-                                    <a href="/terms/of/service/" class="terms-link" target="_blank"  data-login-required>잔인성, 선정성이 있는 작품</a>이면 동의를 눌러주세요
-                                    </span>
-                                </label>
-                                </div>
-
-        <button class="submit-btn" type="submit">스냅 생성하기</button>
-
-    </form>
+  </div>
 </div>
 
+<script>
+function updatePreviewTitle(v) {
+  document.getElementById('previewTitle').textContent = v || '제목 없음';
+}
+function updatePreviewDesc(v) {
+  document.getElementById('previewDesc').textContent = v || '설명이 여기에 표시됩니다';
+}
+function updatePreviewBook(name) {
+  const wrap = document.getElementById('previewBook');
+  const span = document.getElementById('previewBookName');
+  if (name && name !== '— 선택 안 함 —') {
+    span.textContent = name;
+    wrap.style.display = 'flex';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+function onThumbChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('thumbName').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const thumb = document.getElementById('previewThumb');
+    const empty = document.getElementById('previewEmpty');
+    thumb.src = e.target.result;
+    thumb.style.display = 'block';
+    empty.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function onVideoChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('videoName').textContent = file.name;
+
+  const video = document.getElementById('previewVideo');
+  const thumb = document.getElementById('previewThumb');
+  const url   = URL.createObjectURL(file);
+  video.src   = url;
+  video.style.display = 'block';
+  thumb.style.display = 'none';
+  document.getElementById('previewEmpty').style.display = 'none';
+}
+
+document.getElementById('adultToggle').addEventListener('change', function() {
+  document.getElementById('previewAdultBadge').style.display = this.checked ? 'flex' : 'none';
+});
+</script>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/book/snap/create_snap.js' %}"></script>
-
-</script>
 {% endblock %}

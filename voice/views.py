@@ -52,12 +52,18 @@ def voice_list(request):
         my_voices = MyVoiceList.objects.filter(user=request.user).select_related('voice')
         books = Books.objects.filter(user=request.user)
 
+    from book.models import AudioBookGuide
+    voice_guides = AudioBookGuide.objects.filter(
+        category='voiceChoice', is_active=True
+    ).order_by('order_num')
+
     context = {
         'voice_lists': voice_lists,
         'voice_types': voice_types,
         'selected_type_ids': list(map(int, selected_type_ids)),
         'my_voices': my_voices,
         'books': books,
+        'voice_guides': voice_guides,
     }
 
     return render(request, 'voice/voice_list.html', context)

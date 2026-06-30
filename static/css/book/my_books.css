@@ -1,739 +1,328 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
-
-/* CSS 변수 */
-/* 전역 스타일 */
-.my-books-wrapper {
-    min-height: 100vh;
-    padding: 100px 20px 80px;
-    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-.my-books-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    animation: fadeInUp 0.6s ease;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* 페이지 헤더 */
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 40px;
-    padding: 32px 40px;
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.header-content h1 {
-    font-size: 32px;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0 0 8px;
-}
-
-.page-subtitle {
-    font-size: 15px;
-    color: var(--text-secondary);
-    margin: 0;
-}
-
-/* 버튼 */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 28px;
-    border: none;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    color: #fff;
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5);
-}
-
-.btn-secondary {
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-}
-
-.btn-secondary:hover {
-    background: var(--hover-bg);
-    border-color: rgba(99, 102, 241, 0.3);
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, var(--danger), #dc2626);
-    color: #fff;
-    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
-}
-
-.btn-danger:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(239, 68, 68, 0.5);
-}
-
-/* 작품 그리드 */
-.books-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 24px;
-}
-
-/* 작품 카드 */
-.book-card {
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 24px;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.book-card:hover {
-    border-color: rgba(99, 102, 241, 0.3);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-}
-
-.book-card-header {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-}
-
-.book-cover-mini {
-    width: 80px;
-    height: 100px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-    flex-shrink: 0;
-}
-
-.book-card-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.book-card-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0 0 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-}
-
-.book-card-meta {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.meta-badge {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 13px;
-    color: var(--text-secondary);
-}
-
-.meta-badge svg {
-    color: var(--primary);
-}
-
-.book-card-genres {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.genre-mini-badge {
-    padding: 6px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.book-card-description {
-    font-size: 14px;
-    line-height: 1.6;
-    color: var(--text-secondary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-}
-
-.book-card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: auto;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-}
-
-.book-date {
-    font-size: 13px;
-    color: var(--text-secondary);
-}
-
-.book-card-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.btn-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-}
-
-.btn-icon:hover {
-    background: var(--hover-bg);
-    border-color: rgba(99, 102, 241, 0.4);
-    color: var(--primary);
-    transform: translateY(-2px);
-}
-
-.btn-delete:hover {
-    border-color: rgba(239, 68, 68, 0.4);
-    color: var(--danger);
-}
-
-/* 빈 상태 */
-.empty-state {
-    text-align: center;
-    padding: 120px 40px;
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-}
-
-.empty-state svg {
-    color: var(--text-secondary);
-    opacity: 0.3;
-    margin-bottom: 24px;
-}
-
-.empty-state h2 {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0 0 12px;
-}
-
-.empty-state p {
-    font-size: 16px;
-    color: var(--text-secondary);
-    margin: 0 0 32px;
-}
-
-/* 모달 */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
-    z-index: 10000;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 0.3s ease;
-}
-
-.modal.active {
-    display: flex;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-.modal-content {
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    padding: 40px;
-    max-width: 480px;
-    width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-    from {
-        transform: translateY(40px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.modal-header {
-    text-align: center;
-    margin-bottom: 24px;
-}
-
-.modal-header svg {
-    color: var(--danger);
-    margin-bottom: 16px;
-}
-
-.modal-header h3 {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0;
-}
-
-.modal-body {
-    margin-bottom: 32px;
-}
-
-.modal-body p {
-    font-size: 16px;
-    line-height: 1.6;
-    color: var(--text);
-    margin: 0 0 12px;
-    text-align: center;
-}
-
-.modal-body strong {
-    color: var(--primary);
-    font-weight: 600;
-}
-
-.warning-text {
-    font-size: 14px;
-    color: var(--danger);
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 12px;
-    padding: 12px 16px;
-    margin-top: 16px !important;
-}
-
-.modal-footer {
-    display: flex;
-    gap: 12px;
-}
-
-.modal-footer .btn {
-    flex: 1;
-    justify-content: center;
-}
-
-/* 반응형 */
-@media (max-width: 768px) {
-    .my-books-wrapper {
-        padding: 80px 15px 60px;
-    }
-
-    .page-header {
-        flex-direction: column;
-        gap: 20px;
-        padding: 24px;
-    }
-
-    .header-content h1 {
-        font-size: 26px;
-    }
-
-    .btn {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .books-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .book-card {
-        padding: 20px;
-    }
-
-    .book-card-title {
-        font-size: 18px;
-    }
-
-    .empty-state {
-        padding: 80px 20px;
-    }
-
-    .empty-state h2 {
-        font-size: 22px;
-    }
-
-    .modal-content {
-        padding: 28px;
-    }
-}
-
-/* 라이트 모드 */
-body.light-mode {
-    --text: #0f172a;
-    --text-secondary: #475569;
-    --border: rgba(0, 0, 0, 0.1);
-    --card-bg: rgba(255, 255, 255, 0.95);
-    --input-bg: rgba(0, 0, 0, 0.03);
-    --hover-bg: rgba(0, 0, 0, 0.05);
-}
-
-body.light-mode .page-header,
-body.light-mode .book-card,
-body.light-mode .empty-state,
-body.light-mode .modal-content {
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-}
-
-body.light-mode .book-cover-mini {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
-}
-
-body.light-mode .btn-icon {
-    background: rgba(0, 0, 0, 0.03);
-}
-
-
-/* Dark mode (default) */
-.bookmark-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 16px;
-    display: flex;
-    gap: 20px;
-    transition: all 0.3s;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.bookmark-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-    border-color: rgba(99, 102, 241, 0.3);
-}
-
-.bookmark-cover {
-    width: 150px;
-    height: 267px; /* 9:16 비율 유지 (150 * 16/9 = 266.67) */
-    border-radius: 12px;
-    overflow: hidden;
-    flex-shrink: 0;
-}
-
-.bookmark-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.bookmark-info {
-    flex: 1;
-    max-width: 600px; /* 고정 너비로 오른쪽 여백 확보 */
-    min-width: 0; /* flex 아이템의 overflow를 위해 필요 */
-}
-
-.bookmark-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #fff;
-    margin-bottom: 8px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.bookmark-author {
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.bookmark-note {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 12px;
-    margin-top: 12px;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 14px;
-}
-
-.bookmark-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.btn-primary {
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.empty-state {
-    text-align: center;
-    padding: 80px 20px;
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.empty-state svg {
-    margin-bottom: 24px;
-    opacity: 0.3;
-}
-
-/* Light mode overrides */
-body.light-mode .bookmark-item {
-    background: rgba(0, 0, 0, 0.02);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-body.light-mode .bookmark-item:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    border-color: rgba(99, 102, 241, 0.3);
-}
-
-body.light-mode .bookmark-title {
-    color: #1a1a1a;
-}
-
-body.light-mode .bookmark-author {
-    color: rgba(0, 0, 0, 0.6);
-}
-
-body.light-mode .bookmark-note {
-    background: rgba(0, 0, 0, 0.03);
-    color: rgba(0, 0, 0, 0.7);
-}
-
-body.light-mode .btn-secondary {
-    background: rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    color: rgba(0, 0, 0, 0.7);
-}
-
-body.light-mode .btn-secondary:hover {
-    background: rgba(0, 0, 0, 0.08);
-}
-
-body.light-mode .empty-state {
-    color: rgba(0, 0, 0, 0.4);
-}
-
-body.light-mode .page-title {
-    color: #1a1a1a !important;
-}
-
-body.light-mode .page-subtitle {
-    color: rgba(0, 0, 0, 0.5) !important;
-}
-
-/* ===============================
-   반응형 (Responsive)
-=============================== */
-
-/* 태블릿 (768px 이하) */
-@media (max-width: 768px) {
-    .bookmark-item {
-        gap: 16px;
-    }
-
-    .bookmark-cover {
-        width: 100px;
-        height: 178px; /* 9:16 비율 유지 */
-    }
-
-    .bookmark-title {
-        font-size: 18px;
-    }
-}
-
-/* 모바일 (480px 이하) */
-@media (max-width: 480px) {
-    .bookmark-item {
-        padding: 16px;
-        gap: 12px;
-    }
-
-    .bookmark-cover {
-        width: 130px;
-        height: 220px; /* 9:16 비율 유지 */
-    }
-
-    .bookmark-title {
-        font-size: 16px;
-    }
-
-    .bookmark-author {
-        font-size: 14px;
-    }
-
-    .bookmark-actions {
-        flex-direction: column;
-    }
-
-    .btn-primary,
-    .btn-secondary {
-        width: 100%;
-        text-align: center;
-    }
-}
-/* ── AI 스토리 북마크 섹션 ── */
-.bm-ai-section { margin-bottom: 48px; }
-.bm-section-title {
-  font-size: 1.2rem; font-weight: 700; margin-bottom: 20px;
-  display: flex; align-items: center; gap: 8px;
-}
-body.light-mode .bm-section-title { color: #0f172a; }
-.bm-count-badge {
-  padding: 2px 10px; border-radius: 20px;
-  background: rgba(99,102,241,.15); font-size: .85rem; color: #a78bfa;
-}
-.bm-ai-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+/* ========================================
+   My Books — PDF editorial style
+   ======================================== */
+
+.mb-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 28px 80px;
+  background: #fafafa;
+}
+
+/* Header */
+.mb-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #111;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+}
+
+.mb-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: -.01em;
+  margin: 0 0 4px;
+}
+
+.mb-desc {
+  font-size: .82rem;
+  color: #888;
+  margin: 0;
+}
+
+/* Buttons */
+.mb-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 9px 18px;
+  font-size: .82rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 0;
+  white-space: nowrap;
+  transition: opacity .15s;
+}
+
+.mb-btn-primary:hover { opacity: .82; }
+
+/* Section */
+.mb-section {
+  margin-bottom: 36px;
+}
+
+.mb-section-label {
+  font-size: .72rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8e8e8;
+  margin-bottom: 0;
+}
+
+/* Table */
+.mb-table {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-top: none;
+}
+
+.mb-row {
+  display: flex;
+  align-items: center;
   gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background .1s;
 }
-.bm-ai-card {
-  position: relative; border-radius: 14px; overflow: hidden;
-  border: 1px solid rgba(255,255,255,.07);
-  transition: transform .2s;
+
+.mb-row:last-child { border-bottom: none; }
+.mb-row:hover { background: #fafafa; }
+
+/* Cover */
+.mb-cover-link { flex-shrink: 0; }
+
+.mb-cover {
+  width: 50px;
+  height: 67px;
+  object-fit: cover;
+  display: block;
+  border: 1px solid #e8e8e8;
 }
-.bm-ai-card:hover { transform: translateY(-3px); }
-body.light-mode .bm-ai-card { border-color: rgba(0,0,0,.08); }
-.bm-ai-card-link { display: block; text-decoration: none; }
-.bm-ai-cover {
-  position: relative; aspect-ratio: 3/4; overflow: hidden;
-  background: rgba(99,102,241,.1);
+
+.mb-cover-empty {
+  width: 50px;
+  height: 67px;
+  background: #f5f5f5;
+  border: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
 }
-.bm-ai-cover img, .bm-ai-cover video {
-  width: 100%; height: 100%; object-fit: cover; transition: transform .3s;
+
+/* Info */
+.mb-info {
+  flex: 1;
+  min-width: 0;
 }
-.bm-ai-card:hover .bm-ai-cover img,
-.bm-ai-card:hover .bm-ai-cover video { transform: scale(1.05); }
-.bm-ai-cover-empty {
-  width: 100%; height: 100%;
-  display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
+
+.mb-book-title {
+  display: block;
+  font-size: .9rem;
+  font-weight: 600;
+  color: #111;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
 }
-.bm-ai-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,.8) 0%, transparent 55%);
+
+.mb-book-title:hover { text-decoration: underline; }
+
+.mb-book-meta {
+  font-size: .75rem;
+  color: #888;
 }
-.bm-ai-info {
-  position: absolute; bottom: 0; left: 0; right: 0; padding: 10px;
+
+/* Status */
+.mb-status { flex-shrink: 0; }
+
+.mb-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: .7rem;
+  font-weight: 700;
+  border-radius: 0;
 }
-.bm-ai-chars { display: flex; gap: 3px; margin-bottom: 5px; }
-.bm-ai-avatar {
-  width: 22px; height: 22px; border-radius: 50%; overflow: hidden;
-  border: 1.5px solid rgba(255,255,255,.5); flex-shrink: 0;
-  background: rgba(99,102,241,.3);
-  display: flex; align-items: center; justify-content: center;
-  font-size: .6rem; font-weight: 700; color: #c4b5fd;
+
+.mb-badge-published {
+  background: #d1fae5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
 }
-.bm-ai-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.bm-ai-title {
-  font-size: .82rem; font-weight: 700; color: #fff;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  text-shadow: 0 1px 3px rgba(0,0,0,.6);
+
+.mb-badge-draft {
+  background: #fff3cd;
+  color: #b45309;
+  border: 1px solid #f0d070;
 }
-.bm-ai-date { font-size: .65rem; color: rgba(255,255,255,.4); margin-top: 2px; }
-.bm-ai-remove-btn {
-  position: absolute; top: 8px; right: 8px; z-index: 3;
-  width: 28px; height: 28px; border-radius: 50%;
-  background: rgba(0,0,0,.5); border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: #fbbf24; transition: background .18s, transform .18s;
+
+/* Row actions */
+.mb-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
-.bm-ai-remove-btn:hover { background: rgba(0,0,0,.75); transform: scale(1.1); }
-@media (max-width: 600px) {
-  .bm-ai-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+.mb-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: .76rem;
+  font-weight: 600;
+  color: #444;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 0;
+  transition: border-color .12s, color .12s;
+}
+
+.mb-btn-secondary:hover {
+  border-color: #aaa;
+  color: #111;
+}
+
+.mb-btn-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: .76rem;
+  font-weight: 600;
+  color: #b91c1c;
+  background: #fff;
+  border: 1px solid #fca5a5;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background .12s, border-color .12s;
+}
+
+.mb-btn-delete:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+/* Empty state */
+.mb-empty {
+  text-align: center;
+  padding: 80px 24px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+}
+
+.mb-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid #e8e8e8;
+  color: #ccc;
+  margin-bottom: 20px;
+}
+
+.mb-empty-title {
+  font-size: .95rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 6px;
+}
+
+.mb-empty-desc {
+  font-size: .82rem;
+  color: #888;
+  margin: 0;
+}
+
+/* Modal */
+.mb-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.mb-modal {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  padding: 36px 32px;
+  max-width: 380px;
+  width: 90%;
+  text-align: center;
+}
+
+.mb-modal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid #e8e8e8;
+  color: #b91c1c;
+  margin-bottom: 16px;
+}
+
+.mb-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 8px;
+}
+
+.mb-modal-desc {
+  font-size: .84rem;
+  color: #666;
+  margin: 0 0 24px;
+}
+
+.mb-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.mb-btn-cancel {
+  padding: 9px 24px;
+  font-size: .84rem;
+  font-weight: 600;
+  color: #444;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  cursor: pointer;
+  border-radius: 0;
+  transition: border-color .12s;
+}
+
+.mb-btn-cancel:hover { border-color: #aaa; }
+
+.mb-btn-confirm-delete {
+  padding: 9px 24px;
+  font-size: .84rem;
+  font-weight: 700;
+  color: #fff;
+  background: #b91c1c;
+  border: 1px solid #b91c1c;
+  cursor: pointer;
+  border-radius: 0;
+  transition: opacity .12s;
+}
+
+.mb-btn-confirm-delete:hover { opacity: .88; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .mb-page { padding: 28px 16px 60px; }
+  .mb-row { padding: 12px 14px; gap: 12px; }
+  .mb-cover, .mb-cover-empty { width: 40px; height: 54px; }
+  .mb-book-meta { display: none; }
+  .mb-btn-secondary span,
+  .mb-btn-delete span { display: none; }
 }

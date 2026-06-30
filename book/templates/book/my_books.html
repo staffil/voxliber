@@ -1,151 +1,121 @@
-{% extends "base.html" %}
+{% extends "base_author.html" %}
 {% load static %}
 
-{% block title %}내 작품 관리 - VOXLIBER{% endblock %}
+{% block title %}내 작품 — Voxliber{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/book/my_books.css' %}">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/book/my_books.css' %}">{% endblock %}
 
 {% block content %}
-<div class="my-books-wrapper">
-    <div class="my-books-container">
+<div class="mb-page">
 
-        <!-- 헤더 -->
-        <div class="page-header">
-            <div class="header-content">
-                <h1 class="page-title">내 작품 관리</h1>
-                <p class="page-subtitle">작성한 작품을 수정하거나 삭제할 수 있습니다</p>
-            </div>
-            <a href="{% url 'book:book_profile' %}" class="btn btn-primary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"/>
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                새 작품 등록
-            </a>
-        </div>
+  <div class="mb-header">
+    <div class="mb-header-text">
+      <h1 class="mb-title">내 작품</h1>
+      <p class="mb-desc">등록된 오디오북을 관리합니다</p>
+    </div>
+    <a href="{% url 'book:book_profile' %}" class="mb-btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      새 작품 등록
+    </a>
+  </div>
 
-        <!-- 작품 목록 -->
-        {% if books %}
-        <div class="books-grid">
-            {% for book in books %}
-            <div class="book-card">
-                <div class="book-card-header">
-                    <div class="book-cover-mini">
-                        {% if book.cover_img %}
-                            <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
-                        {% else %}
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                            </svg>
-                        {% endif %}
-                    </div>
-                    <div class="book-card-info">
-                        <h3 class="book-card-title">{{ book.name }}</h3>
-                        <div class="book-card-meta">
-                            <span class="meta-badge">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>
-                                {{ book.book_score }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+  {% if books %}
+  <div class="mb-section">
+    <div class="mb-section-label">작품 목록 ({{ books|length }})</div>
+    <div class="mb-table">
 
-                <div class="book-card-genres">
-                    {% for genre in book.genres.all %}
-                    <span class="genre-mini-badge" style="background-color: {{ genre.genres_color }}30; color: {{ genre.genres_color }};">
-                        {{ genre.name }}
-                    </span>
-                    {% endfor %}
-                </div>
+      {% for book in books %}
+      <div class="mb-row">
 
-                {% if book.description %}
-                <div class="book-card-description">
-                    {{ book.description|truncatewords:20 }}
-                </div>
-                {% endif %}
-
-                <div class="book-card-footer">
-                    <span class="book-date">{{ book.created_at|date:"Y.m.d" }}</span>
-                    <div class="book-card-actions">
-                        <a href="{% url 'book:book_detail' book.public_uuid %}" class="btn-icon" title="상세보기" data-login-required>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                        </a>
-                        <a href="{% url 'book:book_profile' %}?public_uuid={{ book.public_uuid }}" class="btn-icon" title="수정" data-login-required>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-                            </svg>
-                        </a>
-                        <a href="{% url 'book:book_serialization' %}?public_uuid={{ book.public_uuid }}" class="btn-icon" title="집필" data-login-required>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                            </svg>
-                        </a>
-                        <button class="btn-icon btn-delete" data-book-id="{{ book.public_uuid }}" data-book-name="{{ book.name }}" title="삭제" data-login-required>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"/>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                <line x1="10" y1="11" x2="10" y2="17"/>
-                                <line x1="14" y1="11" x2="14" y2="17"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-state">
-            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <a href="{% url 'book:book_detail' book.public_uuid %}" class="mb-cover-link">
+          {% if book.cover_img %}
+            <img class="mb-cover" src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+          {% else %}
+            <div class="mb-cover mb-cover-empty">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-            <h2>아직 작성한 작품이 없습니다</h2>
-            <p>새로운 작품을 등록하고 당신의 이야기를 시작해보세요!</p>
-            <a href="{% url 'book:book_profile' %}" class="btn btn-primary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"/>
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                첫 작품 등록하기
-            </a>
+              </svg>
+            </div>
+          {% endif %}
+        </a>
+
+        <div class="mb-info">
+          <a href="{% url 'book:book_detail' book.public_uuid %}" class="mb-book-title">{{ book.name }}</a>
+          <div class="mb-book-meta">에피소드 {{ book.contents.count }}화 &middot; {{ book.created_at|date:"Y.m.d" }}</div>
         </div>
-        {% endif %}
+
+        <div class="mb-status">
+          {% if book.is_published %}
+            <span class="mb-badge mb-badge-published">공개</span>
+          {% else %}
+            <span class="mb-badge mb-badge-draft">비공개</span>
+          {% endif %}
+        </div>
+
+        <div class="mb-actions">
+          <a href="{% url 'book:book_profile' %}?public_uuid={{ book.public_uuid }}" class="mb-btn-secondary">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            편집
+          </a>
+          <button class="mb-btn-delete" onclick="deleteBook('{{ book.public_uuid }}', '{{ book.name|escapejs }}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14H6L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/>
+              <path d="M9 6V4h6v2"/>
+            </svg>
+            삭제
+          </button>
+        </div>
+
+      </div>
+      {% endfor %}
 
     </div>
+  </div>
+
+  {% else %}
+  <div class="mb-empty">
+    <div class="mb-empty-icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+    </div>
+    <p class="mb-empty-title">등록된 작품이 없습니다</p>
+    <p class="mb-empty-desc">첫 번째 오디오북을 만들어보세요</p>
+    <a href="{% url 'book:book_profile' %}" class="mb-btn-primary" style="margin-top:20px;">작품 등록하기</a>
+  </div>
+  {% endif %}
+
 </div>
 
-<!-- 삭제 확인 모달 -->
-<div id="deleteModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            <h3>작품 삭제</h3>
-        </div>
-        <div class="modal-body">
-            <p>정말 <strong id="deleteBookName"></strong>을(를) 삭제하시겠습니까?</p>
-            <p class="warning-text">이 작업은 되돌릴 수 없으며, 모든 에피소드가 함께 삭제됩니다.</p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" id="cancelDelete">취소</button>
-            <button type="button" class="btn btn-danger" id="confirmDelete">삭제하기</button>
-        </div>
+<!-- Delete confirm modal -->
+<div id="deleteModal" class="mb-modal-overlay" style="display:none;">
+  <div class="mb-modal">
+    <div class="mb-modal-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6l-1 14H6L5 6"/>
+        <path d="M10 11v6"/><path d="M14 11v6"/>
+        <path d="M9 6V4h6v2"/>
+      </svg>
     </div>
+    <h3 class="mb-modal-title">작품을 삭제할까요?</h3>
+    <p id="deleteBookName" class="mb-modal-desc"></p>
+    <div class="mb-modal-actions">
+      <button onclick="closeDeleteModal()" class="mb-btn-cancel">취소</button>
+      <form id="deleteForm" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="mb-btn-confirm-delete">삭제</button>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'js/book/my_books.js' %}"></script>
-{% endblock %}
+{% block extra_js %}<script src="{% static 'js/book/my_books.js' %}"></script>{% endblock %}

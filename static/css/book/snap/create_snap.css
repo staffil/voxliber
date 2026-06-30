@@ -1,295 +1,294 @@
-.snap-container {
-    display: flex;
-    justify-content: center;
-    gap: 40px;
-    padding: 50px 0;
-    margin-top: 100px;
+/* ============================================================
+   Create Snap — PDF editorial style + live preview
+   ============================================================ */
+
+.cs-page {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 48px 28px 80px;
+  background: #fafafa;
 }
 
-.snap-preview-wrapper {
-    width: 500px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+/* ── Header ── */
+.cs-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #111;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
 }
 
-.snap-preview {
-    width: 100%;
-    aspect-ratio: 9 / 16;
-    background: rgba(255,255,255,0.06);
-    border-radius: 18px;
-    border: 1px dashed rgba(255,255,255,0.25);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #aaa;
-    overflow: hidden;
-    margin-bottom: 14px;
+.cs-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: -.01em;
+  margin: 0 0 4px;
 }
 
-.snap-preview img,
-.snap-preview video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.cs-desc {
+  font-size: .82rem;
+  color: #888;
+  margin: 0;
 }
 
-.snap-form {
-    width: 420px;
-    background: rgba(255,255,255,0.08);
-    padding: 28px;
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.15);
-    backdrop-filter: blur(18px);
+.cs-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid #e0e0e0;
+  color: #666;
+  padding: 9px 16px;
+  font-size: .8rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color .15s, color .15s;
+}
+.cs-back-btn:hover { border-color: #111; color: #111; }
+
+/* ── Alert ── */
+.cs-alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  padding: 10px 16px;
+  font-size: .84rem;
+  margin-bottom: 20px;
 }
 
-.section-title {
-    font-size: 22px;
-    font-weight: 700;
-    color: #fff;
-    margin-bottom: 20px;
+/* ── Two-column layout ── */
+.cs-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 32px;
+  align-items: start;
 }
 
-.message {
-    padding: 12px;
-    border-radius: 10px;
-    font-weight: 600;
-    margin-bottom: 15px;
-    text-align: center;
-}
-.message.error { background: rgba(255,50,50,0.25); color: #ff6b6b; }
-.message.success { background: rgba(60,240,120,0.25); color: #38ff99; }
-/* 선정성 체크박스 전체 래퍼 */
-.terms-checkbox-wrapper {
-  margin: 20px 0;
-  padding: 16px;
-  background: rgba(102, 126, 234, 0.08);
-  border-radius: 12px;
-  border: 1px solid rgba(102, 126, 234, 0.2);
+/* ── Form ── */
+.cs-form-col {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  padding: 28px 28px 24px;
 }
 
-/* 커스텀 체크박스 */
-.custom-checkbox {
+.cs-field { margin-bottom: 22px; }
+
+.cs-label {
+  display: block;
+  font-size: .73rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 7px;
+}
+
+.cs-required { color: #ef4444; }
+.cs-optional { color: #bbb; font-weight: 400; text-transform: none; }
+
+.cs-input {
+  width: 100%;
+  border: 1.5px solid #e0e0e0;
+  padding: 10px 14px;
+  font-size: .9rem;
+  color: #111;
+  background: #fff;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color .15s;
+}
+.cs-input:focus { border-color: #111; }
+
+.cs-textarea {
+  width: 100%;
+  border: 1.5px solid #e0e0e0;
+  padding: 10px 14px;
+  font-size: .88rem;
+  color: #111;
+  background: #fff;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+  line-height: 1.7;
+  transition: border-color .15s;
+}
+.cs-textarea:focus { border-color: #111; }
+
+.cs-select {
+  width: 100%;
+  border: 1.5px solid #e0e0e0;
+  padding: 10px 14px;
+  font-size: .88rem;
+  color: #111;
+  background: #fff;
+  font-family: inherit;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: border-color .15s;
+}
+.cs-select:focus { border-color: #111; }
+
+.cs-upload-box {
   display: flex;
   align-items: center;
+  gap: 14px;
+  border: 1.5px dashed #d0d0d0;
+  padding: 18px 16px;
   cursor: pointer;
-  position: relative;
+  background: #fafafa;
+  transition: border-color .15s, background .15s;
 }
+.cs-upload-box:hover { border-color: #111; background: #f4f4f4; }
+.cs-upload-box svg { color: #aaa; flex-shrink: 0; }
 
-.custom-checkbox input {
-  position: absolute;
-  opacity: 0;
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  z-index: 2;
-}
+.cs-upload-text { flex: 1; min-width: 0; }
+.cs-upload-text strong { display: block; font-size: .84rem; font-weight: 700; color: #333; }
+.cs-upload-text span { font-size: .73rem; color: #aaa; margin-top: 2px; display: block; }
 
-
-.custom-checkbox:hover {
-  color: #c4b5fd;
-}
-
-
-
-/* 커스텀 체크박스 아이콘 */
-.checkbox-icon {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #a78bfa;
-  border-radius: 6px;
-  margin-right: 12px;
-  position: relative;
+.cs-file-name {
+  font-size: .72rem; color: #888;
+  max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   flex-shrink: 0;
-  background: rgba(167, 139, 250, 0.1);
-  transition: all 0.3s ease;
 }
 
-/* 체크됐을 때 */
-.custom-checkbox input:checked + .checkbox-icon {
-  background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%);
-  border-color: #c084fc;
-  box-shadow: 0 0 12px rgba(192, 132, 252, 0.5);
+/* Toggle */
+.cs-field-toggle { margin-bottom: 28px; }
+.cs-toggle-row { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+
+.cs-toggle { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+.cs-toggle input { opacity: 0; width: 0; height: 0; }
+
+.cs-toggle-slider {
+  position: absolute; inset: 0;
+  background: #e0e0e0; border-radius: 24px;
+  transition: background .2s; cursor: pointer;
+}
+.cs-toggle-slider::before {
+  content: ''; position: absolute;
+  height: 18px; width: 18px; left: 3px; bottom: 3px;
+  background: #fff; border-radius: 50%; transition: transform .2s;
+}
+.cs-toggle input:checked + .cs-toggle-slider { background: #111; }
+.cs-toggle input:checked + .cs-toggle-slider::before { transform: translateX(18px); }
+.cs-toggle-label { font-size: .85rem; font-weight: 600; color: #333; }
+
+/* Submit */
+.cs-submit-row {
+  display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+  padding-top: 20px; border-top: 1px solid #f0f0f0;
 }
 
-/* 체크 표시 (체크 시 나타남) */
-.checkbox-icon::after {
-  content: "❤️";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  font-size: 16px;
-  color: white;
-  opacity: 0;
-  transition: all 0.3s ease;
+.cs-cancel-btn {
+  display: inline-flex; align-items: center;
+  background: none; border: 1px solid #e0e0e0; color: #888;
+  padding: 10px 18px; font-size: .84rem; font-weight: 600;
+  text-decoration: none; cursor: pointer;
+  transition: border-color .12s, color .12s;
+}
+.cs-cancel-btn:hover { border-color: #111; color: #111; }
+
+.cs-submit-btn {
+  background: #111; border: none; color: #fff;
+  padding: 10px 24px; font-size: .88rem; font-weight: 700;
+  cursor: pointer; transition: opacity .15s;
+}
+.cs-submit-btn:hover { opacity: .8; }
+
+/* ── Preview column ── */
+.cs-preview-col { position: sticky; top: 80px; }
+
+.cs-preview-label {
+  font-size: .72rem; font-weight: 700; color: #888;
+  text-transform: uppercase; letter-spacing: .06em;
+  padding-bottom: 8px; border-bottom: 1px solid #e8e8e8; margin-bottom: 14px;
 }
 
-.custom-checkbox input:checked + .checkbox-icon::after {
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 1;
+.cs-preview-card { background: #fff; border: 1px solid #e8e8e8; overflow: hidden; }
+
+.cs-preview-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 14;
+  background: #1a1a1a;
+  overflow: hidden;
 }
 
-/* 텍스트 스타일 */
-.checkbox-text {
-  line-height: 1.5;
+.cs-preview-empty {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; color: #555;
+}
+.cs-preview-empty svg { opacity: .35; }
+.cs-preview-empty span {
+  font-size: .75rem; color: #666; text-align: center; line-height: 1.6;
 }
 
-/* "잔인성, 선정성" 링크 강조 */
-.terms-link {
-  color: #f472b6;
-  text-decoration: underline;
-  font-weight: 600;
-  transition: color 0.3s;
+.cs-preview-thumb {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover;
 }
 
-.terms-link:hover {
-  color: #ec4899;
-}
-.input-group {
-    margin-bottom: 18px;
+.cs-preview-video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover;
 }
 
-.input-label {
-    font-size: 14px;
-    color: #ccc;
-    margin-bottom: 6px;
-    display: block;
+.cs-preview-adult {
+  position: absolute; top: 10px; left: 10px;
+  width: 26px; height: 26px;
+  background: #ef4444; color: #fff;
+  font-size: .7rem; font-weight: 700;
+  align-items: center; justify-content: center;
+  border-radius: 50%;
 }
 
-.input-field {
-    width: 100%;
-    padding: 12px;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.15);
-    color: #fff;
+.cs-preview-info { padding: 14px 16px 16px; }
+
+.cs-preview-title {
+  font-size: .9rem; font-weight: 700; color: #111;
+  margin-bottom: 5px; line-height: 1.3;
 }
 
-textarea {
-    height: 120px;
-    resize: none;
+.cs-preview-desc {
+  font-size: .78rem; color: #666; line-height: 1.55; margin-bottom: 8px;
+  display: -webkit-box; -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical; overflow: hidden;
 }
 
-.submit-btn {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, #6366f1, #7c3aed);
-    border: none;
-    border-radius: 12px;
-    color: #fff;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.25s;
-}
-.submit-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 22px rgba(99,102,241,0.35);
+.cs-preview-book {
+  display: flex; align-items: center; gap: 5px;
+  font-size: .72rem; color: #5b4cf5; font-weight: 600; margin-bottom: 8px;
 }
 
-    #book_link {
-        color: #000000;
-        /* 필요하면 배경색도 흰색으로 */
-    }
+.cs-preview-meta {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .72rem; color: #aaa;
+}
+.cs-preview-dot { color: #ddd; }
 
-    /* 옵션 글자도 검정 */
-    #book_link option {
-        color: #000000;
-    }
+.cs-preview-hint { font-size: .7rem; color: #bbb; text-align: center; margin-top: 8px; }
 
-
-/* ============================= */
-/* 🌞 LIGHT MODE (Snap Page) */
-/* ============================= */
-
-body.light-mode {
-    background: #f9fafb;
-    color: #374151;
+/* ── Responsive ── */
+@media (max-width: 840px) {
+  .cs-layout { grid-template-columns: 1fr; }
+  .cs-preview-col { position: static; order: -1; }
+  .cs-preview-media { aspect-ratio: 16 / 9; }
 }
 
-/* 컨테이너 */
-body.light-mode .snap-container {
-    background: transparent;
-}
-
-/* 미리보기 영역 */
-body.light-mode .snap-preview {
-    background: #ffffff;
-    border: 1px dashed #d1d5db;
-    color: #6b7280;
-}
-
-/* 폼 카드 */
-body.light-mode .snap-form {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    backdrop-filter: none;
-}
-
-/* 섹션 제목 */
-body.light-mode .section-title {
-    color: #111827;
-}
-
-/* 메시지 */
-body.light-mode .message.error {
-    background: #fee2e2;
-    color: #b91c1c;
-}
-
-body.light-mode .message.success {
-    background: #dcfce7;
-    color: #15803d;
-}
-
-/* 입력 필드 */
-body.light-mode .input-label {
-    color: #374151;
-}
-
-body.light-mode .input-field,
-body.light-mode textarea {
-    background: #f9fafb;
-    border: 1px solid #d1d5db;
-    color: #111827;
-}
-
-body.light-mode .input-field::placeholder,
-body.light-mode textarea::placeholder {
-    color: #9ca3af;
-}
-
-/* 제출 버튼 */
-body.light-mode .submit-btn {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-}
-
-body.light-mode .submit-btn:hover {
-    box-shadow: 0 8px 22px rgba(99,102,241,0.25);
-}
-
-/* 선정성 체크박스 래퍼 */
-body.light-mode .terms-checkbox-wrapper {
-    background: #f5f3ff;
-    border: 1px solid #ddd6fe;
-}
-
-/* 체크박스 아이콘 */
-body.light-mode .checkbox-icon {
-    background: #ffffff;
-    border-color: #a78bfa;
-}
-
-/* 체크박스 텍스트 */
-body.light-mode .checkbox-text {
-    color: #374151;
-}
-
-/* 링크 */
-body.light-mode .terms-link {
-    color: #db2777;
-}
-
-body.light-mode .terms-link:hover {
-    color: #be185d;
+@media (max-width: 640px) {
+  .cs-page { padding: 28px 16px 60px; }
+  .cs-form-col { padding: 20px 16px; }
 }

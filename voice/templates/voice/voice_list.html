@@ -1,208 +1,187 @@
-{% extends "base.html" %}
+{% extends "base_author.html" %}
 {% load static %}
 
-{% block title %}보이스 라이브러리 | VoxLiber{% endblock %}
-
-{% block content %}
+{% block title %}보이스 라이브러리 — Voxliber{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/voice/voice_list.css' %}">
 <link rel="stylesheet" href="{% static 'css/book/onboarding.css' %}">
 {% endblock %}
 
+{% block content %}
+
 <!-- 페이지 헤더 -->
-<div class="page-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-    <div>
-        <h1 class="page-title">🎤 보이스 라이브러리</h1>
-        <p class="page-subtitle">나만의 오디오북을 위한 완벽한 목소리를 찾아보세요</p>
+<div class="vl-page">
+
+<div class="vl-header">
+    <div class="vl-header-text">
+        <h1 class="vl-title">보이스 라이브러리</h1>
+        <p class="vl-desc">나만의 오디오북을 위한 완벽한 목소리를 찾아보세요</p>
     </div>
-    <button class="vox-voice-guide-btn" onclick="document.getElementById('voxGuidePanelOverlay').style.display='flex'" aria-label="가이드 열기">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <button class="vl-guide-btn" onclick="document.getElementById('voxGuidePanelOverlay').style.display='flex'" aria-label="가이드 열기">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/>
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
             <line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
-        가이드북
+        가이드
     </button>
 </div>
 
-<!-- 검색 & 필터 섹션 -->
-<div class="search-filter-section">
-    <!-- AI 목소리 추천 검색 -->
-    <div class="ai-voice-search-section">
-        <div class="ai-search-box">
-            <span class="ai-search-icon">✨</span>
-            <input type="text" id="ai-voice-input" class="ai-voice-input"
-                   placeholder="AI에게 원하는 목소리를 설명해보세요... (예: 차분하고 깊은 남성 목소리, 밝고 에너지 넘치는 여성)"
+<!-- 검색 & 필터 -->
+<div class="vl-search-section">
+    <div class="vl-ai-search-row">
+        <div class="vl-ai-search-box">
+            <svg class="vl-ai-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <input type="text" id="ai-voice-input" class="vl-ai-input"
+                   placeholder="AI에게 원하는 목소리를 설명해보세요 (예: 차분하고 깊은 남성 목소리)"
                    data-login-required>
-            <button id="ai-search-btn" class="ai-search-btn" onclick="runAiVoiceSearch()">AI 추천</button>
+            <button id="ai-search-btn" class="vl-ai-btn" onclick="runAiVoiceSearch()">AI 추천</button>
         </div>
-        <div id="ai-search-result" class="ai-search-result" style="display:none;">
+        <div id="ai-search-result" class="vl-ai-result" style="display:none;">
             <span id="ai-result-text"></span>
-            <button onclick="clearAiFilter()" class="ai-clear-btn">✕ 필터 해제</button>
+            <button onclick="clearAiFilter()" class="vl-ai-clear">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                필터 해제
+            </button>
         </div>
     </div>
 
-    <!-- 일반 검색창 -->
-    <div class="voice-search-box">
-        <input type="text" id="voice-search" class="voice-search-input" placeholder="🔍 목소리 이름으로 검색..." data-login-required>
-    </div>
-
-    <!-- 타입 필터 -->
-    <div class="filter-buttons">
-        {% for voice_type in voice_types %}
-        <button
-            type="button"
-            class="filter-btn"
-            data-id="{{ voice_type.id }}"
-        >
-            {{ voice_type.name }}
-        </button>
-        {% endfor %}
+    <div class="vl-search-row">
+        <div class="vl-search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="voice-search" class="vl-search-input" placeholder="목소리 이름으로 검색..." data-login-required>
+        </div>
+        <div class="vl-filter-tags">
+            {% for voice_type in voice_types %}
+            <button type="button" class="vl-tag-btn" data-id="{{ voice_type.id }}">{{ voice_type.name }}</button>
+            {% endfor %}
+        </div>
     </div>
 </div>
 
-<!-- 메인 레이아웃: 왼쪽(내 보이스) + 오른쪽(전체 목록) -->
-<div class="main-layout">
-    <!-- 왼쪽: 내 보이스 - 🔥 가로 스크롤 컨테이너 -->
-    <div class="my-voices-section"> 
-        <div class="section-header">💾 내 보이스 컬렉션</div>
+<!-- 메인 레이아웃 -->
+<div class="vl-layout">
 
-        <!-- 🔥 가로 스크롤 래퍼 추가 -->
-        <div class="myvoice-scroll-wrapper">
+    <!-- 왼쪽: 내 보이스 컬렉션 -->
+    <aside class="vl-my-section">
+        <div class="vl-section-label">내 보이스 컬렉션</div>
+        <div class="vl-my-scroll">
             {% if my_voices %}
                 {% for item in my_voices %}
-                <div class="myvoice-card-small">
-                    <div class="myvoice-header">
+                <div class="vl-my-card">
+                    <div class="vl-my-top">
                         {% if item.voice.voice_image %}
-                        <img src="{{ item.voice.voice_image.url }}" class="myvoice-img-small" alt="{{ item.alias_name }}" loading="lazy">
+                        <img src="{{ item.voice.voice_image.url }}" class="vl-my-img" alt="{{ item.alias_name }}" loading="lazy">
                         {% else %}
-                        <img src="{% static 'default_voice.png' %}" class="myvoice-img-small" alt="{{ item.alias_name }}" loading="lazy">
-                        {% endif %}
-
-                        <div class="myvoice-info-small">
-                            <div class="myvoice-name-small">{{ item.alias_name }}</div>
-                            <div class="myvoice-alias-small">{{ item.voice.voice_name }}</div>
+                        <div class="vl-my-img vl-my-img-empty">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                         </div>
-
-                        <button class="favorite-btn-small" onclick="toggleFavorite({{ item.id }}, this)" data-favorite="{{ item.is_favorite|lower }}" data-login-required>
-                            {% if item.is_favorite %}⭐{% else %}☆{% endif %}
+                        {% endif %}
+                        <div class="vl-my-info">
+                            <div class="vl-my-alias">{{ item.alias_name }}</div>
+                            <div class="vl-my-name">{{ item.voice.voice_name }}</div>
+                        </div>
+                        <button class="vl-fav-btn" onclick="toggleFavorite({{ item.id }}, this)" data-favorite="{{ item.is_favorite|lower }}" data-login-required title="즐겨찾기">
+                            {% if item.is_favorite %}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            {% else %}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            {% endif %}
                         </button>
                     </div>
 
-                    <!-- 책 선택 -->
-                    <select name="book_id" onchange="selectBook({{ item.id }}, this.value)" class="book-select-small" data-login-required>
-                        <option value="">📚 전체 작품</option>
+                    <select name="book_id" onchange="selectBook({{ item.id }}, this.value)" class="vl-book-sel" data-login-required>
+                        <option value="">전체 작품</option>
                         {% for book in books %}
-                        <option value="{{ book.id }}" {% if item.book and book.id == item.book.id %}selected{% endif %}>
-                            {{ book.name }}
-                        </option>
+                        <option value="{{ book.id }}" {% if item.book and book.id == item.book.id %}selected{% endif %}>{{ book.name }}</option>
                         {% endfor %}
                     </select>
 
-                    <!-- 오디오 플레이어 -->
                     {% if item.voice.sample_audio %}
-                    <div class="audio-player-small">
-                        <button onclick="togglePlaySmall(this)" data-login-required>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
+                    <div class="vl-my-player">
+                        <button onclick="togglePlaySmall(this)" class="vl-play-sm" data-login-required>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                         </button>
-                        <div class="progress-bar-small">
-                            <div class="progress-small"></div>
-                        </div>
-                        <span class="time-small">0:00 / 0:00</span>
+                        <div class="vl-prog-sm"><div class="vl-fill-sm"></div></div>
+                        <span class="vl-time-sm">0:00</span>
                         <audio src="{{ item.voice.sample_audio.url }}" preload="metadata" loading="lazy"></audio>
                     </div>
                     {% endif %}
 
-                    <!-- 삭제 버튼 -->
-                    <button type="button" class="delete-btn-small" onclick="deleteVoice({{ item.id }}, this)" data-login-required>🗑️ 삭제</button>
+                    <button type="button" class="vl-del-btn" onclick="deleteVoice({{ item.id }}, this)" data-login-required>삭제</button>
                 </div>
                 {% endfor %}
             {% else %}
-                <div class="no-myvoice-small">
-                    <div class="no-myvoice-icon-small">🎙️</div>
-                    <p style="font-size: 14px; margin-bottom: 0;">저장된 보이스가 없습니다</p>
-                    <p style="font-size: 12px; color: var(--text-secondary);">오른쪽에서 목소리를 선택하세요</p>
+                <div class="vl-my-empty">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    <p>저장된 보이스가 없습니다</p>
+                    <span>오른쪽에서 목소리를 선택하세요</span>
                 </div>
             {% endif %}
         </div>
-    </div>
+    </aside>
 
     <!-- 오른쪽: 전체 보이스 목록 -->
-    <div class="voice-list-section">
-        <div class="section-header">🎵 전체 보이스 목록</div>
+    <div class="vl-list-section">
+        <div class="vl-section-label">전체 보이스 목록</div>
 
-        <div class="voice-container">
+        <div class="vl-grid">
             {% if voice_lists %}
                 {% for voice in voice_lists %}
-                <div class="voice-card"
+                <div class="vl-card"
                      data-voice-id="{{ voice.id }}"
                      data-voice-name="{{ voice.voice_name }}"
                      data-voice-types="{% for t in voice.types.all %}{{ t.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
-                    {% if voice.voice_image %}
-                    <img src="{{ voice.voice_image.url }}" alt="{{ voice.voice_name }}" class="voice-image" loading="lazy">
-                    {% else %}
-                    <img src="{% static 'default_voice.png' %}" alt="{{ voice.voice_name }}" class="voice-image" loading="lazy">
-                    {% endif %}
 
-                    <div class="voice-name">{{ voice.voice_name }}</div>
+                    <div class="vl-card-img-wrap">
+                        {% if voice.voice_image %}
+                        <img src="{{ voice.voice_image.url }}" alt="{{ voice.voice_name }}" class="vl-card-img" loading="lazy">
+                        {% else %}
+                        <div class="vl-card-img vl-card-img-empty">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="vl-card-name">{{ voice.voice_name }}</div>
 
                     {% if voice.types.all %}
-                    <div class="voice-types">
-                        {% for type in voice.types.all %}
-                        <span class="type-badge">{{ type.name }}</span>
-                        {% endfor %}
+                    <div class="vl-card-tags">
+                        {% for type in voice.types.all %}<span class="vl-card-tag">{{ type.name }}</span>{% endfor %}
                     </div>
                     {% endif %}
 
                     {% if voice.sample_audio %}
-                    <div class="voice-audio-player">
-                        <button class="play-btn" onclick="toggleVoicePlay(this)" data-login-required>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
+                    <div class="vl-card-player">
+                        <button class="vl-play-btn" onclick="toggleVoicePlay(this)" data-login-required>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                         </button>
-                        <div class="audio-progress">
-                            <div class="audio-progress-bar"></div>
-                        </div>
-                        <span class="audio-time">0:00 / 0:00</span>
+                        <div class="vl-card-prog"><div class="vl-card-fill"></div></div>
+                        <span class="vl-card-time">0:00 / 0:00</span>
                         <audio src="{{ voice.sample_audio.url }}" preload="metadata" loading="lazy"></audio>
                     </div>
                     {% endif %}
 
-                    <button class="select-voice-btn" onclick="selectVoice('{{ voice.id }}')" data-login-required>선택</button>
+                    <button class="vl-select-btn" onclick="selectVoice('{{ voice.id }}')" data-login-required>선택</button>
                 </div>
                 {% endfor %}
             {% else %}
-                <div class="no-voices">
-                    <div class="no-voices-icon">🎙️</div>
-                    <h2 class="no-voices-title">
-                        {% if selected_type_ids %}
-                        해당 타입의 목소리가 없습니다
-                        {% else %}
-                        등록된 보이스가 없습니다
-                        {% endif %}
-                    </h2>
-                    <p class="no-voices-text">
-                        {% if selected_type_ids %}
-                        다른 타입을 선택해보세요
-                        {% else %}
-                        새로운 보이스가 곧 추가될 예정입니다
-                        {% endif %}
-                    </p>
+                <div class="vl-empty">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    <p class="vl-empty-title">{% if selected_type_ids %}해당 타입의 목소리가 없습니다{% else %}등록된 보이스가 없습니다{% endif %}</p>
+                    <span class="vl-empty-desc">{% if selected_type_ids %}다른 타입을 선택해보세요{% else %}새로운 보이스가 곧 추가될 예정입니다{% endif %}</span>
                 </div>
             {% endif %}
         </div>
     </div>
-</div>
-</div>
 
-<div id="voice_name" style="display: none;"></div>
-<div class="desktop-only"></div>
+</div><!-- /vl-layout -->
+</div><!-- /vl-page -->
 
-<!-- 보이스 라이브러리 가이드 패널 -->
+<div id="voice_name" style="display:none;"></div>
+
+<!-- 가이드 패널 -->
 <div id="voxGuidePanelOverlay" style="display:none;" class="vox-guide-panel-overlay" onclick="if(event.target===this)this.style.display='none'">
     <div class="vox-guide-panel">
         <div class="vox-guide-panel-header">
@@ -210,7 +189,7 @@
             <button class="vox-guide-panel-close" onclick="document.getElementById('voxGuidePanelOverlay').style.display='none'" aria-label="닫기">&times;</button>
         </div>
         <div class="vox-guide-panel-body">
-            <div class="ui-tour-label" style="margin-bottom:12px;">✨ 단계를 클릭하면 해당 위치를 안내합니다 (다음 버튼으로 순서대로 이동)</div>
+            <div class="ui-tour-label">단계를 클릭하면 해당 위치를 안내합니다</div>
             <div class="ui-tour-steps">
                 <button class="ui-tour-step-btn" onclick="VoxTour.startTour(VOX_VOICE_STEPS, 0)">
                     <span class="ui-tour-step-num">1</span>
@@ -233,6 +212,49 @@
                     <span class="ui-tour-step-arrow">›</span>
                 </button>
             </div>
+
+            {% if voice_guides %}
+            <div class="guide-static-section guide-static-section-mt">
+                <div class="guide-static-section-title">📚 보이스 선택 가이드</div>
+                {% for g in voice_guides %}
+                <div class="guide-static-card">
+                    <div class="guide-static-card-header">
+                        {% if g.thumbnail %}
+                        <img src="{{ g.thumbnail.url }}" alt="{{ g.title }}" class="guide-thumbnail">
+                        {% else %}
+                        <span class="guide-static-icon">🎙️</span>
+                        {% endif %}
+                        <div class="guide-static-info">
+                            <div class="guide-static-title">{{ g.title }}</div>
+                            {% if g.short_description %}
+                            <div class="guide-short-desc">{{ g.short_description }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if g.description or g.video_url or g.guide_video %}
+                    <div class="guide-static-body">
+                        {% if g.description %}
+                        <p class="guide-desc-text">{{ g.description }}</p>
+                        {% endif %}
+                        {% if g.guide_video %}
+                        <div class="guide-video-wrap">
+                            <video controls preload="metadata">
+                                <source src="{{ g.guide_video.url }}" type="video/mp4">
+                            </video>
+                        </div>
+                        {% elif g.video_url %}
+                        <div class="guide-video-link-wrap">
+                            <a href="{{ g.video_url }}" target="_blank" rel="noopener" class="guide-tip guide-tip-blue">
+                                ▶ 영상으로 보기
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -240,15 +262,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- <script>
-// 페이지 접근 제한 - 메인으로 리다이렉트
-(function() {
-    window.location.href = '/';
-})();
-</script> -->
 <script src="{% static 'js/book/onboarding.js' %}"></script>
 <script>
-/* ── 첫 방문 시 자동 가이드 열기 ── */
 document.addEventListener('DOMContentLoaded', function () {
     if (!localStorage.getItem('vox_guide_seen_voice')) {
         document.getElementById('voxGuidePanelOverlay').style.display = 'flex';
@@ -256,143 +271,66 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-/* ── 보이스 라이브러리 투어 단계 ── */
 var VOX_VOICE_STEPS = [
-    {
-        sel: '.ai-voice-search-section',
-        title: 'AI 목소리 추천 검색',
-        desc: '원하는 목소리를 직접 글로 설명하면 AI가 어울리는 보이스를 추천해 드립니다.<br><br>예시:<br>· <i>"차분하고 깊은 남성 목소리"</i><br>· <i>"밝고 에너지 넘치는 여성 목소리"</i><br>· <i>"노인 남성, 중후한 느낌"</i><br><br>설명을 입력한 뒤 <b>AI 추천</b> 버튼을 클릭하면 해당 설명에 맞는 보이스만 필터링됩니다.'
-    },
-    {
-        sel: '.filter-buttons',
-        title: '음성 태그 선택',
-        desc: '태그 버튼으로 카테고리별 목소리를 빠르게 찾을 수 있습니다.<br><br>태그를 선택하면 해당 유형의 보이스만 표시됩니다. AI 추천과 함께 사용하면 더 정확한 목소리를 찾을 수 있습니다.'
-    },
-    {
-        sel: '.voice-list-section',
-        title: '보이스 선택 & 별칭',
-        desc: '마음에 드는 목소리 아래의 <b>선택</b> 버튼을 누릅니다.<br><br>별칭을 입력하면 왼쪽 내 보이스 컬렉션에 저장됩니다.<br>이후 집필 중인 책을 해당 보이스에 지정하고, 자주 사용할 보이스는 별(★) 버튼으로 즐겨찾기에 등록하세요.'
-    },
-    {
-        sel: '.my-voices-section',
-        title: '내 보이스 컬렉션',
-        desc: '저장한 보이스는 이 컬렉션에서 확인할 수 있습니다.<br><br>마이페이지에서 집필 중인 책에 보이스를 연결할 수 있으며, 오른쪽에 있는 재생 버튼으로 저장된 목소리를 미리 들어볼 수 있습니다.'
-    }
+    { sel: '.vl-ai-search-row', title: 'AI 목소리 추천 검색', desc: '원하는 목소리를 글로 설명하면 AI가 어울리는 보이스를 추천해드립니다.' },
+    { sel: '.vl-filter-tags',   title: '음성 태그 선택',     desc: '태그 버튼으로 카테고리별 목소리를 빠르게 찾을 수 있습니다.' },
+    { sel: '.vl-list-section',  title: '보이스 선택 & 별칭', desc: '마음에 드는 목소리의 선택 버튼을 눌러 컬렉션에 저장하세요.' },
+    { sel: '.vl-my-section',    title: '내 보이스 컬렉션',   desc: '저장한 보이스를 확인하고 작품에 연결할 수 있습니다.' },
 ];
 </script>
 <script src="{% static 'js/voice/voice_list.js' %}"></script>
 <script>
-// CSRF 토큰 가져오기
 function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
+    const m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+    return m ? decodeURIComponent(m[1]) : null;
 }
-
 const csrftoken = getCookie('csrftoken');
 
-// 목소리 검색 및 타입 필터 (클라이언트 사이드)
-const voiceCards = document.querySelectorAll('.voice-card');
+const voiceCards = document.querySelectorAll('.vl-card');
 const voiceSearch = document.getElementById('voice-search');
-const filterBtns = document.querySelectorAll('.filter-btn');
+const filterBtns  = document.querySelectorAll('.vl-tag-btn');
 let selectedTypes = new Set();
-let aiFilteredIds = null; // null = 필터 없음, Set = AI 추천 결과
+let aiFilteredIds = null;
 
-// 필터 적용 함수
 function applyVoiceFilters() {
     const searchTerm = voiceSearch ? voiceSearch.value.toLowerCase().trim() : '';
     let visibleCount = 0;
-
     voiceCards.forEach(card => {
-        const voiceName = (card.dataset.voiceName || '').toLowerCase();
+        const voiceName  = (card.dataset.voiceName || '').toLowerCase();
         const voiceTypes = (card.dataset.voiceTypes || '').split(',').filter(t => t);
-        const voiceId = String(card.dataset.voiceId || '');
-
+        const voiceId    = String(card.dataset.voiceId || '');
         const matchesSearch = searchTerm === '' || voiceName.includes(searchTerm);
-        const matchesType = selectedTypes.size === 0 ||
-            [...selectedTypes].some(typeId => voiceTypes.includes(typeId));
-        const matchesAi = aiFilteredIds === null || aiFilteredIds.has(voiceId);
-
+        const matchesType   = selectedTypes.size === 0 || [...selectedTypes].some(id => voiceTypes.includes(id));
+        const matchesAi     = aiFilteredIds === null || aiFilteredIds.has(voiceId);
         const visible = matchesSearch && matchesType && matchesAi;
         card.style.display = visible ? '' : 'none';
-
-        // AI 필터 활성화 시 매칭 카드에 하이라이트
-        if (aiFilteredIds !== null) {
-            card.classList.toggle('ai-matched', matchesAi && visible);
-        } else {
-            card.classList.remove('ai-matched');
-        }
-
+        if (aiFilteredIds !== null) card.classList.toggle('vl-ai-matched', matchesAi && visible);
+        else card.classList.remove('vl-ai-matched');
         if (visible) visibleCount++;
     });
-
-    const noVoices = document.querySelector('.no-voices');
-    if (noVoices) {
-        noVoices.style.display = visibleCount === 0 ? 'flex' : 'none';
-    }
+    const empty = document.querySelector('.vl-empty');
+    if (empty) empty.style.display = visibleCount === 0 ? 'flex' : 'none';
 }
 
-// AI 목소리 추천 검색
 async function runAiVoiceSearch() {
     const input = document.getElementById('ai-voice-input');
     const query = (input.value || '').trim();
-    if (!query) {
-        input.focus();
-        return;
-    }
-
+    if (!query) { input.focus(); return; }
     const btn = document.getElementById('ai-search-btn');
-    btn.textContent = '검색 중...';
-    btn.disabled = true;
-
+    btn.textContent = '검색 중...'; btn.disabled = true;
     try {
-        const res = await fetch('/voice/voice/ai-search/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken
-            },
-            body: JSON.stringify({ query })
-        });
-
+        const res  = await fetch('/voice/voice/ai-search/', { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify({query}) });
         const data = await res.json();
-
-        if (data.error) {
-            alert('AI 검색 오류: ' + data.error);
-            return;
-        }
-
+        if (data.error) { alert('AI 검색 오류: ' + data.error); return; }
         aiFilteredIds = new Set((data.matched_ids || []).map(String));
-
-        const resultDiv = document.getElementById('ai-search-result');
-        const resultText = document.getElementById('ai-result-text');
         const count = data.matched_ids ? data.matched_ids.length : 0;
-        resultText.textContent = `✨ "${query}"에 맞는 목소리 ${count}개를 찾았습니다`;
-        resultDiv.style.display = 'flex';
-
+        document.getElementById('ai-result-text').textContent = `"${query}"에 맞는 목소리 ${count}개`;
+        document.getElementById('ai-search-result').style.display = 'flex';
         applyVoiceFilters();
-
-        // 첫 매칭 카드로 스크롤
-        const firstMatch = document.querySelector('.voice-card.ai-matched');
-        if (firstMatch) {
-            firstMatch.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    } catch (e) {
-        console.error('AI 검색 오류:', e);
-        alert('AI 검색에 실패했습니다.');
-    } finally {
-        btn.textContent = 'AI 추천';
-        btn.disabled = false;
-    }
+        const first = document.querySelector('.vl-card.vl-ai-matched');
+        if (first) first.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    } catch(e) { alert('AI 검색에 실패했습니다.'); }
+    finally { btn.textContent = 'AI 추천'; btn.disabled = false; }
 }
 
 function clearAiFilter() {
@@ -402,127 +340,49 @@ function clearAiFilter() {
     applyVoiceFilters();
 }
 
-// Enter 키로 AI 검색
-document.getElementById('ai-voice-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') runAiVoiceSearch();
-});
+document.getElementById('ai-voice-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') runAiVoiceSearch(); });
 
-// 타입 버튼 클릭 (중복 선택 가능, 페이지 새로고침 없음)
 filterBtns.forEach(btn => {
     btn.addEventListener('click', function() {
         const typeId = this.dataset.id;
-
-        if (selectedTypes.has(typeId)) {
-            selectedTypes.delete(typeId);
-            this.classList.remove('active');
-        } else {
-            selectedTypes.add(typeId);
-            this.classList.add('active');
-        }
-
+        if (selectedTypes.has(typeId)) { selectedTypes.delete(typeId); this.classList.remove('active'); }
+        else { selectedTypes.add(typeId); this.classList.add('active'); }
         applyVoiceFilters();
     });
 });
+if (voiceSearch) voiceSearch.addEventListener('input', applyVoiceFilters);
 
-// 검색 입력
-if (voiceSearch) {
-    voiceSearch.addEventListener('input', applyVoiceFilters);
-}
-
-// 즐겨찾기 토글 (페이지 새로고침 없음)
 function toggleFavorite(voiceId, button) {
-    fetch(`/mypage/toggle_myvoice_favorite/${voiceId}/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken,
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
+    fetch(`/mypage/toggle_myvoice_favorite/${voiceId}/`, { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken,'X-Requested-With':'XMLHttpRequest'} })
+    .then(r => r.json()).then(data => {
         if (data.success) {
-            // 버튼 아이콘 변경
-            button.textContent = data.is_favorite ? '⭐' : '☆';
-            button.dataset.favorite = data.is_favorite;
-            console.log('✅', data.message);
+            const starFill = data.is_favorite ? '#f59e0b' : 'none';
+            const starStroke = data.is_favorite ? '#f59e0b' : 'currentColor';
+            button.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="${starFill}" stroke="${starStroke}" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
         }
-    })
-    .catch(error => {
-        console.error('❌ 즐겨찾기 토글 오류:', error);
-        alert('즐겨찾기 업데이트에 실패했습니다.');
     });
 }
 
-// 책 선택 (페이지 새로고침 없음)
 function selectBook(voiceId, bookId) {
-    const formData = new FormData();
-    formData.append('book_id', bookId);
-
-    fetch(`/mypage/select_book/${voiceId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrftoken,
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log('✅', data.message, '-', data.book_name);
-        }
-    })
-    .catch(error => {
-        console.error('❌ 책 선택 오류:', error);
-        alert('책 선택에 실패했습니다.');
-    });
+    const fd = new FormData(); fd.append('book_id', bookId);
+    fetch(`/mypage/select_book/${voiceId}/`, { method:'POST', headers:{'X-CSRFToken':csrftoken,'X-Requested-With':'XMLHttpRequest'}, body: fd });
 }
 
-// 목소리 삭제 (페이지 새로고침 없음)
 function deleteVoice(voiceId, button) {
-    if (!confirm('정말로 삭제하시겠습니까?')) {
-        return;
-    }
-
-    fetch(`/mypage/delete/${voiceId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrftoken,
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
+    if (!confirm('정말로 삭제하시겠습니까?')) return;
+    fetch(`/mypage/delete/${voiceId}/`, { method:'POST', headers:{'X-CSRFToken':csrftoken,'X-Requested-With':'XMLHttpRequest'} })
+    .then(r => r.json()).then(data => {
         if (data.success) {
-            // 카드 전체를 DOM에서 제거 (부드러운 페이드아웃 효과)
-            const card = button.closest('.myvoice-card-small');
-            card.style.transition = 'opacity 0.3s ease';
+            const card = button.closest('.vl-my-card');
+            card.style.transition = 'opacity .3s';
             card.style.opacity = '0';
             setTimeout(() => {
                 card.remove();
-
-                // 모든 카드가 삭제되었는지 확인
-                const remainingCards = document.querySelectorAll('.myvoice-card-small');
-                if (remainingCards.length === 0) {
-                    // 빈 상태 메시지 표시
-                    const myVoicesSection = document.querySelector('.my-voices-section');
-                    myVoicesSection.innerHTML = `
-                        <div class="section-header">💾 내 보이스 컬렉션</div>
-                        <div class="no-myvoice-small">
-                            <div class="no-myvoice-icon-small">🎙️</div>
-                            <p style="font-size: 14px; margin-bottom: 0;">저장된 보이스가 없습니다</p>
-                            <p style="font-size: 12px; color: var(--text-secondary);">오른쪽에서 목소리를 선택하세요</p>
-                        </div>
-                    `;
+                if (!document.querySelector('.vl-my-card')) {
+                    document.querySelector('.vl-my-scroll').innerHTML = `<div class="vl-my-empty"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg><p>저장된 보이스가 없습니다</p></div>`;
                 }
             }, 300);
-            console.log('✅', data.message);
         }
-    })
-    .catch(error => {
-        console.error('❌ 삭제 오류:', error);
-        alert('삭제에 실패했습니다.');
     });
 }
 </script>

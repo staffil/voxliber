@@ -1,5 +1,5 @@
 # main/views.py
-from django.shortcuts import render,redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -8,15 +8,20 @@ import json
 import os
 from uuid import uuid4
 from django.conf import settings
-from main.models import SnapBtn, Advertisment, Event, ScreenAI
-from book.models import Books,ReadingProgress, BookSnap, Content, Poem_list, BookTag, Tags, BookSnippet, ListeningHistory, GenrePlaylist
-from character.models import Story, CharacterMemory, LLM, LoreEntry, ConversationMessage, Conversation,LastWard, UserLastWard, ConversationState
+from main.models import SnapBtn, Advertisment, Event
+from book.models import Books,ReadingProgress, BookSnap, Content, BookTag, Tags, BookSnippet, ListeningHistory, GenrePlaylist
+from voice.models import VoiceProfile
 from book.service.recommendation import recommend_books
 from django.db.models import Max
 import random
 from register.decorator import login_required_to_main
 from rest_framework.decorators import api_view, permission_classes
 from book.api_utils import require_api_key, paginate, api_response, require_api_key_secure
+from book.models import Genres
+from register.models import Users
+from django.db.models import Count, Max, Sum
+from django.utils import timezone
+from datetime import timedelta
 
 
 
@@ -28,40 +33,27 @@ COLAB_TTS_URL = "https://dolabriform-intense-jameson.ngrok-free.dev"
 
 def main(request):
     """메인 페이지"""
-    from book.models import Genres
-    from register.models import Users
-    from django.db.models import Count, Max, Sum
-    from django.utils import timezone
-    from datetime import timedelta
 
     # 뉴스/배너
     news_list = SnapBtn.objects.all()[:5]
     advertisment_list = Advertisment.objects.all()
-    story_list = Story.objects.all()
 
-    # AI 채팅 소설 — 공개된 스토리 + 캐릭터 프리페치
-    ai_chat_stories = list(
-        Story.objects.filter(is_public=True)
-        .prefetch_related('characters', 'genres')
-        .select_related('user')
-        .order_by('-created_at')[:40]
-    )
-    random.shuffle(ai_chat_stories)
-    ai_chat_stories = ai_chat_stories[:20]
-
-
+   
 
     
 
+    # 배너용 책 (최신 4권, 날짜 제한 없음)
+    banner_books = list(Books.objects.filter(
+        book_type='audiobook', is_deleted=False
+    ).select_related('user').prefetch_related('genres').order_by('-created_at')[:4])
+
     # 📌 신작 (최근 30일 이내 생성된 책, 최신 콘텐츠 기준 정렬)
-    thirty_days_ago = timezone.now() - timedelta(days=30)
-    _new_books_pool = list(Books.objects.filter(
-        book_type='audiobook', is_deleted=False, created_at__gte=thirty_days_ago
+    # 최신 에피소드 업데이트 기준 정렬 (책 생성일 무관)
+    new_books = list(Books.objects.filter(
+        book_type='audiobook', is_deleted=False
     ).annotate(
         last_content_time=Max('contents__created_at')
-    ).select_related('user').prefetch_related('genres').order_by('-last_content_time')[:50])
-    random.shuffle(_new_books_pool)
-    new_books = _new_books_pool[:20]
+    ).filter(last_content_time__isnull=False).select_related('user').prefetch_related('genres').order_by('-last_content_time')[:20])
 
     # 🔥 인기 작품 (평점과 에피소드 수를 고려한 종합 점수)
     _popular_pool = list(Books.objects.filter(
@@ -168,13 +160,12 @@ def main(request):
     # 에피소드 없데이트 바로 한 책 
     latest_episodes = Content.objects.select_related('book').order_by('-created_at')[:20]
 
-    # 장르당 인기 많은 수록 책들
-    popular_genres = GenrePlaylist.objects.filter(
-        playlist_type='popular',
+    # 장르 플레이리스트 (활성화된 전체)
+    genre_playlists = GenrePlaylist.objects.filter(
         is_active=True
     ).select_related('genre').prefetch_related(
         'items__content__book'
-    )[:6]
+    ).order_by('genre__name', 'playlist_type')[:10]
 
     # ai 추천
     ai_recommended_books = []
@@ -184,18 +175,13 @@ def main(request):
 
     snap_list = BookSnap.objects.all().order_by("?")[:10]
 
-
-    poem_list = Poem_list.objects.filter(status="winner").order_by("?")[:10]
-
-
     snippet_list = BookSnippet.objects.all().order_by("?")[:10]
 
-    ai_advertismemt_img = ScreenAI.objects.all()
+    # 🎙 보이스 라이브러리 (완성된 보이스 프로필)
+    voice_profiles = VoiceProfile.objects.filter(
+        status='completed', is_activate=True
+    ).select_related('user').order_by('-id')[:12]
 
-    # AI 소설 탭 - 공유된 대화 목록
-    user_share_list = Conversation.objects.filter(
-        is_public=True
-    ).select_related('llm', 'user').order_by('-shared_at')[:30]
 
     # 🎧 홈 데모 플레이어 — 랜덤 에피소드
     demo_episode = None
@@ -243,11 +229,16 @@ def main(request):
         if g_novels:
             genre_webnovels.append({'genre': g, 'books': g_novels[:8]})
 
+    is_minor = not (request.user.is_authenticated and request.user.is_adult())
+
     context = {
+        "is_minor": is_minor,
+        "ai_chat_stories": [],
         "webnovel_list": webnovel_list,
         "popular_webnovels": popular_webnovels,
         "genre_webnovels": genre_webnovels,
         "news_list": news_list,
+        "banner_books": banner_books,
         "new_books": new_books,
         "popular_books": popular_books,
         "top_rated_books": top_rated_books,
@@ -263,13 +254,9 @@ def main(request):
         "ai_recommended_books":ai_recommended_books,
         "snap_list":snap_list,
         "latest_episode":latest_episodes,
-        "poem_list":poem_list,
         "snippet_list":snippet_list,
-        "ai_stories":story_list,
-        "ai_chat_stories": ai_chat_stories,
-        "ai_advertismemt_img":ai_advertismemt_img,
-        "user_share_list":user_share_list,
-        "popular_genres":popular_genres,
+        "genre_playlists": genre_playlists,
+        "voice_profiles": voice_profiles,
         "demo_episode": demo_episode,
     }
     return render(request, "main/main.html", context)
@@ -282,6 +269,50 @@ def delete_listening_history(request, book_uuid):
 
     return redirect('main:main')
 
+
+
+# ── AI 맞춤 추천 전체 보기 ──
+def ai_recommended_page(request):
+    ai_books = []
+    if request.user.is_authenticated:
+        ai_books = recommend_books(request.user, limit=30)
+    recommended_books = []
+    if request.user.is_authenticated:
+        from book.models import ReadingProgress as RP
+        read_genres = Genres.objects.filter(
+            books__readingprogress__user=request.user
+        ).distinct()[:3]
+        if read_genres.exists():
+            from django.db.models import Q
+            qs = Books.objects.filter(
+                book_type='audiobook', genres__in=read_genres, is_activate=True
+            ).exclude(
+                readingprogress__user=request.user
+            ).distinct().order_by('-book_score')[:20]
+            recommended_books = list(qs)
+    return render(request, 'main/ai_recommended.html', {
+        'ai_books': ai_books,
+        'recommended_books': recommended_books,
+    })
+
+
+# ── 장르 전체 탐색 ──
+def genres_all(request):
+    from django.db.models import Count, Q
+    genres = Genres.objects.annotate(
+        book_count=Count('books', filter=Q(books__is_activate=True))
+    ).order_by('name')
+    return render(request, 'main/genres_all.html', {'genres': genres})
+
+
+# ── 플레이리스트 목록 ──
+def playlist_list(request):
+    playlists = GenrePlaylist.objects.filter(
+        is_active=True
+    ).select_related('genre').prefetch_related(
+        'items__content__book'
+    ).order_by('genre__name', 'playlist_type')
+    return render(request, 'main/playlist_list.html', {'playlists': playlists})
 
 
 from rest_framework import status
@@ -415,13 +446,16 @@ def search_books(request):
 
     if not query:
         return render(request, "main/search_result.html", {
-            'books': [],
+            'audiobooks': [],
+            'webnovels': [],
             'authors': [],
-            'ai_stories': [],
+            'snap_result': [],
             'query': '',
-            'books_count': 0,
+            'audiobooks_count': 0,
+            'webnovels_count': 0,
             'authors_count': 0,
-            'ai_stories_count': 0,
+            'snap_result_count': 0,
+            'books': [],
         })
 
     # 📚 책 검색 (제목, 설명, 태그로 검색)
@@ -448,8 +482,6 @@ def search_books(request):
         }
 
     audiobooks_data = [_book_dict(b) for b in book_qs.filter(book_type='audiobook')[:20]]
-    webnovels_data  = [_book_dict(b) for b in book_qs.filter(book_type='webnovel')[:20]]
-    books_data = audiobooks_data + webnovels_data
 
     # 👤 작가 검색 (닉네임으로 검색)
     authors = Users.objects.filter(
@@ -460,13 +492,13 @@ def search_books(request):
 
     authors_data = []
     for author in authors:
-        # 작가의 대표 작품 3개
+        # 작가의 대표 작품 5개
         representative_books = Books.objects.filter(user=author).order_by('-book_score', '-created_at')[:5]
 
         authors_data.append({
             'id': author.user_id,
+            'public_uuid': str(author.public_uuid) if author.public_uuid else '',
             'nickname': author.nickname,
-            
             'profile_img': author.user_img.url if author.user_img else None,
             'bio': author.bio if hasattr(author, 'bio') else '',
             'books_count': author.books_count,
@@ -479,29 +511,6 @@ def search_books(request):
 
                 } for book in representative_books
             ]
-        })
-
-    # 🤖 AI 스토리 검색
-    from character.models import Story
-    ai_stories = Story.objects.filter(
-        Q(title__icontains=query) |
-        Q(description__icontains=query) |
-        Q(genres__name__icontains=query) |
-        Q(tags__name__icontains=query),
-        is_public=True
-    ).select_related('user').prefetch_related('genres', 'characters').distinct()[:20]
-
-    ai_stories_data = []
-    for story in ai_stories:
-        ai_stories_data.append({
-            'id': story.id,
-            'public_uuid': str(story.public_uuid),
-            'title': story.title,
-            'cover_image': story.cover_image.url if story.cover_image else None,
-            'author': story.user.nickname if story.user else '알 수 없음',
-            'description': story.description[:100] if story.description else '',
-            'genres': [{'name': g.name, 'color': g.genres_color} for g in story.genres.all()],
-            'character_count': story.characters.count(),
         })
 
     # snap 검색
@@ -521,19 +530,16 @@ def search_books(request):
 
 
     return render(request, "main/search_result.html", {
-        'books': books_data,
         'audiobooks': audiobooks_data,
-        'webnovels': webnovels_data,
+        'webnovels': [],
         'authors': authors_data,
-        'ai_stories': ai_stories_data,
         'snap_result': snap_result,
         'query': query,
-        'books_count': len(books_data),
         'audiobooks_count': len(audiobooks_data),
-        'webnovels_count': len(webnovels_data),
+        'webnovels_count': 0,
         'authors_count': len(authors_data),
-        'ai_stories_count': len(ai_stories_data),
-        'snap_result_count': len(snap_result)
+        'snap_result_count': len(snap_result),
+        'books': audiobooks_data,
     })
 
 
@@ -630,20 +636,6 @@ def genres_books(request, genres_id):
     }
 
     return render(request, "main/genres_books.html", context)
-
-
-@login_required_to_main
-def poem_winner(request):
-    poem_ids = list(Poem_list.objects.values_list('id', flat=True))
-    selected_ids = random.sample(poem_ids, min(10, len(poem_ids)))
-    poem_list = Poem_list.objects.filter(id__in=selected_ids)
-
-    content = {
-        "poem_list":poem_list
-    }
-
-
-    return render(request, "main/poem_winner.html", content)
 
 
 # 스니펫 리스트
@@ -789,71 +781,7 @@ def youth_protection(request):
     return render(request, "main/other/youth_protection.html", context)
 
 
-from book.service.recommendation import generate_ai_reason, get_user_preference
-# AI 가 추천하는 책 뷰
-from django.shortcuts import render
-from book.service.recommendation import generate_ai_reason
-@login_required_to_main
-def ai_recommended(request):
-    user = request.user
-
-    books = recommend_books(user, limit=5)
-
-    chat_messages = [
-        {
-            "type": "intro",
-            "text": "당신의 취향 데이터를 분석해서 책을 추천했어요 📊"
-        }
-    ]
-
-    for book in books:
-        chat_messages.append({
-            "type": "book",
-            "book": book,
-            "reason": generate_ai_reason(book)
-        })
-
-    return render(request, "main/ai_recommended.html", {
-        "chat_messages": chat_messages
-    })
-
-
-
-
-# AI 소설 페이지
-def ai_novel_main(request):
-    # 1. 랜덤 스토리 (성능 위해 10개만)
-    story_list = Story.objects.all().order_by('?')  # 10개로 제한 추천
-
-    # 2. ScreenAI 전체 (필요하면 필터링)
-    screen_list = ScreenAI.objects.all()[:20]  # 너무 많으면 제한
-
-    # 3. 공개된 대화 목록 (최근 20개)
-    user_share_list = Conversation.objects.filter(
-        is_public=True
-    ).select_related('llm', 'user').order_by('-shared_at')
-
-    # 4. 본인 대화도 포함하고 싶다면 (선택)
-    if request.user.is_authenticated:
-        my_conversations = Conversation.objects.filter(
-            user=request.user,
-            is_public=True
-        ).select_related('llm').order_by('-shared_at')[:10]
-    else:
-        my_conversations = []
-
-    content = {
-        "ai_stories": story_list,
-        "screen_list": screen_list,
-        "user_share_list": user_share_list,
-        "my_conversations": my_conversations,  # 본인 공개 대화 (선택)
-        "is_authenticated": request.user.is_authenticated,
-    }
-
-    return render(request, "main/ai_novel_main.html", content)
-
-
-# AI 웹소설 페이지
+# 웹소설 페이지
 def webnovel(request):
     from book.models import Books
     novels = list(Books.objects.filter(book_type='webnovel', is_deleted=False).order_by('-id')[:40])
@@ -877,16 +805,7 @@ def user_info(request, user_uuid):
     # URL의 user_uuid로 해당 유저 조회
     target_user = get_object_or_404(Users, public_uuid=user_uuid)
 
-    # 해당 유저의 책과 스토리
     book_list = Books.objects.filter(user=target_user)
-    story_list = Story.objects.filter(user=target_user)
-
-
-     # 3. 공개된 대화 목록 (최근 20개)
-    user_share_list = Conversation.objects.filter(
-        is_public=True
-    ).select_related('llm', 'user').order_by('-shared_at')
-
 
     # 해당 유저의 스냅
     snap_list = BookSnap.objects.filter(user=target_user).order_by('-created_at')
@@ -906,111 +825,14 @@ def user_info(request, user_uuid):
     context = {
         "target_user": target_user,
         "book_list": book_list,
-        "story_list": story_list,
         "snap_list": snap_list,
         "follower_count": follower_count,
         "following_count": following_count,
         "is_following": is_following,
         "is_own_profile": request.user == target_user,
-        "user_share_list":user_share_list
     }
     
     return render(request, "main/user_intro.html", context)
-
-from django.utils import timezone
-from character.models import HPImageMapping
-
-
-def shared_novel(request, conv_id):
-    """
-    공개된 대화(Conversation)를 공유용으로 보여주는 뷰
-    - 로그인 없이도 접근 가능
-    - is_public=True인 대화만 허용
-    """
-    # conv_id로 대화 직접 조회 (본인 여부 상관없이)
-    conversation = get_object_or_404(Conversation, id=conv_id)
-
-    # 공개되지 않은 대화면 접근 차단
-    if not conversation.is_public:
-        return render(request, 'novel/private_novel.html', {
-            'message': '이 소설은 현재 비공개 상태입니다.'
-        })
-
-    llm = conversation.llm
-
-    # HP 매핑 로드
-    hp_mappings = list(
-        HPImageMapping.objects.filter(llm=llm, sub_image__isnull=False)
-        .select_related('sub_image')
-        .order_by('min_hp')
-    )
-
-    # 메시지 불러오기
-    messages = conversation.messages.order_by('created_at')
-
-    novel = {
-        'title': f"{llm.name}과의 이야기",
-        'prologue': f"*그날, {llm.name}과의 대화는 조용히 시작되었다.*",
-        'chapters': [],
-        'epilogue': f"*HP {messages.last().hp_after_message if messages.exists() else 0}에 도달했다.*",
-    }
-
-    current_chapter = None
-    current_range = None
-
-    for msg in messages:
-        msg_range = (msg.hp_range_min, msg.hp_range_max)
-
-        if msg_range != current_range:
-            current_range = msg_range
-            matched_mapping = next(
-                (m for m in hp_mappings if (m.min_hp or 0) == (msg.hp_range_min or 0)),
-                None
-            )
-
-            current_chapter = {
-                'title': matched_mapping.note if matched_mapping else f"HP {msg.hp_range_min or 0} ~ {msg.hp_range_max or 100}",
-                'image': matched_mapping.sub_image if matched_mapping else None,
-                'hp_range': msg_range,
-                'messages': [],
-            }
-            novel['chapters'].append(current_chapter)
-            print(f"[SHARED CHAPTER] 새 구간: {current_chapter['title']}, img={matched_mapping.sub_image.id if matched_mapping else '없음'}")
-
-        if current_chapter:
-            current_chapter['messages'].append({
-                'role': msg.role,
-                'speaker': llm.name if msg.role == 'assistant' else '너',
-                'content': msg.content,
-                'audio': msg.audio.url if msg.audio else None,
-            })
-    last_wards = []
-
-    conv_state = ConversationState.objects.get(conversation=conversation)
-
-    current_hp = conv_state.character_stats.get('hp', 100)
-
-    if current_hp >= 100:
-        last_wards = LastWard.objects.filter(llm= conversation.llm).order_by('order')
-
-    user_share_list = Conversation.objects.filter(
-        is_public=True,
-        llm=conversation.llm
-
-    ).select_related('llm', 'user')
-
-
-
-    context = {
-        'novel': novel,
-        'conversation': conversation,
-        'is_shared': True,  # 공유 모드임을 템플릿에 알림
-        'llm': llm,
-        "last_wards":last_wards,
-        "user_share_list":user_share_list
-    }
-    return render(request, 'main/shared_conversation.html', context)
-
 
 
 
@@ -1024,6 +846,226 @@ def playlist_detail(request, playlist_id):
         is_active=True
     )
     return render(request, 'main/playlist_detail.html', {'playlist': playlist})
+
+
+@login_required
+def admin_dashboard(request):
+    if not request.user.is_superuser:
+        return redirect('main:main')
+
+    from datetime import timedelta
+    from register.models import Users, Subscription, AuthorApplication, AuthorInquiry
+    from book.models import Books, Content, BookReview, ListeningHistory, BookSnap
+
+    now = timezone.now()
+    today = now.date()
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+
+    active_subs = Subscription.objects.filter(
+        status='active', expires_at__gt=now
+    )
+    stats = {
+        'total_users': Users.objects.count(),
+        'new_users_week': Users.objects.filter(created_at__gte=week_ago).count(),
+        'new_users_month': Users.objects.filter(created_at__gte=month_ago).count(),
+        'total_books': Books.objects.filter(is_deleted=False).count(),
+        'audiobooks': Books.objects.filter(book_type='audiobook', is_deleted=False).count(),
+        'webnovels': Books.objects.filter(book_type='webnovel', is_deleted=False).count(),
+        'total_episodes': Content.objects.filter(is_deleted=False).count(),
+        'active_subs': active_subs.count(),
+        'total_snaps': BookSnap.objects.count(),
+        # 'total_reviews': BookReview.objects.filter(is_deleted=False).count(),
+        'pending_author_apps': AuthorApplication.objects.filter(status='pending').count(),
+        'pending_inquiries': AuthorInquiry.objects.filter(status='pending').count(),
+    }
+
+    # 최근 청취 통계 (7일)
+    listening = ListeningHistory.objects.filter(last_listened_at__gte=week_ago).aggregate(
+        sessions=Count('id'),
+        unique_listeners=Count('user', distinct=True),
+        total_seconds=Sum('listened_seconds'),
+    )
+    stats['listening_sessions'] = listening['sessions'] or 0
+    stats['listening_users'] = listening['unique_listeners'] or 0
+    stats['listening_hours'] = round((listening['total_seconds'] or 0) / 3600, 1)
+
+    # 최근 가입 유저 10명
+    recent_users = Users.objects.order_by('-created_at')[:10]
+
+    # 최근 등록 책 10개
+    recent_books = Books.objects.filter(is_deleted=False).select_related('user').prefetch_related('genres').order_by('-created_at')[:10]
+
+    # 구독 현황
+    sub_monthly = active_subs.filter(plan='monthly').count()
+    sub_yearly = active_subs.filter(plan='yearly').count()
+
+    # 인기 책 Top 10 (이번 주 청취 기준)
+    top_books = (
+        ListeningHistory.objects.filter(last_listened_at__gte=week_ago)
+        .values('book__name', 'book__public_uuid', 'book__id')
+        .annotate(listeners=Count('user', distinct=True))
+        .order_by('-listeners')[:10]
+    )
+
+    # 전체 구독자 목록 (active + expired 포함, 최근 50명)
+    all_subs = Subscription.objects.select_related('user').order_by('-created_at')[:60]
+
+    # 무료 이용자 수 (subscription 없거나 expired/cancelled)
+    sub_free = Users.objects.count() - Subscription.objects.filter(status='active', expires_at__gt=now).count()
+
+    # 미답변 작가 문의 (pending)
+    from register.models import AuthorInquiry
+    pending_inquiries = AuthorInquiry.objects.filter(
+        status='pending', parent__isnull=True
+    ).select_related('user', 'book').order_by('-created_at')[:30]
+
+    # 전체 작가 문의
+    all_author_inquiries = AuthorInquiry.objects.filter(
+        parent__isnull=True
+    ).select_related('user', 'book').order_by('-created_at')[:50]
+
+    # 일반 문의 (Contact)
+    from main.models import Contact
+    pending_contacts = Contact.objects.filter(status='pending').count()
+    contact_inquiries = Contact.objects.select_related('user').order_by('-created_at')[:50]
+
+    # 작가 신청
+    pending_apps = AuthorApplication.objects.filter(status='pending').count()
+    author_apps = AuthorApplication.objects.select_related('user').order_by('-applied_at')[:50]
+
+    # 작가 목록
+    authors = Users.objects.filter(is_author=True).order_by('-created_at')[:50]
+
+    # 정산 내역
+    from register.models import SettlementRecord
+    settle_records = SettlementRecord.objects.select_related('user').order_by('-period')[:50]
+
+    context = {
+        'stats': stats,
+        'recent_users': recent_users,
+        'recent_books': recent_books,
+        'top_books': top_books,
+        'sub_monthly': sub_monthly,
+        'sub_yearly': sub_yearly,
+        'sub_free': max(sub_free, 0),
+        'all_subs': all_subs,
+        'now': now,
+        'pending_inquiries': pending_inquiries,
+        'all_author_inquiries': all_author_inquiries,
+        'contact_inquiries': contact_inquiries,
+        'pending_contacts': pending_contacts,
+        'author_apps': author_apps,
+        'pending_apps': pending_apps,
+        'authors': authors,
+        'settle_records': settle_records,
+    }
+    return render(request, 'main/admin_dashboard.html', context)
+
+
+@login_required
+@require_POST
+def admin_approve_author(request, app_id):
+    if not request.user.is_superuser:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    from register.models import AuthorApplication
+    try:
+        app = get_object_or_404(AuthorApplication, id=app_id)
+        app.status = 'approved'
+        app.reviewed_at = timezone.now()
+        app.save()
+        app.user.is_author = True
+        app.user.save(update_fields=['is_author'])
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def admin_reject_author(request, app_id):
+    if not request.user.is_superuser:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    from register.models import AuthorApplication
+    try:
+        data = json.loads(request.body)
+        reason = data.get('reason', '').strip()
+        app = get_object_or_404(AuthorApplication, id=app_id)
+        app.status = 'rejected'
+        app.reject_reason = reason
+        app.reviewed_at = timezone.now()
+        app.save()
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def admin_subscription_change(request, user_id):
+    if not request.user.is_superuser:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+
+    import json as _json
+    from datetime import timedelta
+    from register.models import Users, Subscription
+
+    try:
+        data = _json.loads(request.body)
+        plan = data.get('plan')  # 'monthly', 'yearly', 'free'
+        user = get_object_or_404(Users, id=user_id)
+
+        if plan == 'free':
+            try:
+                sub = user.subscription
+                sub.status = 'cancelled'
+                sub.expires_at = timezone.now()
+                sub.save()
+            except Subscription.DoesNotExist:
+                pass
+        elif plan in ('monthly', 'yearly'):
+            delta = timedelta(days=365 if plan == 'yearly' else 30)
+            sub, created = Subscription.objects.get_or_create(
+                user=user,
+                defaults={
+                    'plan': plan, 'status': 'active',
+                    'started_at': timezone.now(),
+                    'expires_at': timezone.now() + delta,
+                }
+            )
+            if not created:
+                sub.plan = plan
+                sub.status = 'active'
+                sub.expires_at = timezone.now() + delta
+                sub.save()
+        else:
+            return JsonResponse({'ok': False, 'error': '올바르지 않은 플랜'}, status=400)
+
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def admin_inquiry_reply(request, inquiry_id):
+    if not request.user.is_superuser:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+    import json as _json
+    from register.models import AuthorInquiry
+    try:
+        data   = _json.loads(request.body)
+        answer = data.get('answer', '').strip()
+        status = data.get('status', 'answered')
+        inq    = get_object_or_404(AuthorInquiry, id=inquiry_id)
+        inq.answer = answer
+        inq.status = status if status in ('answered', 'closed') else 'answered'
+        inq.save()
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 
 # 에러

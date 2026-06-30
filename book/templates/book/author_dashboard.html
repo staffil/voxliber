@@ -1,245 +1,184 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}작가 센터 - VOXLIBER{% endblock %}
+{% block title %}청취 통계 — VOXLIBER{% endblock %}
+
+{% block sidebar %}{% endblock %}
+{% block page_class %}no-sidebar{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/author_dashboard.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
+<div class="adb-wrap">
 
+  <!-- 헤더 -->
+  <div class="adb-header">
+    <div class="adb-header-left">
+      <a href="{% url 'register:author_center' %}" class="adb-breadcrumb">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        작가 센터
+      </a>
+      <h1 class="adb-title">청취 통계</h1>
+      <p class="adb-subtitle">내 작품의 청취 현황과 독자 데이터를 확인하세요</p>
+    </div>
+    <div class="adb-header-right">
+      <a href="{% url 'book:book_profile' %}" class="adb-btn-new">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        새 작품 등록
+      </a>
+    </div>
+  </div>
 
+  {% if total_books > 0 %}
 
-    <!-- ===================== -->
-    <!-- 탭 버튼 -->
-    <!-- ===================== -->
-    <div class="dashboard-tabs">
-        <button class="tab-btn active" data-tab="audiobook">
-            📚 오디오북 소설
-        </button>
-        <!-- AI 소설 탭 비활성화
-        <button class="tab-btn" data-tab="ai">
-            🤖 AI 소설
-        </button>
-        -->
+  <!-- 요약 통계 -->
+  <div class="adb-kpi-grid">
+
+    <div class="adb-kpi adb-kpi-purple">
+      <div class="adb-kpi-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </div>
+      <div class="adb-kpi-body">
+        <span class="adb-kpi-val">{{ total_books }}</span>
+        <span class="adb-kpi-label">총 작품</span>
+      </div>
+      <div class="adb-kpi-sub">{{ total_contents }}개 에피소드</div>
     </div>
 
-    <!-- ===================== -->
-    <!-- 오디오북 소설 탭 -->
-    <!-- ===================== -->
-    <div class="tab-content active" id="tab-audiobook">
-
-        {% if total_books > 0 %}
-        <div class="stats-grid">
-
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon primary">📚</div>
-                </div>
-                <div class="stat-card-value">{{ total_books }}</div>
-                <div class="stat-card-title">총 작품 수</div>
-                <div class="stat-card-subtitle">{{ total_contents }}개 에피소드</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon success">👥</div>
-                </div>
-                <div class="stat-card-value">{{ total_readers }}</div>
-                <div class="stat-card-title">총 독자 수</div>
-                <div class="stat-card-subtitle">최근 30일: {{ recent_readers }}명</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon info">❤️</div>
-                </div>
-                <div class="stat-card-value">{{ total_followers }}</div>
-                <div class="stat-card-title">팔로워 수</div>
-                <div class="stat-card-subtitle">나를 팔로우하는 독자</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon warning">🎧</div>
-                </div>
-                <div class="stat-card-value">{{ total_audio_duration }}</div>
-                <div class="stat-card-title">총 오디오 길이</div>
-                <div class="stat-card-subtitle">전체 작품 합계</div>
-            </div>
-
-        </div>
-
-        <!-- 작품별 통계 -->
-        <div class="book-stats-section">
-            <h2 class="section-title">작품별 통계</h2>
-
-            <div class="book-stats-grid">
-                {% for stat in book_stats %}
-                <div class="book-stat-card">
-
-                    <div class="book-stat-header">
-                        <div class="book-cover-mini">
-                            {% if stat.book.cover_img %}
-                            <img src="{{ stat.book.cover_img.url }}" alt="{{ stat.book.name }}">
-                            {% else %}
-                            <div class="book-cover-placeholder">📖</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="book-stat-info">
-                            <h3>{{ stat.book.name }}</h3>
-                            <div class="meta">
-                                <span>👥 {{ stat.reader_count }}명</span>
-                                <span>🎧 {{ stat.book_duration }}</span>
-                                <span>⏱️ {{ stat.total_listening_formatted }}</span>
-                                <span>📊 {{ stat.avg_progress_percent }}%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 상태 버튼 -->
-                    <div class="status-buttons" data-book-id="{{ stat.book.public_uuid }}">
-                        <button class="status-btn" data-status="ongoing"
-                            {% if stat.book.status == "ongoing" %}disabled{% endif %}>
-                            연재 중
-                        </button>
-                        <button class="status-btn" data-status="paused"
-                            {% if stat.book.status == "paused" %}disabled{% endif %}>
-                            휴재
-                        </button>
-                        <button class="status-btn" data-status="ended"
-                            {% if stat.book.status == "ended" %}disabled{% endif %}>
-                            연재 종료
-                        </button>
-                    </div>
-
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <script id="book-stats-data" type="application/json">
-            {{ book_stats_json|safe }}
-        </script>
-
-        {% else %}
-        <div class="empty-state">
-            <h2>아직 작성한 오디오북이 없습니다</h2>
-            <p>첫 작품을 등록해보세요</p>
-        </div>
-        {% endif %}
+    <div class="adb-kpi adb-kpi-green">
+      <div class="adb-kpi-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="adb-kpi-body">
+        <span class="adb-kpi-val">{{ total_readers }}</span>
+        <span class="adb-kpi-label">총 독자</span>
+      </div>
+      <div class="adb-kpi-sub">최근 30일 {{ recent_readers }}명</div>
     </div>
 
-{% comment %}AI 소설 탭 비활성화
-    <!-- ===================== -->
-    <!-- AI 소설 탭 -->
-    <!-- ===================== -->
-<div class="tab-content" id="tab-ai">
-
-    {% if ai_stats %}
- <div class="stats-grid">
-
-    <div class="stat-card">
-        <div class="stat-card-header">
-            <div class="stat-icon primary">🤖</div>
-        </div>
-        <div class="stat-card-value">
-            {{ ai_summary.total_llms }}
-        </div>
-        <div class="stat-card-title">총 AI 수</div>
-        <div class="stat-card-subtitle">생성한 LLM 캐릭터</div>
+    <div class="adb-kpi adb-kpi-blue">
+      <div class="adb-kpi-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+      </div>
+      <div class="adb-kpi-body">
+        <span class="adb-kpi-val">{{ total_audio_duration }}</span>
+        <span class="adb-kpi-label">총 오디오</span>
+      </div>
+      <div class="adb-kpi-sub">전체 작품 합산</div>
     </div>
 
-    <div class="stat-card">
-        <div class="stat-card-header">
-            <div class="stat-icon success">👥</div>
-        </div>
-        <div class="stat-card-value">
-            {{ ai_summary.total_ai_readers }}
-        </div>
-        <div class="stat-card-title">AI 독자 수</div>
-        <div class="stat-card-subtitle">중복 제거 기준</div>
+    <div class="adb-kpi adb-kpi-pink">
+      <div class="adb-kpi-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </div>
+      <div class="adb-kpi-body">
+        <span class="adb-kpi-val">{{ total_followers }}</span>
+        <span class="adb-kpi-label">팔로워</span>
+      </div>
+      <div class="adb-kpi-sub">나를 팔로우하는 독자</div>
     </div>
 
-    <div class="stat-card">
-        <div class="stat-card-header">
-            <div class="stat-icon warning">🎧</div>
-        </div>
-        <div class="stat-card-value">
-            {{ ai_summary.total_ai_tts_duration|floatformat:0 }}초
-        </div>
-        <div class="stat-card-title">총 AI 오디오 길이</div>
-        <div class="stat-card-subtitle">모든 TTS 합계</div>
+  </div>
+
+  <!-- 작품별 통계 -->
+  <div class="adb-section">
+    <div class="adb-section-hd">
+      <h2 class="adb-section-title">작품별 현황</h2>
     </div>
 
-    <div class="stat-card">
-        <div class="stat-card-header">
-            <div class="stat-icon info">❤️</div>
-        </div>
-        <div class="stat-card-value">
-            {{ ai_summary.total_llm_likes }}
-        </div>
-        <div class="stat-card-title">AI 좋아요 수</div>
-        <div class="stat-card-subtitle">전체 LLM 기준</div>
-    </div>
+    <div class="adb-book-grid">
+      {% for stat in book_stats %}
+      <div class="adb-book-card">
 
-</div>
-
-    <div class="book-stats-section">
-        <h2 class="section-title">AI 소설 통계</h2>
-
-        <div class="book-stats-grid">
-{% for stat in ai_stats %}
-<div class="book-stat-card">
-
-    <div class="book-stat-header">
-        <div class="book-cover-mini">
-
-            {% if stat.llm_image %}
-                <img src="{{ stat.llm_image.url }}" alt="{{ stat.name }}">
+        <!-- 표지 + 타이틀 -->
+        <div class="adb-book-top">
+          <div class="adb-book-cover">
+            {% if stat.book.cover_img %}
+            <img src="{{ stat.book.cover_img.url }}" alt="{{ stat.book.name }}"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <div class="adb-cover-ph" style="display:none">{{ stat.book.name|slice:":1" }}</div>
             {% else %}
-                <div class="intro-main-image-placeholder">🤖</div>
+            <div class="adb-cover-ph">{{ stat.book.name|slice:":1" }}</div>
             {% endif %}
+          </div>
 
-        </div>
+          <div class="adb-book-info">
+            <h3 class="adb-book-name">{{ stat.book.name }}</h3>
 
-        <div class="book-stat-info">
-            <h3>{{ stat.name }}</h3>
-
-            {% if stat.story %}
-                <div class="sub">{{ stat.story.title }}</div>
-            {% endif %}
-
-            <div class="meta">
-                <span>👥 {{ stat.reader_count }}명</span>
-                <span>❤️ {{ stat.like_count }}</span>
-                <span>🎧 {{ stat.total_tts_duration|floatformat:0 }}초</span>
+            <!-- 연재 상태 -->
+            <div class="status-buttons" data-book-id="{{ stat.book.public_uuid }}">
+              <button class="adb-status-btn {% if stat.book.status == 'ongoing' %}is-active is-ongoing{% endif %}"
+                      data-status="ongoing"
+                      {% if stat.book.status == "ongoing" %}disabled{% endif %}>연재 중</button>
+              <button class="adb-status-btn {% if stat.book.status == 'paused' %}is-active is-paused{% endif %}"
+                      data-status="paused"
+                      {% if stat.book.status == "paused" %}disabled{% endif %}>휴재</button>
+              <button class="adb-status-btn {% if stat.book.status == 'ended' %}is-active is-ended{% endif %}"
+                      data-status="ended"
+                      {% if stat.book.status == "ended" %}disabled{% endif %}>완결</button>
             </div>
+          </div>
         </div>
-    </div>
 
-</div>
-{% endfor %}
+        <!-- 핵심 수치 -->
+        <div class="adb-metrics">
+          <div class="adb-metric">
+            <span class="adb-metric-val">{{ stat.reader_count }}</span>
+            <span class="adb-metric-lbl">독자</span>
+          </div>
+          <div class="adb-metric-div"></div>
+          <div class="adb-metric">
+            <span class="adb-metric-val">{{ stat.total_listening_formatted }}</span>
+            <span class="adb-metric-lbl">총 청취시간</span>
+          </div>
+          <div class="adb-metric-div"></div>
+          <div class="adb-metric">
+            <span class="adb-metric-val">{{ stat.book_duration }}</span>
+            <span class="adb-metric-lbl">오디오 길이</span>
+          </div>
         </div>
+
+        <!-- 평균 완독률 바 -->
+        <div class="adb-progress-wrap">
+          <div class="adb-progress-hd">
+            <span class="adb-progress-lbl">평균 완독률</span>
+            <span class="adb-progress-pct">{{ stat.avg_progress_percent }}%</span>
+          </div>
+          <div class="adb-progress-track">
+            <div class="adb-progress-bar" style="width: {{ stat.avg_progress_percent }}%"></div>
+          </div>
+        </div>
+
+        <!-- 작품 링크 -->
+        <a href="{% url 'book:book_detail' stat.book.public_uuid %}" class="adb-book-link">
+          작품 보기
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+
+      </div>
+      {% endfor %}
     </div>
-    {% else %}
-    <div class="empty-state">
-        <h2>AI 소설이 없습니다</h2>
-        <p>AI 캐릭터를 만들어보세요</p>
+  </div>
+
+  <script id="book-stats-data" type="application/json">{{ book_stats_json|safe }}</script>
+
+  {% else %}
+  <!-- 빈 상태 -->
+  <div class="adb-empty">
+    <div class="adb-empty-icon">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
     </div>
-    {% endif %}
-</div>
-{% endcomment %}
+    <h2>아직 등록된 작품이 없습니다</h2>
+    <p>첫 오디오북을 등록하면 이곳에 통계가 표시됩니다</p>
+    <a href="{% url 'book:book_profile' %}" class="adb-empty-btn">첫 작품 등록하기</a>
+  </div>
+  {% endif %}
 
 </div>
 {% endblock %}
 
-
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
 <script src="{% static 'js/book/author_dashboard.js' %}"></script>
 {% endblock %}

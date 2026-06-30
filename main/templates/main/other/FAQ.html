@@ -1,60 +1,42 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}FAQ | VOXLIBER{% endblock %}
+{% block title %}자주 묻는 질문 — Voxliber{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/main/legal_pages.css' %}">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/main/other/legal_pages.css' %}">{%  endblock %}
 
 {% block content %}
-<div class="faq-wrapper">
-    <h1>자주 묻는 질문 (FAQ)</h1>
+<div class="faq-page">
+  <div class="page-header">
+    <h1>자주 묻는 질문</h1>
+    <p>궁금한 점을 빠르게 확인하세요</p>
+  </div>
 
-    {% regroup faqs by category_display as category_list %}
-
-    {% for category in category_list %}
-    <div class="faq-category">
-        <h2>{{ category.grouper }}</h2>
-
-        {% for faq in category.list %}
-        <div class="faq-item">
-            <div class="faq-question">{{ faq.question }}</div>
-            <div class="faq-answer">{{ faq.answer|linebreaksbr }}</div>
-        </div>
-        {% endfor %}
-
-    </div>
+  <!-- Category filter -->
+  <div class="faq-category-tabs">
+    <button class="cat-btn active" onclick="filterFaq('all', this)">전체</button>
+    {% for faq in faqs %}
+    {% if faq.category_display %}
+    <button class="cat-btn" onclick="filterFaq('{{ faq.category }}', this)" data-cat="{{ faq.category }}">{{ faq.category_display }}</button>
+    {% endif %}
     {% endfor %}
+  </div>
+
+  <div class="faq-list">
+    {% for faq in faqs %}
+    <div class="faq-item" data-cat="{{ faq.category }}">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span class="faq-q-icon">Q</span>
+        <span class="faq-q-text">{{ faq.question }}</span>
+        <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="faq-answer">{{ faq.answer|linebreaksbr }}</div>
+    </div>
+    {% empty %}
+    <div class="empty-state"><div class="empty-state-icon">💬</div><h3>등록된 FAQ가 없습니다</h3></div>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}
 
-
-{% block extra_js %}
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    const questions = document.querySelectorAll(".faq-question");
-    questions.forEach(q => {
-        q.addEventListener("click", () => {
-            const answer = q.nextElementSibling;
-
-            // Toggle active class on question
-            q.classList.toggle("active");
-
-            // Toggle active class on answer
-            if (answer.classList.contains("active")) {
-                answer.classList.remove("active");
-                setTimeout(() => {
-                    answer.style.display = "none";
-                }, 300);
-            } else {
-                answer.style.display = "block";
-                setTimeout(() => {
-                    answer.classList.add("active");
-                }, 10);
-            }
-        });
-    });
-});
-</script>
-{% endblock %}
+{% block extra_js %}<script src="{% static 'js/main/other/faq.js' %}"></script>{%  endblock %}

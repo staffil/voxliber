@@ -3,38 +3,49 @@
 
 {% block title %}미리듣기 - {{ book.name }}{% endblock %}
 
+{% block sidebar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block page_class %}no-sidebar{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/preview.css' %}">
-
 {% endblock %}
 
 {% block content %}
 <div class="preview-container">
     <!-- 헤더 -->
     <div class="preview-header">
-        <!-- 에피소드 이미지 -->
         <input type="file" name="episode-image" id="episodeImageInput" accept="image/*" style="display: none;">
 
-        <div class="preview-image-area" onclick="document.getElementById('episodeImageInput').click()">
-            <div class="image-placeholder">이미지 업로드</div>
-        </div>
+        <div class="preview-header-inner">
+            <div class="preview-image-area" onclick="document.getElementById('episodeImageInput').click()">
+                <div class="image-placeholder">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>이미지 업로드</span>
+                </div>
+            </div>
 
-        <div class="preview-title">🎧 미리듣기</div>
-        <div class="preview-subtitle" id="episodeTitle">에피소드 제목</div>
-        <div class="preview-info">
-            <span>📚 {{ book.name }}</span>
-            <span>•</span>
-            <span>✍️ {{ book.user.nickname }}</span>
+            <div class="preview-header-info">
+                <div class="preview-badge">미리듣기</div>
+                <div class="preview-title" id="episodeTitle">에피소드 제목</div>
+                <div class="preview-meta">
+                    <span>{{ book.name }}</span>
+                    <span class="preview-meta-sep">·</span>
+                    <span>{{ book.user.nickname }}</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- 오디오 플레이어 -->
     <div class="audio-player-section">
         <div class="player-header">
-            <div class="player-icon">🎵</div>
+            <div class="player-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
             <div class="player-info">
-                <h3>최종 오디오 미리듣기</h3>
-                <p>대사, 사운드 이팩트, 배경음이 모두 포함된 완성본입니다</p>
+                <h3>최종 오디오</h3>
+                <p>대사 · 사운드 이펙트 · 배경음 완성본</p>
             </div>
         </div>
 
@@ -42,12 +53,8 @@
 
         <div class="audio-controls">
             <button id="playBtn" class="play-btn" data-login-required>
-                <svg id="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z"/>
-                </svg>
-                <svg id="pauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
-                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                </svg>
+                <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
             </button>
 
             <div class="progress-container">
@@ -60,10 +67,7 @@
 
             <div class="volume-control">
                 <button id="volumeBtn" class="volume-btn" data-login-required>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                    </svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                 </button>
                 <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="100">
             </div>
@@ -72,7 +76,7 @@
 
     <!-- 정보 카드 -->
     <div class="info-card">
-        <h4>📊 에피소드 정보</h4>
+        <h4>에피소드 정보</h4>
         <ul class="info-list">
             <li>
                 <span class="info-label">대사 개수</span>
@@ -92,15 +96,11 @@
     <!-- 액션 버튼 -->
     <div class="action-buttons">
         <button class="btn btn-secondary" onclick="goBack()" data-login-required>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             수정하기
         </button>
         <button class="btn btn-primary" onclick="publishEpisode()" data-login-required>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-            </svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
             발행하기
         </button>
     </div>
@@ -115,26 +115,20 @@
     </div>
 </div>
 
-
 {% endblock %}
 
 {% block extra_js %}
 <script>
 const bookId = "{{ book.public_uuid }}";
 let previewAudioUrl = null;
-let db = null; // IndexedDB 전역 변수
+let db = null;
 let isPublishing = false;
 
-// ================================
-// IndexedDB 초기화
-// ================================
 function initIndexedDB() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open('VoxliberDrafts', 1);
-
         request.onerror = () => reject(request.error);
         request.onsuccess = () => resolve(request.result);
-
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
             if (!db.objectStoreNames.contains('drafts')) {
@@ -144,28 +138,18 @@ function initIndexedDB() {
     });
 }
 
-// ================================
-// 페이지 로드 시 미리듣기 생성
-// ================================
 document.addEventListener('DOMContentLoaded', async function() {
     db = await initIndexedDB();
     await generatePreviewAudio();
     initAudioPlayer();
 });
 
-// ================================
-// 미리듣기 오디오 생성
-// ================================
 async function generatePreviewAudio() {
     try {
-        console.log('🔍 미리듣기 오디오 생성 시작, bookId:', bookId);
-
-        // IndexedDB에서 draft 데이터 가져오기
         const draftData = await new Promise((resolve, reject) => {
             const transaction = db.transaction(['drafts'], 'readonly');
             const store = transaction.objectStore('drafts');
             const request = store.get(bookId);
-
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
         });
@@ -176,12 +160,8 @@ async function generatePreviewAudio() {
             return;
         }
 
-        console.log('✅ 데이터 로드 성공:', draftData);
-
-        // 제목 표시
         document.getElementById('episodeTitle').textContent = draftData.episodeTitle || '제목 없음';
 
-        // 정보 표시
         const dialogueCount = draftData.pages.filter(p => !p.isSoundEffect).length;
         const bgMusicCount = draftData.backgroundTracks ? draftData.backgroundTracks.length : 0;
         document.getElementById('dialogueCount').textContent = `${dialogueCount}개`;
@@ -192,22 +172,18 @@ async function generatePreviewAudio() {
             return;
         }
 
-        // 서버에 임시 오디오 생성 요청
         const formData = new FormData();
         formData.append('book_id', bookId);
 
         draftData.pages.forEach((page, index) => {
             if (page.audioBlob) {
-                const audioFile = new File([page.audioBlob], `audio_${index}.mp3`, { type: 'audio/mp3' });
-                formData.append(`audio_${index}`, audioFile);
+                formData.append(`audio_${index}`, new File([page.audioBlob], `audio_${index}.mp3`, { type: 'audio/mp3' }));
             }
             let pt = '';
             if (!page.isSoundEffect && !page.isSilence) {
-                if (page.isDuet) {
-                    pt = page.duetText || (page.duetData || []).map(v => (v.text || '').trim()).filter(t => t).join('\n');
-                } else {
-                    pt = page.content || '';
-                }
+                pt = page.isDuet
+                    ? (page.duetText || (page.duetData || []).map(v => (v.text || '').trim()).filter(t => t).join('\n'))
+                    : (page.content || '');
             }
             formData.append(`page_text_${index}`, pt);
         });
@@ -248,9 +224,6 @@ async function generatePreviewAudio() {
     }
 }
 
-// ================================
-// Task 상태 폴링
-// ================================
 async function pollTaskStatus(taskId) {
     const pollInterval = 5000;
     const loadingOverlay = document.getElementById('loadingOverlay');
@@ -261,7 +234,7 @@ async function pollTaskStatus(taskId) {
         const data = await response.json();
 
         if (data.progress !== undefined) {
-            loadingText.innerHTML = `${data.status}<br><span style="font-size: 14px; color: #4CAF50;">${data.progress}%</span>`;
+            loadingText.innerHTML = `${data.status}<br><span style="font-size: 14px; color: var(--primary);">${data.progress}%</span>`;
         } else {
             loadingText.textContent = data.status || '오디오 생성 중...';
         }
@@ -274,7 +247,6 @@ async function pollTaskStatus(taskId) {
             const audio = document.getElementById('previewAudio');
             audio.src = previewAudioUrl;
 
-            // IndexedDB에 mergeAudio + timestamps 저장
             const tx = db.transaction(['drafts'], 'readwrite');
             const store = tx.objectStore('drafts');
             const getRequest = store.get(bookId);
@@ -301,9 +273,6 @@ async function pollTaskStatus(taskId) {
     }
 }
 
-// ================================
-// 오디오 플레이어 초기화
-// ================================
 function initAudioPlayer() {
     const audio = document.getElementById('previewAudio');
     const playBtn = document.getElementById('playBtn');
@@ -329,8 +298,7 @@ function initAudioPlayer() {
     });
 
     audio.addEventListener('timeupdate', () => {
-        const progress = (audio.currentTime / audio.duration) * 100;
-        progressFill.style.width = progress + '%';
+        progressFill.style.width = (audio.currentTime / audio.duration * 100) + '%';
         currentTimeDisplay.textContent = formatTime(audio.currentTime);
     });
 
@@ -349,16 +317,10 @@ function initAudioPlayer() {
     audio.addEventListener('ended', () => { playIcon.style.display='block'; pauseIcon.style.display='none'; });
 }
 
-// ================================
-// 뒤로가기
-// ================================
 function goBack() {
     if (confirm('수정 페이지로 돌아가시겠습니까?')) history.back();
 }
 
-// ================================
-// 발행하기
-// ================================
 async function publishEpisode() {
     if (isPublishing) return;
     isPublishing = true;
@@ -396,30 +358,29 @@ async function publishEpisode() {
 
             if (draftData.mergedAudioBlob) {
                 formData.append('merged_audio', new File([draftData.mergedAudioBlob], 'merged_final_audio.mp3', {type:'audio/mp3'}));
-                draftData.pages.forEach((page,index)=>{
-                    let pt='';
-                    if(!page.isSoundEffect&&!page.isSilence){
-                        pt=page.isDuet?(page.duetText||(page.duetData||[]).map(v=>(v.text||'').trim()).filter(t=>t).join('\n')):(page.content||'');
+                draftData.pages.forEach((page, index) => {
+                    let pt = '';
+                    if (!page.isSoundEffect && !page.isSilence) {
+                        pt = page.isDuet ? (page.duetText || (page.duetData||[]).map(v=>(v.text||'').trim()).filter(t=>t).join('\n')) : (page.content||'');
                     }
-                    formData.append(`page_text_${index}`,pt);
+                    formData.append(`page_text_${index}`, pt);
                 });
-                // 미리듣기에서 생성된 정확한 타임스탬프 전송
                 if (draftData.mergedAudioTimestamps && draftData.mergedAudioTimestamps.length > 0) {
                     formData.append('merged_timestamps', JSON.stringify(draftData.mergedAudioTimestamps));
                 }
             } else {
-                draftData.pages.forEach((page,index)=>{
+                draftData.pages.forEach((page, index) => {
                     if (page.audioBlob) formData.append(`audio_${index}`, new File([page.audioBlob], `audio_${index}.mp3`, {type:'audio/mp3'}));
-                    let pt='';
-                    if(!page.isSoundEffect&&!page.isSilence){
-                        pt=page.isDuet?(page.duetText||(page.duetData||[]).map(v=>(v.text||'').trim()).filter(t=>t).join('\n')):(page.content||'');
+                    let pt = '';
+                    if (!page.isSoundEffect && !page.isSilence) {
+                        pt = page.isDuet ? (page.duetText || (page.duetData||[]).map(v=>(v.text||'').trim()).filter(t=>t).join('\n')) : (page.content||'');
                     }
                     formData.append(`page_text_${index}`, pt);
                 });
 
-                if (draftData.backgroundTracks.length>0) {
-                    draftData.backgroundTracks.forEach((track,index)=>{
-                        if(track.audioBlob) {
+                if (draftData.backgroundTracks.length > 0) {
+                    draftData.backgroundTracks.forEach((track, index) => {
+                        if (track.audioBlob) {
                             formData.append(`background_audio_${index}`, new File([track.audioBlob], `bg_${index}.mp3`, {type:'audio/mp3'}));
                             formData.append(`background_start_${index}`, track.startPage);
                             formData.append(`background_end_${index}`, track.endPage);
@@ -428,15 +389,15 @@ async function publishEpisode() {
                         }
                     });
                     formData.append('background_tracks_count', draftData.backgroundTracks.length);
-                } else formData.append('background_tracks_count',0);
+                } else {
+                    formData.append('background_tracks_count', 0);
+                }
             }
 
             const response = await fetch('/book/book/serialization/', { method:'POST', headers:{'X-CSRFToken':getCookie('csrftoken')}, body:formData });
             const data = await response.json();
 
             if (data.success) {
-                // 발행 후 draft를 삭제하지 않고 유지 → 전문가 모드로 돌아올 때 TTS 오디오 복원 가능
-                // (다음 에피소드 작업 시 임시저장 불러오기 버튼으로 확인 후 사용)
                 alert('✅ 에피소드 발행 성공!');
                 window.location.href = data.redirect_url || `/book/detail/${bookId}/`;
             } else {
@@ -445,56 +406,52 @@ async function publishEpisode() {
             }
         };
 
-        request.onerror = () => { alert('❌ IndexedDB에서 데이터를 불러오지 못했습니다.'); isPublishing=false; document.getElementById('loadingOverlay').style.display='none'; };
+        request.onerror = () => {
+            alert('❌ IndexedDB에서 데이터를 불러오지 못했습니다.');
+            isPublishing = false;
+            document.getElementById('loadingOverlay').style.display='none';
+        };
 
     } catch(error) {
         console.error('발행 오류:', error);
         alert('❌ 발행 중 오류 발생');
-        isPublishing=false;
+        isPublishing = false;
         document.getElementById('loadingOverlay').style.display='none';
     }
 }
 
-// ================================
-// CSRF Helper
-// ================================
 function getCookie(name) {
     let cookieValue = null;
-    if(document.cookie && document.cookie!=='') {
-        const cookies = document.cookie.split(';');
-        for(let i=0;i<cookies.length;i++){
-            const cookie = cookies[i].trim();
-            if(cookie.substring(0,name.length+1) === (name+'=')) { cookieValue = decodeURIComponent(cookie.substring(name.length+1)); break; }
+    if (document.cookie && document.cookie !== '') {
+        for (let cookie of document.cookie.split(';')) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) { cookieValue = decodeURIComponent(cookie.substring(name.length + 1)); break; }
         }
     }
     return cookieValue;
 }
 
-// ================================
-// 이미지 업로드 처리
-// ================================
-document.getElementById("episodeImageInput").addEventListener("change", async (e)=>{
+document.getElementById("episodeImageInput").addEventListener("change", async (e) => {
     const file = e.target.files[0];
-    if(!file) return;
+    if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(event){
+    reader.onload = function(event) {
         document.querySelector('.preview-image-area').innerHTML = `<img src="${event.target.result}" class="episode-image">`;
     };
     reader.readAsDataURL(file);
 
-    const tx = db.transaction(['drafts'],'readwrite');
+    const tx = db.transaction(['drafts'], 'readwrite');
     const store = tx.objectStore('drafts');
     const getRequest = store.get(bookId);
-    getRequest.onsuccess = ()=>{
+    getRequest.onsuccess = () => {
         const draftData = getRequest.result;
-        if(draftData){
+        if (draftData) {
             draftData.episodeImageBlob = file;
             draftData.episodeImageName = file.name;
             store.put(draftData);
         }
     };
 });
-
 </script>
 {% endblock %}

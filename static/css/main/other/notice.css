@@ -1,0 +1,22 @@
+.other-page { max-width: 860px; margin: 0 auto; padding: 36px 28px 80px; }
+.page-header { margin-bottom: 32px; }
+.page-header h1 { font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 6px; }
+.page-header p { font-size: .84rem; color: var(--text-muted); }
+
+.notice-list { display: flex; flex-direction: column; gap: 0; }
+.notice-item {
+  padding: 18px 4px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex; gap: 16px; align-items: flex-start;
+  cursor: pointer;
+}
+.notice-item:hover .notice-title { color: var(--accent); }
+.notice-pin { color: #d97706; font-size: .78rem; flex-shrink: 0; margin-top: 2px; }
+.notice-badge { padding: 2px 9px; border-radius: 0; font-size: .64rem; font-weight: 700; background: var(--accent-soft); color: var(--accent); flex-shrink: 0; margin-top: 2px; }
+.notice-main { flex: 1; min-width: 0; }
+.notice-title { font-size: .9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; transition: color .15s; }
+.notice-meta { font-size: .74rem; color: var(--text-muted); }
+.notice-body { padding: 14px 4px 18px 20px; font-size: .84rem; color: var(--text-secondary); line-height: 1.8; border-bottom: 1px solid var(--border-color); display: none; }
+.notice-body.open { display: block; }
+
+@media (max-width: 640px) { .other-page { padding: 18px 14px 60px; } }

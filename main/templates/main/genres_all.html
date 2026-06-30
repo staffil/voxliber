@@ -1,0 +1,79 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}장르 탐색 — Voxliber{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/main/genres_all.css' %}">
+
+{% endblock %}
+
+{% block content %}
+<div class="ga-page">
+
+  <div class="ga-hero">
+    <div class="ga-hero-inner">
+      <div class="ga-eyebrow">Browse by Genre</div>
+      <h1 class="ga-title">장르 탐색</h1>
+      <p class="ga-sub">원하는 장르의 오디오북을 모아 보세요</p>
+    </div>
+  </div>
+
+  <div class="ga-body">
+
+    <div class="ga-search-row">
+      <input type="text" id="gaSearch" placeholder="장르 검색..." oninput="gaFilter()">
+      <button onclick="gaFilter()">검색</button>
+    </div>
+
+    <div class="ga-filter-row">
+      <button class="ga-filter on" onclick="gaSort('name', this)">이름순</button>
+      <button class="ga-filter" onclick="gaSort('count', this)">작품 많은 순</button>
+    </div>
+
+    <div class="ga-grid" id="gaGrid">
+      {% for genre in genres %}
+      <a href="{% url 'main:genres_books' genre.id %}" class="ga-card"
+         data-name="{{ genre.name }}" data-count="{{ genre.book_count }}">
+        <div class="ga-dot" style="background: {{ genre.genres_color|default:'#e8e4ff' }}20; border: 2px solid {{ genre.genres_color|default:'#7c3aed' }}40;">
+          <span style="font-size:.9rem;">🎧</span>
+        </div>
+        <div class="ga-info">
+          <div class="ga-name">{{ genre.name }}</div>
+          <div class="ga-count">{{ genre.book_count }}권</div>
+        </div>
+        <div class="ga-arrow">→</div>
+      </a>
+      {% empty %}
+      <div class="ga-empty">등록된 장르가 없습니다</div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+var gaCards = Array.from(document.querySelectorAll('#gaGrid .ga-card'));
+
+function gaFilter() {
+  var q = document.getElementById('gaSearch').value.trim().toLowerCase();
+  gaCards.forEach(function(c) {
+    var name = c.dataset.name.toLowerCase();
+    c.style.display = (!q || name.includes(q)) ? '' : 'none';
+  });
+}
+
+function gaSort(by, el) {
+  document.querySelectorAll('.ga-filter').forEach(function(f){ f.classList.remove('on'); });
+  el.classList.add('on');
+  var grid = document.getElementById('gaGrid');
+  var cards = Array.from(grid.querySelectorAll('.ga-card'));
+  cards.sort(function(a, b) {
+    if (by === 'count') return (+b.dataset.count) - (+a.dataset.count);
+    return a.dataset.name.localeCompare(b.dataset.name, 'ko');
+  });
+  cards.forEach(function(c) { grid.appendChild(c); });
+}
+</script>
+{% endblock %}
+

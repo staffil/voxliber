@@ -1,222 +1,130 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}VOXLIBER - 내 서재{% endblock %}
+{% block title %}내 서재 — Voxliber{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/mypage/my_library.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'css/mypage/my_library.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="library-container">
+<div class="ml-page">
 
-  <!-- 헤더 -->
-  <div class="library-header">
-    <h1 class="library-title">내 서재</h1>
-    <p class="library-subtitle">나만의 독서 기록을 확인하세요</p>
+  <!-- ══ 헤더 (다크) ══ -->
+  <div class="ml-hero">
+    <div class="ml-hero-inner">
+      <div class="ml-hero-text">
+        <div class="ml-hero-eyebrow">My Library</div>
+        <h1 class="ml-hero-title">내 서재</h1>
+        <p class="ml-hero-sub">나만의 독서 기록을 한눈에 확인하세요</p>
+      </div>
+      <div class="ml-stats-row">
+        <div class="ml-stat">
+          <div class="ml-stat-val">{{ stats.total }}</div>
+          <div class="ml-stat-label">전체 작품</div>
+        </div>
+        <div class="ml-stat-divider"></div>
+        <div class="ml-stat">
+          <div class="ml-stat-val">{{ stats.reading }}</div>
+          <div class="ml-stat-label">읽는 중</div>
+        </div>
+        <div class="ml-stat-divider"></div>
+        <div class="ml-stat">
+          <div class="ml-stat-val">{{ stats.completed }}</div>
+          <div class="ml-stat-label">완독</div>
+        </div>
+        <div class="ml-stat-divider"></div>
+        <div class="ml-stat">
+          <div class="ml-stat-val">{{ stats.favorite|default:0 }}</div>
+          <div class="ml-stat-label">즐겨찾기</div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- 통계 -->
-  <div class="stats-grid">
-    <div class="stat-card"><div class="stat-label">전체 책</div><div class="stat-value">{{ stats.total }}</div></div>
-    <div class="stat-card"><div class="stat-label">읽는 중</div><div class="stat-value">{{ stats.reading }}</div></div>
-    <div class="stat-card"><div class="stat-label">완독</div><div class="stat-value">{{ stats.completed }}</div></div>
-    <div class="stat-card"><div class="stat-label">대화한 AI</div><div class="stat-value">{{ stats.llms }}</div></div>
+  <!-- ══ 필터 탭 ══ -->
+  <div class="ml-tab-bar">
+    <a href="?status=all"       class="ml-tab {% if filter_status == 'all' %}on{% endif %}">전체</a>
+    <a href="?status=reading"   class="ml-tab {% if filter_status == 'reading' %}on{% endif %}">읽는 중</a>
+    <a href="?status=completed" class="ml-tab {% if filter_status == 'completed' %}on{% endif %}">완독</a>
+    <a href="{% url 'book:my_bookmarks' %}" class="ml-tab">북마크</a>
   </div>
 
-  <!-- 필터 탭 -->
-  <div class="filter-tabs">
-    <a href="?status=all"       class="filter-tab {% if filter_status == 'all' %}active{% endif %}">전체</a>
-    <a href="?status=reading"   class="filter-tab {% if filter_status == 'reading' %}active{% endif %}">읽는 중</a>
-    <a href="?status=completed" class="filter-tab {% if filter_status == 'completed' %}active{% endif %}">완독</a>
-    <a href="?status=llms"      class="filter-tab filter-tab-ai {% if filter_status == 'llms' %}active{% endif %}">🤖 대화한 AI</a>
-    <a href="{% url 'book:my_bookmarks' %}" class="filter-tab">북마크 →</a>
-  </div>
-
-
-  <!-- ========================= -->
-  <!-- 📚 책 목록                -->
-  <!-- ========================= -->
-  {% if filter_status != 'ai' and filter_status != 'llms' %}
+  <!-- ══ 책 목록 ══ -->
+  <div class="ml-body">
     {% if reading_progress_list %}
-      <div class="books-grid">
-        {% for progress in reading_progress_list %}
-        <div class="book-progress-card">
-          <div class="book-cover-section">
-            {% if progress.book.cover_img %}
-              <img src="{{ progress.book.cover_img.url }}" alt="{{ progress.book.name }}">
-            {% else %}
-              <div class="cover-placeholder">{{ progress.book.name|slice:":2" }}</div>
-            {% endif %}
-            <div class="book-status-badge status-{{ progress.status }}">
-              {% if progress.status == 'reading' %}읽는 중
-              {% elif progress.status == 'completed' %}완독
-              {% elif progress.status == 'paused' %}일시중지
-              {% endif %}
-            </div>
-            <div class="book-type-badge book-type-{{ progress.book.book_type }}">
-              {% if progress.book.book_type == 'webnovel' %}📖 웹소설{% else %}🎧 오디오북{% endif %}
-            </div>
+    <div class="ml-grid">
+      {% for progress in reading_progress_list %}
+      <div class="ml-card">
+        <!-- 표지 -->
+        <div class="ml-card-cover">
+          {% if progress.book.cover_img %}
+            <img src="{{ progress.book.cover_img.url }}" alt="{{ progress.book.name }}">
+          {% else %}
+            <div class="ml-cover-ph">{{ progress.book.name|slice:":2" }}</div>
+          {% endif %}
+          <!-- 상태 뱃지 -->
+          <div class="ml-status-badge ml-status-{{ progress.status }}">
+            {% if progress.status == 'reading' %}읽는 중
+            {% elif progress.status == 'completed' %}완독
+            {% else %}일시중지{% endif %}
           </div>
-          <div class="book-info-section">
-            <h3 class="book-title">{{ progress.book.name }}</h3>
-            <div class="book-meta">
-              {% for genre in progress.book.genres.all|slice:":2" %}
-                {{ genre.name }}{% if not forloop.last %}, {% endif %}
-              {% endfor %}
-            </div>
-            <div class="progress-section">
-              <div class="progress-info">
-                <span>{{ progress.last_read_content_number }}화 / {{ progress.book.contents.count }}화</span>
-                <span>{{ progress.get_progress_percentage }}%</span>
-              </div>
-              <div class="progress-bar-container">
-                <div class="progress-bar" style="width: {{ progress.get_progress_percentage }}%"></div>
-              </div>
-            </div>
-            <div class="book-actions">
-              {% if progress.book.book_type == 'webnovel' %}
-                {% if progress.current_content %}
-                <a href="{% url 'book:webnovel_episode' progress.current_content.public_uuid %}" class="btn-action btn-continue">
-                  {% if progress.status == 'completed' %}다시 읽기{% else %}이어 읽기{% endif %}
-                </a>
-                {% else %}
-                <a href="{% url 'book:webnovel_detail' progress.book.public_uuid %}" class="btn-action btn-continue">읽기 시작</a>
-                {% endif %}
-                <a href="{% url 'book:webnovel_detail' progress.book.public_uuid %}" class="btn-action btn-secondary">상세 정보</a>
-              {% else %}
-                <a href="#" class="btn-action btn-continue" onclick="showAppInstallModal()">
-                  {% if progress.status == 'completed' %}다시 읽기{% else %}이어 읽기{% endif %}
-                </a>
-                <a href="{% url 'book:book_detail' progress.book.public_uuid %}" class="btn-action btn-secondary">상세 정보</a>
-              {% endif %}
-            </div>
+          <!-- 타입 뱃지 -->
+          <div class="ml-type-badge ml-type-{{ progress.book.book_type }}">
+            {% if progress.book.book_type == 'webnovel' %}웹소설{% else %}오디오북{% endif %}
           </div>
         </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="empty-state">
-        <div class="empty-state-icon">📚</div>
-        <h3>아직 읽은 책이 없습니다</h3>
-      </div>
-    {% endif %}
-  {% endif %}
 
+        <!-- 정보 -->
+        <div class="ml-card-info">
+          <div class="ml-card-genre">
+            {% for genre in progress.book.genres.all|slice:":2" %}{{ genre.name }}{% if not forloop.last %} · {% endif %}{% endfor %}
+          </div>
+          <div class="ml-card-title">{{ progress.book.name }}</div>
 
-
-
-  <!-- ========================= -->
-  <!-- 💬 대화한 AI 캐릭터        -->
-  <!-- ========================= -->
-  {% if filter_status == 'llms' or filter_status == 'all' %}
-    {% if chatted_llms %}
-    <div class="section-header" style="margin-top:40px;">
-      <h2 class="section-title">💬 대화한 AI 캐릭터</h2>
-    </div>
-    <div class="ai-stories-grid">
-      {% for llm in chatted_llms %}
-      <div class="lib-ai-card">
-        <a href="{% url 'character:ai_intro' llm.public_uuid %}" class="lib-ai-card-link">
-          <div class="lib-ai-cover">
-            {% if llm.llm_image %}
-              <img src="{{ llm.llm_image.url }}" alt="{{ llm.name }}">
-            {% else %}
-              <div class="lib-ai-cover-empty">🤖</div>
-            {% endif %}
-            <div class="lib-ai-overlay"></div>
-            <div class="lib-ai-info">
-              <div class="lib-ai-title">{{ llm.name }}</div>
-              {% if llm.description %}
-              <div class="lib-ai-meta">{{ llm.description|truncatechars:40 }}</div>
-              {% endif %}
+          <!-- 진행률 -->
+          <div class="ml-progress">
+            <div class="ml-progress-meta">
+              <span>{{ progress.last_read_content_number }}화 / {{ progress.book.contents.count }}화</span>
+              <span class="ml-progress-pct">{{ progress.get_progress_percentage }}%</span>
+            </div>
+            <div class="ml-progress-bar">
+              <div class="ml-progress-fill" style="width:{{ progress.get_progress_percentage }}%"></div>
             </div>
           </div>
-        </a>
-        <a href="{% url 'character:chat-view' llm.public_uuid %}" class="lib-ai-chat-btn">
-          💬 대화 이어가기
-        </a>
+
+          <!-- 버튼 -->
+          <div class="ml-card-actions">
+            {% if progress.book.book_type == 'webnovel' %}
+              {% if progress.current_content %}
+              <a href="{% url 'book:webnovel_episode' progress.current_content.public_uuid %}" class="ml-btn ml-btn-primary">
+                {% if progress.status == 'completed' %}다시 읽기{% else %}이어 읽기{% endif %}
+              </a>
+              {% else %}
+              <a href="{% url 'book:webnovel_detail' progress.book.public_uuid %}" class="ml-btn ml-btn-primary">읽기 시작</a>
+              {% endif %}
+              <a href="{% url 'book:webnovel_detail' progress.book.public_uuid %}" class="ml-btn ml-btn-ghost">상세 정보</a>
+            {% else %}
+              <a href="#" class="ml-btn ml-btn-primary" onclick="showAppInstallModal();return false;">
+                {% if progress.status == 'completed' %}다시 듣기{% else %}이어 듣기{% endif %}
+              </a>
+              <a href="{% url 'book:book_detail' progress.book.public_uuid %}" class="ml-btn ml-btn-ghost">상세 정보</a>
+            {% endif %}
+          </div>
+        </div>
       </div>
       {% endfor %}
     </div>
-    {% elif filter_status == 'llms' %}
-    <div class="empty-state">
-      <div class="empty-state-icon">💬</div>
-      <h3>아직 대화한 AI가 없습니다</h3>
+
+    {% else %}
+    <div class="ml-empty">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.4"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <p class="ml-empty-title">아직 읽은 작품이 없습니다</p>
+      <p class="ml-empty-sub">오디오북이나 웹소설을 읽으면 여기에 기록됩니다</p>
+      <a href="{% url 'main:main' %}" class="ml-btn ml-btn-primary" style="margin-top:16px">작품 둘러보기</a>
     </div>
     {% endif %}
-  {% endif %}
-
-
-  <!-- ========================= -->
-  <!-- 🔖 북마크한 AI 스토리      -->
-  <!-- ========================= -->
-  {% if filter_status == 'all' and bookmarked_stories %}
-  <div class="section-header" style="margin-top:40px;">
-    <h2 class="section-title">🔖 북마크한 AI 스토리</h2>
   </div>
-  <div class="ai-stories-grid">
-    {% for story in bookmarked_stories %}
-    <div class="lib-ai-card">
-      <button class="lib-bookmark-btn active"
-              onclick="toggleBookmark(this, '{{ story.public_uuid }}')" title="북마크 해제">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-        </svg>
-      </button>
-      <a href="{% url 'character:story_intro' story.public_uuid %}" class="lib-ai-card-link">
-        <div class="lib-ai-cover">
-          {% if story.story_desc_video %}
-            <video src="{{ story.story_desc_video.url }}" autoplay muted loop playsinline></video>
-          {% elif story.story_desc_img %}
-            <img src="{{ story.story_desc_img.url }}" alt="{{ story.title }}">
-          {% elif story.cover_image %}
-            <img src="{{ story.cover_image.url }}" alt="{{ story.title }}">
-          {% else %}
-            <div class="lib-ai-cover-empty">🤖</div>
-          {% endif %}
-          <div class="lib-ai-overlay"></div>
-          <div class="lib-ai-info">
-            <div class="lib-ai-avatars">
-              {% for char in story.characters.all|slice:":3" %}
-              <div class="lib-ai-avatar">
-                {% if char.llm_image %}<img src="{{ char.llm_image.url }}" alt="{{ char.name }}">
-                {% else %}<span>{{ char.name|first }}</span>{% endif %}
-              </div>
-              {% endfor %}
-            </div>
-            <div class="lib-ai-title">{{ story.title }}</div>
-          </div>
-        </div>
-      </a>
-      {% with char=story.characters.first %}
-      {% if char %}
-      <a href="{% url 'character:chat-view' char.public_uuid %}" class="lib-ai-chat-btn">💬 대화 이어가기</a>
-      {% endif %}
-      {% endwith %}
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
 
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function toggleBookmark(btn, storyUuid) {
-  fetch('/character/story/' + storyUuid + '/bookmark/toggle/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.success) {
-      btn.classList.toggle('active', data.bookmarked);
-      const path = btn.querySelector('path');
-      if (path) path.setAttribute('fill', data.bookmarked ? 'currentColor' : 'none');
-    }
-  });
-}
-</script>
 {% endblock %}

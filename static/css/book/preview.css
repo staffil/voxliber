@@ -1,64 +1,55 @@
 body {
     background: var(--bg-primary);
     color: var(--text-primary);
-    margin-top: 100px;
+    margin-top: 80px;
 }
 
 .preview-container {
-    max-width: 1000px;
+    max-width: 720px;
     margin: 40px auto;
-    padding: 20px;
+    padding: 0 20px 60px;
 }
 
+/* ── 헤더 ── */
 .preview-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 30px;
-    border-radius: 20px;
-    margin-bottom: 30px;
-    box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+    background: var(--bg-dark);
+    border: 1px solid #222;
+    padding: 32px;
+    margin-bottom: 16px;
 }
 
-/* 에피소드 이미지 영역 */
+.preview-header-inner {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+}
+
 .preview-image-area {
-    width: 200px;
-    height: 200px;
-    margin: 0 auto 20px;
-    border-radius: 16px;
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px dashed rgba(255, 255, 255, 0.3);
+    background: #1a1a1a;
+    border: 1px dashed #444;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: border-color 0.15s;
     position: relative;
 }
 
 .preview-image-area:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.15);
+    border-color: #777;
 }
 
 .image-placeholder {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 16px;
-    font-weight: 500;
-    text-align: center;
-    padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-}
-
-.image-placeholder::before {
-    content: "📷";
-    font-size: 48px;
-    display: block;
-    margin-bottom: 8px;
+    gap: 8px;
+    color: #666;
+    font-size: 12px;
 }
 
 .episode-image {
@@ -68,142 +59,147 @@ body {
     display: block;
 }
 
-/* 이미지가 업로드된 후 hover 효과 */
-.preview-image-area:has(.episode-image):hover::after {
-    content: "클릭하여 변경";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 14px;
-    font-weight: 600;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+.preview-header-info {
+    flex: 1;
+    min-width: 0;
 }
 
-.preview-image-area:has(.episode-image):hover::after {
-    opacity: 1;
+.preview-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    padding: 2px 8px;
+    margin-bottom: 12px;
 }
 
 .preview-title {
-    font-size: 28px;
+    font-size: 22px;
     font-weight: 700;
+    color: #000000;
     margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.preview-subtitle {
-    font-size: 16px;
-    opacity: 0.9;
-    margin-bottom: 20px;
-}
-
-.preview-info {
+.preview-meta {
     display: flex;
-    gap: 20px;
-    font-size: 14px;
-    opacity: 0.8;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #888;
 }
 
+.preview-meta-sep {
+    color: #444;
+}
+
+/* ── 플레이어 ── */
 .audio-player-section {
     background: var(--bg-secondary);
-    padding: 30px;
-    border-radius: 16px;
-    margin-bottom: 30px;
     border: 1px solid var(--border-color);
+    padding: 24px;
+    margin-bottom: 16px;
 }
 
 .player-header {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 24px;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .player-icon {
-    width: 64px;
-    height: 64px;
-    background: rgba(102, 126, 234, 0.2);
-    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    color: var(--primary);
+    flex-shrink: 0;
 }
 
 .player-info h3 {
-    margin: 0 0 4px 0;
-    font-size: 18px;
-    font-weight: 600;
+    margin: 0 0 3px 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
 }
 
 .player-info p {
     margin: 0;
-    font-size: 14px;
-    color: var(--text-secondary);
+    font-size: 12px;
+    color: var(--text-muted);
 }
 
 .audio-controls {
     display: flex;
     align-items: center;
-    gap: 20px;
-    margin-bottom: 16px;
+    gap: 16px;
 }
 
 .play-btn {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: #667eea;
+    width: 48px;
+    height: 48px;
+    background: var(--text-primary);
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s;
+    transition: background 0.15s;
     flex-shrink: 0;
+    color: var(--bg-primary);
 }
 
 .play-btn:hover {
-    transform: scale(1.1);
-    background: #764ba2;
+    background: #333;
 }
 
 .play-btn svg {
-    color: var(--text-primary);
+    color: inherit;
+    fill: currentColor;
 }
 
 .progress-container {
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    min-width: 0;
 }
 
 .time-display {
-    color: var(--text-secondary);
-    font-size: 13px;
-    min-width: 45px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    min-width: 38px;
+    flex-shrink: 0;
 }
 
 .progress-bar {
     flex: 1;
-    height: 6px;
-    background: #2d3748;
-    border-radius: 3px;
+    height: 3px;
+    background: var(--border-color);
     position: relative;
     cursor: pointer;
 }
 
+.progress-bar:hover {
+    height: 5px;
+}
+
 .progress-fill {
     height: 100%;
-    background: #667eea;
-    border-radius: 3px;
+    background: var(--text-primary);
     width: 0%;
     transition: width 0.1s;
 }
@@ -212,122 +208,48 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
 }
 
 .volume-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #2d3748;
-    border: none;
+    width: 34px;
+    height: 34px;
+    background: transparent;
+    border: 1px solid var(--border-color);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    color: var(--text-secondary);
+    transition: border-color 0.15s, color 0.15s;
 }
 
 .volume-btn:hover {
-    background: #3d4758;
+    border-color: var(--text-primary);
+    color: var(--text-primary);
 }
 
 .volume-slider {
-    width: 100px;
-}
-
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-}
-
-.loading-content {
-    text-align: center;
-}
-
-.spinner {
-    width: 60px;
-    height: 60px;
-    border: 4px solid #2d3748;
-    border-top: 4px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 20px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.loading-text {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.loading-subtext {
-    font-size: 14px;
-    color: var(--text-secondary);
-}
-
-.action-buttons {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-}
-
-.btn {
-    padding: 14px 32px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
+    width: 80px;
+    accent-color: var(--text-primary);
     cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
 }
 
-.btn-secondary {
-    background: #2d3748;
-    color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-    background: #3d4758;
-}
-
-.btn-primary {
-    background: #667eea;
-    color: var(--text-primary);
-}
-
-.btn-primary:hover {
-    background: #764ba2;
-}
-
+/* ── 정보 카드 ── */
 .info-card {
     background: var(--bg-secondary);
-    padding: 20px;
-    border-radius: 12px;
     border: 1px solid var(--border-color);
+    padding: 20px 24px;
     margin-bottom: 20px;
 }
 
 .info-card h4 {
-    margin: 0 0 12px 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #667eea;
+    margin: 0 0 14px 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
 }
 
 .info-list {
@@ -337,11 +259,12 @@ body {
 }
 
 .info-list li {
-    padding: 8px 0;
-    border-bottom: 1px solid #2d3748;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
     font-size: 14px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
 .info-list li:last-child {
@@ -349,10 +272,133 @@ body {
 }
 
 .info-label {
-    color: var(--text-secondary);
+    color: var(--text-muted);
 }
 
 .info-value {
     color: var(--text-primary);
-    font-weight: 500;
+    font-weight: 600;
+}
+
+/* ── 액션 버튼 ── */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.btn {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+}
+
+.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.btn-primary {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border: 1px solid var(--text-primary);
+}
+
+.btn-primary:hover {
+    background: #333;
+    border-color: #333;
+}
+
+/* ── 로딩 오버레이 ── */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.loading-content {
+    text-align: center;
+    padding: 40px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    min-width: 300px;
+}
+
+.spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--text-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-text {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+}
+
+.loading-subtext {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 600px) {
+    .preview-header-inner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .preview-image-area {
+        width: 100%;
+        height: 180px;
+    }
+
+    .audio-controls {
+        flex-wrap: wrap;
+    }
+
+    .volume-control {
+        width: 100%;
+    }
+
+    .volume-slider {
+        flex: 1;
+        width: auto;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
 }

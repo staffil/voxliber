@@ -2557,24 +2557,46 @@ function clearAllBlocks() {
 
 // ==================== 블록 편집기 생성/재생성 ====================
 async function blockRegenerateTts(pageNum, btn) {
-    if (!_editorContentUuid) {
-        alert('에피소드를 먼저 실행해주세요.');
-        return;
-    }
     // 해당 page번째 block의 텍스트/voice_id 추출
-    let pageCount = 0, text = '', voiceId = '';
+    let pageCount = 0, text = '', voiceId = '', isDuet = false;
     for (const item of _blockItems) {
         if (item.type === 'page' || item.type === 'duet') {
             pageCount++;
             if (pageCount === pageNum) {
                 if (item.type === 'page') { text = item.pageData.text; voiceId = item.pageData.voice_id; }
-                else if (item.type === 'duet') { text = (item.duetData.voices || []).map(v => v.text).join(' / '); voiceId = (item.duetData.voices[0] || {}).voice_id || ''; }
+                else if (item.type === 'duet') { isDuet = true; text = (item.duetData.voices || []).map(v => v.text).join(' / '); voiceId = (item.duetData.voices[0] || {}).voice_id || ''; }
                 break;
             }
         }
     }
+    if (!text || !voiceId) return;
     const origText = btn ? btn.textContent : '';
     if (btn) { btn.textContent = '생성 중...'; btn.disabled = true; }
+
+    if (!_editorContentUuid) {
+        // 에피소드 미실행 상태 → /book/tts/generate/ 로 임시 미리보기
+        try {
+            const res = await fetch('/book/tts/generate/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({ text, voice_id: voiceId })
+            });
+            if (!res.ok) throw new Error('TTS 생성 실패');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            if (!_blockAudioMap.tts) _blockAudioMap.tts = {};
+            _blockAudioMap.tts[pageNum] = url;
+            renderBlockList();
+            if (btn) btn.textContent = '✅ 완료';
+        } catch (e) {
+            if (btn) btn.textContent = '❌ 실패';
+            console.error('TTS 미리보기 실패:', e);
+        } finally {
+            setTimeout(() => { if (btn) { btn.textContent = origText; btn.disabled = false; } }, 2000);
+        }
+        return;
+    }
+
     try {
         const res = await fetch(`/book/episodes/${_editorContentUuid}/pages/${pageNum}/regenerate/`, {
             method: 'POST',

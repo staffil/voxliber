@@ -1,0 +1,141 @@
+﻿
+.apply-wrap {
+    max-width: 640px;
+    margin: 48px auto;
+    padding: 0 24px 80px;
+}
+.apply-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #888;
+    font-size: 13px;
+    text-decoration: none;
+    margin-bottom: 28px;
+}
+.apply-back:hover { color: #111; }
+.apply-head { margin-bottom: 32px; }
+.apply-head h1 { font-size: 22px; font-weight: 700; color: #111; margin-bottom: 8px; }
+.apply-head p  { font-size: 14px; color: #666; line-height: 1.6; }
+
+/* 상태 카드 */
+.apply-status {
+    border: 1px solid #e8e8e8;
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.apply-status-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.apply-status-dot.pending  { background: #f59e0b; }
+.apply-status-dot.approved { background: #10b981; }
+.apply-status-dot.rejected { background: #ef4444; }
+.apply-status-label { font-size: 13px; font-weight: 600; color: #111; }
+.apply-status-sub   { font-size: 12px; color: #888; margin-top: 2px; }
+
+/* 거절 사유 */
+.apply-reject-reason {
+    background: #fff5f5;
+    border: 1px solid #fca5a5;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: #b91c1c;
+    line-height: 1.6;
+}
+
+/* 알림 */
+.apply-alert-error {
+    background: #fff5f5;
+    border: 1px solid #fca5a5;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #b91c1c;
+    margin-bottom: 20px;
+}
+.apply-alert-ok {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #166534;
+    margin-bottom: 20px;
+}
+
+/* 폼 */
+.apply-form-row { margin-bottom: 20px; }
+.apply-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111;
+    margin-bottom: 7px;
+}
+.apply-label span { color: #888; font-weight: 400; margin-left: 6px; }
+.apply-textarea {
+    width: 100%;
+    border: 1px solid #e8e8e8;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #111;
+    resize: vertical;
+    min-height: 120px;
+    outline: none;
+    transition: border-color .15s;
+    font-family: inherit;
+    line-height: 1.6;
+}
+.apply-textarea:focus { border-color: #111; }
+.apply-input {
+    width: 100%;
+    border: 1px solid #e8e8e8;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #111;
+    outline: none;
+    transition: border-color .15s;
+}
+.apply-input:focus { border-color: #111; }
+
+/* 정책 동의 */
+.apply-policy {
+    border: 1px solid #e8e8e8;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #444;
+    line-height: 1.7;
+}
+.apply-policy-title { font-weight: 700; color: #111; margin-bottom: 10px; }
+.apply-policy-list  { padding-left: 18px; }
+.apply-policy-list li { margin-bottom: 4px; }
+
+.apply-check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+    font-size: 13px;
+    color: #111;
+    cursor: pointer;
+}
+.apply-check-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: #111; }
+
+/* 제출 버튼 */
+.apply-submit {
+    width: 100%;
+    background: #111;
+    color: #fff;
+    border: none;
+    padding: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: .02em;
+    transition: opacity .15s;
+}
+.apply-submit:hover { opacity: .8; }
+

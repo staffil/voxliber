@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}결제 완료 — Voxliber{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/register/subscribe_success.css' %}">{% endblock %}
+
+{% block content %}
+<div class="success-page">
+
+  <div class="success-icon">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#5b4cf5" stroke-width="2.5">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  </div>
+
+  <h1 class="success-title">결제가 완료되었습니다</h1>
+  <p class="success-sub">구독이 즉시 활성화되었습니다. 모든 기능을 자유롭게 이용하세요.</p>
+
+  {% if payment %}
+  <div class="success-card">
+    <div class="success-row">
+      <span class="success-label">플랜</span>
+      <span class="success-val">{% if plan_type == 'monthly' %}월간 구독{% else %}연간 구독{% endif %}</span>
+    </div>
+    <div class="success-row">
+      <span class="success-label">결제 금액</span>
+      <span class="success-val success-val--price">{{ payment.amount|floatformat:"0" }}원</span>
+    </div>
+    <div class="success-row">
+      <span class="success-label">결제 수단</span>
+      <span class="success-val">{{ payment.get_method_display }}</span>
+    </div>
+    <div class="success-row">
+      <span class="success-label">결제 일시</span>
+      <span class="success-val">{{ payment.paid_at|date:"Y년 n월 j일 H:i" }}</span>
+    </div>
+    {% if payment.receipt_email %}
+    <div class="success-row">
+      <span class="success-label">영수증 이메일</span>
+      <span class="success-val">{{ payment.receipt_email }}</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="success-actions">
+    <a href="{% url 'main:main' %}" class="success-btn success-btn--primary">홈으로 가기</a>
+    <a href="{% url 'register:subscription_manage' %}" class="success-btn success-btn--secondary">구독 관리</a>
+  </div>
+
+</div>
+{% endblock %}

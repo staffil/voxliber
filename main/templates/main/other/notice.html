@@ -1,29 +1,36 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}공지사항 | VOXLIBER{% endblock %}
+{% block title %}공지사항 — Voxliber{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/main/legal_pages.css' %}">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/main/other/legal_pages.css' %}">{%  endblock %}
 
 {% block content %}
-<div class="notice-wrapper">
+<div class="other-page">
+  <div class="page-header">
     <h1>공지사항</h1>
-    {% if notices %}
-    <ul class="notice-list">
-        {% for notice in notices %}
-        <li class="notice-item">
-            <a href="{% url 'notice_detail' notice.public_uuid %}">{{ notice.title }}</a>
-            <span class="notice-date">{{ notice.created_at|date:"Y.m.d" }}</span>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>등록된 공지사항이 없습니다.</p>
-    {% endif %}
+    <p>Voxliber 서비스 공지와 업데이트를 확인하세요</p>
+  </div>
+
+  <div class="notice-list">
+    {% for notice in notices %}
+    <div>
+      <div class="notice-item" onclick="toggleNotice({{ notice.id }})">
+        {% if notice.is_pinned %}<span class="notice-pin">📌</span>{% endif %}
+        {% if notice.category %}<span class="notice-badge">{{ notice.get_category_display|default:notice.category }}</span>{% endif %}
+        <div class="notice-main">
+          <div class="notice-title">{{ notice.title }}</div>
+          <div class="notice-meta">{{ notice.created_at|date:"Y.m.d" }}</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="arrow-{{ notice.id }}" style="color:var(--text-muted);flex-shrink:0;margin-top:2px;transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="notice-body" id="notice-{{ notice.id }}">{{ notice.content|linebreaksbr }}</div>
+    </div>
+    {% empty %}
+    <div class="empty-state"><div class="empty-state-icon">📢</div><h3>등록된 공지사항이 없습니다</h3></div>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
-{% endblock %}
+{% block extra_js %}<script src="{% static 'js/main/other/notice.js' %}"></script>{%  endblock %}

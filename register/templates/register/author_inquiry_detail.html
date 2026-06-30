@@ -1,0 +1,179 @@
+{% extends "base_author.html" %}
+{% load static %}
+
+{% block title %}{{ inq.title }} — 작가 문의 · Voxliber{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/register/author_inquiry_list.css' %}">{% endblock %}
+
+{% block content %}
+<div class="inq-page">
+
+  <!-- Header -->
+  <div class="inq-header">
+    <div class="inq-header-text">
+      <h1 class="inq-title">문의 상세</h1>
+      <p class="inq-desc">문의 내용과 답변을 확인합니다</p>
+    </div>
+    <a href="{% url 'register:author_inquiry_list' %}" class="inq-btn-ghost">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      목록으로
+    </a>
+  </div>
+
+  <!-- Messages -->
+  {% for msg in messages %}
+  <div class="inq-alert-{% if msg.tags == 'error' %}error{% else %}success{% endif %}">{{ msg }}</div>
+  {% endfor %}
+
+  <!-- Inquiry card -->
+  <div class="inq-detail-card">
+    <div class="inq-detail-meta">
+      <span class="inq-badge inq-badge-category">{{ inq.get_category_display }}</span>
+      <span class="inq-badge inq-badge-{{ inq.status }}">{{ inq.get_status_display }}</span>
+      {% if inq.book %}
+      <span class="inq-detail-book">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        {{ inq.book.name }}
+      </span>
+      {% endif %}
+      <span class="inq-detail-date">{{ inq.created_at|date:"Y.m.d H:i" }}</span>
+    </div>
+
+    <h2 class="inq-detail-title">{{ inq.title }}</h2>
+
+    <div class="inq-detail-body">{{ inq.message|linebreaksbr }}</div>
+
+    {% if inq.attachment %}
+    <div class="inq-detail-attach">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      <a href="{{ inq.attachment.url }}" target="_blank" class="inq-attach-link">첨부 파일 보기</a>
+    </div>
+    {% endif %}
+
+    <!-- Action buttons (only if pending) -->
+    {% if inq.status == 'pending' %}
+    <div class="inq-detail-actions">
+      <a href="{% url 'register:author_inquiry_edit' inq.id %}" class="inq-btn-edit">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        수정
+      </a>
+      <form method="post" action="{% url 'register:author_inquiry_delete' inq.id %}" id="deleteForm" class="inq-delete-form">
+        {% csrf_token %}
+        <button type="button" class="inq-btn-delete" onclick="confirmDelete()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          삭제
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Admin reply area (visible to all - author sees the answer) -->
+  {% if inq.answer %}
+  <div class="inq-reply-card">
+    <div class="inq-reply-header">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>운영팀 답변</span>
+      <span class="inq-reply-badge">공식</span>
+    </div>
+    <div class="inq-reply-body">{{ inq.answer|linebreaksbr }}</div>
+    <div class="inq-reply-date">{{ inq.updated_at|date:"Y.m.d H:i" }}</div>
+
+    <!-- Admin edit reply (superuser only) -->
+    {% if request.user.is_superuser %}
+    <button class="inq-admin-edit-btn" onclick="toggleAdminReply()">답변 수정</button>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Admin reply form (superuser only, shows when no answer yet OR after clicking edit) -->
+  {% if request.user.is_superuser %}
+  <div class="inq-admin-reply-form" id="adminReplyForm" {% if inq.answer %}style="display:none;"{% endif %}>
+    <div class="inq-section-label inq-section-label-mb">
+      {% if inq.answer %}답변 수정{% else %}답변 작성{% endif %}
+    </div>
+    <textarea id="adminAnswerText" class="inq-textarea" rows="6"
+              placeholder="답변 내용을 입력하세요...">{{ inq.answer|default:'' }}</textarea>
+    <div class="inq-admin-reply-footer">
+      <select id="adminStatusSelect" class="inq-select inq-select-auto">
+        <option value="answered"{% if inq.status == 'answered' %} selected{% endif %}>답변 완료</option>
+        <option value="closed"{% if inq.status == 'closed' %} selected{% endif %}>종료</option>
+      </select>
+      <button onclick="submitAdminReply()" class="inq-btn-primary">답변 등록</button>
+      {% if inq.answer %}
+      <button type="button" class="inq-cancel-btn" onclick="toggleAdminReply()">취소</button>
+      {% endif %}
+    </div>
+    <div id="adminReplyMsg" class="inq-reply-msg" style="display:none;"></div>
+  </div>
+  {% elif not inq.answer %}
+  <div class="inq-pending-notice">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>답변을 준비 중입니다. 영업일 기준 2~3일 내 답변드립니다.</span>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Delete confirm modal -->
+<div id="deleteModal" class="inq-modal-overlay" style="display:none;">
+  <div class="inq-modal">
+    <h3 class="inq-modal-title">문의를 삭제할까요?</h3>
+    <p class="inq-modal-desc">삭제된 문의는 복구할 수 없습니다.</p>
+    <div class="inq-modal-actions">
+      <button onclick="document.getElementById('deleteModal').style.display='none'" class="inq-cancel-btn">취소</button>
+      <button onclick="document.getElementById('deleteForm').submit()" class="inq-btn-delete-confirm">삭제</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmDelete() {
+  document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function toggleAdminReply() {
+  const form = document.getElementById('adminReplyForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function submitAdminReply() {
+  const answer = document.getElementById('adminAnswerText').value.trim();
+  const status = document.getElementById('adminStatusSelect').value;
+  const msg    = document.getElementById('adminReplyMsg');
+
+  if (!answer) {
+    msg.textContent = '답변 내용을 입력해주세요.';
+    msg.className   = 'inq-reply-msg inq-reply-msg-error';
+    msg.style.display = 'block';
+    return;
+  }
+
+  const csrfToken = document.cookie.match('(?:^|; )csrftoken=([^;]*)');
+  const csrf = csrfToken ? decodeURIComponent(csrfToken[1]) : '';
+
+  try {
+    const res = await fetch('{% url "main:admin_inquiry_reply" inq.id %}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+      body: JSON.stringify({ answer, status }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      msg.textContent   = '답변이 등록되었습니다.';
+      msg.className     = 'inq-reply-msg inq-reply-msg-ok';
+      msg.style.display = 'block';
+      setTimeout(() => location.reload(), 800);
+    } else {
+      msg.textContent   = data.error || '오류가 발생했습니다.';
+      msg.className     = 'inq-reply-msg inq-reply-msg-error';
+      msg.style.display = 'block';
+    }
+  } catch {
+    msg.textContent   = '요청 실패';
+    msg.className     = 'inq-reply-msg inq-reply-msg-error';
+    msg.style.display = 'block';
+  }
+}
+</script>
+{% endblock %}

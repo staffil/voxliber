@@ -170,16 +170,62 @@ class Policy(models.Model):
         return f"{self.get_policy_type_display()} - {self.title}"
 
 
-
-# 광고 테이블
-class ScreenAI(models.Model):
-    title = models.CharField(max_length=300)
-    link = models.CharField(max_length=200)
-    advertisment_img = models.ImageField(upload_to="upload/advertisment/", null=True)
+# 세금계산서 테이블
+class TaxInvoice(models.Model):
+    STATUS_CHOICES = [
+        ('draft', '임시저장'),
+        ('issued', '발행 완료'),
+        ('cancelled', '취소'),
+    ]
+    issue_date = models.DateField(verbose_name='발행일')
+    period = models.CharField(max_length=7, verbose_name='정산 월 (YYYY-MM)')
+    supply_amount = models.DecimalField(max_digits=14, decimal_places=2, verbose_name='공급가액')
+    vat = models.DecimalField(max_digits=14, decimal_places=2, verbose_name='부가세(10%)')
+    total_amount = models.DecimalField(max_digits=14, decimal_places=2, verbose_name='합계금액')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    note = models.TextField(null=True, blank=True, verbose_name='비고')
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        db_table= "screen_ai"
-        verbose_name = "ai 광고 테이블"
+        db_table = 'tax_invoice'
+        verbose_name = '세금계산서'
+        ordering = ['-issue_date']
+
+    def save(self, *args, **kwargs):
+        self.vat = self.supply_amount * 10 / 100
+        self.total_amount = self.supply_amount + self.vat
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return self.title
+        return f"{self.period} 세금계산서 - {self.total_amount}원"
+
+
+# 경비 테이블
+class Expense(models.Model):
+    CATEGORY_CHOICES = [
+        ('server', '서버비'),
+        ('marketing', '마케팅'),
+        ('labor', '인건비'),
+        ('api', 'API 사용료'),
+        ('office', '사무용품'),
+        ('other', '기타'),
+    ]
+    date = models.DateField(verbose_name='지출일')
+    title = models.CharField(max_length=200, verbose_name='항목명')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
+    amount = models.DecimalField(max_digits=14, decimal_places=2, verbose_name='금액')
+    receipt = models.FileField(upload_to='uploads/expense/', null=True, blank=True, verbose_name='영수증')
+    note = models.TextField(null=True, blank=True, verbose_name='메모')
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'expense'
+        verbose_name = '경비'
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.date} {self.title} - {self.amount}원"
+
+
+
 

@@ -1,0 +1,7 @@
+.error-page { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding: 40px 20px; }
+.error-code { font-family: 'Poppins', sans-serif; font-size: 6rem; font-weight: 900; background: linear-gradient(135deg, #06b6d4, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; margin-bottom: 16px; }
+.error-title { font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; }
+.error-desc { font-size: .88rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 32px; max-width: 400px; }
+.error-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.btn-retry { background: var(--accent); color: #fff; padding: 12px 26px; border-radius: 0; font-size: .9rem; font-weight: 700; border: none; cursor: pointer; }
+.btn-home { background: rgba(255,255,255,.06); border: 1px solid var(--border); color: var(--text-secondary); padding: 12px 26px; border-radius: 0; text-decoration: none; font-size: .9rem; font-weight: 600; }

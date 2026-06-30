@@ -1,172 +1,137 @@
-/**
- * VoxTour — Spotlight Guide System
- * Supports sequential tour (next / close) across all guide pages.
- */
-(function () {
-    'use strict';
+/* VoxTour — lightweight UI tour helper */
+const VoxTour = (() => {
+    let _steps = [];
+    let _idx   = 0;
+    let _overlay, _box, _title, _desc, _counter, _prevBtn, _nextBtn;
 
-    var _overlay   = null;
-    var _spotlight = null;
-    var _tooltip   = null;
-    var _steps     = [];
-    var _idx       = 0;
+    function _build() {
+        if (document.getElementById('vox-tour-box')) return;
 
-    /* Remove DOM elements only (keep step state) */
-    function _closeUI() {
-        if (_overlay)   { _overlay.remove();   _overlay   = null; }
-        if (_spotlight) { _spotlight.remove(); _spotlight = null; }
-        if (_tooltip)   { _tooltip.remove();   _tooltip   = null; }
+        // 투명 클릭 차단 오버레이 (dim은 highlight box-shadow가 담당)
+        _overlay = document.createElement('div');
+        _overlay.id = 'vox-tour-overlay';
+        _overlay.addEventListener('click', e => { if (e.target === _overlay) VoxTour.end(); });
+        document.body.appendChild(_overlay);
+
+        // 툴팁 박스 (오버레이와 별도 element → z-index 자유)
+        _box = document.createElement('div');
+        _box.id = 'vox-tour-box';
+        _box.innerHTML = `
+<button id="vox-tour-close" aria-label="닫기">&times;</button>
+<div id="vox-tour-counter"></div>
+<div id="vox-tour-title"></div>
+<div id="vox-tour-desc"></div>
+<div id="vox-tour-nav">
+  <button id="vox-tour-prev">‹ 이전</button>
+  <button id="vox-tour-next">다음 ›</button>
+</div>`;
+        document.body.appendChild(_box);
+
+        _title    = document.getElementById('vox-tour-title');
+        _desc     = document.getElementById('vox-tour-desc');
+        _counter  = document.getElementById('vox-tour-counter');
+        _prevBtn  = document.getElementById('vox-tour-prev');
+        _nextBtn  = document.getElementById('vox-tour-next');
+
+        document.getElementById('vox-tour-close').onclick = () => VoxTour.end();
+        _prevBtn.onclick = () => VoxTour.go(_idx - 1);
+        _nextBtn.onclick = () => VoxTour.go(_idx + 1);
+        document.addEventListener('keydown', _onKey);
     }
 
-    /* Full close — removes DOM + resets tour state */
-    function close() {
-        _closeUI();
-        _steps = [];
-        _idx   = 0;
+    function _onKey(e) {
+        if (!_overlay || !_overlay.classList.contains('active')) return;
+        if (e.key === 'Escape')     VoxTour.end();
+        if (e.key === 'ArrowRight') VoxTour.go(_idx + 1);
+        if (e.key === 'ArrowLeft')  VoxTour.go(_idx - 1);
     }
 
-    /**
-     * Start a tour from a given step index.
-     * @param {Array}  stepsArr  Array of {sel, title, desc} objects
-     * @param {number} startIdx  0-based index to start from
-     */
-    function startTour(stepsArr, startIdx) {
-        /* Close any open guide panels */
-        var gm = document.getElementById('guideModal');
-        if (gm) gm.classList.remove('active');
-
-        var gv = document.getElementById('audioBookGuideView');
-        if (gv) gv.style.display = 'none';
-
-        var gp = document.getElementById('voxGuidePanelOverlay');
-        if (gp) gp.style.display = 'none';
-
-        _steps = stepsArr || [];
-        _idx   = startIdx  || 0;
-        _closeUI();
-        _showCurrent();
+    function _clearHighlight() {
+        document.querySelectorAll('.vox-tour-highlight').forEach(el => el.classList.remove('vox-tour-highlight'));
     }
 
-    function _showCurrent() {
-        var step = _steps[_idx];
-        if (!step) { close(); return; }
-        _render(step.sel, step.title, step.desc);
-    }
+    function _show(idx) {
+        _idx = Math.max(0, Math.min(idx, _steps.length - 1));
+        const step = _steps[_idx];
 
-    function _render(selector, title, descHTML) {
-        var el = document.querySelector(selector);
-        if (!el) {
-            /* Skip missing elements */
-            if (_idx < _steps.length - 1) { _idx++; _showCurrent(); }
-            else close();
-            return;
-        }
+        _title.textContent   = step.title || '';
+        _desc.innerHTML      = step.desc  || '';
+        _counter.textContent = `${_idx + 1} / ${_steps.length}`;
+        _prevBtn.disabled    = _idx === 0;
+        _nextBtn.textContent = _idx === _steps.length - 1 ? '닫기' : '다음 ›';
 
-        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        _clearHighlight();
 
-        setTimeout(function () {
-            var rect    = el.getBoundingClientRect();
-            var pad     = 10;
-            var stepNum = _idx + 1;
-            var total   = _steps.length;
-            var isLast  = stepNum >= total;
+        const target = step.sel ? document.querySelector(step.sel) : null;
+        _overlay.classList.add('active');
+        _box.classList.add('active');
 
-            /* --- Overlay (click outside to close) --- */
-            _overlay = document.createElement('div');
-            _overlay.className = 'vox-tour-overlay';
-            _overlay.addEventListener('click', close);
-            document.body.appendChild(_overlay);
-
-            /* --- Spotlight --- */
-            _spotlight = document.createElement('div');
-            _spotlight.className = 'vox-tour-spotlight';
-            _spotlight.style.left   = (rect.left   - pad) + 'px';
-            _spotlight.style.top    = (rect.top    - pad) + 'px';
-            _spotlight.style.width  = (rect.width  + pad * 2) + 'px';
-            _spotlight.style.height = (rect.height + pad * 2) + 'px';
-            document.body.appendChild(_spotlight);
-
-            /* --- Tooltip --- */
-            var isFirst = _idx === 0;
-            _tooltip = document.createElement('div');
-            _tooltip.className = 'vox-tour-tooltip';
-            _tooltip.innerHTML =
-                '<div class="vox-tour-tooltip-title">' +
-                    '<span class="vox-tour-step-badge">' + stepNum + '</span>' +
-                    _esc(title) +
-                    '<span class="vox-tour-progress">' + stepNum + ' / ' + total + '</span>' +
-                '</div>' +
-                '<div class="vox-tour-tooltip-desc">' + descHTML + '</div>' +
-                '<div class="vox-tour-tooltip-footer">' +
-                    '<button class="vox-tour-btn-close" id="_vClose">닫기</button>' +
-                    (!isFirst ? '<button class="vox-tour-btn-prev" id="_vPrev">← 이전</button>' : '') +
-                    (isLast
-                        ? '<button class="vox-tour-btn-finish" id="_vFinish">완료 ✓</button>'
-                        : '<button class="vox-tour-btn-next"  id="_vNext">다음 →</button>'
-                    ) +
-                '</div>';
-            document.body.appendChild(_tooltip);
-
-            /* Button events */
-            document.getElementById('_vClose').addEventListener('click', close);
-            if (!isFirst) {
-                document.getElementById('_vPrev').addEventListener('click', function () {
-                    _closeUI();
-                    _idx--;
-                    _showCurrent();
-                });
-            }
-            if (isLast) {
-                document.getElementById('_vFinish').addEventListener('click', close);
-            } else {
-                document.getElementById('_vNext').addEventListener('click', function () {
-                    _closeUI();
-                    _idx++;
-                    _showCurrent();
-                });
-            }
-
-            /* Position (mobile handled by CSS bottom-sheet) */
-            if (window.innerWidth > 640) {
-                _positionTooltip(_tooltip, rect, pad);
-            }
-        }, 380);
-    }
-
-    function _positionTooltip(tooltip, targetRect, pad) {
-        var vw     = window.innerWidth;
-        var vh     = window.innerHeight;
-        var tw     = tooltip.offsetWidth  || 340;
-        var th     = tooltip.offsetHeight || 200;
-        var gap    = 14;
-        var margin = 12;
-        var top, left;
-
-        if (targetRect.bottom + pad + gap + th < vh) {
-            top = targetRect.bottom + pad + gap;
-        } else if (targetRect.top - pad - gap - th > 0) {
-            top = targetRect.top - pad - gap - th;
+        if (target) {
+            target.classList.add('vox-tour-highlight');
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // scroll이 끝난 후 위치 계산 (smooth scroll ~300ms)
+            setTimeout(() => _positionBox(target), 350);
         } else {
-            top = Math.max(margin, (vh - th) / 2);
+            // target 없으면 중앙에
+            _box.style.top    = '50%';
+            _box.style.left   = '50%';
+            _box.style.transform = 'translate(-50%, -50%)';
         }
-
-        left = targetRect.left + targetRect.width / 2 - tw / 2;
-        left = Math.max(margin, Math.min(vw - tw - margin, left));
-
-        tooltip.style.top  = top  + 'px';
-        tooltip.style.left = left + 'px';
     }
 
-    function _esc(str) {
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
+    function _positionBox(target) {
+        _box.style.transform = '';
+        const tr = target.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const bw = _box.offsetWidth  || 300;
+        const bh = _box.offsetHeight || 200;
+        const gap = 16;
+
+        // 아래에 충분한 공간이 있으면 아래, 없으면 위
+        let top = tr.bottom + gap < vh - bh - 8
+            ? tr.bottom + gap
+            : tr.top   - bh - gap;
+        if (top < 8) top = 8;
+
+        let left = tr.left + tr.width / 2 - bw / 2;
+        left = Math.max(12, Math.min(left, vw - bw - 12));
+
+        _box.style.top  = top  + 'px';
+        _box.style.left = left + 'px';
     }
 
-    window.VoxTour = {
-        startTour: startTour,
-        close:     close
+    return {
+        startTour(steps, startIdx) {
+            _steps = steps || [];
+            if (!_steps.length) return;
+            // 열려있는 가이드 모달/패널 모두 닫기
+            const views = ['audioBookGuideView'];
+            views.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+            ['guideModal'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active'); });
+            ['voxGuidePanelOverlay'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+            _build();
+            _show(startIdx || 0);
+        },
+        go(idx) {
+            if (idx >= _steps.length) { VoxTour.end(); return; }
+            if (idx < 0) return;
+            _show(idx);
+        },
+        end() {
+            if (_overlay) _overlay.classList.remove('active');
+            if (_box)     _box.classList.remove('active');
+            _clearHighlight();
+        }
     };
-
 })();
+
+/* toggleGuideDetail — collapsible DB guide items */
+function toggleGuideDetail(el) {
+    const detail  = el.querySelector('.guide-detail');
+    const chevron = el.querySelector('.guide-chevron');
+    if (!detail) return;
+    const isOpen = el.classList.toggle('open');
+    detail.style.display = isOpen ? 'block' : 'none';
+    if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : '';
+}

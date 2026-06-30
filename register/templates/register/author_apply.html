@@ -1,0 +1,99 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}작가 신청 — Voxliber{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/register/author_apply.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="apply-wrap">
+
+  <a href="javascript:history.back()" class="apply-back">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    돌아가기
+  </a>
+
+  <div class="apply-head">
+    <h1>작가 신청</h1>
+    <p>Voxliber에서 오디오북을 제작하고 싶은 작가를 모집합니다.<br>아래 내용을 작성해 제출하면 운영팀이 검토 후 승인해드립니다.</p>
+  </div>
+
+  {% if application %}
+    {% if application.status == 'pending' %}
+    <div class="apply-status">
+      <div class="apply-status-dot pending"></div>
+      <div>
+        <div class="apply-status-label">검토 중</div>
+        <div class="apply-status-sub">운영팀이 검토하고 있습니다. 영업일 기준 3~5일 내 결과를 알려드립니다.</div>
+      </div>
+    </div>
+    {% elif application.status == 'approved' %}
+    <div class="apply-status">
+      <div class="apply-status-dot approved"></div>
+      <div>
+        <div class="apply-status-label">승인 완료</div>
+        <div class="apply-status-sub">작가 센터를 이용할 수 있습니다.</div>
+      </div>
+    </div>
+    {% elif application.status == 'rejected' %}
+    <div class="apply-status">
+      <div class="apply-status-dot rejected"></div>
+      <div>
+        <div class="apply-status-label">반려됨 — 재신청 가능</div>
+        <div class="apply-status-sub">아래 내용을 수정해 다시 제출할 수 있습니다.</div>
+      </div>
+    </div>
+    {% if application.reject_reason %}
+    <div class="apply-reject-reason">
+      <strong>반려 사유:</strong> {{ application.reject_reason }}
+    </div>
+    {% endif %}
+    {% endif %}
+  {% endif %}
+
+  {% if error %}<div class="apply-alert-error">{{ error }}</div>{% endif %}
+
+  {% if not application or application.status == 'rejected' %}
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="apply-form-row">
+      <label class="apply-label">
+        쓰고 싶은 작품 소개
+        <span>어떤 장르·주제의 오디오북을 만들고 싶으신지 자유롭게 적어주세요.</span>
+      </label>
+      <textarea name="planned_work" class="apply-textarea" placeholder="예) 로맨스 판타지 작품을 중심으로 감성적인 나레이션을 제작하고 싶습니다…" required>{{ application.planned_work|default:"" }}</textarea>
+    </div>
+
+    <div class="apply-form-row">
+      <label class="apply-label">
+        포트폴리오 URL
+        <span>선택 사항</span>
+      </label>
+      <input type="url" name="portfolio" class="apply-input"
+             placeholder="https://..." value="{{ application.portfolio|default:'' }}">
+    </div>
+
+    <div class="apply-policy">
+      <div class="apply-policy-title">작가 정책 안내</div>
+      <ul class="apply-policy-list">
+        <li>모든 콘텐츠는 저작권법을 준수해야 합니다.</li>
+        <li>타인의 저작물을 무단으로 사용하면 계정이 정지될 수 있습니다.</li>
+        <li>Voxliber는 수익의 일부를 플랫폼 운영비로 사용합니다.</li>
+        <li>작가 승인 후 작가 센터를 통해 작품을 등록할 수 있습니다.</li>
+      </ul>
+    </div>
+
+    <label class="apply-check-row">
+      <input type="checkbox" name="policy_agreed" required>
+      위 작가 정책을 모두 읽고 동의합니다.
+    </label>
+
+    <button type="submit" class="apply-submit">신청하기</button>
+  </form>
+  {% endif %}
+
+</div>
+{% endblock %}

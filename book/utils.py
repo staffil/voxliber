@@ -308,7 +308,7 @@ import traceback
 
 def background_music(music_name, music_description, duration_seconds=30):
     """
-    배경음 생성 함수 (REST API 기반)
+    배경음 생성 함수 (ElevenLabs SDK music.compose 사용)
     music_name: 음악 이름
     music_description: 음악 설명
     duration_seconds: 음악 길이 (초)
@@ -316,7 +316,6 @@ def background_music(music_name, music_description, duration_seconds=30):
     try:
         print(f"🎵 배경음 생성: {music_name} - {music_description} ({duration_seconds}초)")
 
-        url = "https://api.elevenlabs.io/v1/music/generate"
         detailed_prompt = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -342,28 +341,16 @@ def background_music(music_name, music_description, duration_seconds=30):
         # 결과 텍스트만 추출
         refined_prompt = detailed_prompt.choices[0].message.content.strip()
 
-        # 안전장치: 450자 초과 시 자동 자르기
+        # 안전장치: 430자 초과 시 자동 자르기
         refined_prompt = refined_prompt[:430]
         print("ai 가 생성한 배경음:", refined_prompt)
 
-        payload = {
-            "prompt": refined_prompt,
-            "duration_seconds": duration_seconds,
-            "generation_settings": {
-                "prompt_influence": 1.0,
-            }
-        }
-
-        headers = {
-            "xi-api-key": ELEVEN_API_KEY,
-            "Content-Type": "application/json"
-        }
-
-        response = requests.post(url, headers=headers, json=payload, stream=True)
-
-        if response.status_code != 200:
-            print("❌ Music API Error:", response.text)
-            return None
+        # ElevenLabs SDK music.compose() 사용 (music_length_ms 단위: 밀리초)
+        audio_stream = eleven_client.music.compose(
+            prompt=refined_prompt,
+            music_length_ms=int(duration_seconds * 1000),
+            force_instrumental=True,
+        )
 
         # 파일로 저장
         audio_dir = os.path.join(settings.MEDIA_ROOT, 'audio')
@@ -372,7 +359,7 @@ def background_music(music_name, music_description, duration_seconds=30):
         audio_path = os.path.join(audio_dir, filename)
 
         with open(audio_path, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=1024):
+            for chunk in audio_stream:
                 f.write(chunk)
 
         print(f"✅ 배경음 생성 완료: {audio_path}")

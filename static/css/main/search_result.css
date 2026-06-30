@@ -1,0 +1,74 @@
+.search-page { max-width: 1100px; margin: 0 auto; padding: 36px 28px 80px; }
+
+.search-header { margin-bottom: 28px; }
+.search-header h1 { font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 6px; }
+.search-header p { font-size: .84rem; color: var(--text-muted); }
+
+/* Re-search bar */
+.search-bar-wrap { margin-bottom: 36px; }
+.search-bar-inner { display: flex; gap: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 0; overflow: hidden; }
+.search-input {
+  flex: 1; background: none; border: none; padding: 13px 18px;
+  color: var(--text-primary); font-size: .9rem; font-family: inherit; outline: none;
+}
+.search-submit {
+  padding: 12px 20px; background: var(--accent); border: none; color: #fff;
+  cursor: pointer; font-size: .9rem; transition: opacity .2s;
+}
+.search-submit:hover { opacity: .85; }
+
+/* TABS */
+.result-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 28px; overflow-x: auto; }
+.result-tab {
+  padding: 10px 18px; font-size: .86rem; font-weight: 600; color: var(--text-muted);
+  cursor: pointer; border: none; background: none; font-family: inherit;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap;
+  transition: color .2s;
+}
+.result-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* BOOK GRID */
+.result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 18px; }
+.result-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 0; overflow: hidden;
+  text-decoration: none; transition: transform .2s, box-shadow .2s;
+}
+.result-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.result-cover { aspect-ratio: 3/4; overflow: hidden; position: relative; }
+.result-cover img { width: 100%; height: 100%; object-fit: cover; }
+.result-cover-ph { width: 100%; height: 100%; background: linear-gradient(135deg,rgba(124,58,237,.15),rgba(59,130,246,.08)); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--text-muted); }
+.result-info { padding: 10px 12px; }
+.result-title { font-size: .84rem; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+.result-author { font-size: .72rem; color: var(--text-muted); }
+
+/* AUTHOR LIST */
+.author-list { display: flex; flex-direction: column; gap: 14px; }
+.author-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 0; padding: 16px 20px; display: flex; align-items: center; gap: 18px; }
+.author-avatar {
+  width: 56px; height: 56px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  background: var(--accent-soft); display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 700; color: var(--accent);
+}
+.author-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.author-name { font-size: .96rem; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+.author-meta { font-size: .76rem; color: var(--text-muted); margin-bottom: 8px; }
+.author-books { display: flex; gap: 6px; }
+.author-book-thumb { width: 34px; height: 46px; border-radius: 0; object-fit: cover; background: var(--bg-card); }
+.author-book-ph { width: 34px; height: 46px; border-radius: 0; background: rgba(124,58,237,.1); display: flex; align-items: center; justify-content: center; font-size: .9rem; }
+.author-profile-link { font-size: .8rem; color: var(--accent); text-decoration: none; margin-left: auto; flex-shrink: 0; }
+
+/* SNAP */
+.snap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.snap-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 0; overflow: hidden; text-decoration: none; transition: transform .2s; }
+.snap-card:hover { transform: translateY(-2px); }
+.snap-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+.snap-ph { width: 100%; aspect-ratio: 16/9; background: rgba(124,58,237,.1); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+.snap-title { padding: 10px 12px; font-size: .82rem; font-weight: 600; color: var(--text-primary); }
+
+@media (max-width: 640px) {
+  .search-page { padding: 18px 14px 60px; }
+  .result-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .author-profile-link{ font-size: 0.4rem;}
+}

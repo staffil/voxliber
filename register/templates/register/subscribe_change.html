@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}플랜 변경 — Voxliber{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/register/subscribe_success.css' %}">{% endblock %}
+
+{% block content %}
+<div class="success-page">
+
+  <a href="{% url 'register:subscription_manage' %}" class="change-back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    구독 관리로
+  </a>
+
+  <h1 class="success-title" style="margin-top:16px;">플랜 변경</h1>
+
+  <div class="success-card change-card">
+    <div class="change-plans">
+      <div class="change-plan change-plan--current">
+        <div class="change-plan__label">현재 플랜</div>
+        <div class="change-plan__name">{% if subscription.plan == 'monthly' %}월간 구독{% else %}연간 구독{% endif %}</div>
+        <div class="change-plan__price">{% if subscription.plan == 'monthly' %}7,900원/월{% else %}80,000원/년{% endif %}</div>
+      </div>
+      <div class="change-arrow">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5b4cf5" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <div class="change-plan change-plan--target">
+        <div class="change-plan__label">변경 플랜</div>
+        <div class="change-plan__name">{% if target_plan == 'monthly' %}월간 구독{% else %}연간 구독{% endif %}</div>
+        <div class="change-plan__price">{% if target_plan == 'monthly' %}7,900원/월{% else %}80,000원/년{% endif %}</div>
+      </div>
+    </div>
+
+    {% if target_plan == 'yearly' %}
+    <div class="change-notice change-notice--benefit">
+      ✨ 연간으로 전환하면 15% 할인 — 월 6,667원으로 이용하세요.
+    </div>
+    {% else %}
+    <div class="change-notice change-notice--warn">
+      ⚠ 월간으로 변경 시 연간 할인 혜택이 종료됩니다. 변경 즉시 새 구독 주기가 시작됩니다.
+    </div>
+    {% endif %}
+  </div>
+
+  <form method="post" action="{% url 'register:subscribe_change' %}">
+    {% csrf_token %}
+    <div class="success-actions">
+      <button type="submit" class="success-btn success-btn--primary">
+        {% if target_plan == 'yearly' %}연간으로 전환하기{% else %}월간으로 변경하기{% endif %}
+      </button>
+      <a href="{% url 'register:subscription_manage' %}" class="success-btn success-btn--secondary">취소</a>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

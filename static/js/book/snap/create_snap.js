@@ -1,22 +1,18 @@
-const previewBox = document.getElementById("snap-preview");
-
-/* 이미지 프리뷰 */
-document.getElementById("image-input").addEventListener("change", function(e) {
-    const file = e.target.files[0];
-    if (!file) return previewBox.innerHTML = "9:16 미리보기";
-
-    const reader = new FileReader();
-    reader.onload = e => {
-        previewBox.innerHTML = `<img src="${e.target.result}" />`;
-    };
-    reader.readAsDataURL(file);
-});
-
-/* 비디오 프리뷰 */
-document.getElementById("video-input").addEventListener("change", function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const url = URL.createObjectURL(file);
-    previewBox.innerHTML = `<video src="${url}" controls></video>`;
-});
+function previewFile(input, previewId, areaId) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var preview = document.getElementById(previewId);
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+function setVideoName(input, areaId) {
+  var file = input.files[0];
+  if (!file) return;
+  var area = document.getElementById(areaId);
+  var text = area.querySelector('.file-upload-text');
+  if (text) text.innerHTML = '<strong>' + file.name + '</strong>선택 완료';
+}

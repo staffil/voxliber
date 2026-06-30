@@ -1,7 +1,9 @@
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 import json
 
 from .models import FCMToken, Notification
@@ -35,8 +37,9 @@ def register_fcm_token(request):
 @login_required
 def get_notifications(request):
     """내 알림 목록"""
-    notifications = Notification.objects.filter(user=request.user)[:50]
-    unread_count = notifications.filter(is_read=False).count()
+    qs = Notification.objects.filter(user=request.user)
+    unread_count = qs.filter(is_read=False).count()
+    notifications = qs.order_by('-created_at')[:50]
 
     data = [
         {
@@ -71,3 +74,26 @@ def mark_all_read(request):
         return JsonResponse({'success': False}, status=405)
     Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
     return JsonResponse({'success': True})
+
+
+@login_required
+def notification_page(request):
+    """알림 전체 목록 페이지"""
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timezone.timedelta(days=7)
+
+    qs = Notification.objects.filter(user=request.user).order_by('-created_at')
+    unread_count = qs.filter(is_read=False).count()
+    all_notifs = list(qs[:100])
+
+    today_list = [n for n in all_notifs if n.created_at >= today_start]
+    week_list  = [n for n in all_notifs if week_start <= n.created_at < today_start]
+    older_list = [n for n in all_notifs if n.created_at < week_start]
+
+    return render(request, 'notifications/notification_list.html', {
+        'today_list': today_list,
+        'week_list': week_list,
+        'older_list': older_list,
+        'unread_count': unread_count,
+    })

@@ -1,17 +1,50 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}VOXLIBER - 목소리로 듣는 이야기{% endblock %}
+{% block title %}이벤트 — Voxliber{% endblock %}
 
-{% block extra_css %}
-
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/main/event.css' %}">{%  endblock %}
 
 {% block content %}
+<div class="event-page">
+  <div class="page-header">
+    <h1>이벤트</h1>
+    <p>Voxliber 최신 이벤트를 확인하세요</p>
+  </div>
 
-
-{% endblock %}
-
-{% block extra_js %}
-
+  {% if event_list %}
+  <div class="event-list">
+    {% for ev in event_list %}
+    <div class="event-card">
+      <div class="event-card-img">
+        {% if ev.image %}<img src="{{ ev.image.url }}" alt="{{ ev.title }}">
+        {% else %}<div class="event-card-img-ph">🎉</div>{% endif %}
+      </div>
+      <div class="event-card-body">
+        {% if ev.is_active %}
+          <span class="event-badge">🔥 진행 중</span>
+        {% else %}
+          <span class="event-badge ended">종료</span>
+        {% endif %}
+        <div class="event-title">{{ ev.title }}</div>
+        <div class="event-desc">{{ ev.description|truncatechars:200 }}</div>
+        <div class="event-date">
+          {% if ev.start_date %}{{ ev.start_date|date:"Y.m.d" }}{% endif %}
+          {% if ev.end_date %} ~ {{ ev.end_date|date:"Y.m.d" }}{% endif %}
+        </div>
+        {% if ev.link %}
+        <a href="{{ ev.link }}" class="event-btn">자세히 보기</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">🎉</div>
+    <h3>진행 중인 이벤트가 없습니다</h3>
+    <p>곧 새로운 이벤트로 찾아올게요!</p>
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

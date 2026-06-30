@@ -18,9 +18,11 @@ urlpatterns=[
     path("webnovel/<uuid:book_uuid>/upload-cover/", views.webnovel_upload_cover, name="webnovel_upload_cover"),
     path("webnovel/episode/<uuid:content_uuid>/", views.webnovel_episode, name="webnovel_episode"),
     path("content/<uuid:content_uuid>/save-listening/", views.save_listening_history, name="save_listening_history"),
+    path("content/<uuid:content_uuid>/snippet/save/", views.save_snippet, name="save_snippet"),
 
     path("review/<uuid:book_uuid>/", views.submit_review, name="submit_review"),
     path("comment/<uuid:book_uuid>/", views.submit_book_comment, name="submit_book_comment"),
+    path("content/<uuid:content_uuid>/comment/", views.submit_content_comment, name="submit_content_comment"),
     path("my/books/", views.my_books, name="my_books"),
     path("delete/<uuid:book_uuid>/", views.delete_book, name="delete_book"),
     path("tags/search/", views.search_tags, name="search_tags"),
@@ -67,11 +69,6 @@ urlpatterns=[
     path("test/", views.test, name="test"),
     path('chat-api/', views.chat_api, name='chat_api'),
 
-
-    path('ads/audio/<uuid:uuid>/', views.audio_view, name='ad_audio'),
-    path('ads/click/<uuid:uuid>/', views.ad_click, name='ad_click'),
-    path('ads/skip/<uuid:uuid>/', views.ad_skip, name='ad_skip'),
-    path('ads/video/<uuid:uuid>/', views.video_view, name='ad_video'),
 
     # 작가 센터
     path("author/dashboard/", views.author_dashboard, name="author_dashboard"),
@@ -174,8 +171,6 @@ urlpatterns=[
     path("api/snaps/<uuid:snap_uuid>/like/", api_views.api_snap_like, name="api_snap_like"),
     path("api/snaps/<uuid:snap_uuid>/comment/", api_views.api_snap_comment, name="api_snap_comment"),
 
-    # 시 공모전(main)
-    path("api/poem_list/", api_views.api_poem_main, name="api_poem_main"),
     path("api/snippet/", api_views.api_book_snippet_main, name="api_book_snippet_main"),
 
     # 👥 Follow System
@@ -185,10 +180,24 @@ urlpatterns=[
     path("api/following/feed/", api_views.api_following_feed, name="api_following_feed"),
     path("follow/<int:user_id>/toggle/", views.toggle_follow, name="toggle_follow"),  # 웹용 팔로우
 
-    # 🔖 Bookmark System
+    # 📖 Reading Progress API
+    path("api/books/<uuid:book_uuid>/progress/", api_views.api_progress_update, name="api_progress_update"),
+
+    # 🔖 Bookmark System (책 단위)
     path("api/books/<uuid:book_uuid>/bookmark/", api_views.api_bookmark_toggle, name="api_bookmark_toggle"),
     path("api/books/<uuid:book_uuid>/bookmark/note/", api_views.api_bookmark_update_note, name="api_bookmark_update_note"),
     path("api/bookmarks/", api_views.api_user_bookmarks, name="api_user_bookmarks"),
+
+    # 🔖 Episode Bookmark API (에피소드 위치 북마크)
+    path("api/contents/<uuid:content_uuid>/bookmarks/", api_views.api_content_bookmarks, name="api_content_bookmarks"),
+    path("api/content-bookmarks/<int:bookmark_id>/", api_views.api_content_bookmark_detail, name="api_content_bookmark_detail"),
+    path("api/my/content-bookmarks/", api_views.api_my_content_bookmarks, name="api_my_content_bookmarks"),
+
+    # 📌 Snippet API
+    path("api/snippet/", api_views.api_book_snippet_main, name="api_book_snippet_main"),  # 랜덤 피드 (기존)
+    path("api/contents/<uuid:content_uuid>/snippets/", api_views.api_content_snippets, name="api_content_snippets"),
+    path("api/snippets/<int:snippet_id>/", api_views.api_snippet_delete, name="api_snippet_delete"),
+    path("api/my/snippets/", api_views.api_my_snippets, name="api_my_snippets"),
 
     # 📖 Webnovel API
     path("api/webnovels/", api_views.api_webnovel_list, name="api_webnovel_list"),

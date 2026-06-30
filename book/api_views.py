@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg, Count, Max, Q
 from django.views.decorators.csrf import csrf_exempt
-from book.models import Books, Content, BookReview, ReadingProgress, ListeningHistory, Poem_list, BookSnippet, Tags, Follow, BookmarkBook
+from book.models import Books, Content, BookReview, ReadingProgress, ListeningHistory, BookSnippet, Tags, Follow, BookmarkBook
 from book.api_utils import require_api_key, paginate, api_response
 from rest_framework.decorators import api_view
 import json
@@ -390,6 +390,86 @@ def api_my_progress(request):
 
     return api_response({'progress': progress_data})
 
+
+@require_api_key
+def api_progress_update(request, book_uuid):
+    """
+    독서 진행률 저장/업데이트
+
+    POST /api/books/<book_uuid>/progress/
+    PATCH /api/books/<book_uuid>/progress/
+    DELETE /api/books/<book_uuid>/progress/   — 진행 기록 삭제
+
+    Body (POST/PATCH):
+      content_uuid  : 현재 에피소드 UUID (선택)
+      status        : reading | completed | paused (선택)
+      is_favorite   : true | false (선택)
+
+    Response:
+      { ok, progress: { status, last_read_content_number, last_read_at, ... } }
+    """
+    from book.models import Content
+
+    if request.method not in ('POST', 'PATCH', 'DELETE'):
+        return JsonResponse({"error": "method not allowed"}, status=405)
+
+    user = request.api_user
+    book = get_object_or_404(Books, public_uuid=book_uuid)
+
+    if request.method == 'DELETE':
+        ReadingProgress.objects.filter(user=user, book=book).delete()
+        return JsonResponse({"ok": True})
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"error": "잘못된 요청"}, status=400)
+
+    content_uuid  = data.get('content_uuid')
+    status        = data.get('status')
+    is_favorite   = data.get('is_favorite')
+
+    VALID_STATUS = {'reading', 'completed', 'paused'}
+    if status and status not in VALID_STATUS:
+        return JsonResponse({"error": f"status 는 {VALID_STATUS} 중 하나여야 합니다"}, status=400)
+
+    progress, _ = ReadingProgress.objects.get_or_create(
+        user=user, book=book,
+        defaults={'status': 'reading'},
+    )
+
+    if content_uuid:
+        content = get_object_or_404(Content, public_uuid=content_uuid, book=book)
+        progress.current_content = content
+        progress.last_read_content_number = content.number
+
+    if status:
+        progress.status = status
+        if status == 'completed' and not progress.completed_at:
+            from django.utils import timezone as tz
+            progress.completed_at = tz.now()
+
+    if is_favorite is not None:
+        progress.is_favorite = bool(is_favorite)
+
+    progress.save()
+
+    return JsonResponse({
+        "ok": True,
+        "progress": {
+            "status": progress.status,
+            "status_display": progress.get_status_display(),
+            "last_read_content_number": progress.last_read_content_number,
+            "last_read_at": progress.last_read_at.isoformat(),
+            "completed_at": progress.completed_at.isoformat() if progress.completed_at else None,
+            "is_favorite": progress.is_favorite,
+            "current_content": {
+                "public_uuid": str(progress.current_content.public_uuid),
+                "title": progress.current_content.title,
+                "number": progress.current_content.number,
+            } if progress.current_content else None,
+        }
+    })
 
 
 @require_api_key
@@ -1447,53 +1527,327 @@ def api_ai_recommend(request, user_id):
     return JsonResponse({"ai_recommended": data}, json_dumps_params={'ensure_ascii': False})
 
 
-
-# 시 공모전 작품
-def api_poem_main(request):
-    poem_qs = Poem_list.objects.filter(status = 'winner').all().order_by("?")[:10]
-
-    poem_list = []
-
-    for p  in poem_qs:
-        poem_list.append({
-            "id": p.user_id,
-            "title": p.title,
-            "content": p.content,
-            "poem_audio": p.poem_audio.url if p.poem_audio else None,
-            "created_at": p.created_at,
-            "image": p.image.url if p.image else None,
-        })
-
-    return JsonResponse({"poems": poem_list})
-
 def api_book_snippet_main(request):
-    snippet_qs = BookSnippet.objects.all().order_by("?")[:10]
+    snippet_qs = BookSnippet.objects.select_related('book', 'book__user').all().order_by("?")[:10]
 
     snippet_list = []
     for s in snippet_qs:
         snippet_list.append({
             "id": s.id,
             "sentence": s.sentence,
-            "audio_file": s.audio_file.url if s.audio_file else None,
-            "created_at": s.created_at,
+            "audio_file": request.build_absolute_uri(s.audio_file.url) if s.audio_file else None,
+            "created_at": s.created_at.isoformat(),
             "link": s.link,
             "book": {
                 "id": s.book.id if s.book else None,
                 "title": s.book.name if s.book else None,
-                "created_at": s.book.created_at if s.book else None,
                 "author": s.book.user.nickname if s.book and s.book.user else None,
-                "cover_img": s.book.cover_img.url if s.book and s.book.cover_img else None,
-
+                "cover_img": request.build_absolute_uri(s.book.cover_img.url) if s.book and s.book.cover_img else None,
             }
         })
-    return JsonResponse({"snippet":snippet_list })
+    return JsonResponse({"snippet": snippet_list})
+
+
+# ==================== 📌 Snippet API ====================
+
+def _snippet_to_dict(request, s):
+    return {
+        "id": s.id,
+        "sentence": s.sentence,
+        "audio_file": request.build_absolute_uri(s.audio_file.url) if s.audio_file else None,
+        "start_time": s.start_time,
+        "end_time": s.end_time,
+        "created_at": s.created_at.isoformat(),
+        "link": s.link,
+        "book": {
+            "id": s.book.id if s.book else None,
+            "public_uuid": str(s.book.public_uuid) if s.book else None,
+            "title": s.book.name if s.book else None,
+            "author": s.book.user.nickname if s.book and s.book.user else None,
+            "cover_img": request.build_absolute_uri(s.book.cover_img.url) if s.book and s.book.cover_img else None,
+        },
+        "content": {
+            "public_uuid": str(s.content.public_uuid) if s.content else None,
+            "title": s.content.title if s.content else None,
+            "number": s.content.number if s.content else None,
+        } if s.content else None,
+    }
+
+
+@require_api_key
+def api_content_snippets(request, content_uuid):
+    """
+    에피소드 스니펫 목록 조회 / 스니펫 생성
+
+    GET  /api/contents/<content_uuid>/snippets/
+         Query: page, per_page
+
+    POST /api/contents/<content_uuid>/snippets/
+         Body: { sentence, start_time?, end_time? }
+         * 로그인 필요
+    """
+    from book.models import Content
+    content = get_object_or_404(Content, public_uuid=content_uuid, is_deleted=False)
+
+    if request.method == 'GET':
+        page     = int(request.GET.get('page', 1))
+        per_page = min(int(request.GET.get('per_page', 20)), 50)
+        qs = BookSnippet.objects.select_related('book', 'book__user', 'content') \
+                                .filter(content=content) \
+                                .order_by('-created_at')
+        result = paginate(qs, page, per_page)
+        return JsonResponse({
+            "snippets": [_snippet_to_dict(request, s) for s in result['items']],
+            "pagination": {k: v for k, v in result.items() if k != 'items'},
+        })
+
+    if request.method == 'POST':
+        user = getattr(request, 'api_user', None)
+        if not user:
+            return JsonResponse({"error": "로그인이 필요합니다"}, status=401)
+
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            return JsonResponse({"error": "잘못된 요청"}, status=400)
+
+        sentence  = data.get('sentence', '').strip()
+        start_sec = data.get('start_time')
+        end_sec   = data.get('end_time')
+
+        if not sentence:
+            return JsonResponse({"error": "sentence 는 필수입니다"}, status=400)
+        if len(sentence) > 500:
+            return JsonResponse({"error": "문장은 500자 이하여야 합니다"}, status=400)
+
+        import os, tempfile
+        from django.core.files.base import ContentFile
+
+        snippet = BookSnippet(
+            book=content.book,
+            content=content,
+            user=user,
+            sentence=sentence,
+            start_time=start_sec,
+            end_time=end_sec,
+            link=request.build_absolute_uri(f'/book/content/{content_uuid}/'),
+        )
+
+        if start_sec is not None and end_sec is not None and content.audio_file:
+            try:
+                from pydub import AudioSegment
+                audio = AudioSegment.from_file(content.audio_file.path)
+                start_ms = int(float(start_sec) * 1000)
+                end_ms   = int(float(end_sec)   * 1000)
+                clip = audio[start_ms:end_ms]
+                buf = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
+                clip.export(buf.name, format='mp3', bitrate='128k')
+                buf.close()
+                with open(buf.name, 'rb') as f:
+                    snippet.audio_file.save(
+                        f'snippet_{content_uuid}_{start_ms}.mp3',
+                        ContentFile(f.read()), save=False
+                    )
+                os.unlink(buf.name)
+            except Exception as e:
+                pass
+
+        snippet.save()
+        return JsonResponse({"ok": True, "snippet": _snippet_to_dict(request, snippet)}, status=201)
+
+    return JsonResponse({"error": "method not allowed"}, status=405)
+
+
+@require_api_key
+def api_snippet_delete(request, snippet_id):
+    """
+    스니펫 삭제 (본인 것만)
+
+    DELETE /api/snippets/<snippet_id>/
+    """
+    if request.method != 'DELETE':
+        return JsonResponse({"error": "method not allowed"}, status=405)
+
+    user = getattr(request, 'api_user', None)
+    if not user:
+        return JsonResponse({"error": "로그인이 필요합니다"}, status=401)
+
+    snippet = get_object_or_404(BookSnippet, id=snippet_id)
+    if snippet.user_id != user.pk:
+        return JsonResponse({"error": "권한이 없습니다"}, status=403)
+
+    snippet.delete()
+    return JsonResponse({"ok": True})
+
+
+@require_api_key
+def api_my_snippets(request):
+    """
+    내 스니펫 목록
+
+    GET /api/my/snippets/
+        Query: page, per_page
+    """
+    user = getattr(request, 'api_user', None)
+    if not user:
+        return JsonResponse({"error": "로그인이 필요합니다"}, status=401)
+
+    page     = int(request.GET.get('page', 1))
+    per_page = min(int(request.GET.get('per_page', 20)), 50)
+
+    qs = BookSnippet.objects.select_related('book', 'book__user', 'content') \
+                            .filter(user=user) \
+                            .order_by('-created_at')
+    result = paginate(qs, page, per_page)
+    return JsonResponse({
+        "snippets": [_snippet_to_dict(request, s) for s in result['items']],
+        "pagination": {k: v for k, v in result.items() if k != 'items'},
+    })
+
+
+# ==================== 🔖 Episode Bookmark API ====================
+
+def _content_bookmark_to_dict(bm):
+    return {
+        "id": bm.id,
+        "position": bm.position,
+        "memo": bm.memo or "",
+        "created_at": bm.created_at.isoformat(),
+        "updated_at": bm.updated_at.isoformat(),
+        "content": {
+            "public_uuid": str(bm.content.public_uuid),
+            "title": bm.content.title,
+            "number": bm.content.number,
+            "book": {
+                "public_uuid": str(bm.content.book.public_uuid),
+                "title": bm.content.book.name,
+            } if bm.content.book_id else None,
+        } if bm.content_id else None,
+    }
+
+
+@require_api_key
+def api_content_bookmarks(request, content_uuid):
+    """
+    에피소드 내 북마크 (위치/메모) 목록 조회 / 저장
+
+    GET  /api/contents/<content_uuid>/bookmarks/
+         * 로그인 필요, 본인 북마크만 반환
+
+    POST /api/contents/<content_uuid>/bookmarks/
+         Body: { position, memo? }
+         * 같은 position 이 있으면 메모를 업데이트, 없으면 생성
+    """
+    from book.models import Content, ContentBookmark
+
+    user = getattr(request, 'api_user', None)
+    if not user:
+        return JsonResponse({"error": "로그인이 필요합니다"}, status=401)
+
+    content = get_object_or_404(Content, public_uuid=content_uuid, is_deleted=False)
+
+    if request.method == 'GET':
+        bms = ContentBookmark.objects.select_related('content', 'content__book') \
+                                     .filter(user=user, content=content) \
+                                     .order_by('position')
+        return JsonResponse({"bookmarks": [_content_bookmark_to_dict(b) for b in bms]})
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            return JsonResponse({"error": "잘못된 요청"}, status=400)
+
+        position = data.get('position')
+        memo     = data.get('memo', '').strip()
+
+        if position is None:
+            return JsonResponse({"error": "position 은 필수입니다"}, status=400)
+        try:
+            position = float(position)
+        except (TypeError, ValueError):
+            return JsonResponse({"error": "position 은 숫자(초)여야 합니다"}, status=400)
+
+        bm, created = ContentBookmark.objects.update_or_create(
+            user=user, content=content, position=position,
+            defaults={'memo': memo},
+        )
+        return JsonResponse({
+            "ok": True,
+            "created": created,
+            "bookmark": _content_bookmark_to_dict(bm),
+        }, status=201 if created else 200)
+
+    return JsonResponse({"error": "method not allowed"}, status=405)
+
+
+@require_api_key
+def api_content_bookmark_detail(request, bookmark_id):
+    """
+    에피소드 북마크 수정 / 삭제
+
+    PATCH  /api/content-bookmarks/<id>/   Body: { memo }
+    DELETE /api/content-bookmarks/<id>/
+    """
+    from book.models import ContentBookmark
+
+    user = getattr(request, 'api_user', None)
+    if not user:
+        return JsonResponse({"error": "로그인이 필요합니다"}, status=401)
+
+    bm = get_object_or_404(ContentBookmark, id=bookmark_id)
+    if bm.user_id != user.pk:
+        return JsonResponse({"error": "권한이 없습니다"}, status=403)
+
+    if request.method == 'PATCH':
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            return JsonResponse({"error": "잘못된 요청"}, status=400)
+        bm.memo = data.get('memo', bm.memo or '')
+        bm.save(update_fields=['memo', 'updated_at'])
+        return JsonResponse({"ok": True, "bookmark": _content_bookmark_to_dict(bm)})
+
+    if request.method == 'DELETE':
+        bm.delete()
+        return JsonResponse({"ok": True})
+
+    return JsonResponse({"error": "method not allowed"}, status=405)
+
+
+@require_api_key
+def api_my_content_bookmarks(request):
+    """
+    내 에피소드 북마크 전체 목록
+
+    GET /api/my/content-bookmarks/
+        Query: page, per_page
+    """
+    from book.models import ContentBookmark
+
+    user = getattr(request, 'api_user', None)
+    if not user:
+        return JsonResponse({"error": "로그인이 필요합니다"}, status=401)
+
+    page     = int(request.GET.get('page', 1))
+    per_page = min(int(request.GET.get('per_page', 20)), 50)
+
+    qs = ContentBookmark.objects.select_related('content', 'content__book') \
+                                .filter(user=user) \
+                                .order_by('-created_at')
+    result = paginate(qs, page, per_page)
+    return JsonResponse({
+        "bookmarks": [_content_bookmark_to_dict(b) for b in result['items']],
+        "pagination": {k: v for k, v in result.items() if k != 'items'},
+    })
+
+
 # ==================== 🔍 통합 검색 API (웹용 + 앱용) ====================
 
 from django.db.models import Q
 from django.http import JsonResponse
 from register.models import Users
 from book.models import Books, BookSnap
-from character.models import Story  # Snap 대체 LLM
 
 def api_search(request):
     """
@@ -1510,10 +1864,9 @@ def api_search(request):
         return JsonResponse({'success': True, 'results': [], 'counts': {}})
 
     results = []
-    counts = {'book': 0, 'audiobook': 0, 'webnovel': 0, 'story': 0, 'snap': 0, 'user': 0}
+    counts = {'book': 0, 'audiobook': 0, 'webnovel': 0, 'snap': 0, 'user': 0}
 
     added_book_ids = set()
-    added_story_ids = set()
     added_snap_ids = set()
     added_user_ids = set()
 
@@ -1528,7 +1881,6 @@ def api_search(request):
             if user.public_uuid and str(user.public_uuid) not in added_user_ids:
                 added_user_ids.add(str(user.public_uuid))
                 book_count = Books.objects.filter(user=user).count()
-                story_count = Story.objects.filter(user=user).count()
                 snap_count = BookSnap.objects.filter(user=user).count()
 
                 results.append({
@@ -1538,7 +1890,6 @@ def api_search(request):
                     'username': user.username,
                     'profile_image': request.build_absolute_uri(user.user_img.url) if user.user_img else None,
                     'book_count': book_count,
-                    'story_count': story_count,
                     'snap_count': snap_count
                 })
                 counts['user'] += 1
@@ -1563,27 +1914,8 @@ def api_search(request):
                         })
                         counts['book'] += 1
 
-                # 유저 스토리
-                for story in Story.objects.filter(user=user, is_public=True).select_related('user').prefetch_related('genres', 'characters')[:10]:
-                    if str(story.public_uuid) not in added_story_ids:
-                        added_story_ids.add(str(story.public_uuid))
-                        genres = ', '.join([g.name for g in story.genres.all()[:2]]) or 'AI 스토리'
-                        image = request.build_absolute_uri(story.cover_image.url) if getattr(story, 'cover_image', None) else None
-                        results.append({
-                            'type': 'story',
-                            'id': str(story.public_uuid),
-                            'title': story.title,
-                            'description': story.description[:100] if story.description else '',
-                            'author': story.user.nickname if story.user else '알 수 없음',
-                            'author_id': str(story.user.public_uuid) if story.user else None,
-                            'cover_image': image,
-                            'genre': genres,
-                            'character_count': story.characters.count()
-                        })
-                        counts['story'] += 1
-
                 # 유저 Snap
-                for snap in BookSnap.objects.filter(user=user).select_related('user', 'story', 'book')[:10]:
+                for snap in BookSnap.objects.filter(user=user).select_related('user', 'book')[:10]:
                     if str(snap.public_uuid) not in added_snap_ids:
                         added_snap_ids.add(str(snap.public_uuid))
                         thumb = request.build_absolute_uri(snap.thumbnail.url) if getattr(snap, 'thumbnail', None) else None
@@ -1600,8 +1932,7 @@ def api_search(request):
                             'comments_count': comments_count,
                             'allow_comments': snap.allow_comments,
                             'book_id': str(snap.book.public_uuid) if snap.book else None,
-                            'story_id': str(snap.story.public_uuid) if snap.story else None,
-                            'linked_type': 'book' if snap.book else 'story' if snap.story else None,
+                            'linked_type': 'book' if snap.book else None,
                             'book_comment': snap.book_comment,
                             'duration': snap.duration,
                             'created_at': snap.created_at.isoformat(),
@@ -1651,42 +1982,14 @@ def api_search(request):
                 else:
                     counts['audiobook'] += 1
 
-    # ========== 스토리 검색 ========== 
-    if filter_type in ['all', 'story']:
-        for story in Story.objects.filter(
-            Q(title__icontains=query) |
-            Q(description__icontains=query) |
-            Q(genres__name__icontains=query) |
-            Q(tags__name__icontains=query) |
-            Q(user__nickname__icontains=query),
-            is_public=True
-        ).select_related('user').prefetch_related('genres', 'characters').distinct()[:30]:
-            if str(story.public_uuid) not in added_story_ids:
-                added_story_ids.add(str(story.public_uuid))
-                genres = ', '.join([g.name for g in story.genres.all()[:2]]) or 'AI 스토리'
-                image = request.build_absolute_uri(story.cover_image.url) if getattr(story, 'cover_image', None) else None
-                results.append({
-                    'type': 'story',
-                    'id': str(story.public_uuid),
-                    'title': story.title,
-                    'description': story.description[:100] if story.description else '',
-                    'author': story.user.nickname if story.user else '알 수 없음',
-                    'author_id': str(story.user.public_uuid) if story.user else None,
-                    'cover_image': image,
-                    'genre': genres,
-                    'character_count': story.characters.count(),
-                    'adult_choice': getattr(story, 'adult_choice', False),
-                })
-                counts['story'] += 1
-
-    # ========== Snap 검색 ========== 
+    # ========== Snap 검색 ==========
     if filter_type in ['all', 'snap']:
         for snap in BookSnap.objects.filter(
             Q(snap_title__icontains=query) |
             Q(book_comment__icontains=query) |
             Q(book__name__icontains=query) |
             Q(user__nickname__icontains=query)
-        ).select_related('user', 'story', 'book').distinct()[:30]:
+        ).select_related('user', 'book').distinct()[:30]:
             if str(snap.public_uuid) not in added_snap_ids:
                 added_snap_ids.add(str(snap.public_uuid))
                 thumb = request.build_absolute_uri(snap.thumbnail.url) if getattr(snap, 'thumbnail', None) else None
@@ -1703,8 +2006,7 @@ def api_search(request):
                     'comments_count': comments_count,
                     'allow_comments': snap.allow_comments,
                     'book_id': str(snap.book.public_uuid) if snap.book else None,
-                    'story_id': str(snap.story.public_uuid) if snap.story else None,
-                    'linked_type': 'book' if snap.book else 'story' if snap.story else None,
+                    'linked_type': 'book' if snap.book else None,
                     'book_comment': snap.book_comment,
                     'duration': snap.duration,
                     'created_at': snap.created_at.isoformat(),

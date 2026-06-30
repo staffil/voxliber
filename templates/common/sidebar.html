@@ -1,0 +1,211 @@
+{% load static %}
+<aside class="sidebar" id="voxSidebar">
+
+{% if request.user.is_authenticated %}
+{# ============================================================ #}
+{# LOGGED-IN SIDEBAR                                            #}
+{# ============================================================ #}
+<div class="sidebar-inner">
+
+  <!-- Logo + Collapse -->
+  <div class="sidebar-header">
+    <a href="{% url 'main:main' %}" class="sidebar-logo">
+      <img src="{% static 'img/logo3.png' %}" alt="Voxliber" class="logo-img">
+      <span class="logo-text">VOXLIBER</span>
+    </a>
+    <button class="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="사이드바 접기">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- User mini card -->
+  <a href="{% url 'mypage:my_profile' %}" class="sidebar-user">
+    {% if request.user.user_img %}
+      <img src="{{ request.user.user_img.url }}" alt="프로필" class="user-avatar">
+    {% else %}
+      <div class="user-avatar user-avatar-placeholder">
+        {% if request.user.nickname %}{{ request.user.nickname|first|upper }}{% else %}U{% endif %}
+      </div>
+    {% endif %}
+    <div class="user-info">
+      <span class="user-name">{{ request.user.nickname|default:"사용자" }}</span>
+      <span class="user-plan">
+        {% with sub=request.user.subscription %}
+          {% if sub and sub.is_active %}
+            {% if sub.plan == 'yearly' %}연간 구독중{% else %}월간 구독중{% endif %}
+          {% else %}무료 이용 중{% endif %}
+        {% endwith %}
+      </span>
+    </div>
+  </a>
+
+
+  <!-- 이어듣기 (context processor 제공 시) -->
+  {% if sidebar_resume_books %}
+  <div class="sidebar-section">
+    <div class="section-label">이어듣기</div>
+    <div class="sidebar-scroll-row">
+      {% for item in sidebar_resume_books %}
+      <a href="{% url 'book:book_detail' item.book.public_uuid %}" class="resume-thumb"
+         title="{{ item.book.name }}">
+        {% if item.book.cover_img %}
+          <img src="{{ item.book.cover_img.url }}" alt="{{ item.book.name }}" loading="lazy">
+        {% else %}
+          <div class="thumb-placeholder">{{ item.book.name|slice:":1" }}</div>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 메뉴 네비게이션 -->
+  <nav class="sidebar-nav">
+    <div class="nav-group">
+      <a href="{% url 'main:main' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>홈</span>
+      </a>
+      <a href="{% url 'mypage:my_library' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+        <span>내 서재</span>
+      </a>
+      <a href="{% url 'book:my_bookmarks' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span>북마크</span>
+      </a>
+      <a href="{% url 'mypage:my_profile' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M3 21v-1a7 7 0 0 1 14 0v1"/></svg>
+        <span>마이페이지</span>
+      </a>
+      <a href="{% url 'book:book_snap_list' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        <span>스냅</span>
+      </a>
+      <a href="{% url 'notifications:page' %}" class="nav-item" id="ntfNavItem">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span>알림</span>
+        <span class="ntf-sb-badge" id="ntfSbBadge" style="display:none"></span>
+      </a>
+      <a href="{% url 'register:subscribe_plan' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span>구독 플랜</span>
+      </a>
+    </div>
+
+    <!-- 작가 메뉴 / 신청 -->
+    <div class="nav-divider"></div>
+    {% if request.user.is_author %}
+    <div class="nav-group-label">작가 메뉴</div>
+    <div class="nav-group">
+      <a href="{% url 'register:author_center' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        <span>작가 센터</span>
+      </a>
+      <a href="{% url 'mypage:my_book_list' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>내 작품</span>
+      </a>
+      <a href="{% url 'register:author_inquiry_list' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>작가 문의</span>
+      </a>
+      <a href="{% url 'book:author_dashboard' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+        <span>청취 통계</span>
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- 관리자 메뉴 -->
+    {% if request.user.is_staff %}
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">관리자</div>
+    <div class="nav-group">
+      <a href="{% url 'main:admin_dashboard' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>관리자 대시보드</span>
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="nav-divider"></div>
+    <a href="{% url 'register:logout' %}" class="nav-item nav-logout">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span>로그아웃</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-bottom"></div>
+
+</div>
+
+{% else %}
+{# ============================================================ #}
+{# GUEST SIDEBAR                                                #}
+{# ============================================================ #}
+<div class="sidebar-inner sidebar-guest">
+
+  <!-- Logo -->
+  <div class="sidebar-header">
+    <a href="{% url 'main:main' %}" class="sidebar-logo">
+      <img src="{% static 'img/logo3.png' %}" alt="Voxliber" class="logo-img">
+      <span class="logo-text">VOXLIBER</span>
+    </a>
+  </div>
+
+  <!-- Intro -->
+  <div class="guest-intro">
+    <div class="guest-icon">
+
+      <img src="{% static 'img/logo3.png' %}" alt="Voxliber" class="logo-login">
+
+
+    </div>
+    <p class="guest-title">소리로 읽는 서재</p>
+    <p class="guest-desc">간편로그인으로<br>새롭게 시작하세요</p>
+  </div>
+
+  <!-- OAuth buttons -->
+  <div class="oauth-buttons">
+    <a href="{% url 'register:google_login' %}" class="oauth-btn oauth-google">
+      <img src="{% static 'img/google_login.png' %}" alt="" class="oauth-icon">
+      Google로 시작하기
+    </a>
+    <a href="{% url 'register:kakao_login' %}" class="oauth-btn oauth-kakao">
+      <img src="{% static 'img/kakao_login.png' %}" alt="" class="oauth-icon">
+      카카오로 시작하기
+    </a>
+    <a href="{% url 'register:naver_login' %}" class="oauth-btn oauth-naver">
+      <img src="{% static 'img/naver_login.png' %}" alt="" class="oauth-icon">
+      네이버로 시작하기
+    </a>
+  </div>
+  <div class="terms-of-all">
+      계정생성시 <a href="{% url 'main:terms_of_service' %}" class="terms">이용약관</a> 및
+      <a href="{% url 'main:privacy_policy' %}" class="terms">개인정보처리방침</a> 에 동의하게 됩니다.
+  </div>
+
+  <!-- Guest nav -->
+  <nav class="sidebar-nav" style="margin-top:8px;">
+    <div class="nav-group">
+      <a href="{% url 'main:main' %}" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>홈</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Policy -->
+  <div class="guest-policy">
+    <a href="{% url 'main:terms_of_service' %}">이용약관</a>
+    <span class="sep">·</span>
+    <a href="{% url 'main:privacy_policy' %}">개인정보처리방침</a>
+  </div>
+
+</div>
+{% endif %}
+
+</aside>

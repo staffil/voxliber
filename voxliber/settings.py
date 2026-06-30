@@ -115,8 +115,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework.authtoken',
     "django_celery_results",
-    "character",
-    "advertisment",
     "notifications",
 ]
 
@@ -157,6 +155,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "main.context_processors.sidebar_context",
             ],
         },
     },

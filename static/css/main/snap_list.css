@@ -1,0 +1,39 @@
+.snap-page { max-width: 1100px; margin: 0 auto; padding: 36px 28px 80px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+.page-header h1 { font-family: 'Poppins', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--text-primary); }
+.btn-create-snap {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--accent); color: #fff; border: none; padding: 10px 18px;
+  border-radius: 0; font-size: .84rem; font-weight: 700;
+  text-decoration: none; cursor: pointer; transition: opacity .2s;
+}
+.btn-create-snap:hover { opacity: .85; }
+
+.snap-masonry { columns: 3; gap: 16px; }
+@media (max-width: 900px) { .snap-masonry { columns: 2; } }
+@media (max-width: 560px) { .snap-masonry { columns: 1; } }
+
+.snap-card {
+  break-inside: avoid;
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  overflow: hidden;
+  display: block;
+  text-decoration: none;
+  transition: transform .2s, box-shadow .2s;
+}
+.snap-card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,.3); }
+
+.snap-card-thumb img { width: 100%; display: block; }
+.snap-card-thumb-ph { width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg,rgba(124,58,237,.15),rgba(59,130,246,.08)); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--text-muted); }
+.snap-card-body { padding: 14px; }
+.snap-card-title { font-size: .9rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; line-height: 1.35; }
+.snap-card-user { display: flex; align-items: center; gap: 8px; }
+.snap-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: .65rem; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+.snap-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.snap-username { font-size: .74rem; color: var(--text-muted); }
+.snap-date { font-size: .7rem; color: var(--text-muted); margin-left: auto; }
+
+@media (max-width: 640px) { .snap-page { padding: 18px 14px 60px; } }

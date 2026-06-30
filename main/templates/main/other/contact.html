@@ -1,56 +1,42 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}문의 목록 | VOXLIBER{% endblock %}
+{% block title %}문의하기 — Voxliber{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/main/legal_pages.css' %}">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/main/other/legal_pages.css' %}">{%  endblock %}
 
 {% block content %}
-<div class="contact-wrapper">
-    <div class="contact-header">
-        <h1>문의 목록</h1>
-        <a href="contact/write/" class="contact-write-btn" data-login-required>문의하기</a>
-    </div>
+<div class="contact-page">
+  <div class="page-header">
+    <h1>문의하기</h1>
+    <a href="{% url 'main:contact_write' %}" class="btn-write">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      문의 작성
+    </a>
+  </div>
 
-    {% if contacts %}
-    <table class="contact-table">
-        <thead>
-            <tr>
-                <th>번호</th>
-                <th>이름</th>
-                <th>제목</th>
-                <th>작성일</th>
-            </tr>
-        </thead>
-<tbody>
-{% for contact in contacts %}
-<tr>
-    <td>{{ forloop.counter }}</td>
-    <td>
-        {% if contact.user %}
-            {{ contact.user.nickname }}
-        {% else %}
-            비회원
-        {% endif %}
-    </td>
-    <td>
-        <a href="{% url 'main:contact_detail' contact.id %}" data-login-required>
-            {{ contact.subject }}
-        </a>
-    </td>
-    <td>{{ contact.created_at|date:"Y.m.d H:i" }}</td>
-</tr>
-{% endfor %}
-</tbody>
-
-    </table>
-    {% else %}
-    <div class="no-data">등록된 문의가 없습니다.</div>
-    {% endif %}
+  {% if contacts %}
+  <div class="contact-list">
+    {% for c in contacts %}
+    <a href="{% url 'main:contact_detail' c.id %}" class="contact-item">
+      <span class="contact-status status-{{ c.status|default:'pending' }}">
+        {% if c.status == 'answered' %}답변완료
+        {% elif c.status == 'closed' %}종료
+        {% else %}접수됨{% endif %}
+      </span>
+      <span class="contact-subject">{{ c.subject }}</span>
+      <span class="contact-author">{{ c.user.nickname|default:c.email }}</span>
+      <span class="contact-date">{{ c.created_at|date:"m.d" }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">💬</div>
+    <h3>문의 내역이 없습니다</h3>
+    <p>궁금한 점이 있으시면 문의해주세요</p>
+    <a href="{% url 'main:contact_write' %}" class="btn-primary" style="margin-top:20px;display:inline-block;">문의 작성</a>
+  </div>
+  {% endif %}
 </div>
-{% endblock %}
-
-{% block extra_js %}
 {% endblock %}

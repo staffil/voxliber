@@ -1,0 +1,115 @@
+{% extends "base_author.html" %}
+{% load static %}
+
+{% block title %}작가 센터 — Voxliber{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/register/author_center.css' %}">{% endblock %}
+
+{% block content %}
+<div class="ac-page">
+
+  <div class="ac-header">
+    <div class="ac-header-text">
+      <h1 class="ac-title">작가 센터</h1>
+      <p class="ac-desc">내 작품을 관리하고 청취 현황을 확인하세요</p>
+    </div>
+    <a href="{% url 'book:book_profile' %}" class="ac-btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      새 작품 등록
+    </a>
+  </div>
+
+  <div class="ac-section">
+    <div class="ac-section-label">메뉴</div>
+    <div class="ac-nav-list">
+
+      <a href="{% url 'mypage:my_book_list' %}" class="ac-nav-item">
+        <div class="ac-nav-left">
+          <span class="ac-nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+          </span>
+          <div class="ac-nav-info">
+            <span class="ac-nav-name">내 작품</span>
+            <span class="ac-nav-hint">등록된 오디오북을 관리합니다</span>
+          </div>
+        </div>
+        <svg class="ac-nav-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+
+      <a href="{% url 'register:author_inquiry_list' %}" class="ac-nav-item">
+        <div class="ac-nav-left">
+          <span class="ac-nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </span>
+          <div class="ac-nav-info">
+            <span class="ac-nav-name">작가 문의</span>
+            <span class="ac-nav-hint">운영팀에 문의하거나 답변을 확인합니다</span>
+          </div>
+        </div>
+        <svg class="ac-nav-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+
+      <a href="{% url 'book:author_dashboard' %}" class="ac-nav-item">
+        <div class="ac-nav-left">
+          <span class="ac-nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+          </span>
+          <div class="ac-nav-info">
+            <span class="ac-nav-name">청취 통계</span>
+            <span class="ac-nav-hint">청취 수, 완독률 등 통계를 확인합니다</span>
+          </div>
+        </div>
+        <svg class="ac-nav-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+
+      <a href="{% url 'voice:voice_list' %}" class="ac-nav-item">
+        <div class="ac-nav-left">
+          <span class="ac-nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </span>
+          <div class="ac-nav-info">
+            <span class="ac-nav-name">목소리 라이브러리</span>
+            <span class="ac-nav-hint">사용 가능한 AI 목소리를 탐색합니다</span>
+          </div>
+        </div>
+        <svg class="ac-nav-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+
+      <a href="{% url 'book:create_book_snap' %}" class="ac-nav-item">
+        <div class="ac-nav-left">
+          <span class="ac-nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </span>
+          <div class="ac-nav-info">
+            <span class="ac-nav-name">스냅 만들기</span>
+            <span class="ac-nav-hint">작품의 스냅을 만들어 팬들과 공유합니다</span>
+          </div>
+        </div>
+        <svg class="ac-nav-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+
+    </div>
+  </div>
+
+  <p class="ac-footnote">작가 대시보드 기능이 순차적으로 추가될 예정입니다.</p>
+
+</div>
+{% endblock %}

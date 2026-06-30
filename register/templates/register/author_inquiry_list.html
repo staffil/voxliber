@@ -1,0 +1,70 @@
+{% extends "base_author.html" %}
+{% load static %}
+
+{% block title %}작가 문의 — Voxliber{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/register/author_inquiry_list.css' %}">{% endblock %}
+
+{% block content %}
+<div class="inq-page">
+
+  <div class="inq-header">
+    <div class="inq-header-text">
+      <h1 class="inq-title">작가 문의</h1>
+      <p class="inq-desc">운영팀에 문의하거나 답변을 확인합니다</p>
+    </div>
+    <a href="{% url 'register:author_inquiry_write' %}" class="inq-btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      문의 작성
+    </a>
+  </div>
+
+  {% for msg in messages %}
+  <div class="inq-alert-{% if msg.tags == 'error' %}error{% else %}success{% endif %}">{{ msg }}</div>
+  {% endfor %}
+
+  <div class="inq-section">
+    <div class="inq-section-label">
+      <span>문의 내역</span>
+      {% if inquiries %}
+      <span class="inq-count">{{ inquiries|length }}건</span>
+      {% endif %}
+    </div>
+
+    <div class="inq-table">
+      {% for inq in inquiries %}
+      <a href="{% url 'register:author_inquiry_detail' inq.id %}" class="inq-row">
+
+        <div class="inq-col-date">{{ inq.created_at|date:"Y.m.d" }}</div>
+
+        <div class="inq-col-category">
+          <span class="inq-badge inq-badge-category">{{ inq.get_category_display }}</span>
+        </div>
+
+        <div class="inq-col-title">{{ inq.title }}</div>
+
+        <div class="inq-col-status">
+          <span class="inq-badge inq-badge-{{ inq.status }}">{{ inq.get_status_display }}</span>
+        </div>
+
+        <div class="inq-col-arrow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+
+      </a>
+      {% empty %}
+      <div class="inq-empty">
+        <div class="inq-empty-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <p class="inq-empty-title">아직 문의 내역이 없습니다</p>
+        <p class="inq-empty-desc">궁금한 사항이 있으면 문의를 남겨주세요</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

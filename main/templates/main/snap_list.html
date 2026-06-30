@@ -1,98 +1,53 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}SNAP - VOXLIBER{% endblock %}
+{% block title %}스냅 — Voxliber{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/home/main/snap.css' %}">
-<link rel="stylesheet" href="{% static 'css/home/main/snap_list.css' %}">
-
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/main/snap_list.css' %}">{% endblock %}
 
 {% block content %}
-<div class="snap-list-container">
-    <div class="snap-list-header">
-        <h1>📸 SNAP</h1>
-        <p>짧고 강렬한 북스냅을 만나보세요</p>
-    </div>
+<div class="snap-page">
+  <div class="page-header">
+    <h1>스냅</h1>
+    {% if request.user.is_authenticated %}
+    <a href="{% url 'book:create_snap' %}" class="btn-create-snap">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      스냅 만들기
+    </a>
+    {% endif %}
+  </div>
 
-    <div class="snap-grid">
-        {% for snap in snap_list %}
-        <div class="snap-grid-item">
-            <a href="{% url 'book:book_snap_detail' snap.public_uuid %}" data-login-required>
-                <div class="snap-media-wrapper">
-                    <!-- 섬네일 이미지 -->
-                    {% if snap.thumbnail %}
-                    <img class="snap-thumbnail"
-                         src="{{ snap.thumbnail.url }}"
-                         alt="{{ snap.snap_title }}"
-                         loading="lazy">
-                    {% else %}
-                    <img class="snap-thumbnail"
-                         src="{% static 'images/book_snap_placeholder.png' %}"
-                         alt="{{ snap.snap_title }}"
-                         loading="lazy">
-                    {% endif %}
-
-                    <!-- 영상 (호버 시 재생) -->
-                    {% if snap.snap_video %}
-                    <video class="hover-video"
-                           muted
-                           loop
-                           playsinline
-                           preload="none"
-                           data-src="{{ snap.snap_video.url }}">
-                    </video>
-                    {% endif %}
-
-                    <!-- 오버레이 -->
-                    <div class="snap-overlay">
-                        <h3>{{ snap.snap_title|default:"제목 없음" }}</h3>
-                        <div class="snap-meta">
-                            {% if snap.user %}
-                            <span>{{ snap.user.nickname }}</span>
-                            {% endif %}
-                            {% if snap.view_count %}
-                            <span>👁 {{ snap.view_count }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </a>
+  {% if snap_list %}
+  <div class="snap-masonry">
+    {% for snap in snap_list %}
+    <a href="{% url 'book:snap_detail' snap.public_uuid %}" class="snap-card">
+      <div class="snap-card-thumb">
+        {% if snap.thumbnail %}<img src="{{ snap.thumbnail.url }}" alt="{{ snap.snap_title }}" loading="lazy">
+        {% else %}<div class="snap-card-thumb-ph">🎬</div>{% endif %}
+      </div>
+      <div class="snap-card-body">
+        <div class="snap-card-title">{{ snap.snap_title }}</div>
+        <div class="snap-card-user">
+          <div class="snap-avatar">
+            {% if snap.user.user_img %}<img src="{{ snap.user.user_img.url }}" alt="">
+            {% else %}{{ snap.user.nickname|first|upper|default:"U" }}{% endif %}
+          </div>
+          <span class="snap-username">{{ snap.user.nickname|default:"익명" }}</span>
+          <span class="snap-date">{{ snap.created_at|date:"m.d" }}</span>
         </div>
-        {% empty %}
-        <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.6);">
-            <div style="font-size: 64px; margin-bottom: 16px;">📸</div>
-            <p style="font-size: 18px; color: #fff; margin-bottom: 8px;">아직 SNAP이 없습니다</p>
-            <p style="font-size: 14px;">첫 번째 SNAP을 만들어보세요!</p>
-        </div>
-        {% endfor %}
-    </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">🎬</div>
+    <h3>아직 스냅이 없습니다</h3>
+    <p>오디오북 구간을 영상으로 만들어 공유해보세요</p>
+    {% if request.user.is_authenticated %}
+    <a href="{% url 'book:create_snap' %}" class="btn-primary" style="margin-top:20px;display:inline-block;">첫 스냅 만들기</a>
+    {% endif %}
+  </div>
+  {% endif %}
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // 비디오 호버 재생
-    const snapItems = document.querySelectorAll('.snap-grid-item');
-
-    snapItems.forEach(item => {
-        const video = item.querySelector('.hover-video');
-        if (!video) return;
-
-        item.addEventListener('mouseenter', function() {
-            // lazy load video src
-            if (!video.src && video.dataset.src) {
-                video.src = video.dataset.src;
-            }
-            video.currentTime = 0;
-            video.play().catch(() => {});
-        });
-
-        item.addEventListener('mouseleave', function() {
-            video.pause();
-            video.currentTime = 0;
-        });
-    });
-});
-</script>
 {% endblock %}

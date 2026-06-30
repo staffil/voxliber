@@ -73,7 +73,7 @@ function emotionFunc() {
   function makeSection(cat) {
     return `
       <div style="margin-bottom:22px; padding:18px; background:rgba(255,255,255,0.05);
-                  border-left:4px solid ${cat.color}; border-radius:12px;">
+                  border-left:4px solid ${cat.color};">
         <div style="color:${cat.color}; margin-bottom:12px; font-weight:700; font-size:15px;">
           ${cat.title}
         </div>
@@ -86,13 +86,13 @@ function emotionFunc() {
 
   container.innerHTML = `
     <div style="margin-top:20px; background:rgba(18,28,48,0.98); backdrop-filter:blur(16px);
-                padding:30px; border-radius:20px; border:1px solid rgba(96,165,250,0.4);
+                padding:30px; border:1px solid rgba(96,165,250,0.4);
                 width:360px; max-height:85vh; overflow-y:auto; position:relative; font-family:'Pretendard',sans-serif;">
 
       <button onclick="document.getElementById('emotionViewContainer').innerHTML='';"
         style="position:absolute; top:14px; right:14px; background:rgba(255,80,80,0.25);
                border:1px solid rgba(255,80,80,0.5); color:#ff6b6b; font-size:26px;
-               width:38px; height:38px; border-radius:12px; cursor:pointer;">×</button>
+               width:38px; height:38px; cursor:pointer;">×</button>
 
       <h3 style="color:#7dd3fc; text-align:center; margin-bottom:30px; font-size:22px; font-weight:800;">
         감정 리스트

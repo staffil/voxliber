@@ -1,32 +1,46 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}저작권 정책 | VOXLIBER{% endblock %}
+{% block title %}저작권 정책 — Voxliber{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/main/legal_pages.css' %}">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/main/other/legal_pages.css' %}">{%  endblock %}
 
 {% block content %}
-<div class="policy-wrapper">
+<div class="policy-page">
+  <div class="policy-header">
+    <h1>저작권 정책</h1>
+    {% if policy %}<div class="policy-date">최종 수정일: {{ policy.created_at|date:"Y년 m월 d일" }}</div>{% endif %}
+  </div>
 
-    {% if policy %}
-    <div class="policy-header">
-        <h1>{{ policy.title }}</h1>
-        <div class="date">
-            시행일 : {{ policy.created_at|date:"Y.m.d" }}
-        </div>
-    </div>
+  <div class="policy-nav">
+    <a href="{% url 'main:terms_of_service' %}">이용약관</a>
+    <a href="{% url 'main:privacy_policy' %}">개인정보처리방침</a>
+    <a href="{% url 'main:copyright_policy' %}" class="active">저작권 정책</a>
+    <a href="{% url 'main:youth_protection' %}">청소년 보호정책</a>
+  </div>
 
-    <div class="policy-content">
-        {{ policy.content }}
-    </div>
+  <div class="policy-body">
+    {% if policy and policy.content %}
+      <div class="policy-content-raw">{{ policy.content }}</div>
     {% else %}
-    <p>등록된 저작권 정책이 없습니다.</p>
+      <div class="highlight-box">Voxliber에 게재된 모든 오디오북 콘텐츠의 저작권은 해당 창작자에게 귀속됩니다.</div>
+      <h2>1. 저작권 보호</h2>
+      <p>Voxliber에 게시된 모든 콘텐츠(오디오, 텍스트, 이미지, 스냅 등)는 대한민국 저작권법의 보호를 받습니다. 저작권자의 허락 없이 무단으로 복제, 배포, 수정, 2차 저작물 제작을 금지합니다.</p>
+      <h2>2. 창작자 권리</h2>
+      <ul>
+        <li>Voxliber에 업로드한 작품의 저작권은 창작자에게 있습니다</li>
+        <li>Voxliber는 서비스 제공 목적에 한해 콘텐츠를 사용할 권리를 갖습니다</li>
+        <li>창작자는 언제든지 자신의 콘텐츠를 삭제할 권리가 있습니다</li>
+      </ul>
+      <h2>3. 저작권 침해 신고</h2>
+      <p>저작권 침해가 의심되는 콘텐츠를 발견하신 경우 아래 방법으로 신고해주세요:</p>
+      <ul>
+        <li>이메일: copyright@voxliber.ink</li>
+        <li>문의하기 → 저작권 침해 신고 카테고리 선택</li>
+      </ul>
+      <h2>4. 침해 콘텐츠 처리</h2>
+      <p>신고 접수 후 검토를 통해 저작권을 침해하는 것으로 판단되면 즉시 해당 콘텐츠를 삭제하고 게시자에게 안내합니다.</p>
     {% endif %}
-
+  </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
 {% endblock %}

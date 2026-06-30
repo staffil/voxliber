@@ -1,232 +1,223 @@
-/* ================================================
-   VoxTour - Spotlight Onboarding Guide System
-   ================================================ */
-
-/* ---- Spotlight overlay (click to close) ---- */
-.vox-tour-overlay {
+/* ── VoxTour ── */
+#vox-tour-overlay {
+    display: none;
     position: fixed;
     inset: 0;
-    z-index: 9997;
-    cursor: default;
+    background: transparent;   /* dim은 highlight의 box-shadow가 담당 */
+    z-index: 100000;
 }
+#vox-tour-overlay.active { display: block; }
 
-/* ---- Spotlight hole (box-shadow darkness trick) ---- */
-.vox-tour-spotlight {
-    position: fixed;
+#vox-tour-box {
+    display: none;
+    position: fixed;            /* 오버레이와 독립된 fixed 요소 */
+    width: min(320px, 90vw);
+    background: #fff;
     border-radius: 10px;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.72);
-    z-index: 9998;
-    pointer-events: none;
-    outline: 2px solid rgba(99, 102, 241, 0.7);
-    outline-offset: 0;
+    padding: 20px 18px 14px;
+    box-shadow: 0 12px 48px rgba(0,0,0,.35);
+    font-family: 'Noto Sans KR', sans-serif;
+    color: #111;
+    z-index: 100002;
+}
+#vox-tour-box.active { display: block; }
+
+#vox-tour-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #888;
+    line-height: 1;
+}
+#vox-tour-close:hover { color: #111; }
+
+#vox-tour-counter {
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 6px;
+    font-weight: 600;
+    letter-spacing: .02em;
 }
 
-/* ---- Tooltip card ---- */
-.vox-tour-tooltip {
-    position: fixed;
-    background: #16162a;
-    border-radius: 14px;
-    padding: 20px 22px 16px;
-    width: 340px;
-    max-width: calc(100vw - 32px);
-    z-index: 9999;
-    border: 1px solid rgba(99, 102, 241, 0.45);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.04);
-    color: #e2e8f0;
-    pointer-events: all;
-}
-
-.vox-tour-tooltip-title {
+#vox-tour-title {
     font-size: 14px;
     font-weight: 700;
-    color: #a5b4fc;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    margin-bottom: 8px;
+    padding-right: 24px;
 }
 
-.vox-tour-step-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    background: #6366f1;
-    border-radius: 50%;
-    font-size: 11px;
-    font-weight: 800;
-    color: white;
-    flex-shrink: 0;
-}
-
-.vox-tour-progress {
-    margin-left: auto;
-    font-size: 11px;
-    color: #475569;
-    font-weight: 400;
-    white-space: nowrap;
-}
-
-.vox-tour-tooltip-desc {
-    font-size: 13px;
-    line-height: 1.68;
-    color: #cbd5e1;
-    max-height: 50vh;
+#vox-tour-desc {
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: #444;
+    max-height: 200px;
     overflow-y: auto;
 }
 
-.vox-tour-tooltip-footer {
-    margin-top: 16px;
+#vox-tour-nav {
     display: flex;
+    justify-content: space-between;
+    margin-top: 14px;
     gap: 8px;
-    justify-content: flex-end;
 }
 
-/* 닫기 — subtle */
-.vox-tour-btn-close {
-    padding: 7px 16px;
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 8px;
-    color: #64748b;
-    font-size: 13px;
-    font-weight: 500;
+#vox-tour-nav button {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid #ddd;
+    background: #f5f5f5;
+    border-radius: 6px;
+    font-size: 12px;
     cursor: pointer;
-    transition: border-color 0.2s, color 0.2s;
-    outline: none;
+    font-weight: 600;
+    transition: background .12s, border-color .12s;
 }
-.vox-tour-btn-close:hover { border-color: rgba(255,255,255,0.25); color: #94a3b8; }
+#vox-tour-nav button:hover:not(:disabled) { background: #111; color: #fff; border-color: #111; }
+#vox-tour-nav button:disabled { opacity: .38; cursor: default; }
+#vox-tour-next { background: #5b4cf5; color: #fff; border-color: #5b4cf5; }
+#vox-tour-next:hover:not(:disabled) { background: #4c3fd4; border-color: #4c3fd4; }
 
-/* 이전 — muted accent */
-.vox-tour-btn-prev {
-    padding: 7px 16px;
-    background: transparent;
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    border-radius: 8px;
-    color: #6366f1;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
-    outline: none;
-}
-.vox-tour-btn-prev:hover { background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.5); }
-
-/* 다음 — accent */
-.vox-tour-btn-next {
-    padding: 7px 18px;
-    background: rgba(99, 102, 241, 0.2);
-    border: 1px solid rgba(99, 102, 241, 0.45);
-    border-radius: 8px;
-    color: #a5b4fc;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.2s;
-    outline: none;
-}
-.vox-tour-btn-next:hover { background: rgba(99, 102, 241, 0.35); }
-
-/* 완료 — green */
-.vox-tour-btn-finish {
-    padding: 7px 18px;
-    background: rgba(16, 185, 129, 0.16);
-    border: 1px solid rgba(16, 185, 129, 0.38);
-    border-radius: 8px;
-    color: #6ee7b7;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.2s;
-    outline: none;
-}
-.vox-tour-btn-finish:hover { background: rgba(16, 185, 129, 0.28); }
-
-/* ---- UI Tour Steps section (inside guide modals) ---- */
-.ui-tour-section {
-    margin-bottom: 18px;
-    padding-bottom: 18px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+.vox-tour-highlight {
+    outline: 3px solid #5b4cf5 !important;
+    outline-offset: 4px !important;
+    position: relative;
+    z-index: 100001 !important;
+    /* spotlight: 주변을 어둡게 */
+    box-shadow: 0 0 0 9999px rgba(0,0,0,.52) !important;
+    border-radius: 4px;
 }
 
-.ui-tour-label {
+/* ── Guide modal styles (shared across fast/expert/voice) ── */
+.guide-static-section { margin-bottom: 18px; }
+
+.guide-static-section-title {
     font-size: 11px;
     font-weight: 700;
-    color: #6366f1;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-tertiary, #999);
     margin-bottom: 10px;
 }
 
-.ui-tour-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+.guide-static-card {
+    background: var(--bg-tertiary, #f8f8f8);
+    border: 1px solid var(--border-color, #e8e8e8);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
 }
 
-.ui-tour-step-btn {
+.guide-static-card-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    background: rgba(99, 102, 241, 0.07);
-    border: 1px solid rgba(99, 102, 241, 0.18);
-    border-radius: 9px;
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.18s, border-color 0.18s;
-    width: 100%;
+    gap: 10px;
+    padding: 12px 14px;
+}
+
+.guide-static-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+    width: 36px;
+    text-align: center;
+}
+
+.guide-static-info { flex: 1; min-width: 0; }
+
+.guide-static-title {
     font-size: 13px;
-    color: inherit;
+    font-weight: 700;
+    color: var(--text-primary, #111);
 }
 
-.ui-tour-step-btn:hover {
-    background: rgba(99, 102, 241, 0.16);
-    border-color: rgba(99, 102, 241, 0.36);
+.guide-static-body {
+    padding: 0 14px 14px;
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text-secondary, #555);
 }
 
-.ui-tour-step-num {
-    width: 22px;
-    height: 22px;
+.guide-step-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+
+.guide-step-row {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 12.5px;
+}
+
+.guide-step-num {
+    width: 18px;
+    height: 18px;
+    background: var(--accent, #5b4cf5);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
     border-radius: 50%;
-    background: #6366f1;
-    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* tip boxes */
+.guide-tip {
+    font-size: 11.5px;
+    border-radius: 6px;
+    padding: 7px 10px;
+    margin-top: 6px;
+    border-left: 3px solid;
+    line-height: 1.6;
+}
+.guide-tip-blue   { background: rgba(59,130,246,.08); border-color: #3b82f6; color: #1e40af; }
+.guide-tip-purple { background: rgba(91,76,245,.08);  border-color: #5b4cf5; color: #3730a3; }
+.guide-tip-red    { background: rgba(239,68,68,.08);  border-color: #ef4444; color: #991b1b; }
+
+/* badge */
+.guide-tag-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+
+.guide-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 20px;
+    letter-spacing: .02em;
+}
+.badge-gray { background: var(--bg-primary, #f0f0f0); border: 1px solid var(--border-color, #e0e0e0); color: var(--text-secondary, #666); }
+.badge-red  { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: #dc2626; }
+
+/* block type list */
+.guide-block-type-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+
+.guide-block-type-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+}
+
+.guide-block-type-badge {
+    width: 26px;
+    height: 26px;
+    border-radius: 5px;
+    color: #fff;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
 
-.ui-tour-step-text {
-    font-weight: 500;
-    line-height: 1.4;
-    flex: 1;
-}
-
-.ui-tour-step-arrow {
-    color: #6366f1;
-    font-size: 16px;
-    opacity: 0.55;
-}
-
-/* ---- Expert mode inline tour panel ---- */
-.expert-ui-tour-wrap {
-    background: rgba(255,255,255,0.04);
-    border-radius: 10px;
-    padding: 14px 16px;
-    border: 1px solid rgba(99,102,241,0.2);
-    margin-bottom: 18px;
-}
+/* ── expert ui-tour (book_serialization.html) ── */
+.expert-ui-tour-wrap { margin-bottom: 20px; }
 
 .expert-ui-tour-label {
     font-size: 11px;
-    font-weight: 700;
-    color: #6366f1;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    color: #999;
     margin-bottom: 10px;
 }
 
@@ -234,168 +225,89 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 12px;
-    background: rgba(99,102,241,0.08);
-    border: 1px solid rgba(99,102,241,0.16);
-    border-radius: 8px;
-    cursor: pointer;
-    text-align: left;
     width: 100%;
+    padding: 9px 12px;
+    background: #f8f8f8;
+    border: 1px solid #e8e8e8;
+    color: #111;
     font-size: 13px;
-    color: #e2e8f0;
-    margin-bottom: 5px;
-    transition: background 0.18s;
-}
-
-.expert-ui-tour-step:hover {
-    background: rgba(99,102,241,0.18);
-}
-
-/* ---- Voice library page header guide button ---- */
-.vox-voice-guide-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 9px 18px;
-    background: rgba(99, 102, 241, 0.12);
-    border: 1px solid rgba(99, 102, 241, 0.35);
-    border-radius: 10px;
-    color: #a5b4fc;
-    font-size: 13px;
-    font-weight: 600;
+    text-align: left;
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
-    white-space: nowrap;
+    margin-bottom: 4px;
+    transition: border-color .12s, background .12s;
+}
+.expert-ui-tour-step:hover { border-color: #111; background: #f0f0f0; }
+
+/* ── DB guide collapsible items ── */
+.guide-list { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+
+.guide-item {
+    border: 1px solid var(--border-color, #e8e8e8);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--bg-tertiary, #f8f8f8);
+    transition: border-color .15s;
+}
+.guide-item:hover { border-color: var(--accent, #5b4cf5); }
+
+.guide-item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+}
+
+.guide-thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 5px;
     flex-shrink: 0;
 }
 
-.vox-voice-guide-btn:hover {
-    background: rgba(99, 102, 241, 0.22);
-    border-color: rgba(99, 102, 241, 0.55);
+.guide-item-info { flex: 1; min-width: 0; }
+.guide-item-info h4 { font-size: 13px; font-weight: 700; color: var(--text-primary, #111); margin: 0 0 2px; }
+.guide-item-info p  { font-size: 11.5px; color: var(--text-secondary, #777); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.guide-chevron {
+    color: var(--text-tertiary, #999);
+    transition: transform .2s;
+    flex-shrink: 0;
 }
 
-/* ---- Standalone floating guide button (fallback) ---- */
-.vox-guide-fab {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 200;
-    padding: 10px 18px;
-    border-radius: 50px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.45);
-    color: white;
-    font-size: 13px;
-    font-weight: 600;
-    transition: transform 0.2s, box-shadow 0.2s;
-    white-space: nowrap;
+.guide-detail {
+    display: none;
+    padding: 0 12px 12px;
 }
 
-.vox-guide-fab:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(99, 102, 241, 0.6);
+.guide-description {
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text-secondary, #555);
+    margin-bottom: 10px;
 }
 
-/* Standalone guide panel overlay */
-.vox-guide-panel-overlay {
-    position: fixed;
+.guide-video {
+    width: 100%;
+    max-height: 260px;
+    border-radius: 6px;
+    display: block;
+    background: #000;
+}
+
+.guide-video-wrap {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+.guide-video-wrap iframe {
+    position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    z-index: 9996;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-}
-
-.vox-guide-panel {
-    background: #1e1e2e;
-    border-radius: 16px;
-    width: min(460px, 100%);
-    max-height: calc(100vh - 64px);
-    overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    display: flex;
-    flex-direction: column;
-}
-
-.vox-guide-panel-header {
-    padding: 18px 20px 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    background: #1e1e2e;
-    border-radius: 16px 16px 0 0;
-    z-index: 1;
-    flex-shrink: 0;
-}
-
-.vox-guide-panel-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: #e2e8f0;
-}
-
-.vox-guide-panel-close {
-    background: none;
+    width: 100%;
+    height: 100%;
     border: none;
-    color: #64748b;
-    cursor: pointer;
-    font-size: 22px;
-    line-height: 1;
-    padding: 4px;
-    transition: color 0.15s;
-}
-
-.vox-guide-panel-close:hover {
-    color: #e2e8f0;
-}
-
-.vox-guide-panel-body {
-    padding: 16px 18px 20px;
-}
-
-/* ---- Responsive (mobile) ---- */
-@media (max-width: 640px) {
-    /* Tooltip becomes bottom sheet on mobile */
-    .vox-tour-tooltip {
-        position: fixed !important;
-        bottom: 0 !important;
-        top: auto !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        border-radius: 16px 16px 0 0;
-        padding: 20px 20px 36px;
-    }
-
-    /* FAB stays in corner but smaller */
-    .vox-guide-fab {
-        bottom: 16px;
-        right: 16px;
-        padding: 10px 14px;
-        font-size: 12px;
-    }
-
-    /* Guide panel full screen on mobile */
-    .vox-guide-panel-overlay {
-        align-items: flex-end;
-        padding: 0;
-    }
-
-    .vox-guide-panel {
-        width: 100%;
-        max-height: 80vh;
-        border-radius: 16px 16px 0 0;
-    }
 }

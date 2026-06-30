@@ -48,7 +48,7 @@
                         </div>
                     </div>
                     <div class="user-details">
-                        <a href="{% url 'main:user_info' user.public_uuid %}" style="color: inherit; text-decoration: none; transition: color 0.2s;">
+                        <a href="{% url 'main:user_info' user.public_uuid %}" class="profile-author-link">
                             <h1 class="user-nickname">{{ user.nickname|default:"닉네임 없음" }}</h1>
                         </a>
                         <div class="user-stats">
@@ -189,33 +189,11 @@
                             </span>
                         </span>
                     </div>
-                    <a href="{% url 'register:logout' %}" class="nav-item" style="background-color: rgb(167, 60, 60, 0.5);">로그아웃</a>
+                    <a href="{% url 'register:logout' %}" class="nav-item logout-btn-nav">로그아웃</a>
                 </div>
             </div>
 
-            <!-- 슈퍼유저 전용: AI 스토리 관리 -->
-            {% if user.is_superuser %}
-            <div class="form-section" style="margin-top:24px;">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
-                        </svg>
-                        AI 스토리 관리 <span style="font-size:.68rem;font-weight:700;color:#a78bfa;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:6px;padding:2px 8px;margin-left:8px;vertical-align:middle;">ADMIN</span>
-                    </h2>
-                </div>
-                <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
-                    <a href="{% url 'character:make_ai_story' %}" class="btn btn-primary" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;display:inline-flex;align-items:center;gap:8px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        새 AI 스토리 만들기
-                    </a>
-                    <a href="{% url 'mypage:ai_list' %}" class="btn btn-primary" style="background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.4);color:#a78bfa;display:inline-flex;align-items:center;gap:8px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                        AI 스토리 목록
-                    </a>
-                </div>
-            </div>
-            {% endif %}
+          
 
             <!-- 저장 버튼 -->
             <div class="form-actions">
@@ -233,8 +211,8 @@
         <!-- =====================================================
              활동 통계 그래프 (form 밖)
              ===================================================== -->
-        <div class="form-section stats-section" style="margin-top: 32px;">
-            <div class="section-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        <div class="form-section stats-section stats-section-mt">
+            <div class="section-header section-header-flex">
                 <h2 class="section-title">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="20" x2="18" y2="10"/>
@@ -245,46 +223,79 @@
                 </h2>
 
                 <!-- 일/월/연도 탭 -->
-                <div class="chart-period-tabs" style="display:flex; gap:6px;">
-                    <button class="chart-tab active" data-period="daily"
-                        style="padding:6px 14px; border-radius:20px; border:1px solid rgba(99,102,241,0.6);
-                               background:rgba(99,102,241,0.8); color:#fff; font-size:0.8rem; cursor:pointer; transition:all 0.2s;">
-                        일별
-                    </button>
-                    <button class="chart-tab" data-period="monthly"
-                        style="padding:6px 14px; border-radius:20px; border:1px solid rgba(255,255,255,0.15);
-                               background:transparent; color:rgba(255,255,255,0.5); font-size:0.8rem; cursor:pointer; transition:all 0.2s;">
-                        월별
-                    </button>
-                    <button class="chart-tab" data-period="yearly"
-                        style="padding:6px 14px; border-radius:20px; border:1px solid rgba(255,255,255,0.15);
-                               background:transparent; color:rgba(255,255,255,0.5); font-size:0.8rem; cursor:pointer; transition:all 0.2s;">
-                        연도별
-                    </button>
+                <div class="chart-period-tabs chart-period-tabs-row">
+                    <button class="chart-tab active" data-period="daily">일별</button>
+                    <button class="chart-tab" data-period="monthly">월별</button>
+                    <button class="chart-tab" data-period="yearly">연도별</button>
                 </div>
             </div>
 
             <!-- 기간 설명 텍스트 -->
-            <p id="chartPeriodLabel" style="font-size:0.75rem; color:rgba(255,255,255,0.3); margin: 8px 0 16px;">
-                최근 30일
-            </p>
+            <p id="chartPeriodLabel" class="stat-chart-period">최근 30일</p>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-                <!-- TTS 차트 -->
-                <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:16px;">
-                    <p id="ttsLabel" style="font-size:0.8rem; color:rgba(255,255,255,0.5); margin-bottom:12px;">📝 TTS 생성 (분)</p>
+            <div class="stat-charts-grid">
+                <div class="stat-chart-card">
+                    <p id="ttsLabel" class="stat-chart-label">📝 TTS 생성 (분)</p>
                     <canvas id="ttsChart" height="180"></canvas>
                 </div>
-                <!-- 청취 차트 -->
-                <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:16px;">
-                    <p id="listeningLabel" style="font-size:0.8rem; color:rgba(255,255,255,0.5); margin-bottom:12px;">🎧 청취 시간 (분)</p>
+                <div class="stat-chart-card">
+                    <p id="listeningLabel" class="stat-chart-label">🎧 청취 시간 (분)</p>
                     <canvas id="listeningChart" height="180"></canvas>
                 </div>
             </div>
         </div>
 
+        <!-- 구독 & 결제 내역 -->
+        <div class="form-section sub-section-mt">
+            <div class="section-header section-header-flex">
+                <h2 class="section-title">구독 & 결제 내역</h2>
+                {% if subscription and subscription.is_active %}
+                <a href="{% url 'register:subscription_manage' %}" class="sub-link">구독 관리</a>
+                {% endif %}
+            </div>
+
+            {% if subscription and subscription.is_active %}
+            <div class="sub-active-card">
+                <div>
+                    <div class="sub-plan-name">{% if subscription.plan == 'monthly' %}월간 구독{% else %}연간 구독{% endif %}</div>
+                    <div class="sub-plan-date">{{ subscription.expires_at|date:"Y.m.d" }} 다음 결제</div>
+                </div>
+                <span class="sub-badge-active">이용 중</span>
+            </div>
+            {% elif subscription %}
+            <div class="sub-inactive-card">
+                <div class="sub-expired-txt">구독이 만료되었습니다.</div>
+                <a href="{% url 'register:subscribe_plan' %}" class="sub-plan-link">플랜 보기</a>
+            </div>
+            {% else %}
+            <div class="sub-inactive-card">
+                <div class="sub-expired-txt">구독 중인 플랜이 없습니다.</div>
+                <a href="{% url 'register:subscribe_plan' %}" class="sub-plan-link">구독 시작</a>
+            </div>
+            {% endif %}
+
+            {% if recent_payments %}
+            <div class="mypage-pay-list">
+                {% for p in recent_payments %}
+                <div class="mypage-pay-item">
+                    <div>
+                        <div class="mypage-pay-plan">{{ p.get_plan_display }}</div>
+                        <div class="mypage-pay-date">{{ p.paid_at|date:"Y.m.d" }} · {{ p.get_method_display }}</div>
+                    </div>
+                    <div class="mypage-pay-amount">{{ p.amount|floatformat:"0" }}원</div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="pay-history-link-row">
+                <a href="{% url 'register:payment_history' %}" class="pay-history-link">전체 결제 내역 →</a>
+            </div>
+            {% else %}
+            <div class="pay-empty">아직 결제 내역이 없습니다.</div>
+            {% endif %}
+        </div>
+
         <!-- 🚨 Danger Zone -->
-        <div class="form-section danger-zone" style="margin-top: 90px;">
+        <div class="form-section danger-zone danger-zone-mt">
             <h2 class="danger-title">⚠️ 계정 삭제</h2>
             <p class="danger-text">
                 계정을 탈퇴하면 로그인할 수 없게 되며,<br>
@@ -322,155 +333,6 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-// =====================================================
-// 기본 기능
-// =====================================================
-document.getElementById('avatarInput').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        if (file.size > 5 * 1024 * 1024) { alert('파일 크기는 5MB 이하여야 합니다.'); this.value = ''; return; }
-        const reader = new FileReader();
-        reader.onload = function(e) { document.getElementById('avatarPreview').src = e.target.result; };
-        reader.readAsDataURL(file);
-        document.getElementById('removeAvatarInput').value = 'false';
-    }
-});
-
-document.getElementById('nickname').addEventListener('input', function() {
-    const count = this.value.length;
-    document.getElementById('nicknameCount').textContent = count;
-    if (count > 20) { this.value = this.value.substring(0, 20); document.getElementById('nicknameCount').textContent = 20; }
-});
-
-document.getElementById('profileForm').addEventListener('submit', function(e) {
-    const nickname = document.getElementById('nickname').value.trim();
-    if (!nickname) { e.preventDefault(); alert('닉네임을 입력해주세요.'); document.getElementById('nickname').focus(); return false; }
-});
-
-const deleteModal = document.getElementById('deleteModal');
-const deleteBookName = document.getElementById('deleteBookName');
-const confirmDeleteBtn = document.getElementById('confirmDelete');
-const cancelDeleteBtn = document.getElementById('cancelDelete');
-let bookIdToDelete = null;
-
-document.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.addEventListener('click', function() {
-        bookIdToDelete = this.dataset.bookId;
-        deleteBookName.textContent = this.dataset.bookName;
-        deleteModal.classList.add('active');
-    });
-});
-cancelDeleteBtn.addEventListener('click', function() { deleteModal.classList.remove('active'); bookIdToDelete = null; });
-deleteModal.addEventListener('click', function(e) { if (e.target === deleteModal) { deleteModal.classList.remove('active'); bookIdToDelete = null; } });
-confirmDeleteBtn.addEventListener('click', async function() {
-    if (!bookIdToDelete) return;
-    try {
-        const response = await fetch(`/book/delete/${bookIdToDelete}/`, { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } });
-        if (response.ok) { showNotification('작품이 삭제되었습니다', 'success'); setTimeout(() => window.location.reload(), 1000); }
-        else showNotification('삭제 중 오류가 발생했습니다', 'error');
-    } catch (error) { showNotification('삭제 중 오류가 발생했습니다', 'error'); }
-    deleteModal.classList.remove('active'); bookIdToDelete = null;
-});
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) { cookieValue = decodeURIComponent(cookie.substring(name.length + 1)); break; }
-        }
-    }
-    return cookieValue;
-}
-
-function showNotification(message, type = 'info') {
-    const n = document.createElement('div');
-    n.style.cssText = `position:fixed;top:100px;right:20px;padding:16px 24px;
-        background:${type==='success'?'rgba(16,185,129,0.9)':type==='error'?'rgba(239,68,68,0.9)':'rgba(99,102,241,0.9)'};
-        color:white;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:10000;
-        animation:slideInRight 0.3s ease;font-size:14px;font-weight:500;`;
-    n.textContent = message;
-    document.body.appendChild(n);
-    setTimeout(() => { n.style.animation = 'slideOutRight 0.3s ease'; setTimeout(() => n.remove(), 300); }, 3000);
-}
-
-const animStyle = document.createElement('style');
-animStyle.textContent = `
-    @keyframes slideInRight { from { transform:translateX(400px); opacity:0; } to { transform:translateX(0); opacity:1; } }
-    @keyframes slideOutRight { from { transform:translateX(0); opacity:1; } to { transform:translateX(400px); opacity:0; } }
-`;
-document.head.appendChild(animStyle);
-
-
-// =====================================================
-// 활동 통계 차트 (일/월/연도 탭)
-// =====================================================
-const ALL_DATA = {{ chart_data|safe }};
-
-const PERIOD_META = {
-    daily:   { label: '최근 30일', ttsUnit: '분',  listeningUnit: '분' },
-    monthly: { label: '최근 12개월', ttsUnit: '분', listeningUnit: '시간' },
-    yearly:  { label: '전체 연도별', ttsUnit: '시간', listeningUnit: '시간' },
-};
-
-const scaleOpts = {
-    x: { grid: { color: 'rgba(255,255,255,0.07)' }, ticks: { color: 'rgba(255,255,255,0.5)', maxRotation: 45, minRotation: 0 } },
-    y: { grid: { color: 'rgba(255,255,255,0.07)' }, ticks: { color: 'rgba(255,255,255,0.5)' } }
-};
-
-// 차트 인스턴스 생성
-const ttsChart = new Chart(document.getElementById('ttsChart'), {
-    type: 'bar',
-    data: { labels: [], datasets: [{ label: 'TTS', data: [], backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 6 }] },
-    options: { plugins: { legend: { display: false } }, scales: scaleOpts, animation: { duration: 300 } }
-});
-
-const listeningChart = new Chart(document.getElementById('listeningChart'), {
-    type: 'bar',
-    data: { labels: [], datasets: [{ label: '청취', data: [], backgroundColor: 'rgba(139,92,246,0.7)', borderRadius: 6 }] },
-    options: { plugins: { legend: { display: false } }, scales: scaleOpts, animation: { duration: 300 } }
-});
-
-function updateCharts(period) {
-    const d = ALL_DATA[period];
-    const meta = PERIOD_META[period];
-
-    // TTS
-    ttsChart.data.labels = d.tts.labels;
-    ttsChart.data.datasets[0].data = d.tts.data;
-    ttsChart.update();
-    document.getElementById('ttsLabel').textContent = `📝 TTS 생성 (${meta.ttsUnit})`;
-
-    // 청취
-    listeningChart.data.labels = d.listening.labels;
-    listeningChart.data.datasets[0].data = d.listening.data;
-    listeningChart.update();
-    document.getElementById('listeningLabel').textContent = `🎧 청취 시간 (${meta.listeningUnit})`;
-
-    // 기간 설명
-    document.getElementById('chartPeriodLabel').textContent = meta.label;
-}
-
-// 탭 클릭 이벤트
-document.querySelectorAll('.chart-tab').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('.chart-tab').forEach(b => {
-            b.style.background = 'transparent';
-            b.style.color = 'rgba(255,255,255,0.5)';
-            b.style.borderColor = 'rgba(255,255,255,0.15)';
-            b.classList.remove('active');
-        });
-        this.style.background = 'rgba(99,102,241,0.8)';
-        this.style.color = '#fff';
-        this.style.borderColor = 'rgba(99,102,241,0.6)';
-        this.classList.add('active');
-        updateCharts(this.dataset.period);
-    });
-});
-
-// 초기 렌더 (일별)
-updateCharts('daily');
-</script>
+<script>window.VOXLIBER_CHART_DATA = {{ chart_data|safe }};</script>
+{% load static %}<script src="{% static 'js/mypage/my_profile.js' %}"></script>
 {% endblock %}

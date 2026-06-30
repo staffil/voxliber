@@ -1,0 +1,59 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}작가 센터 — VOXLIBER{% endblock %}</title>
+
+  <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{% static 'css/common/variables.css' %}">
+
+    <link rel="stylesheet" href="{% static 'css/common/base_author.css' %}">
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <div class="author-topbar">
+    <a href="{% url 'register:author_center' %}" class="author-topbar-brand">
+      <img src="{% static 'img/logo3.png' %}" alt="Voxliber" onerror="this.style.display='none'">
+      <span>VOXLIBER</span>
+      <span class="author-topbar-badge">AUTHOR</span>
+    </a>
+    <nav class="author-topbar-nav">
+      <a href="{% url 'register:author_center' %}" class="author-topbar-link {% if request.resolver_match.url_name == 'author_center' %}active{% endif %}">작가 센터</a>
+      <a href="{% url 'mypage:my_book_list' %}" class="author-topbar-link {% if 'my_book' in request.resolver_match.url_name %}active{% endif %}">내 작품</a>
+      <a href="{% url 'book:book_profile' %}" class="author-topbar-link {% if request.resolver_match.url_name == 'book_profile' %}active{% endif %}">새 작품 등록</a>
+      <a href="{% url 'register:author_inquiry_list' %}" class="author-topbar-link {% if 'inquiry' in request.resolver_match.url_name %}active{% endif %}">작가 문의</a>
+    </nav>
+    <div class="author-topbar-right">
+      <span class="author-topbar-user">{{ request.user.nickname|default:request.user.email }}</span>
+      <a href="{% url 'main:main' %}" class="author-topbar-back">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        사이트로
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div style="max-width:1100px;margin:12px auto 0;padding:0 32px;">
+    {% for message in messages %}
+    <div style="padding:10px 16px;background:{% if 'error' in message.tags %}#fee2e2;color:#dc2626{% else %}#f0fdf4;color:#16a34a{% endif %};border:1px solid;margin-bottom:8px;font-size:13px;">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="author-body">
+    {% block content %}{% endblock %}
+  </div>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
+

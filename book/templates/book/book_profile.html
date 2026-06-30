@@ -1,266 +1,382 @@
-{% extends "base.html" %}
+{% extends "base_author.html" %}
 {% load static %}
 
-{% block title %}VOXLIBER - 소설 제목{% endblock %}
+{% block title %}{% if book %}작품 수정{% else %}새 작품 등록{% endif %} — Voxliber{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/book/book_profile.css' %}">
-
 {% endblock %}
 
 {% block content %}
-<div class="novel-title-wrapper" style="margin-top: 100px;">
-    <div class="novel-title-container">
-        {% if error %}
-        <div class="error-msg">{{ error }}</div>
-        {% endif %}
+<div class="bp-page">
 
-        <form action="" method="post" enctype="multipart/form-data" id="book_profile_form">
-            {% csrf_token %}
-
-            <!-- 소설 제목 -->
-            <div class="title-header">
-                <input type="text" name="novel_title" class="section-title" placeholder="📚 소설 제목을 입력하세요"
-                    value="{{ book.name|default:'' }}" required data-login-required>
-            </div>
-
-            <div class="title-content">
-                <!-- 왼쪽: 표지 -->
-                <div class="novel-cover-section">
-                    <div class="cover-wrapper">
-                        <div class="cover-image" id="cover-preview">
-                            {% if book and book.cover_img %}
-                                <img src="{{ book.cover_img.url }}" id="preview-cover" alt="소설 표지" loading="lazy">
-                            {% else %}
-                                <img src="{% static 'images/default-novel-cover.jpg' %}" id="preview-cover" alt="소설 표지" loading="lazy">
-                            {% endif %}
-                            <div class="cover-overlay">
-                                <span>표지 선택</span>
-                                <p style="padding: 8px 12px;">
-                                  표지를 업로드하지 않으면 제목의 앞 두 글자를 사용한 기본 표지가 자동으로 적용됩니다.
-                                  더 좋은 작품 인상을 위해 표지 업로드를 권장드려요.
-                                </p>
-                            </div>
-                        </div>
-                        <input type="file" name="cover-image" id="book-cover-image" accept="image/*" style="display: none;" data-login-required>
-                    </div>
-                    <div style="display:flex; gap:16px; margin:12px 12px 0 12px;">
-                        <div style="width:120px; position:relative; border-radius:8px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
-                            <span style="position:absolute; top:6px; left:6px; background:rgba(0,0,0,0.6); color:white; font-size:11px; padding:2px 6px; border-radius:4px;">기본 표지1</span>
-                            <img src="/static/img/cover/example.jpg" alt="" style="width:100%; display:block;">
-                        </div>
-                        <div style="width:120px; position:relative; border-radius:8px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
-                            <span style="position:absolute; top:6px; left:6px; background:#6366f1; color:white; font-size:11px; padding:2px 6px; border-radius:4px;">기본 표지2</span>
-                            <img src="/static/img/cover/example2.jpg" alt="" style="width:100%; display:block;">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 오른쪽: 정보 -->
-                <div class="novel-info-section">
-                    <div class="info-card">
-                        <label class="info-label">📖 소설 줄거리</label>
-                        <textarea name="novel_description" placeholder="소설 줄거리를 입력하세요..."
-                            rows="5" data-login-required>{{ book.description }}</textarea>
-                    </div>
-
-                    <div class="info-card">
-                        <label class="info-label">🎭 장르 선택 (여러 개 선택 가능)</label>
-                        <div class="genre-grid">
-                            {% for genre in genres_list %}
-                            <label class="genre-option">
-                                <input type="checkbox" name="genres" value="{{ genre.id }}"
-                                    {% if book and genre in book.genres.all %}checked{% endif %} data-login-required>
-                                <span class="genre-box" style="background-color: {{ genre.genres_color|default:'#FFF' }}">
-                                    {{ genre.name }}
-                                </span>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <!-- 태그 검색/추가 -->
-                    <div class="info-card">
-                        <label class="info-label">🏷️ 태그 선택</label>
-                        <div class="tag-input-wrapper">
-                            <input type="text" id="tag-search" placeholder="태그 검색 또는 추가..." data-login-required>
-                            <button type="button" id="add-tag-btn">추가</button>
-                        </div>
-                        <div class="selected-tags" id="selected-tags">
-                            {% for tag in book.tags.all %}
-                            <input type="hidden" name="tags" value="{{ tag.id }}" data-login-required>
-                            <span class="selected-tag" data-login-required>{{ tag.name }}</span>
-                            {% endfor %}
-                        </div>
-                        <div class="tag-list-wrapper">
-                            <div class="tag-grid" id="tag-grid">
-                                {% for tag in tag_list %}
-                                <label class="tag-option">
-                                    <input type="checkbox" class="tag-checkbox" value="{{ tag.id }}"
-                                        {% if book and tag in book.tags.all %}checked{% endif %} data-login-required>
-                                    <span>{{ tag.name }}</span>
-                                </label>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 연재 주기 선택 -->
-                    <div class="info-card">
-                        <label class="info-label">📅 연재 주기</label>
-                        <div style="display:flex; flex-direction:column; gap:10px;">
-                            <select name="episode_interval_weeks" style="
-                                padding:12px 16px;
-                                background:var(--input-bg);
-                                border:1px solid var(--border-color);
-                                border-radius:8px;
-                                color:var(--text-primary);
-                                font-size:14px;
-                                cursor:pointer;
-                                transition:all var(--transition-base);
-                            " data-login-required>
-                                <option value="1" {% if book.episode_interval_weeks == 1 %}selected{% endif %}>매주 (1주마다)</option>
-                                <option value="2" {% if book.episode_interval_weeks == 2 %}selected{% endif %}>격주 (2주마다)</option>
-                                <option value="3" {% if book.episode_interval_weeks == 3 %}selected{% endif %}>3주마다</option>
-                                <option value="4" {% if book.episode_interval_weeks == 4 %}selected{% endif %}>매월 (4주마다)</option>
-                            </select>
-                            <div style="font-size:12px; color:var(--text-tertiary); padding:0 4px;">
-                                💡 에피소드를 얼마나 자주 등록할 계획인지 선택하세요
-                            </div>
-                            <div class="terms-checkbox-wrapper">
-                                <label class="custom-checkbox">
-                                    <input type="checkbox" id="adult_choice" name="adult_choice" value="on"
-                                        {% if book and book.adult_choice %}checked{% endif %} data-login-required>
-                                    <span class="checkbox-icon"></span>
-                                    <span class="checkbox-text">
-                                        <a href="/terms/of/service/" class="terms-link" target="_blank">잔인성, 선정성이 있는 작품</a>이면 동의를 눌러주세요
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <!-- 저장 버튼 → 모달 트리거 -->
-            <button type="button" id="open-mode-modal-btn">저장 후 집필 시작 →</button>
-
-        </form>
-
+  <div class="bp-header">
+    <div class="bp-header-text">
+      <h1 class="bp-page-title">{% if book %}작품 수정{% else %}새 작품 등록{% endif %}</h1>
+      <p class="bp-page-desc">오디오북 작품 정보를 입력하세요</p>
     </div>
+    <a href="{% url 'register:author_center' %}" class="bp-back-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      작가 센터
+    </a>
+  </div>
+
+  {% if error %}
+  <div class="bp-alert-error">{{ error }}</div>
+  {% endif %}
+
+  <!-- Tab navigation -->
+  <div class="bp-tabs">
+    <button class="bp-tab active" data-tab="tab-info" onclick="switchTab('tab-info', this)">
+      <span class="bp-tab-num">1</span>작품 정보
+    </button>
+    <div class="bp-tab-line"></div>
+    <button class="bp-tab" data-tab="tab-genre" onclick="switchTab('tab-genre', this)">
+      <span class="bp-tab-num">2</span>장르 · 태그
+    </button>
+    <div class="bp-tab-line"></div>
+    <button class="bp-tab" data-tab="tab-serial" onclick="switchTab('tab-serial', this)">
+      <span class="bp-tab-num">3</span>연재 정보
+    </button>
+  </div>
+
+  <form action="" method="post" enctype="multipart/form-data" id="book_profile_form">
+    {% csrf_token %}
+
+    <!-- ══════════ Tab 1: 작품 정보 ══════════ -->
+    <div class="bp-tab-pane active" id="tab-info">
+      <div class="bp-card">
+
+        <!-- 제목 -->
+        <div class="bp-field">
+          <label class="bp-label" for="bpTitle">작품 제목 <span class="bp-required">*</span></label>
+          <input type="text" name="novel_title" id="bpTitle" class="bp-input"
+                 placeholder="작품 제목을 입력하세요"
+                 value="{{ book.name|default:'' }}" required>
+        </div>
+
+        <!-- 표지 + 줄거리 -->
+        <div class="bp-info-grid">
+
+          <!-- 표지 업로드 -->
+          <div class="bp-cover-col">
+            <label class="bp-label">표지 이미지</label>
+            <div class="bp-cover-wrap" id="coverPreview" onclick="document.getElementById('book-cover-image').click()">
+              {% if book and book.cover_img %}
+              <img src="{{ book.cover_img.url }}" id="previewCoverImg" alt="표지">
+              {% else %}
+              <img src="" id="previewCoverImg" style="display:none;" alt="표지">
+              {% endif %}
+              <div class="bp-cover-overlay">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>표지 선택</span>
+              </div>
+            </div>
+            <input type="file" name="cover-image" id="book-cover-image" accept="image/*" style="display:none">
+            <p class="bp-hint">업로드하지 않으면 제목 앞 두 글자로 자동 생성됩니다</p>
+          </div>
+
+          <!-- 줄거리 -->
+          <div class="bp-desc-col">
+            <label class="bp-label" for="bpDesc">작품 줄거리 <span class="bp-required">*</span></label>
+            <textarea name="novel_description" id="bpDesc" class="bp-textarea" rows="12"
+                      placeholder="작품의 줄거리를 입력하세요..." required>{{ book.description|default:'' }}</textarea>
+          </div>
+
+        </div>
+
+        <div class="bp-tab-footer">
+          <button type="button" class="bp-next-btn" onclick="goTab('tab-genre')">
+            다음 — 장르·태그
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════ Tab 2: 장르 · 태그 ══════════ -->
+    <div class="bp-tab-pane" id="tab-genre">
+      <div class="bp-card">
+
+        <!-- 장르 -->
+        <div class="bp-field">
+          <label class="bp-label">장르 선택 <span class="bp-hint-inline">(복수 선택 가능)</span></label>
+          <div class="bp-genre-grid">
+            {% for genre in genres_list %}
+            <label class="bp-genre-item">
+              <input type="checkbox" name="genres" value="{{ genre.id }}"
+                     {% if book and genre in book.genres.all %}checked{% endif %}>
+              <span class="bp-genre-box">{{ genre.name }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 태그 -->
+        <div class="bp-field">
+          <label class="bp-label">태그 선택 <span class="bp-hint-inline">(선택)</span></label>
+          <div class="bp-tag-search-row">
+            <div class="bp-tag-input-wrap">
+              <input type="text" id="tag-search" class="bp-tag-input" placeholder="태그 검색 또는 추가...">
+            </div>
+            <button type="button" id="add-tag-btn" class="bp-tag-add-btn">추가</button>
+          </div>
+          <div class="bp-selected-tags" id="selected-tags">
+            {% for tag in book.tags.all %}
+            <input type="hidden" name="tags" value="{{ tag.id }}">
+            <span class="bp-tag-chip" data-id="{{ tag.id }}">{{ tag.name }}<button type="button" class="bp-tag-remove">×</button></span>
+            {% endfor %}
+          </div>
+          <div class="bp-tag-dropdown" id="tag-list-wrapper" style="display:none;">
+            <div class="bp-tag-grid" id="tag-grid">
+              {% for tag in tag_list %}
+              <label class="bp-tag-option">
+                <input type="checkbox" class="tag-checkbox" value="{{ tag.id }}"
+                       {% if book and tag in book.tags.all %}checked{% endif %}>
+                <span>{{ tag.name }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="bp-tab-footer bp-tab-footer-two">
+          <button type="button" class="bp-prev-btn" onclick="goTab('tab-info')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            이전
+          </button>
+          <button type="button" class="bp-next-btn" onclick="goTab('tab-serial')">
+            다음 — 연재 정보
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════ Tab 3: 연재 정보 ══════════ -->
+    <div class="bp-tab-pane" id="tab-serial">
+      <div class="bp-card">
+
+        <div class="bp-field">
+          <label class="bp-label" for="episodeInterval">연재 주기</label>
+          <select name="episode_interval_weeks" id="episodeInterval" class="bp-select">
+            <option value="1" {% if book.episode_interval_weeks == 1 %}selected{% endif %}>매주 (1주마다)</option>
+            <option value="2" {% if book.episode_interval_weeks == 2 %}selected{% endif %}>격주 (2주마다)</option>
+            <option value="3" {% if book.episode_interval_weeks == 3 %}selected{% endif %}>3주마다</option>
+            <option value="4" {% if book.episode_interval_weeks == 4 %}selected{% endif %}>매월 (4주마다)</option>
+          </select>
+          <p class="bp-hint">에피소드를 얼마나 자주 등록할 계획인지 선택하세요</p>
+        </div>
+
+        <div class="bp-field">
+          <label class="bp-toggle-row">
+            <div class="bp-toggle">
+              <input type="checkbox" id="adult_choice" name="adult_choice" value="on"
+                     {% if book and book.adult_choice %}checked{% endif %}>
+              <span class="bp-toggle-slider"></span>
+            </div>
+            <div class="bp-toggle-info">
+              <span class="bp-toggle-label">성인 콘텐츠</span>
+              <span class="bp-toggle-desc">잔인성·선정성이 있는 작품이면 활성화하세요</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="bp-tab-footer bp-tab-footer-two">
+          <button type="button" class="bp-prev-btn" onclick="goTab('tab-genre')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            이전
+          </button>
+          <button type="button" id="open-mode-modal-btn" class="bp-submit-btn">
+            저장 후 집필 시작
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </form>
 </div>
 
 
-<!-- ============================================================
-     모드 선택 모달
-     ============================================================ -->
-<div class="mode-modal-overlay" id="modeModalOverlay">
-  <div class="mode-modal">
-    <button class="mode-modal-close" id="closeModeModal" aria-label="닫기">✕</button>
+<!-- 집필 방식 선택 모달 -->
+<div class="bp-modal-overlay" id="modeModalOverlay">
+  <div class="bp-modal">
+    <button class="bp-modal-close" id="closeModeModal">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="bp-modal-title">집필 방식을 선택하세요</div>
+    <p class="bp-modal-sub">저장 후 바로 집필을 시작합니다. 나중에 방식을 바꿀 수도 있어요.</p>
 
-    <div class="mode-modal-title">집필 방식을 선택하세요</div>
-    <p class="mode-modal-sub">저장 후 바로 집필을 시작합니다. 나중에 방식을 바꿀 수도 있어요.</p>
-
-    <div class="mode-cards">
-
-      <!-- 보이스 라이브러리 (맨 왼쪽) -->
-      <div class="mode-card voice" id="modeVoiceBtn">
-        <div class="mode-card-icon">🎙️</div>
-        <div class="mode-card-label">보이스 라이브러리</div>
-        <div class="mode-card-name">목소리 먼저<br>골라보기</div>
-        <div class="mode-card-desc">수십 가지 성우<br>직접 비교 청취</div>
-        <div class="mode-card-arrow">둘러보기 →</div>
-      </div>
-
-      <!-- 초보자 모드 -->
-      <div class="mode-card beginner" id="modeBeginnerBtn">
-        <div class="mode-card-icon">🎬</div>
-        <div class="mode-card-label">초보자 모드</div>
-        <div class="mode-card-name">문장만 써도<br>AI가 연출</div>
-        <div class="mode-card-desc">번호만 붙이면<br>AI가 자동 완성</div>
-        <div class="mode-card-arrow">시작하기 →</div>
-      </div>
-
-      <!-- 전문가 모드 — 1200px 초과(데스크탑)에서만 표시 -->
-      <div class="mode-card expert" id="modeExpertBtn">
-        <div class="mode-card-icon">🛠️</div>
-        <div class="mode-card-label">전문가 모드</div>
-        <div class="mode-card-name">효과음·감정<br>직접 설계</div>
-        <div class="mode-card-desc">페이지 단위<br>세밀한 제작</div>
-        <div class="mode-card-arrow">시작하기 →</div>
-      </div>
-
-      <!-- 내 작품으로 가기 -->
-      <div class="mode-card myworks" id="modeMyWorksBtn">
-        <div class="mode-card-icon">📚</div>
-        <div class="mode-card-label">내 작품</div>
-        <div class="mode-card-name">만든 작품<br>모아보기</div>
-        <div class="mode-card-desc">에피소드 관리<br>및 수정</div>
-        <div class="mode-card-arrow">바로가기 →</div>
-      </div>
-
+    <div class="bp-mode-grid">
+      <button class="bp-mode-card bp-mode-voice" id="modeVoiceBtn">
+        <div class="bp-mode-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </div>
+        <div class="bp-mode-name">보이스 라이브러리</div>
+        <div class="bp-mode-desc">목소리 먼저 골라보기</div>
+        <div class="bp-mode-arrow">둘러보기 →</div>
+      </button>
+      <button class="bp-mode-card bp-mode-beginner" id="modeBeginnerBtn">
+        <div class="bp-mode-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        </div>
+        <div class="bp-mode-name">초보자 모드</div>
+        <div class="bp-mode-desc">문장만 써도 AI가 연출</div>
+        <div class="bp-mode-arrow">시작하기 →</div>
+      </button>
+      <button class="bp-mode-card bp-mode-expert" id="modeExpertBtn">
+        <div class="bp-mode-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        </div>
+        <div class="bp-mode-name">전문가 모드</div>
+        <div class="bp-mode-desc">효과음·감정 직접 설계</div>
+        <div class="bp-mode-arrow">시작하기 →</div>
+      </button>
+      <button class="bp-mode-card bp-mode-myworks" id="modeMyWorksBtn">
+        <div class="bp-mode-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <div class="bp-mode-name">내 작품</div>
+        <div class="bp-mode-desc">만든 작품 모아보기</div>
+        <div class="bp-mode-arrow">바로가기 →</div>
+      </button>
     </div>
 
-    <!-- 보이스 안내 -->
-    <div class="mode-voice-notice">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      <span>
-        <strong>보이스를 선택해야 오디오북을 만들 수 있습니다.</strong>
-        보이스를 아직 선택하지 않으셨다면 왼쪽 보이스 라이브러리에서 먼저 목소리를 골라주세요.
-      </span>
+    <div class="bp-modal-notice">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span><strong>보이스를 선택해야 오디오북을 만들 수 있습니다.</strong> 아직 선택하지 않으셨다면 보이스 라이브러리에서 먼저 목소리를 골라주세요.</span>
     </div>
-
   </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'js/book/book_profile.js' %}"></script>
-<script src="{% static 'js/register/login.js' %}"></script>
 
 <script>
-(function () {
-  var form     = document.getElementById('book_profile_form');
-  var openBtn  = document.getElementById('open-mode-modal-btn');
-  var overlay  = document.getElementById('modeModalOverlay');
-  var closeBtn = document.getElementById('closeModeModal');
+/* ── Tab logic ── */
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.bp-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.bp-tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
 
-  var btnBeginner = document.getElementById('modeBeginnerBtn');
-  var btnExpert   = document.getElementById('modeExpertBtn');
-  var btnVoice    = document.getElementById('modeVoiceBtn');
-  var btnMyWorks  = document.getElementById('modeMyWorksBtn');
-
-  // 저장 버튼 클릭 → 폼 유효성 검사 후 모달 오픈
-  openBtn.addEventListener('click', function () {
-    // HTML5 기본 유효성 검사 트리거
-    if (!form.reportValidity()) return;
-    overlay.classList.add('open');
+function goTab(tabId) {
+  const btn = document.querySelector(`.bp-tab[data-tab="${tabId}"]`);
+  if (btn) { btn.classList.add('active'); switchTab(tabId, btn); }
+  document.querySelectorAll('.bp-tab').forEach(t => {
+    if (t.dataset.tab !== tabId) t.classList.remove('active');
   });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-  // 모달 닫기
-  closeBtn.addEventListener('click', function () { overlay.classList.remove('open'); });
-  overlay.addEventListener('click', function (e) {
-    if (e.target === overlay) overlay.classList.remove('open');
+/* ── Cover preview ── */
+const coverInput = document.getElementById('book-cover-image');
+const coverWrap  = document.getElementById('coverPreview');
+const previewImg = document.getElementById('previewCoverImg');
+
+coverInput.addEventListener('change', function () {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src = e.target.result;
+    previewImg.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ── Tag logic ── */
+const tagSearch    = document.getElementById('tag-search');
+const tagWrapper   = document.getElementById('tag-list-wrapper');
+const tagGrid      = document.getElementById('tag-grid');
+const selectedWrap = document.getElementById('selected-tags');
+const addTagBtn    = document.getElementById('add-tag-btn');
+
+tagSearch.addEventListener('focus', () => { tagWrapper.style.display = 'block'; filterTags(''); });
+tagSearch.addEventListener('input', () => filterTags(tagSearch.value));
+document.addEventListener('click', e => {
+  if (!e.target.closest('#tag-search') && !e.target.closest('#tag-list-wrapper') && !e.target.closest('#add-tag-btn'))
+    tagWrapper.style.display = 'none';
+});
+
+function filterTags(q) {
+  tagGrid.querySelectorAll('.bp-tag-option').forEach(o => {
+    o.style.display = o.querySelector('span').textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
   });
+}
 
-  // 폼 제출 + 리다이렉트 목적지 지정
-  function submitWithMode(mode) {
-    // hidden input으로 모드 전달
-    var input = document.createElement('input');
-    input.type  = 'hidden';
-    input.name  = 'write_mode';
-    input.value = mode;
-    form.appendChild(input);
-    form.submit();
-  }
+tagGrid.addEventListener('change', e => {
+  if (!e.target.classList.contains('tag-checkbox')) return;
+  const cb   = e.target;
+  const name = cb.closest('.bp-tag-option').querySelector('span').textContent;
+  if (cb.checked) addTagChip(cb.value, name);
+  else removeTagChip(cb.value);
+});
 
-  btnBeginner.addEventListener('click', function () { submitWithMode('beginner'); });
-  btnExpert.addEventListener('click',   function () { submitWithMode('expert');   });
-  btnVoice.addEventListener('click',    function () { submitWithMode('voice');    });
-  btnMyWorks.addEventListener('click',  function () { submitWithMode('myworks'); });
-})();
+function addTagChip(id, name) {
+  if (selectedWrap.querySelector(`[data-id="${id}"]`)) return;
+  const span = document.createElement('span');
+  span.className = 'bp-tag-chip'; span.dataset.id = id;
+  span.innerHTML = `<input type="hidden" name="tags" value="${id}">${name}<button type="button" class="bp-tag-remove">×</button>`;
+  span.querySelector('.bp-tag-remove').addEventListener('click', () => {
+    span.remove();
+    const cb = tagGrid.querySelector(`input[value="${id}"]`);
+    if (cb) cb.checked = false;
+  });
+  selectedWrap.appendChild(span);
+}
+function removeTagChip(id) {
+  const chip = selectedWrap.querySelector(`[data-id="${id}"]`);
+  if (chip) chip.remove();
+}
+
+selectedWrap.querySelectorAll('.bp-tag-remove').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const chip = btn.closest('.bp-tag-chip');
+    const id   = chip.dataset.id;
+    chip.remove();
+    const cb = tagGrid.querySelector(`input[value="${id}"]`);
+    if (cb) cb.checked = false;
+  });
+});
+
+addTagBtn.addEventListener('click', () => {
+  const name = tagSearch.value.trim();
+  if (!name) return;
+  fetch("{% url 'book:add_tags' %}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+    body: JSON.stringify({ name })
+  }).then(r => r.json()).then(data => {
+    if (data.id) { addTagChip(data.id, data.name); tagSearch.value = ''; }
+  });
+});
+
+/* ── Modal ── */
+const form     = document.getElementById('book_profile_form');
+const openBtn  = document.getElementById('open-mode-modal-btn');
+const overlay  = document.getElementById('modeModalOverlay');
+const closeBtn = document.getElementById('closeModeModal');
+
+openBtn.addEventListener('click', () => {
+  if (!form.reportValidity()) return;
+  overlay.classList.add('open');
+});
+closeBtn.addEventListener('click', () => overlay.classList.remove('open'));
+overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+function submitWithMode(mode) {
+  const inp = document.createElement('input');
+  inp.type = 'hidden'; inp.name = 'write_mode'; inp.value = mode;
+  form.appendChild(inp);
+  form.submit();
+}
+
+document.getElementById('modeVoiceBtn').addEventListener('click',   () => submitWithMode('voice'));
+document.getElementById('modeBeginnerBtn').addEventListener('click', () => submitWithMode('beginner'));
+document.getElementById('modeExpertBtn').addEventListener('click',   () => submitWithMode('expert'));
+document.getElementById('modeMyWorksBtn').addEventListener('click',  () => submitWithMode('myworks'));
 </script>
 {% endblock %}

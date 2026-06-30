@@ -1,70 +1,113 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 
-{% block title %}VOXLIBER - AI 추천하기{% endblock %}
+{% block title %}AI 맞춤 추천 — Voxliber{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/ai/ai_recommended.css' %}">
+<link rel="stylesheet" href="{% static 'css/main/ai_recommended.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="ai-recommend-wrapper">
-    <div class="recommend-header">
-        <br><br>
+<div class="ar-page">
 
-        <h1 class="recommend-title">AI 맞춤 추천</h1>
-        <p class="recommend-subtitle">당신을 위한 완벽한 책을 찾아드렸어요</p>
+  <div class="ar-hero">
+    <div class="ar-hero-inner">
+      <div class="ar-eyebrow">Personalized for You</div>
+      <h1 class="ar-title">AI가 고른 맞춤 작품</h1>
+      <p class="ar-sub">당신의 취향과 독서 기록을 분석해 엄선한 추천 목록입니다</p>
+    </div>
+  </div>
+
+  <div class="ar-tabs">
+    <div class="ar-tab on" onclick="arSwitchTab('ai', this)">AI 추천</div>
+    <div class="ar-tab" onclick="arSwitchTab('genre', this)">장르 기반 추천</div>
+  </div>
+
+  <div class="ar-body">
+
+    {% if not request.user.is_authenticated %}
+    <div class="ar-login-box">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+      <p class="ar-login-title">로그인하면 AI 맞춤 추천을 받을 수 있습니다</p>
+      <p class="ar-login-sub">독서 기록과 취향을 분석해 딱 맞는 작품을 찾아드립니다</p>
+      <a href="{% url 'register:login' %}" class="ar-login-btn">로그인하기</a>
     </div>
 
-    <div class="recommend-list">
-        {% for msg in chat_messages %}
-            {% if msg.type == "book" %}
-            <div class="recommend-item">
+    {% else %}
 
-
-                <!-- 책 커버 -->
-                <div class="book-cover-wrapper">
-                    {% if msg.book.cover_img %}
-                        <img src="{{ msg.book.cover_img.url }}" alt="{{ msg.book.name }}" class="book-cover">
-                    {% else %}
-                        <div class="book-cover-placeholder">
-                            <span>📚</span>
-                        </div>
-                    {% endif %}
-
-                </div>
-
-                <!-- 책 정보 -->
-                <div class="book-info">
-                    <h3 class="book-title">{{ msg.book.name }}</h3>
-                    <p class="book-author">{{ msg.book.author }}</p>
-
-                    <div class="book-meta-tags">
-                        <span class="meta-tag tag">🏷 {{ msg.book.tag_match }}</span>
-                        <span class="meta-tag genre">📚 {{ msg.book.genre_match }}</span>
-                        <span class="meta-tag score">⭐ {{ msg.book.book_score }}</span>
-                    </div>
-
-                    <!-- AI 추천 이유 -->
-                    <div class="ai-reason">
-                        <span class="ai-icon">🤖</span>
-                        <p>{{ msg.reason }}</p>
-                    </div>
-
-
-                </div>
-            </div>
+    <!-- AI 추천 패널 -->
+    <div id="ar-panel-ai">
+      <div class="ar-sec-hd">
+        <span class="ar-sec-label">✦ AI 분석 추천</span>
+        <span class="ar-sec-count">{{ ai_books|length }}개 작품</span>
+      </div>
+      {% if ai_books %}
+      <div class="ar-grid">
+        {% for book in ai_books %}
+        <a href="{% url 'book:book_detail' book.public_uuid %}" class="ar-card">
+          <div class="ar-cover">
+            {% if book.cover_img %}
+            <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+            {% else %}
+            <div class="ar-cover-ph">{{ book.name|slice:":2" }}</div>
             {% endif %}
+            <div class="ar-badge ar-badge-ai">AI</div>
+          </div>
+          <div class="ar-card-genre">
+            {% for genre in book.genres.all|slice:":1" %}{{ genre.name }}{% endfor %}
+          </div>
+          <div class="ar-card-title">{{ book.name }}</div>
+          <div class="ar-card-author">{{ book.user.nickname|default:"" }}</div>
+        </a>
         {% endfor %}
+      </div>
+      {% else %}
+      <div class="ar-empty">AI 추천 작품을 불러오는 중입니다. 더 많은 작품을 읽으면 정확도가 높아집니다.</div>
+      {% endif %}
     </div>
 
+    <!-- 장르 기반 추천 패널 -->
+    <div id="ar-panel-genre" style="display:none">
+      <div class="ar-sec-hd">
+        <span class="ar-sec-label">장르 기반 추천</span>
+        <span class="ar-sec-count">{{ recommended_books|length }}개 작품</span>
+      </div>
+      {% if recommended_books %}
+      <div class="ar-grid">
+        {% for book in recommended_books %}
+        <a href="{% url 'book:book_detail' book.public_uuid %}" class="ar-card">
+          <div class="ar-cover">
+            {% if book.cover_img %}
+            <img src="{{ book.cover_img.url }}" alt="{{ book.name }}" loading="lazy">
+            {% else %}
+            <div class="ar-cover-ph">{{ book.name|slice:":2" }}</div>
+            {% endif %}
+            <div class="ar-badge ar-badge-genre">장르</div>
+          </div>
+          <div class="ar-card-genre">
+            {% for genre in book.genres.all|slice:":1" %}{{ genre.name }}{% endfor %}
+          </div>
+          <div class="ar-card-title">{{ book.name }}</div>
+          <div class="ar-card-author">{{ book.user.nickname|default:"" }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="ar-empty">아직 독서 기록이 부족합니다. 더 많은 작품을 읽으면 장르 추천이 정교해집니다.</div>
+      {% endif %}
+    </div>
 
-
+    {% endif %}
+  </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-    // 나중에 "다시 추천해줘" 버튼, 자동 스크롤 등 확장 가능
+function arSwitchTab(name, el) {
+  document.querySelectorAll('.ar-tab').forEach(function(t){ t.classList.remove('on'); });
+  el.classList.add('on');
+  document.getElementById('ar-panel-ai').style.display    = name === 'ai'    ? '' : 'none';
+  document.getElementById('ar-panel-genre').style.display = name === 'genre' ? '' : 'none';
+}
 </script>
 {% endblock %}
+

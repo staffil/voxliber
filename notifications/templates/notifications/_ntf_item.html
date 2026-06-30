@@ -1,0 +1,34 @@
+{% if n.link %}
+<a class="ntf-item ntf-type-{{ n.type }}{% if not n.is_read %} unread{% endif %}"
+   href="{{ n.link }}"
+   onclick="markItem({{ n.id }}, this)">
+{% else %}
+<div class="ntf-item ntf-type-{{ n.type }}{% if not n.is_read %} unread{% endif %}"
+     onclick="markItem({{ n.id }}, this)">
+{% endif %}
+
+  <div class="ntf-icon-wrap">
+    {% if n.type == 'new_episode' %}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+    {% elif n.type == 'follow' %}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    {% elif n.type == 'comment' %}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    {% elif n.type == 'notice' %}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    {% elif n.type == 'author_app' %}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+    {% else %}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+    {% endif %}
+  </div>
+
+  <div class="ntf-body">
+    <div class="ntf-body-title">{{ n.title }}</div>
+    <div class="ntf-body-msg">{{ n.message }}</div>
+    <div class="ntf-body-time">{{ n.created_at|timesince }} 전</div>
+  </div>
+
+  {% if not n.is_read %}<div class="ntf-dot"></div>{% endif %}
+
+{% if n.link %}</a>{% else %}</div>{% endif %}
