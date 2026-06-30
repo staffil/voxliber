@@ -337,12 +337,21 @@ class VoiceType(models.Model):
 class VoiceList(models.Model):
     voice_name = models.CharField(max_length=100)
     voice_id = models.CharField(max_length=100)
+    preview_url = models.URLField(max_length=500, null=True, blank=True)
     sample_audio = models.FileField(upload_to='audio_samples/', null=True, blank=True)
-    voice_image= models.ImageField(upload_to='uploads/voice_images/HOME v.png/', null=True, blank=True, default="uploads/voice_images/HOMEv.png/")
+    voice_image= models.ImageField(upload_to='uploads/voice_images/voice_image.png/', null=True, blank=True, default="uploads/voice_images/HOMEv.png/")
     created_at = models.DateTimeField(default=timezone.now)
     voice_description = models.TextField(null=True, blank=True)
     language_code = models.CharField(max_length=20, default="ko")
     types = models.ManyToManyField(VoiceType, blank=True)
+
+    @property
+    def audio_url(self):
+        if self.preview_url:
+            return self.preview_url
+        if self.sample_audio:
+            return self.sample_audio.url
+        return None
 
 
     class Meta:

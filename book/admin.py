@@ -144,7 +144,7 @@ class VoiceListAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('기본 정보', {'fields': ('voice_name', 'voice_id', 'language_code', 'types')}),
-        ('상세 정보', {'fields': ('voice_description', 'sample_audio', 'voice_image')}),
+        ('상세 정보', {'fields': ('voice_description', 'preview_url', 'sample_audio', 'voice_image')}),
         ('생성일',   {'fields': ('created_at',)}),
     )
 

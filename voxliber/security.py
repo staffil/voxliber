@@ -2,8 +2,13 @@
 Security utilities for file validation, rate limiting, and authentication.
 """
 import mimetypes
-import magic
 from django.core.exceptions import ValidationError
+
+try:
+    import magic
+    _HAS_MAGIC = True
+except (ImportError, OSError):
+    _HAS_MAGIC = False
 from django.conf import settings
 from functools import wraps
 from django.http import JsonResponse
@@ -76,13 +81,15 @@ def validate_file_type(file, allowed_types):
     file_ext = '.' + file.name.split('.')[-1].lower() if '.' in file.name else ''
 
     # Try to detect MIME type from content (magic bytes)
-    try:
-        mime = magic.Magic(mime=True)
-        file.seek(0)
-        detected_mime = mime.from_buffer(file.read(2048))
-        file.seek(0)
-    except:
-        # Fallback to guessing from filename
+    if _HAS_MAGIC:
+        try:
+            mime = magic.Magic(mime=True)
+            file.seek(0)
+            detected_mime = mime.from_buffer(file.read(2048))
+            file.seek(0)
+        except Exception:
+            detected_mime = mimetypes.guess_type(file.name)[0]
+    else:
         detected_mime = mimetypes.guess_type(file.name)[0]
 
     # Check if MIME type is allowed

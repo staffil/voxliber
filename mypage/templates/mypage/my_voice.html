@@ -68,7 +68,7 @@
             </div>
 
             <!-- 오디오 플레이어 -->
-            {% if item.voice.sample_audio %}
+            {% if item.voice.audio_url %}
             <div class="audio-player">
                 <button onclick="togglePlay(this)" data-login-required>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -79,7 +79,7 @@
                     <div class="progress"></div>
                 </div>
                 <span class="time">0:00 / 0:00</span>
-                <audio src="{{ item.voice.sample_audio.url }}" loading="lazy"></audio>
+                <audio src="{{ item.voice.audio_url }}" loading="lazy"></audio>
             </div>
             {% endif %}
 

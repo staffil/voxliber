@@ -211,8 +211,8 @@
             <div class="voice-name">{{ voice.alias_name }}</div>
         </div>
 
-        {% if voice.voice.sample_audio %}
-        <button class="voice-play-btn" onclick="toggleVoicePlay(event, '{{ voice.voice.sample_audio.url }}')" title="샘플 듣기" data-login-required>
+        {% if voice.voice.audio_url %}
+        <button class="voice-play-btn" onclick="toggleVoicePlay(event, '{{ voice.voice.audio_url }}')" title="샘플 듣기" data-login-required>
             ...
         </button>
         {% endif %}

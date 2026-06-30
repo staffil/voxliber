@@ -446,7 +446,7 @@ def api_voice_list(request):
             "language_code": v.language_code,
             "description": v.voice_description or "",
             "types": types,
-            "sample_audio": v.sample_audio.url if v.sample_audio else None,
+            "sample_audio": v.audio_url,
         })
 
     return api_response(data={

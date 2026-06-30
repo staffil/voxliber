@@ -98,14 +98,14 @@
                         {% endfor %}
                     </select>
 
-                    {% if item.voice.sample_audio %}
+                    {% if item.voice.audio_url %}
                     <div class="vl-my-player">
                         <button onclick="togglePlaySmall(this)" class="vl-play-sm" data-login-required>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                         </button>
                         <div class="vl-prog-sm"><div class="vl-fill-sm"></div></div>
                         <span class="vl-time-sm">0:00</span>
-                        <audio src="{{ item.voice.sample_audio.url }}" preload="metadata" loading="lazy"></audio>
+                        <audio src="{{ item.voice.audio_url }}" preload="metadata" loading="lazy"></audio>
                     </div>
                     {% endif %}
 
@@ -152,14 +152,14 @@
                     </div>
                     {% endif %}
 
-                    {% if voice.sample_audio %}
+                    {% if voice.audio_url %}
                     <div class="vl-card-player">
                         <button class="vl-play-btn" onclick="toggleVoicePlay(this)" data-login-required>
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                         </button>
                         <div class="vl-card-prog"><div class="vl-card-fill"></div></div>
                         <span class="vl-card-time">0:00 / 0:00</span>
-                        <audio src="{{ voice.sample_audio.url }}" preload="metadata" loading="lazy"></audio>
+                        <audio src="{{ voice.audio_url }}" preload="metadata" loading="lazy"></audio>
                     </div>
                     {% endif %}
 
